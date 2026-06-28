@@ -9,11 +9,11 @@
  * - Keywords + <number>/<integer> type → z.enum([...keywords]).or(z.number())
  * - Everything else → z.union([z.string(), z.number()])
  *
- * Each property's styleDeclaration array provides the kebab and camel case keys
- * emitted in the properties object schema.
+ * Each property's styleDeclaration array provides the kebab and camel case keys.
  *
- * The agent emits literal CSS values only (no $refs). The resolver layer
- * ($tokenRef/$keyframeRef) is out of scope and handled by a future DB layer.
+ * $ref position constraint: $keyframeRef is legal ONLY in animation/animation-name
+ * value schemas (enforced structurally in the emitted switch).
+ * $tokenRef is legal in every CSS property value.
  */
 
 import { definitionSyntax } from 'css-tree'
@@ -31,6 +31,20 @@ type PropertyEntry = {
   syntax: string
   styleDeclaration: string[]
 }
+
+// --- Keyframe-eligible property name set ---
+
+const KEYFRAME_ELIGIBLE_NAMES = new Set([
+  'animation',
+  'animation-name',
+  'animationName',
+  '-webkit-animation',
+  'WebkitAnimation',
+  'webkitAnimation',
+  '-webkit-animation-name',
+  'WebkitAnimationName',
+  'webkitAnimationName',
+])
 
 // --- Core logic ---
 
@@ -96,7 +110,7 @@ const keywordsToEnum = (keywords: string[]): string => {
   return `z.enum([${values}])`
 }
 
-const generateValueSchema = (property: PropertyEntry): string => {
+const generateLiteralSchema = (property: PropertyEntry): string => {
   const { keywords, classification } = classifyProperty(property.syntax)
 
   switch (classification) {
@@ -107,6 +121,14 @@ const generateValueSchema = (property: PropertyEntry): string => {
     case 'string-or-number':
       return `z.union([z.string(), z.number()])`
   }
+}
+
+const isKeyframeEligible = (name: string): boolean => KEYFRAME_ELIGIBLE_NAMES.has(name)
+
+const generateValueSchema = (name: string, property: PropertyEntry): string => {
+  const literalSchema = generateLiteralSchema(property)
+  const refs = isKeyframeEligible(name) ? 'TokenRefSchema, KeyframeRefSchema' : 'TokenRefSchema'
+  return `z.union([${literalSchema}, ${refs}])`
 }
 
 const generatePropertyNames = (properties: PropertyEntry[]): string[] => {
@@ -142,7 +164,6 @@ const main = async () => {
   const allNames = generatePropertyNames(properties)
   const propertyNameEntries = allNames.map((n) => JSON.stringify(n)).join(', ')
 
-  // Build a map from styleDeclaration name → property entry for quick lookup
   const nameToProp = new Map<string, PropertyEntry>()
   for (const prop of properties) {
     for (const name of prop.styleDeclaration) {
@@ -150,11 +171,10 @@ const main = async () => {
     }
   }
 
-  // Generate the switch-based value schema lookup
   const schemaCases = allNames
     .map((name) => {
       const prop = nameToProp.get(name)!
-      const valueSchema = generateValueSchema(prop)
+      const valueSchema = generateValueSchema(name, prop)
       return `  case ${JSON.stringify(name)}: return ${valueSchema}`
     })
     .join('\n')
@@ -163,11 +183,10 @@ const main = async () => {
   switch (prop) {
 ${schemaCases}
     default:
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
   }
 }`
 
-  // Generate CSSProperties type with known property keys (all optional)
   const typeLines = ['{']
   for (const name of allNames) {
     typeLines.push(`  ${JSON.stringify(name)}?: string | number,`)
@@ -184,6 +203,7 @@ ${schemaCases}
     ' * Do not edit manually.',
     ' */',
     "import { z } from 'zod'",
+    "import { TokenRefSchema, KeyframeRefSchema } from './css.input-schemas.ts'",
     '',
     '/**',
     ' * Schema for valid CSS property names (kebab and camel case).',
@@ -192,9 +212,10 @@ ${schemaCases}
     '',
     '/**',
     ' * Per-property value schema lookup.',
-    ' * Returns the appropriate Zod schema for a given CSS property name.',
-    ' * Known properties map to their specific value schema.',
-    ' * Unknown properties (e.g. `--*` custom properties) return a catchall.',
+    ' * Known properties map to their specific value schema (literal enum or',
+    ' * string|number, plus TokenRefSchema for all and KeyframeRefSchema for',
+    ' * animation/animation-name). Unknown properties (e.g. `--*`) return a',
+    ' * catchall with TokenRefSchema.',
     ' */',
     `export const cssPropertyValueSchema = ${schemaCode}`,
     '',

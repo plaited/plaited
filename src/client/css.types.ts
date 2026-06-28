@@ -4,6 +4,24 @@ import type { CSSProperties } from './css.schemas.ts'
 export type { CSSProperties }
 
 /**
+ * Registry for inline $ref resolution.
+ * Populated from saved catalog (JSONL) entries — how the registry is
+ * populated (DB/query layer) is out of scope for this module.
+ *
+ * When no registry is provided and a $ref is encountered, the util throws
+ * MissingRegistryError. The literal-only path (agent emits no refs) works
+ * without a registry.
+ *
+ * @public
+ */
+export type CssRegistry = {
+  /** Saved tokens by catalog id → { cssVar, stylesheets }. */
+  tokens?: Map<string, { cssVar: `var(--${string})`; stylesheets: string[] }>
+  /** Saved keyframes by catalog id → { id, stylesheets }. */
+  keyframes?: Map<string, { id: string; stylesheets: string[] }>
+}
+
+/**
  * A callable reference to a CSS custom property created by `createTokens`.
  * When called, returns the `var(--css-variable-name)` expression.
  * The `stylesheets` array holds the `:root{}` declarations that define the variable.

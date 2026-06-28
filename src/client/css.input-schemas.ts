@@ -7,12 +7,14 @@
  * that flows from the DB/JSONL layer into the materializers.
  *
  * @remarks
- * - The agent emits literal CSS values only (no $refs). $tokenRef/$keyframeRef
- *   will be handled by a future resolver layer (§3.5) and are OUT OF SCOPE.
+ * - $tokenRef and $keyframeRef are the vocabulary of the catalog (JSONL, §3.4).
+ *   The utils resolve them inline given a registry (not a separate resolver layer).
  * - $styleRef and $bind are not defined here (component/HTML schema).
  * - The Catalog* prefix distinguishes agent-JSON schemas from in-memory
  *   output types in css.types.ts (which are callables / generics).
  * - No superRefine for core shape — structural schemas only.
+ * - $keyframeRef position constraint is enforced inline in createStyles and
+ *   createKeyframes (branch on prop name when a {$keyframeRef} is encountered).
  */
 
 import { z } from 'zod'
@@ -22,75 +24,99 @@ import { z } from 'zod'
 /**
  * Primitive CSS/property value: string or number.
  */
-export const CssValueSchema = z.union([z.string(), z.number()])
-export type CssValue = z.output<typeof CssValueSchema>
+export const PrimitiveValueSchema = z.union([z.string(), z.number()])
+export type PrimitiveValue = z.output<typeof PrimitiveValueSchema>
 
-// --- Nested statements (agent JSON shape) ---
+// --- $ref schemas ---
+
+/**
+ * A `$tokenRef` reference — resolves to a design token's `var(--…)`.
+ * Legal in every CSS property value and in design token aliases.
+ */
+export const TokenRefSchema = z.object({
+  $tokenRef: z.string(),
+})
+export type TokenRef = z.output<typeof TokenRefSchema>
+
+/**
+ * A `$keyframeRef` reference — resolves to a hashed keyframe id.
+ * Legal ONLY in animation / animation-name value schemas
+ * (enforced inline in createStyles/createKeyframes, not superRefine).
+ */
+export const KeyframeRefSchema = z.object({
+  $keyframeRef: z.string(),
+})
+export type KeyframeRef = z.output<typeof KeyframeRefSchema>
+
+/**
+ * Catalog value union: literal ∪ $tokenRef ∪ $keyframeRef.
+ */
+export const CatalogCssValueSchema = z.union([PrimitiveValueSchema, TokenRefSchema, KeyframeRefSchema])
+export type CatalogCssValue = z.output<typeof CatalogCssValueSchema>
+
+// --- Nested statements (catalog JSON shape) ---
 
 /**
  * Recursive schema for nested CSS statements within a property value.
- *
- * Keys are restricted to the structural set the runtime understands:
- * - `$default` → the default value for this property
- * - `$compoundSelectors` → flat map of selector→value (valid only inside `$host`)
- * - `@…`       → at-rules (media, container, supports, etc.)
- * - `:…`       → pseudo-classes (:hover, :focus, etc.)
- * - `[…]`      → attribute selectors ([disabled], [data-x="y"])
- *
- * All terminal values are literals (string | number) — no $refs.
+ * Terminal values are the catalog value union (literal or $ref).
  */
 export const CatalogNestedStatementsSchema = z.lazy(
   (): z.ZodTypeAny =>
     z
       .object({
-        $default: CssValueSchema.optional(),
-        $compoundSelectors: z.record(z.string(), z.union([CssValueSchema, CatalogNestedStatementsSchema])).optional(),
+        $default: CatalogCssValueSchema.optional(),
+        $compoundSelectors: z
+          .record(z.string(), z.union([CatalogCssValueSchema, CatalogNestedStatementsSchema]))
+          .optional(),
       })
-      .catchall(z.union([CssValueSchema, CatalogNestedStatementsSchema])),
+      .catchall(z.union([CatalogCssValueSchema, CatalogNestedStatementsSchema])),
 )
 export type CatalogNestedStatements = z.output<typeof CatalogNestedStatementsSchema>
 
-// --- Per-property rules (agent JSON shape) ---
+// --- Per-property rules (catalog JSON shape) ---
 
-/**
- * CSS rules for a single element entry.
- * Keys are property names; values are literal values or nested statements (no refs).
- */
 export const CatalogCSSRulesSchema = z.lazy(() =>
-  z.record(z.string(), z.union([CssValueSchema, CatalogNestedStatementsSchema])),
+  z.record(z.string(), z.union([CatalogCssValueSchema, CatalogNestedStatementsSchema])),
 )
 export type CatalogCSSRules = z.output<typeof CatalogCSSRulesSchema>
 
 /**
- * CreateParams schema — the raw agent JSON shape for style definitions.
- * Top-level keys are logical style names; values are CSSRules.
+ * CreateParams schema — the raw catalog JSON shape for style definitions.
  */
 export const CatalogCreateParamsSchema = z.record(z.string(), CatalogCSSRulesSchema)
 export type CatalogCreateParams = z.output<typeof CatalogCreateParamsSchema>
 
-// --- Design tokens (agent JSON shape) ---
+// --- Design tokens (catalog JSON shape) ---
+
+/**
+ * Function arguments — literals or $tokenRef.
+ */
+const CatalogFunctionTokenArgumentsSchema = z.union([PrimitiveValueSchema, TokenRefSchema])
 
 /**
  * Function token value — e.g., `calc()`, `rgb()`, `clamp()`.
- * Arguments are literals only — no $refs.
  */
 export const CatalogFunctionTokenValueSchema = z.union([
   z.object({
     $function: z.string(),
-    $arguments: CssValueSchema,
+    $arguments: CatalogFunctionTokenArgumentsSchema,
   }),
   z.object({
     $function: z.string(),
-    $arguments: z.array(CssValueSchema),
+    $arguments: z.array(CatalogFunctionTokenArgumentsSchema),
     $csv: z.boolean(),
   }),
 ])
 export type CatalogFunctionTokenValue = z.output<typeof CatalogFunctionTokenValueSchema>
 
 /**
- * Design token value — primitive or function-based.
+ * Design token value — primitive, function-based, or $tokenRef.
  */
-export const CatalogDesignTokenValueSchema = z.union([CssValueSchema, CatalogFunctionTokenValueSchema])
+export const CatalogDesignTokenValueSchema = z.union([
+  PrimitiveValueSchema,
+  CatalogFunctionTokenValueSchema,
+  TokenRefSchema,
+])
 export type CatalogDesignTokenValue = z.output<typeof CatalogDesignTokenValueSchema>
 
 /**
@@ -107,32 +133,23 @@ export const CatalogDesignTokenSchema = z.union([
 ])
 export type CatalogDesignToken = z.output<typeof CatalogDesignTokenSchema>
 
-/**
- * Design token scale — one level of nesting.
- */
 export const CatalogDesignTokenScaleSchema = z.record(z.string(), CatalogDesignTokenSchema)
 export type CatalogDesignTokenScale = z.output<typeof CatalogDesignTokenScaleSchema>
 
-/**
- * Design token group — tokens or nested scales.
- */
 export const CatalogDesignTokenGroupSchema = z.record(
   z.string(),
   z.union([CatalogDesignTokenSchema, CatalogDesignTokenScaleSchema]),
 )
 export type CatalogDesignTokenGroup = z.output<typeof CatalogDesignTokenGroupSchema>
 
-// --- Keyframes (agent JSON shape) ---
+// --- Keyframes (catalog JSON shape) ---
 
-/**
- * Keyframe rule — from/to/percentage keys mapping CSS properties to literal values.
- */
 export const CatalogCSSKeyFramesSchema = z.lazy(() =>
   z
     .object({
-      from: z.record(z.string(), CssValueSchema).optional(),
-      to: z.record(z.string(), CssValueSchema).optional(),
+      from: z.record(z.string(), CatalogCssValueSchema).optional(),
+      to: z.record(z.string(), CatalogCssValueSchema).optional(),
     })
-    .catchall(z.record(z.string(), CssValueSchema)),
+    .catchall(z.record(z.string(), CatalogCssValueSchema)),
 )
 export type CatalogCSSKeyFrames = z.output<typeof CatalogCSSKeyFramesSchema>

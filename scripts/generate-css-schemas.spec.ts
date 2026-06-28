@@ -1,11 +1,8 @@
 /**
  * @module generate-css-schemas.spec
  *
- * Tests for the CSS schema generator's classification logic and the
- * generated output. This verifies the generator itself, NOT the Zod schemas.
- *
- * Runtime validation tests for createStyles/createTokens/createKeyframes
- * throw behaviors live in src/client/tests/.
+ * Tests for the CSS schema generator: classification logic, generated output
+ * snapshot, and per-property $ref inclusion in the switch cases.
  */
 
 import { expect, test } from 'bun:test'
@@ -27,51 +24,32 @@ const classifyProperty = (
   } catch {
     return { keywords: [], classification: 'string-or-number' }
   }
-
   const keywords: string[] = []
   let hasNumberType = false
   let hasOtherType = false
-
   const walkNode = (node: Record<string, unknown>) => {
-    const type = node.type as string
-    if (type === 'Keyword') {
+    const t = node.type as string
+    if (t === 'Keyword') {
       keywords.push(node.name as string)
-    } else if (type === 'Type') {
-      const name = node.name as string
-      if (name === 'number' || name === 'integer') {
-        hasNumberType = true
-      } else {
-        hasOtherType = true
-      }
-    } else if (type === 'Property') {
+    } else if (t === 'Type') {
+      if (node.name === 'number' || node.name === 'integer') hasNumberType = true
+      else hasOtherType = true
+    } else if (t === 'Property') {
       hasOtherType = true
-    } else if (type === 'Group') {
-      const combinator = node.combinator as string
-      if (combinator === '&&' || combinator === '||') hasOtherType = true
-      const terms = node.terms as Record<string, unknown>[]
-      if (terms) for (const term of terms) walkNode(term)
-    } else if (type === 'Multiplier') {
-      const term = node.term as Record<string, unknown>
-      if (term) walkNode(term)
+    } else if (t === 'Group') {
+      if ((node.combinator as string) === '&&' || node.combinator === '||') hasOtherType = true
+      ;(node.terms as Record<string, unknown>[])?.forEach(walkNode)
+    } else if (t === 'Multiplier') {
+      walkNode(node.term as Record<string, unknown>)
       hasOtherType = true
-    } else if (type === 'Function') {
+    } else if (t === 'Function') {
       hasOtherType = true
-      const children = node.terms as Record<string, unknown>[]
-      if (children) for (const child of children) walkNode(child)
+      ;(node.terms as Record<string, unknown>[])?.forEach(walkNode)
     }
   }
-
   walkNode(ast)
-
-  let classification: PropertyClassification
-  if (!hasNumberType && !hasOtherType) {
-    classification = 'enum'
-  } else if (!hasOtherType && hasNumberType) {
-    classification = 'enum-or-number'
-  } else {
-    classification = 'string-or-number'
-  }
-
+  const classification: PropertyClassification =
+    !hasNumberType && !hasOtherType ? 'enum' : !hasOtherType && hasNumberType ? 'enum-or-number' : 'string-or-number'
   return { keywords, classification }
 }
 
@@ -102,54 +80,51 @@ const propertyStyleDeclarations: Record<string, string[]> = {
 }
 
 test('box-sizing is pure keyword → z.enum', () => {
-  const result = classifyProperty(propertySyntaxes['box-sizing'])
-  expect(result.classification).toBe('enum')
-  expect(result.keywords).toEqual(['content-box', 'border-box'])
+  const r = classifyProperty(propertySyntaxes['box-sizing'])
+  expect(r.classification).toBe('enum')
+  expect(r.keywords).toEqual(['content-box', 'border-box'])
 })
 
 test('clear is pure keyword → z.enum', () => {
-  const result = classifyProperty(propertySyntaxes.clear)
-  expect(result.classification).toBe('enum')
-  expect(result.keywords).toContain('none')
+  const r = classifyProperty(propertySyntaxes.clear)
+  expect(r.classification).toBe('enum')
+  expect(r.keywords).toContain('none')
 })
 
 test('position has type ref → z.union([string, number])', () => {
-  const result = classifyProperty(propertySyntaxes.position)
-  expect(result.classification).toBe('string-or-number')
-  expect(result.keywords).toEqual(['static', 'relative', 'absolute', 'sticky', 'fixed'])
+  const r = classifyProperty(propertySyntaxes.position)
+  expect(r.classification).toBe('string-or-number')
+  expect(r.keywords).toEqual(['static', 'relative', 'absolute', 'sticky', 'fixed'])
 })
 
 test('text-align has type ref → z.union([string, number])', () => {
-  const result = classifyProperty(propertySyntaxes['text-align'])
-  expect(result.classification).toBe('string-or-number')
-  expect(result.keywords).toContain('start')
+  const r = classifyProperty(propertySyntaxes['text-align'])
+  expect(r.classification).toBe('string-or-number')
+  expect(r.keywords).toContain('start')
 })
 
 test('overflow has property ref + multiplier → z.union([string, number])', () => {
-  const result = classifyProperty(propertySyntaxes.overflow)
-  expect(result.classification).toBe('string-or-number')
+  expect(classifyProperty(propertySyntaxes.overflow).classification).toBe('string-or-number')
 })
 
 test('font-weight has type ref → z.union([string, number])', () => {
-  const result = classifyProperty(propertySyntaxes['font-weight'])
-  expect(result.classification).toBe('string-or-number')
-  expect(result.keywords).toEqual(['bolder', 'lighter'])
+  const r = classifyProperty(propertySyntaxes['font-weight'])
+  expect(r.classification).toBe('string-or-number')
+  expect(r.keywords).toEqual(['bolder', 'lighter'])
 })
 
 test('margin has multiplier → z.union([string, number])', () => {
-  const result = classifyProperty(propertySyntaxes.margin)
-  expect(result.classification).toBe('string-or-number')
+  expect(classifyProperty(propertySyntaxes.margin).classification).toBe('string-or-number')
 })
 
 test('color has type ref → z.union([string, number])', () => {
-  const result = classifyProperty(propertySyntaxes.color)
-  expect(result.classification).toBe('string-or-number')
+  expect(classifyProperty(propertySyntaxes.color).classification).toBe('string-or-number')
 })
 
 test('display has complex syntax → z.union([string, number])', () => {
-  const result = classifyProperty(propertySyntaxes.display)
-  expect(result.classification).toBe('string-or-number')
-  expect(result.keywords).toContain('grid-lanes')
+  const r = classifyProperty(propertySyntaxes.display)
+  expect(r.classification).toBe('string-or-number')
+  expect(r.keywords).toContain('grid-lanes')
 })
 
 test('camelCase keys present via styleDeclaration', () => {
@@ -164,29 +139,33 @@ test('kebab keys present via styleDeclaration', () => {
   expect(propertyStyleDeclarations.position).toContain('position')
 })
 
-test('generated file snapshot matches', async () => {
+// --- Generated output snapshot ---
+
+test('generated file includes TokenRefSchema in every case and KeyframeRefSchema only for animation/animation-name', async () => {
   const proc = Bun.spawn(['bun', 'run', path.join(import.meta.dir, 'generate-css-schemas.ts')], {
     cwd: path.resolve(import.meta.dir, '..'),
     stdout: 'pipe',
     stderr: 'pipe',
   })
   await proc.exited
-
   const genPath = new URL('../src/client/css.schemas.ts', import.meta.url)
   const content = await Bun.file(genPath).text()
 
-  // Verify no ref schema imports (resolver layer is out of scope)
-  expect(content).not.toContain('TokenRefSchema')
-  expect(content).not.toContain('KeyframeRefSchema')
+  // Verify ref schema imports present
+  expect(content).toContain("import { TokenRefSchema, KeyframeRefSchema } from './css.input-schemas.ts'")
 
-  // Verify each case returns a literal-only schema
-  expect(content).toContain('case "position": return z.union([z.string(), z.number()])')
-  expect(content).toContain('case "box-sizing": return z.enum(["content-box", "border-box"])')
-  expect(content).toContain('case "clear": return z.enum([')
+  // Non-keyframe property gets TokenRefSchema only
+  expect(content).toContain('case "position": return z.union([z.union([z.string(), z.number()]), TokenRefSchema])')
+  expect(content).toContain('case "color": return z.union([z.union([z.string(), z.number()]), TokenRefSchema])')
+
+  // Keyframe-eligible properties get both
+  expect(content).toContain('TokenRefSchema, KeyframeRefSchema')
+
+  // Default catchall has TokenRefSchema
+  expect(content).toContain('return z.union([z.union([z.string(), z.number()]), TokenRefSchema])')
 
   const lines = content.split('\n')
-  const header = lines.slice(0, 11).join('\n')
+  const header = lines.slice(0, 12).join('\n')
   const typeTail = lines.slice(-5).join('\n')
-
   expect({ header, typeTail }).toMatchSnapshot()
 })

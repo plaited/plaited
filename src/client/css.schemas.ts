@@ -5,6 +5,7 @@
  * Do not edit manually.
  */
 import { z } from 'zod'
+import { KeyframeRefSchema, TokenRefSchema } from './css.input-schemas.ts'
 
 /**
  * Schema for valid CSS property names (kebab and camel case).
@@ -1626,3351 +1627,3438 @@ export const cssPropertyNameSchema = z.enum([
 
 /**
  * Per-property value schema lookup.
- * Returns the appropriate Zod schema for a given CSS property name.
- * Known properties map to their specific value schema.
- * Unknown properties (e.g. `--*` custom properties) return a catchall.
+ * Known properties map to their specific value schema (literal enum or
+ * string|number, plus TokenRefSchema for all and KeyframeRefSchema for
+ * animation/animation-name). Unknown properties (e.g. `--*`) return a
+ * catchall with TokenRefSchema.
  */
 export const cssPropertyValueSchema = (prop: string): z.ZodTypeAny => {
   switch (prop) {
     case '-webkit-align-content':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case '-webkit-align-items':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case '-webkit-align-self':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case '-webkit-animation':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema, KeyframeRefSchema])
     case '-webkit-animation-delay':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case '-webkit-animation-direction':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case '-webkit-animation-duration':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case '-webkit-animation-fill-mode':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case '-webkit-animation-iteration-count':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case '-webkit-animation-name':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema, KeyframeRefSchema])
     case '-webkit-animation-play-state':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case '-webkit-animation-timing-function':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case '-webkit-appearance':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case '-webkit-backface-visibility':
-      return z.enum(['visible', 'hidden'])
+      return z.union([z.enum(['visible', 'hidden']), TokenRefSchema])
     case '-webkit-background-clip':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case '-webkit-background-origin':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case '-webkit-background-size':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case '-webkit-border-bottom-left-radius':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case '-webkit-border-bottom-right-radius':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case '-webkit-border-radius':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case '-webkit-border-top-left-radius':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case '-webkit-border-top-right-radius':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case '-webkit-box-shadow':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case '-webkit-box-sizing':
-      return z.enum(['content-box', 'border-box'])
+      return z.union([z.enum(['content-box', 'border-box']), TokenRefSchema])
     case '-webkit-filter':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case '-webkit-flex':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case '-webkit-flex-basis':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case '-webkit-flex-direction':
-      return z.enum(['row', 'row-reverse', 'column', 'column-reverse'])
+      return z.union([z.enum(['row', 'row-reverse', 'column', 'column-reverse']), TokenRefSchema])
     case '-webkit-flex-flow':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case '-webkit-flex-grow':
-      return z.enum([]).or(z.number())
+      return z.union([z.enum([]).or(z.number()), TokenRefSchema])
     case '-webkit-flex-shrink':
-      return z.enum([]).or(z.number())
+      return z.union([z.enum([]).or(z.number()), TokenRefSchema])
     case '-webkit-flex-wrap':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case '-webkit-justify-content':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case '-webkit-line-clamp':
-      return z.enum(['none']).or(z.number())
+      return z.union([z.enum(['none']).or(z.number()), TokenRefSchema])
     case '-webkit-mask':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case '-webkit-mask-box-image':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case '-webkit-mask-box-image-outset':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case '-webkit-mask-box-image-repeat':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case '-webkit-mask-box-image-slice':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case '-webkit-mask-box-image-source':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case '-webkit-mask-box-image-width':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case '-webkit-mask-clip':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case '-webkit-mask-composite':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case '-webkit-mask-image':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case '-webkit-mask-origin':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case '-webkit-mask-position':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case '-webkit-mask-repeat':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case '-webkit-mask-size':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case '-webkit-order':
-      return z.enum([]).or(z.number())
+      return z.union([z.enum([]).or(z.number()), TokenRefSchema])
     case '-webkit-perspective':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case '-webkit-perspective-origin':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case '-webkit-text-fill-color':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case '-webkit-text-size-adjust':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case '-webkit-text-stroke':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case '-webkit-text-stroke-color':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case '-webkit-text-stroke-width':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case '-webkit-transform':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case '-webkit-transform-origin':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case '-webkit-transform-style':
-      return z.enum(['flat', 'preserve-3d'])
+      return z.union([z.enum(['flat', 'preserve-3d']), TokenRefSchema])
     case '-webkit-transition':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case '-webkit-transition-delay':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case '-webkit-transition-duration':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case '-webkit-transition-property':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case '-webkit-transition-timing-function':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case '-webkit-user-select':
-      return z.enum(['auto', 'text', 'none', 'contain', 'all'])
+      return z.union([z.enum(['auto', 'text', 'none', 'contain', 'all']), TokenRefSchema])
     case 'WebkitAlignContent':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'WebkitAlignItems':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'WebkitAlignSelf':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'WebkitAnimation':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema, KeyframeRefSchema])
     case 'WebkitAnimationDelay':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'WebkitAnimationDirection':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'WebkitAnimationDuration':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'WebkitAnimationFillMode':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'WebkitAnimationIterationCount':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'WebkitAnimationName':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema, KeyframeRefSchema])
     case 'WebkitAnimationPlayState':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'WebkitAnimationTimingFunction':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'WebkitAppearance':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'WebkitBackfaceVisibility':
-      return z.enum(['visible', 'hidden'])
+      return z.union([z.enum(['visible', 'hidden']), TokenRefSchema])
     case 'WebkitBackgroundClip':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'WebkitBackgroundOrigin':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'WebkitBackgroundSize':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'WebkitBorderBottomLeftRadius':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'WebkitBorderBottomRightRadius':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'WebkitBorderRadius':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'WebkitBorderTopLeftRadius':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'WebkitBorderTopRightRadius':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'WebkitBoxShadow':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'WebkitBoxSizing':
-      return z.enum(['content-box', 'border-box'])
+      return z.union([z.enum(['content-box', 'border-box']), TokenRefSchema])
     case 'WebkitFilter':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'WebkitFlex':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'WebkitFlexBasis':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'WebkitFlexDirection':
-      return z.enum(['row', 'row-reverse', 'column', 'column-reverse'])
+      return z.union([z.enum(['row', 'row-reverse', 'column', 'column-reverse']), TokenRefSchema])
     case 'WebkitFlexFlow':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'WebkitFlexGrow':
-      return z.enum([]).or(z.number())
+      return z.union([z.enum([]).or(z.number()), TokenRefSchema])
     case 'WebkitFlexShrink':
-      return z.enum([]).or(z.number())
+      return z.union([z.enum([]).or(z.number()), TokenRefSchema])
     case 'WebkitFlexWrap':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'WebkitJustifyContent':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'WebkitLineClamp':
-      return z.enum(['none']).or(z.number())
+      return z.union([z.enum(['none']).or(z.number()), TokenRefSchema])
     case 'WebkitMask':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'WebkitMaskBoxImage':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'WebkitMaskBoxImageOutset':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'WebkitMaskBoxImageRepeat':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'WebkitMaskBoxImageSlice':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'WebkitMaskBoxImageSource':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'WebkitMaskBoxImageWidth':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'WebkitMaskClip':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'WebkitMaskComposite':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'WebkitMaskImage':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'WebkitMaskOrigin':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'WebkitMaskPosition':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'WebkitMaskRepeat':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'WebkitMaskSize':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'WebkitOrder':
-      return z.enum([]).or(z.number())
+      return z.union([z.enum([]).or(z.number()), TokenRefSchema])
     case 'WebkitPerspective':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'WebkitPerspectiveOrigin':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'WebkitTextFillColor':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'WebkitTextSizeAdjust':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'WebkitTextStroke':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'WebkitTextStrokeColor':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'WebkitTextStrokeWidth':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'WebkitTransform':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'WebkitTransformOrigin':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'WebkitTransformStyle':
-      return z.enum(['flat', 'preserve-3d'])
+      return z.union([z.enum(['flat', 'preserve-3d']), TokenRefSchema])
     case 'WebkitTransition':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'WebkitTransitionDelay':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'WebkitTransitionDuration':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'WebkitTransitionProperty':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'WebkitTransitionTimingFunction':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'WebkitUserSelect':
-      return z.enum(['auto', 'text', 'none', 'contain', 'all'])
+      return z.union([z.enum(['auto', 'text', 'none', 'contain', 'all']), TokenRefSchema])
     case 'accent-color':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'accentColor':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'align-content':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'align-items':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'align-self':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'alignContent':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'alignItems':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'alignSelf':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'alignment-baseline':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'alignmentBaseline':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'all':
-      return z.enum(['initial', 'inherit', 'unset', 'revert', 'revert-layer', 'revert-rule'])
+      return z.union([z.enum(['initial', 'inherit', 'unset', 'revert', 'revert-layer', 'revert-rule']), TokenRefSchema])
     case 'anchor-name':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'anchor-scope':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'anchorName':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'anchorScope':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'animation':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema, KeyframeRefSchema])
     case 'animation-composition':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'animation-delay':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'animation-direction':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'animation-duration':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'animation-fill-mode':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'animation-iteration-count':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'animation-name':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema, KeyframeRefSchema])
     case 'animation-play-state':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'animation-range':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'animation-range-center':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'animation-range-end':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'animation-range-start':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'animation-timeline':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'animation-timing-function':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'animation-trigger':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'animationComposition':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'animationDelay':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'animationDirection':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'animationDuration':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'animationFillMode':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'animationIterationCount':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'animationName':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema, KeyframeRefSchema])
     case 'animationPlayState':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'animationRange':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'animationRangeCenter':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'animationRangeEnd':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'animationRangeStart':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'animationTimeline':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'animationTimingFunction':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'animationTrigger':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'appearance':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'aspect-ratio':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'aspectRatio':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'backdrop-filter':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'backdropFilter':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'backface-visibility':
-      return z.enum(['visible', 'hidden'])
+      return z.union([z.enum(['visible', 'hidden']), TokenRefSchema])
     case 'backfaceVisibility':
-      return z.enum(['visible', 'hidden'])
+      return z.union([z.enum(['visible', 'hidden']), TokenRefSchema])
     case 'background':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'background-attachment':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'background-blend-mode':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'background-clip':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'background-color':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'background-image':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'background-origin':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'background-position':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'background-position-block':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'background-position-inline':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'background-position-x':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'background-position-y':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'background-repeat':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'background-repeat-block':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'background-repeat-inline':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'background-repeat-x':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'background-repeat-y':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'background-size':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'background-tbd':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'backgroundAttachment':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'backgroundBlendMode':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'backgroundClip':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'backgroundColor':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'backgroundImage':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'backgroundOrigin':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'backgroundPosition':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'backgroundPositionBlock':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'backgroundPositionInline':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'backgroundPositionX':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'backgroundPositionY':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'backgroundRepeat':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'backgroundRepeatBlock':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'backgroundRepeatInline':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'backgroundRepeatX':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'backgroundRepeatY':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'backgroundSize':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'backgroundTbd':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'baseline-shift':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'baseline-source':
-      return z.enum(['auto', 'first', 'last'])
+      return z.union([z.enum(['auto', 'first', 'last']), TokenRefSchema])
     case 'baselineShift':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'baselineSource':
-      return z.enum(['auto', 'first', 'last'])
+      return z.union([z.enum(['auto', 'first', 'last']), TokenRefSchema])
     case 'block-ellipsis':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'block-size':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'block-step':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'block-step-align':
-      return z.enum(['auto', 'center', 'start', 'end'])
+      return z.union([z.enum(['auto', 'center', 'start', 'end']), TokenRefSchema])
     case 'block-step-insert':
-      return z.enum(['margin-box', 'padding-box', 'content-box'])
+      return z.union([z.enum(['margin-box', 'padding-box', 'content-box']), TokenRefSchema])
     case 'block-step-round':
-      return z.enum(['up', 'down', 'nearest'])
+      return z.union([z.enum(['up', 'down', 'nearest']), TokenRefSchema])
     case 'block-step-size':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'blockEllipsis':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'blockSize':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'blockStep':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'blockStepAlign':
-      return z.enum(['auto', 'center', 'start', 'end'])
+      return z.union([z.enum(['auto', 'center', 'start', 'end']), TokenRefSchema])
     case 'blockStepInsert':
-      return z.enum(['margin-box', 'padding-box', 'content-box'])
+      return z.union([z.enum(['margin-box', 'padding-box', 'content-box']), TokenRefSchema])
     case 'blockStepRound':
-      return z.enum(['up', 'down', 'nearest'])
+      return z.union([z.enum(['up', 'down', 'nearest']), TokenRefSchema])
     case 'blockStepSize':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'bookmark-label':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'bookmark-level':
-      return z.enum(['none']).or(z.number())
+      return z.union([z.enum(['none']).or(z.number()), TokenRefSchema])
     case 'bookmark-state':
-      return z.enum(['open', 'closed'])
+      return z.union([z.enum(['open', 'closed']), TokenRefSchema])
     case 'bookmarkLabel':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'bookmarkLevel':
-      return z.enum(['none']).or(z.number())
+      return z.union([z.enum(['none']).or(z.number()), TokenRefSchema])
     case 'bookmarkState':
-      return z.enum(['open', 'closed'])
+      return z.union([z.enum(['open', 'closed']), TokenRefSchema])
     case 'border':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'border-block':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'border-block-clip':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'border-block-color':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'border-block-end':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'border-block-end-clip':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'border-block-end-color':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'border-block-end-radius':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'border-block-end-style':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'border-block-end-width':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'border-block-start':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'border-block-start-clip':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'border-block-start-color':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'border-block-start-radius':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'border-block-start-style':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'border-block-start-width':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'border-block-style':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'border-block-width':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'border-bottom':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'border-bottom-clip':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'border-bottom-color':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'border-bottom-left-radius':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'border-bottom-radius':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'border-bottom-right-radius':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'border-bottom-style':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'border-bottom-width':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'border-boundary':
-      return z.enum(['none', 'parent', 'display'])
+      return z.union([z.enum(['none', 'parent', 'display']), TokenRefSchema])
     case 'border-clip':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'border-collapse':
-      return z.enum(['separate', 'collapse'])
+      return z.union([z.enum(['separate', 'collapse']), TokenRefSchema])
     case 'border-color':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'border-end-end-radius':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'border-end-start-radius':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'border-image':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'border-image-outset':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'border-image-repeat':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'border-image-slice':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'border-image-source':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'border-image-width':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'border-inline':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'border-inline-clip':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'border-inline-color':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'border-inline-end':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'border-inline-end-clip':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'border-inline-end-color':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'border-inline-end-radius':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'border-inline-end-style':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'border-inline-end-width':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'border-inline-start':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'border-inline-start-clip':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'border-inline-start-color':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'border-inline-start-radius':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'border-inline-start-style':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'border-inline-start-width':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'border-inline-style':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'border-inline-width':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'border-left':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'border-left-clip':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'border-left-color':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'border-left-radius':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'border-left-style':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'border-left-width':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'border-limit':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'border-radius':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'border-right':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'border-right-clip':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'border-right-color':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'border-right-radius':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'border-right-style':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'border-right-width':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'border-shape':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'border-spacing':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'border-start-end-radius':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'border-start-start-radius':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'border-style':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'border-top':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'border-top-clip':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'border-top-color':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'border-top-left-radius':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'border-top-radius':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'border-top-right-radius':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'border-top-style':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'border-top-width':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'border-width':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'borderBlock':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'borderBlockClip':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'borderBlockColor':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'borderBlockEnd':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'borderBlockEndClip':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'borderBlockEndColor':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'borderBlockEndRadius':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'borderBlockEndStyle':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'borderBlockEndWidth':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'borderBlockStart':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'borderBlockStartClip':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'borderBlockStartColor':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'borderBlockStartRadius':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'borderBlockStartStyle':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'borderBlockStartWidth':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'borderBlockStyle':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'borderBlockWidth':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'borderBottom':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'borderBottomClip':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'borderBottomColor':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'borderBottomLeftRadius':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'borderBottomRadius':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'borderBottomRightRadius':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'borderBottomStyle':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'borderBottomWidth':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'borderBoundary':
-      return z.enum(['none', 'parent', 'display'])
+      return z.union([z.enum(['none', 'parent', 'display']), TokenRefSchema])
     case 'borderClip':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'borderCollapse':
-      return z.enum(['separate', 'collapse'])
+      return z.union([z.enum(['separate', 'collapse']), TokenRefSchema])
     case 'borderColor':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'borderEndEndRadius':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'borderEndStartRadius':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'borderImage':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'borderImageOutset':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'borderImageRepeat':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'borderImageSlice':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'borderImageSource':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'borderImageWidth':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'borderInline':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'borderInlineClip':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'borderInlineColor':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'borderInlineEnd':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'borderInlineEndClip':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'borderInlineEndColor':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'borderInlineEndRadius':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'borderInlineEndStyle':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'borderInlineEndWidth':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'borderInlineStart':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'borderInlineStartClip':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'borderInlineStartColor':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'borderInlineStartRadius':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'borderInlineStartStyle':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'borderInlineStartWidth':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'borderInlineStyle':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'borderInlineWidth':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'borderLeft':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'borderLeftClip':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'borderLeftColor':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'borderLeftRadius':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'borderLeftStyle':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'borderLeftWidth':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'borderLimit':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'borderRadius':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'borderRight':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'borderRightClip':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'borderRightColor':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'borderRightRadius':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'borderRightStyle':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'borderRightWidth':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'borderShape':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'borderSpacing':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'borderStartEndRadius':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'borderStartStartRadius':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'borderStyle':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'borderTop':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'borderTopClip':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'borderTopColor':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'borderTopLeftRadius':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'borderTopRadius':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'borderTopRightRadius':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'borderTopStyle':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'borderTopWidth':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'borderWidth':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'bottom':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'box-decoration-break':
-      return z.enum(['slice', 'clone'])
+      return z.union([z.enum(['slice', 'clone']), TokenRefSchema])
     case 'box-shadow':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'box-shadow-blur':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'box-shadow-color':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'box-shadow-offset':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'box-shadow-position':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'box-shadow-spread':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'box-sizing':
-      return z.enum(['content-box', 'border-box'])
+      return z.union([z.enum(['content-box', 'border-box']), TokenRefSchema])
     case 'box-snap':
-      return z.enum(['none', 'block-start', 'block-end', 'center', 'baseline', 'last-baseline'])
+      return z.union([
+        z.enum(['none', 'block-start', 'block-end', 'center', 'baseline', 'last-baseline']),
+        TokenRefSchema,
+      ])
     case 'boxDecorationBreak':
-      return z.enum(['slice', 'clone'])
+      return z.union([z.enum(['slice', 'clone']), TokenRefSchema])
     case 'boxShadow':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'boxShadowBlur':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'boxShadowColor':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'boxShadowOffset':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'boxShadowPosition':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'boxShadowSpread':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'boxSizing':
-      return z.enum(['content-box', 'border-box'])
+      return z.union([z.enum(['content-box', 'border-box']), TokenRefSchema])
     case 'boxSnap':
-      return z.enum(['none', 'block-start', 'block-end', 'center', 'baseline', 'last-baseline'])
+      return z.union([
+        z.enum(['none', 'block-start', 'block-end', 'center', 'baseline', 'last-baseline']),
+        TokenRefSchema,
+      ])
     case 'break-after':
-      return z.enum([
-        'auto',
-        'avoid',
-        'always',
-        'all',
-        'avoid-page',
-        'page',
-        'left',
-        'right',
-        'recto',
-        'verso',
-        'avoid-column',
-        'column',
-        'avoid-region',
-        'region',
+      return z.union([
+        z.enum([
+          'auto',
+          'avoid',
+          'always',
+          'all',
+          'avoid-page',
+          'page',
+          'left',
+          'right',
+          'recto',
+          'verso',
+          'avoid-column',
+          'column',
+          'avoid-region',
+          'region',
+        ]),
+        TokenRefSchema,
       ])
     case 'break-before':
-      return z.enum([
-        'auto',
-        'avoid',
-        'always',
-        'all',
-        'avoid-page',
-        'page',
-        'left',
-        'right',
-        'recto',
-        'verso',
-        'avoid-column',
-        'column',
-        'avoid-region',
-        'region',
+      return z.union([
+        z.enum([
+          'auto',
+          'avoid',
+          'always',
+          'all',
+          'avoid-page',
+          'page',
+          'left',
+          'right',
+          'recto',
+          'verso',
+          'avoid-column',
+          'column',
+          'avoid-region',
+          'region',
+        ]),
+        TokenRefSchema,
       ])
     case 'break-inside':
-      return z.enum(['auto', 'avoid', 'avoid-page', 'avoid-column', 'avoid-region'])
+      return z.union([z.enum(['auto', 'avoid', 'avoid-page', 'avoid-column', 'avoid-region']), TokenRefSchema])
     case 'breakAfter':
-      return z.enum([
-        'auto',
-        'avoid',
-        'always',
-        'all',
-        'avoid-page',
-        'page',
-        'left',
-        'right',
-        'recto',
-        'verso',
-        'avoid-column',
-        'column',
-        'avoid-region',
-        'region',
+      return z.union([
+        z.enum([
+          'auto',
+          'avoid',
+          'always',
+          'all',
+          'avoid-page',
+          'page',
+          'left',
+          'right',
+          'recto',
+          'verso',
+          'avoid-column',
+          'column',
+          'avoid-region',
+          'region',
+        ]),
+        TokenRefSchema,
       ])
     case 'breakBefore':
-      return z.enum([
-        'auto',
-        'avoid',
-        'always',
-        'all',
-        'avoid-page',
-        'page',
-        'left',
-        'right',
-        'recto',
-        'verso',
-        'avoid-column',
-        'column',
-        'avoid-region',
-        'region',
+      return z.union([
+        z.enum([
+          'auto',
+          'avoid',
+          'always',
+          'all',
+          'avoid-page',
+          'page',
+          'left',
+          'right',
+          'recto',
+          'verso',
+          'avoid-column',
+          'column',
+          'avoid-region',
+          'region',
+        ]),
+        TokenRefSchema,
       ])
     case 'breakInside':
-      return z.enum(['auto', 'avoid', 'avoid-page', 'avoid-column', 'avoid-region'])
+      return z.union([z.enum(['auto', 'avoid', 'avoid-page', 'avoid-column', 'avoid-region']), TokenRefSchema])
     case 'caption-side':
-      return z.enum(['top', 'bottom'])
+      return z.union([z.enum(['top', 'bottom']), TokenRefSchema])
     case 'captionSide':
-      return z.enum(['top', 'bottom'])
+      return z.union([z.enum(['top', 'bottom']), TokenRefSchema])
     case 'caret':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'caret-animation':
-      return z.enum(['auto', 'manual'])
+      return z.union([z.enum(['auto', 'manual']), TokenRefSchema])
     case 'caret-color':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'caret-shape':
-      return z.enum(['auto', 'bar', 'block', 'underscore'])
+      return z.union([z.enum(['auto', 'bar', 'block', 'underscore']), TokenRefSchema])
     case 'caretAnimation':
-      return z.enum(['auto', 'manual'])
+      return z.union([z.enum(['auto', 'manual']), TokenRefSchema])
     case 'caretColor':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'caretShape':
-      return z.enum(['auto', 'bar', 'block', 'underscore'])
+      return z.union([z.enum(['auto', 'bar', 'block', 'underscore']), TokenRefSchema])
     case 'clear':
-      return z.enum([
-        'inline-start',
-        'inline-end',
-        'block-start',
-        'block-end',
-        'left',
-        'right',
-        'top',
-        'bottom',
-        'both-inline',
-        'both-block',
-        'both',
-        'none',
+      return z.union([
+        z.enum([
+          'inline-start',
+          'inline-end',
+          'block-start',
+          'block-end',
+          'left',
+          'right',
+          'top',
+          'bottom',
+          'both-inline',
+          'both-block',
+          'both',
+          'none',
+        ]),
+        TokenRefSchema,
       ])
     case 'clip':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'clip-path':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'clip-rule':
-      return z.enum(['nonzero', 'evenodd'])
+      return z.union([z.enum(['nonzero', 'evenodd']), TokenRefSchema])
     case 'clipPath':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'clipRule':
-      return z.enum(['nonzero', 'evenodd'])
+      return z.union([z.enum(['nonzero', 'evenodd']), TokenRefSchema])
     case 'color':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'color-adjust':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'color-interpolation':
-      return z.enum(['auto', 'sRGB', 'linearRGB'])
+      return z.union([z.enum(['auto', 'sRGB', 'linearRGB']), TokenRefSchema])
     case 'color-interpolation-filters':
-      return z.enum(['auto', 'sRGB', 'linearRGB'])
+      return z.union([z.enum(['auto', 'sRGB', 'linearRGB']), TokenRefSchema])
     case 'color-scheme':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'colorAdjust':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'colorInterpolation':
-      return z.enum(['auto', 'sRGB', 'linearRGB'])
+      return z.union([z.enum(['auto', 'sRGB', 'linearRGB']), TokenRefSchema])
     case 'colorInterpolationFilters':
-      return z.enum(['auto', 'sRGB', 'linearRGB'])
+      return z.union([z.enum(['auto', 'sRGB', 'linearRGB']), TokenRefSchema])
     case 'colorScheme':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'column-count':
-      return z.enum(['auto']).or(z.number())
+      return z.union([z.enum(['auto']).or(z.number()), TokenRefSchema])
     case 'column-fill':
-      return z.enum(['auto', 'balance', 'balance-all'])
+      return z.union([z.enum(['auto', 'balance', 'balance-all']), TokenRefSchema])
     case 'column-gap':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'column-height':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'column-rule':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'column-rule-break':
-      return z.enum(['none', 'normal', 'intersection'])
+      return z.union([z.enum(['none', 'normal', 'intersection']), TokenRefSchema])
     case 'column-rule-color':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'column-rule-inset':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'column-rule-inset-cap':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'column-rule-inset-cap-end':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'column-rule-inset-cap-start':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'column-rule-inset-end':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'column-rule-inset-junction':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'column-rule-inset-junction-end':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'column-rule-inset-junction-start':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'column-rule-inset-start':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'column-rule-style':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'column-rule-visibility-items':
-      return z.enum(['all', 'around', 'between', 'normal'])
+      return z.union([z.enum(['all', 'around', 'between', 'normal']), TokenRefSchema])
     case 'column-rule-width':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'column-span':
-      return z.enum(['none', 'all', 'auto']).or(z.number())
+      return z.union([z.enum(['none', 'all', 'auto']).or(z.number()), TokenRefSchema])
     case 'column-width':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'column-wrap':
-      return z.enum(['auto', 'nowrap', 'wrap'])
+      return z.union([z.enum(['auto', 'nowrap', 'wrap']), TokenRefSchema])
     case 'columnCount':
-      return z.enum(['auto']).or(z.number())
+      return z.union([z.enum(['auto']).or(z.number()), TokenRefSchema])
     case 'columnFill':
-      return z.enum(['auto', 'balance', 'balance-all'])
+      return z.union([z.enum(['auto', 'balance', 'balance-all']), TokenRefSchema])
     case 'columnGap':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'columnHeight':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'columnRule':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'columnRuleBreak':
-      return z.enum(['none', 'normal', 'intersection'])
+      return z.union([z.enum(['none', 'normal', 'intersection']), TokenRefSchema])
     case 'columnRuleColor':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'columnRuleInset':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'columnRuleInsetCap':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'columnRuleInsetCapEnd':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'columnRuleInsetCapStart':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'columnRuleInsetEnd':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'columnRuleInsetJunction':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'columnRuleInsetJunctionEnd':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'columnRuleInsetJunctionStart':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'columnRuleInsetStart':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'columnRuleStyle':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'columnRuleVisibilityItems':
-      return z.enum(['all', 'around', 'between', 'normal'])
+      return z.union([z.enum(['all', 'around', 'between', 'normal']), TokenRefSchema])
     case 'columnRuleWidth':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'columnSpan':
-      return z.enum(['none', 'all', 'auto']).or(z.number())
+      return z.union([z.enum(['none', 'all', 'auto']).or(z.number()), TokenRefSchema])
     case 'columnWidth':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'columnWrap':
-      return z.enum(['auto', 'nowrap', 'wrap'])
+      return z.union([z.enum(['auto', 'nowrap', 'wrap']), TokenRefSchema])
     case 'columns':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'contain':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'contain-intrinsic-block-size':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'contain-intrinsic-height':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'contain-intrinsic-inline-size':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'contain-intrinsic-size':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'contain-intrinsic-width':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'containIntrinsicBlockSize':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'containIntrinsicHeight':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'containIntrinsicInlineSize':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'containIntrinsicSize':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'containIntrinsicWidth':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'container':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'container-name':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'container-type':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'containerName':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'containerType':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'content':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'content-visibility':
-      return z.enum(['visible', 'auto', 'hidden'])
+      return z.union([z.enum(['visible', 'auto', 'hidden']), TokenRefSchema])
     case 'contentVisibility':
-      return z.enum(['visible', 'auto', 'hidden'])
+      return z.union([z.enum(['visible', 'auto', 'hidden']), TokenRefSchema])
     case 'continue':
-      return z.enum(['auto', 'discard', 'collapse', '-webkit-legacy', 'overflow', 'paginate', 'fragments'])
+      return z.union([
+        z.enum(['auto', 'discard', 'collapse', '-webkit-legacy', 'overflow', 'paginate', 'fragments']),
+        TokenRefSchema,
+      ])
     case 'copy-into':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'copyInto':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'corner':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'corner-block-end':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'corner-block-end-shape':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'corner-block-start':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'corner-block-start-shape':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'corner-bottom':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'corner-bottom-left':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'corner-bottom-left-shape':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'corner-bottom-right':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'corner-bottom-right-shape':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'corner-bottom-shape':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'corner-end-end':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'corner-end-end-shape':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'corner-end-start':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'corner-end-start-shape':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'corner-inline-end':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'corner-inline-end-shape':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'corner-inline-start':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'corner-inline-start-shape':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'corner-left':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'corner-left-shape':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'corner-right':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'corner-right-shape':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'corner-shape':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'corner-start-end':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'corner-start-end-shape':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'corner-start-start':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'corner-start-start-shape':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'corner-top':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'corner-top-left':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'corner-top-left-shape':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'corner-top-right':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'corner-top-right-shape':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'corner-top-shape':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'cornerBlockEnd':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'cornerBlockEndShape':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'cornerBlockStart':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'cornerBlockStartShape':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'cornerBottom':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'cornerBottomLeft':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'cornerBottomLeftShape':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'cornerBottomRight':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'cornerBottomRightShape':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'cornerBottomShape':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'cornerEndEnd':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'cornerEndEndShape':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'cornerEndStart':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'cornerEndStartShape':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'cornerInlineEnd':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'cornerInlineEndShape':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'cornerInlineStart':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'cornerInlineStartShape':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'cornerLeft':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'cornerLeftShape':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'cornerRight':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'cornerRightShape':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'cornerShape':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'cornerStartEnd':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'cornerStartEndShape':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'cornerStartStart':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'cornerStartStartShape':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'cornerTop':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'cornerTopLeft':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'cornerTopLeftShape':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'cornerTopRight':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'cornerTopRightShape':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'cornerTopShape':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'counter-increment':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'counter-reset':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'counter-set':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'counterIncrement':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'counterReset':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'counterSet':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'cue':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'cue-after':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'cue-before':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'cueAfter':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'cueBefore':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'cursor':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'cx':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'cy':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'd':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'direction':
-      return z.enum(['ltr', 'rtl'])
+      return z.union([z.enum(['ltr', 'rtl']), TokenRefSchema])
     case 'display':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'dominant-baseline':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'dominantBaseline':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'dynamic-range-limit':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'dynamicRangeLimit':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'empty-cells':
-      return z.enum(['show', 'hide'])
+      return z.union([z.enum(['show', 'hide']), TokenRefSchema])
     case 'emptyCells':
-      return z.enum(['show', 'hide'])
+      return z.union([z.enum(['show', 'hide']), TokenRefSchema])
     case 'event-trigger':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'event-trigger-name':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'event-trigger-source':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'eventTrigger':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'eventTriggerName':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'eventTriggerSource':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'field-sizing':
-      return z.enum(['fixed', 'content'])
+      return z.union([z.enum(['fixed', 'content']), TokenRefSchema])
     case 'fieldSizing':
-      return z.enum(['fixed', 'content'])
+      return z.union([z.enum(['fixed', 'content']), TokenRefSchema])
     case 'fill':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'fill-break':
-      return z.enum(['bounding-box', 'slice', 'clone'])
+      return z.union([z.enum(['bounding-box', 'slice', 'clone']), TokenRefSchema])
     case 'fill-color':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'fill-image':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'fill-opacity':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'fill-origin':
-      return z.enum(['match-parent', 'fill-box', 'stroke-box', 'content-box', 'padding-box', 'border-box'])
+      return z.union([
+        z.enum(['match-parent', 'fill-box', 'stroke-box', 'content-box', 'padding-box', 'border-box']),
+        TokenRefSchema,
+      ])
     case 'fill-position':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'fill-repeat':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'fill-rule':
-      return z.enum(['nonzero', 'evenodd'])
+      return z.union([z.enum(['nonzero', 'evenodd']), TokenRefSchema])
     case 'fill-size':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'fillBreak':
-      return z.enum(['bounding-box', 'slice', 'clone'])
+      return z.union([z.enum(['bounding-box', 'slice', 'clone']), TokenRefSchema])
     case 'fillColor':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'fillImage':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'fillOpacity':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'fillOrigin':
-      return z.enum(['match-parent', 'fill-box', 'stroke-box', 'content-box', 'padding-box', 'border-box'])
+      return z.union([
+        z.enum(['match-parent', 'fill-box', 'stroke-box', 'content-box', 'padding-box', 'border-box']),
+        TokenRefSchema,
+      ])
     case 'fillPosition':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'fillRepeat':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'fillRule':
-      return z.enum(['nonzero', 'evenodd'])
+      return z.union([z.enum(['nonzero', 'evenodd']), TokenRefSchema])
     case 'fillSize':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'filter':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'flex':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'flex-basis':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'flex-direction':
-      return z.enum(['row', 'row-reverse', 'column', 'column-reverse'])
+      return z.union([z.enum(['row', 'row-reverse', 'column', 'column-reverse']), TokenRefSchema])
     case 'flex-flow':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'flex-grow':
-      return z.enum([]).or(z.number())
+      return z.union([z.enum([]).or(z.number()), TokenRefSchema])
     case 'flex-line-count':
-      return z.enum([]).or(z.number())
+      return z.union([z.enum([]).or(z.number()), TokenRefSchema])
     case 'flex-shrink':
-      return z.enum([]).or(z.number())
+      return z.union([z.enum([]).or(z.number()), TokenRefSchema])
     case 'flex-wrap':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'flexBasis':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'flexDirection':
-      return z.enum(['row', 'row-reverse', 'column', 'column-reverse'])
+      return z.union([z.enum(['row', 'row-reverse', 'column', 'column-reverse']), TokenRefSchema])
     case 'flexFlow':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'flexGrow':
-      return z.enum([]).or(z.number())
+      return z.union([z.enum([]).or(z.number()), TokenRefSchema])
     case 'flexLineCount':
-      return z.enum([]).or(z.number())
+      return z.union([z.enum([]).or(z.number()), TokenRefSchema])
     case 'flexShrink':
-      return z.enum([]).or(z.number())
+      return z.union([z.enum([]).or(z.number()), TokenRefSchema])
     case 'flexWrap':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'float':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'float-defer':
-      return z.enum(['last', 'none']).or(z.number())
+      return z.union([z.enum(['last', 'none']).or(z.number()), TokenRefSchema])
     case 'float-offset':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'float-reference':
-      return z.enum(['inline', 'column', 'region', 'page'])
+      return z.union([z.enum(['inline', 'column', 'region', 'page']), TokenRefSchema])
     case 'floatDefer':
-      return z.enum(['last', 'none']).or(z.number())
+      return z.union([z.enum(['last', 'none']).or(z.number()), TokenRefSchema])
     case 'floatOffset':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'floatReference':
-      return z.enum(['inline', 'column', 'region', 'page'])
+      return z.union([z.enum(['inline', 'column', 'region', 'page']), TokenRefSchema])
     case 'flood-color':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'flood-opacity':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'floodColor':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'floodOpacity':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'flow-from':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'flow-into':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'flow-tolerance':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'flowFrom':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'flowInto':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'flowTolerance':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'font':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'font-family':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'font-feature-settings':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'font-kerning':
-      return z.enum(['auto', 'normal', 'none'])
+      return z.union([z.enum(['auto', 'normal', 'none']), TokenRefSchema])
     case 'font-language-override':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'font-optical-sizing':
-      return z.enum(['auto', 'none'])
+      return z.union([z.enum(['auto', 'none']), TokenRefSchema])
     case 'font-palette':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'font-size':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'font-size-adjust':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'font-stretch':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'font-style':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'font-synthesis':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'font-synthesis-position':
-      return z.enum(['auto', 'none'])
+      return z.union([z.enum(['auto', 'none']), TokenRefSchema])
     case 'font-synthesis-small-caps':
-      return z.enum(['auto', 'none'])
+      return z.union([z.enum(['auto', 'none']), TokenRefSchema])
     case 'font-synthesis-style':
-      return z.enum(['auto', 'none', 'oblique-only'])
+      return z.union([z.enum(['auto', 'none', 'oblique-only']), TokenRefSchema])
     case 'font-synthesis-weight':
-      return z.enum(['auto', 'none'])
+      return z.union([z.enum(['auto', 'none']), TokenRefSchema])
     case 'font-variant':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'font-variant-alternates':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'font-variant-caps':
-      return z.enum([
-        'normal',
-        'small-caps',
-        'all-small-caps',
-        'petite-caps',
-        'all-petite-caps',
-        'unicase',
-        'titling-caps',
+      return z.union([
+        z.enum(['normal', 'small-caps', 'all-small-caps', 'petite-caps', 'all-petite-caps', 'unicase', 'titling-caps']),
+        TokenRefSchema,
       ])
     case 'font-variant-east-asian':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'font-variant-emoji':
-      return z.enum(['normal', 'text', 'emoji', 'unicode'])
+      return z.union([z.enum(['normal', 'text', 'emoji', 'unicode']), TokenRefSchema])
     case 'font-variant-ligatures':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'font-variant-numeric':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'font-variant-position':
-      return z.enum(['normal', 'sub', 'super'])
+      return z.union([z.enum(['normal', 'sub', 'super']), TokenRefSchema])
     case 'font-variation-settings':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'font-weight':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'font-width':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'fontFamily':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'fontFeatureSettings':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'fontKerning':
-      return z.enum(['auto', 'normal', 'none'])
+      return z.union([z.enum(['auto', 'normal', 'none']), TokenRefSchema])
     case 'fontLanguageOverride':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'fontOpticalSizing':
-      return z.enum(['auto', 'none'])
+      return z.union([z.enum(['auto', 'none']), TokenRefSchema])
     case 'fontPalette':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'fontSize':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'fontSizeAdjust':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'fontStretch':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'fontStyle':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'fontSynthesis':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'fontSynthesisPosition':
-      return z.enum(['auto', 'none'])
+      return z.union([z.enum(['auto', 'none']), TokenRefSchema])
     case 'fontSynthesisSmallCaps':
-      return z.enum(['auto', 'none'])
+      return z.union([z.enum(['auto', 'none']), TokenRefSchema])
     case 'fontSynthesisStyle':
-      return z.enum(['auto', 'none', 'oblique-only'])
+      return z.union([z.enum(['auto', 'none', 'oblique-only']), TokenRefSchema])
     case 'fontSynthesisWeight':
-      return z.enum(['auto', 'none'])
+      return z.union([z.enum(['auto', 'none']), TokenRefSchema])
     case 'fontVariant':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'fontVariantAlternates':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'fontVariantCaps':
-      return z.enum([
-        'normal',
-        'small-caps',
-        'all-small-caps',
-        'petite-caps',
-        'all-petite-caps',
-        'unicase',
-        'titling-caps',
+      return z.union([
+        z.enum(['normal', 'small-caps', 'all-small-caps', 'petite-caps', 'all-petite-caps', 'unicase', 'titling-caps']),
+        TokenRefSchema,
       ])
     case 'fontVariantEastAsian':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'fontVariantEmoji':
-      return z.enum(['normal', 'text', 'emoji', 'unicode'])
+      return z.union([z.enum(['normal', 'text', 'emoji', 'unicode']), TokenRefSchema])
     case 'fontVariantLigatures':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'fontVariantNumeric':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'fontVariantPosition':
-      return z.enum(['normal', 'sub', 'super'])
+      return z.union([z.enum(['normal', 'sub', 'super']), TokenRefSchema])
     case 'fontVariationSettings':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'fontWeight':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'fontWidth':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'footnote-display':
-      return z.enum(['block', 'inline', 'compact'])
+      return z.union([z.enum(['block', 'inline', 'compact']), TokenRefSchema])
     case 'footnote-policy':
-      return z.enum(['auto', 'line', 'block'])
+      return z.union([z.enum(['auto', 'line', 'block']), TokenRefSchema])
     case 'footnoteDisplay':
-      return z.enum(['block', 'inline', 'compact'])
+      return z.union([z.enum(['block', 'inline', 'compact']), TokenRefSchema])
     case 'footnotePolicy':
-      return z.enum(['auto', 'line', 'block'])
+      return z.union([z.enum(['auto', 'line', 'block']), TokenRefSchema])
     case 'forced-color-adjust':
-      return z.enum(['auto', 'none', 'preserve-parent-color'])
+      return z.union([z.enum(['auto', 'none', 'preserve-parent-color']), TokenRefSchema])
     case 'forcedColorAdjust':
-      return z.enum(['auto', 'none', 'preserve-parent-color'])
+      return z.union([z.enum(['auto', 'none', 'preserve-parent-color']), TokenRefSchema])
     case 'frame-sizing':
-      return z.enum(['auto', 'content-width', 'content-height', 'content-block-size', 'content-inline-size'])
+      return z.union([
+        z.enum(['auto', 'content-width', 'content-height', 'content-block-size', 'content-inline-size']),
+        TokenRefSchema,
+      ])
     case 'frameSizing':
-      return z.enum(['auto', 'content-width', 'content-height', 'content-block-size', 'content-inline-size'])
+      return z.union([
+        z.enum(['auto', 'content-width', 'content-height', 'content-block-size', 'content-inline-size']),
+        TokenRefSchema,
+      ])
     case 'gap':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'glyph-orientation-vertical':
-      return z.enum(['auto', '0deg', '90deg', '0', '90'])
+      return z.union([z.enum(['auto', '0deg', '90deg', '0', '90']), TokenRefSchema])
     case 'glyphOrientationVertical':
-      return z.enum(['auto', '0deg', '90deg', '0', '90'])
+      return z.union([z.enum(['auto', '0deg', '90deg', '0', '90']), TokenRefSchema])
     case 'grid':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'grid-area':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'grid-auto-columns':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'grid-auto-flow':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'grid-auto-rows':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'grid-column':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'grid-column-end':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'grid-column-gap':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'grid-column-start':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'grid-gap':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'grid-row':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'grid-row-end':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'grid-row-gap':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'grid-row-start':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'grid-template':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'grid-template-areas':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'grid-template-columns':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'grid-template-rows':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'gridArea':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'gridAutoColumns':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'gridAutoFlow':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'gridAutoRows':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'gridColumn':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'gridColumnEnd':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'gridColumnGap':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'gridColumnStart':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'gridGap':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'gridRow':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'gridRowEnd':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'gridRowGap':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'gridRowStart':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'gridTemplate':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'gridTemplateAreas':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'gridTemplateColumns':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'gridTemplateRows':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'hanging-punctuation':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'hangingPunctuation':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'height':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'hyphenate-character':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'hyphenate-limit-chars':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'hyphenate-limit-last':
-      return z.enum(['none', 'always', 'column', 'page', 'spread'])
+      return z.union([z.enum(['none', 'always', 'column', 'page', 'spread']), TokenRefSchema])
     case 'hyphenate-limit-lines':
-      return z.enum(['no-limit']).or(z.number())
+      return z.union([z.enum(['no-limit']).or(z.number()), TokenRefSchema])
     case 'hyphenate-limit-zone':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'hyphenateCharacter':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'hyphenateLimitChars':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'hyphenateLimitLast':
-      return z.enum(['none', 'always', 'column', 'page', 'spread'])
+      return z.union([z.enum(['none', 'always', 'column', 'page', 'spread']), TokenRefSchema])
     case 'hyphenateLimitLines':
-      return z.enum(['no-limit']).or(z.number())
+      return z.union([z.enum(['no-limit']).or(z.number()), TokenRefSchema])
     case 'hyphenateLimitZone':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'hyphens':
-      return z.enum(['none', 'manual', 'auto'])
+      return z.union([z.enum(['none', 'manual', 'auto']), TokenRefSchema])
     case 'image-animation':
-      return z.enum(['normal', 'paused', 'stopped', 'running'])
+      return z.union([z.enum(['normal', 'paused', 'stopped', 'running']), TokenRefSchema])
     case 'image-orientation':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'image-rendering':
-      return z.enum(['auto', 'smooth', 'high-quality', 'pixelated', 'crisp-edges'])
+      return z.union([z.enum(['auto', 'smooth', 'high-quality', 'pixelated', 'crisp-edges']), TokenRefSchema])
     case 'image-resolution':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'imageAnimation':
-      return z.enum(['normal', 'paused', 'stopped', 'running'])
+      return z.union([z.enum(['normal', 'paused', 'stopped', 'running']), TokenRefSchema])
     case 'imageOrientation':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'imageRendering':
-      return z.enum(['auto', 'smooth', 'high-quality', 'pixelated', 'crisp-edges'])
+      return z.union([z.enum(['auto', 'smooth', 'high-quality', 'pixelated', 'crisp-edges']), TokenRefSchema])
     case 'imageResolution':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'initial-letter':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'initial-letter-align':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'initial-letter-wrap':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'initialLetter':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'initialLetterAlign':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'initialLetterWrap':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'inline-size':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'inline-sizing':
-      return z.enum(['normal', 'stretch'])
+      return z.union([z.enum(['normal', 'stretch']), TokenRefSchema])
     case 'inlineSize':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'inlineSizing':
-      return z.enum(['normal', 'stretch'])
+      return z.union([z.enum(['normal', 'stretch']), TokenRefSchema])
     case 'input-security':
-      return z.enum(['auto', 'none'])
+      return z.union([z.enum(['auto', 'none']), TokenRefSchema])
     case 'inputSecurity':
-      return z.enum(['auto', 'none'])
+      return z.union([z.enum(['auto', 'none']), TokenRefSchema])
     case 'inset':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'inset-block':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'inset-block-end':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'inset-block-start':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'inset-inline':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'inset-inline-end':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'inset-inline-start':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'insetBlock':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'insetBlockEnd':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'insetBlockStart':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'insetInline':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'insetInlineEnd':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'insetInlineStart':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'interactivity':
-      return z.enum(['auto', 'inert'])
+      return z.union([z.enum(['auto', 'inert']), TokenRefSchema])
     case 'interest-delay':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'interest-delay-end':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'interest-delay-start':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'interestDelay':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'interestDelayEnd':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'interestDelayStart':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'interpolate-size':
-      return z.enum(['numeric-only', 'allow-keywords'])
+      return z.union([z.enum(['numeric-only', 'allow-keywords']), TokenRefSchema])
     case 'interpolateSize':
-      return z.enum(['numeric-only', 'allow-keywords'])
+      return z.union([z.enum(['numeric-only', 'allow-keywords']), TokenRefSchema])
     case 'isolation':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'justify-content':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'justify-items':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'justify-self':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'justifyContent':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'justifyItems':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'justifySelf':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'left':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'letter-spacing':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'letterSpacing':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'lighting-color':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'lightingColor':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'line-break':
-      return z.enum(['auto', 'loose', 'normal', 'strict', 'anywhere'])
+      return z.union([z.enum(['auto', 'loose', 'normal', 'strict', 'anywhere']), TokenRefSchema])
     case 'line-clamp':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'line-fit-edge':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'line-grid':
-      return z.enum(['match-parent', 'create'])
+      return z.union([z.enum(['match-parent', 'create']), TokenRefSchema])
     case 'line-height':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'line-height-step':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'line-padding':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'line-snap':
-      return z.enum(['none', 'baseline', 'contain'])
+      return z.union([z.enum(['none', 'baseline', 'contain']), TokenRefSchema])
     case 'lineBreak':
-      return z.enum(['auto', 'loose', 'normal', 'strict', 'anywhere'])
+      return z.union([z.enum(['auto', 'loose', 'normal', 'strict', 'anywhere']), TokenRefSchema])
     case 'lineClamp':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'lineFitEdge':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'lineGrid':
-      return z.enum(['match-parent', 'create'])
+      return z.union([z.enum(['match-parent', 'create']), TokenRefSchema])
     case 'lineHeight':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'lineHeightStep':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'linePadding':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'lineSnap':
-      return z.enum(['none', 'baseline', 'contain'])
+      return z.union([z.enum(['none', 'baseline', 'contain']), TokenRefSchema])
     case 'link-parameters':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'linkParameters':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'list-style':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'list-style-image':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'list-style-position':
-      return z.enum(['inside', 'outside'])
+      return z.union([z.enum(['inside', 'outside']), TokenRefSchema])
     case 'list-style-type':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'listStyle':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'listStyleImage':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'listStylePosition':
-      return z.enum(['inside', 'outside'])
+      return z.union([z.enum(['inside', 'outside']), TokenRefSchema])
     case 'listStyleType':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'margin':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'margin-block':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'margin-block-end':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'margin-block-start':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'margin-bottom':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'margin-break':
-      return z.enum(['auto', 'keep', 'discard'])
+      return z.union([z.enum(['auto', 'keep', 'discard']), TokenRefSchema])
     case 'margin-inline':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'margin-inline-end':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'margin-inline-start':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'margin-left':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'margin-right':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'margin-top':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'margin-trim':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'marginBlock':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'marginBlockEnd':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'marginBlockStart':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'marginBottom':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'marginBreak':
-      return z.enum(['auto', 'keep', 'discard'])
+      return z.union([z.enum(['auto', 'keep', 'discard']), TokenRefSchema])
     case 'marginInline':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'marginInlineEnd':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'marginInlineStart':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'marginLeft':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'marginRight':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'marginTop':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'marginTrim':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'marker':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'marker-end':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'marker-mid':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'marker-side':
-      return z.enum(['match-self', 'match-parent'])
+      return z.union([z.enum(['match-self', 'match-parent']), TokenRefSchema])
     case 'marker-start':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'markerEnd':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'markerMid':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'markerSide':
-      return z.enum(['match-self', 'match-parent'])
+      return z.union([z.enum(['match-self', 'match-parent']), TokenRefSchema])
     case 'markerStart':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'mask':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'mask-border':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'mask-border-mode':
-      return z.enum(['luminance', 'alpha'])
+      return z.union([z.enum(['luminance', 'alpha']), TokenRefSchema])
     case 'mask-border-outset':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'mask-border-repeat':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'mask-border-slice':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'mask-border-source':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'mask-border-width':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'mask-clip':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'mask-composite':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'mask-image':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'mask-mode':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'mask-origin':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'mask-position':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'mask-repeat':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'mask-size':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'mask-type':
-      return z.enum(['luminance', 'alpha'])
+      return z.union([z.enum(['luminance', 'alpha']), TokenRefSchema])
     case 'maskBorder':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'maskBorderMode':
-      return z.enum(['luminance', 'alpha'])
+      return z.union([z.enum(['luminance', 'alpha']), TokenRefSchema])
     case 'maskBorderOutset':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'maskBorderRepeat':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'maskBorderSlice':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'maskBorderSource':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'maskBorderWidth':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'maskClip':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'maskComposite':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'maskImage':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'maskMode':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'maskOrigin':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'maskPosition':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'maskRepeat':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'maskSize':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'maskType':
-      return z.enum(['luminance', 'alpha'])
+      return z.union([z.enum(['luminance', 'alpha']), TokenRefSchema])
     case 'math-depth':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'math-shift':
-      return z.enum(['normal', 'compact'])
+      return z.union([z.enum(['normal', 'compact']), TokenRefSchema])
     case 'math-style':
-      return z.enum(['normal', 'compact'])
+      return z.union([z.enum(['normal', 'compact']), TokenRefSchema])
     case 'mathDepth':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'mathShift':
-      return z.enum(['normal', 'compact'])
+      return z.union([z.enum(['normal', 'compact']), TokenRefSchema])
     case 'mathStyle':
-      return z.enum(['normal', 'compact'])
+      return z.union([z.enum(['normal', 'compact']), TokenRefSchema])
     case 'max-block-size':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'max-height':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'max-inline-size':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'max-lines':
-      return z.enum(['none']).or(z.number())
+      return z.union([z.enum(['none']).or(z.number()), TokenRefSchema])
     case 'max-width':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'maxBlockSize':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'maxHeight':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'maxInlineSize':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'maxLines':
-      return z.enum(['none']).or(z.number())
+      return z.union([z.enum(['none']).or(z.number()), TokenRefSchema])
     case 'maxWidth':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'min-block-size':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'min-height':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'min-inline-size':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'min-intrinsic-sizing':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'min-width':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'minBlockSize':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'minHeight':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'minInlineSize':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'minIntrinsicSizing':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'minWidth':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'mix-blend-mode':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'mixBlendMode':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'nav-down':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'nav-left':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'nav-right':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'nav-up':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'navDown':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'navLeft':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'navRight':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'navUp':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'object-fit':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'object-position':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'object-view-box':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'objectFit':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'objectPosition':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'objectViewBox':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'offset':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'offset-anchor':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'offset-distance':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'offset-path':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'offset-position':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'offset-rotate':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'offsetAnchor':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'offsetDistance':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'offsetPath':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'offsetPosition':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'offsetRotate':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'opacity':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'order':
-      return z.enum([]).or(z.number())
+      return z.union([z.enum([]).or(z.number()), TokenRefSchema])
     case 'orphans':
-      return z.enum([]).or(z.number())
+      return z.union([z.enum([]).or(z.number()), TokenRefSchema])
     case 'outline':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'outline-color':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'outline-offset':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'outline-style':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'outline-width':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'outlineColor':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'outlineOffset':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'outlineStyle':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'outlineWidth':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'overflow':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'overflow-anchor':
-      return z.enum(['auto', 'none'])
+      return z.union([z.enum(['auto', 'none']), TokenRefSchema])
     case 'overflow-block':
-      return z.enum(['visible', 'hidden', 'clip', 'scroll', 'auto'])
+      return z.union([z.enum(['visible', 'hidden', 'clip', 'scroll', 'auto']), TokenRefSchema])
     case 'overflow-clip-margin':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'overflow-clip-margin-block':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'overflow-clip-margin-block-end':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'overflow-clip-margin-block-start':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'overflow-clip-margin-bottom':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'overflow-clip-margin-inline':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'overflow-clip-margin-inline-end':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'overflow-clip-margin-inline-start':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'overflow-clip-margin-left':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'overflow-clip-margin-right':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'overflow-clip-margin-top':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'overflow-inline':
-      return z.enum(['visible', 'hidden', 'clip', 'scroll', 'auto'])
+      return z.union([z.enum(['visible', 'hidden', 'clip', 'scroll', 'auto']), TokenRefSchema])
     case 'overflow-wrap':
-      return z.enum(['normal', 'break-word', 'anywhere'])
+      return z.union([z.enum(['normal', 'break-word', 'anywhere']), TokenRefSchema])
     case 'overflow-x':
-      return z.enum(['visible', 'hidden', 'clip', 'scroll', 'auto'])
+      return z.union([z.enum(['visible', 'hidden', 'clip', 'scroll', 'auto']), TokenRefSchema])
     case 'overflow-y':
-      return z.enum(['visible', 'hidden', 'clip', 'scroll', 'auto'])
+      return z.union([z.enum(['visible', 'hidden', 'clip', 'scroll', 'auto']), TokenRefSchema])
     case 'overflowAnchor':
-      return z.enum(['auto', 'none'])
+      return z.union([z.enum(['auto', 'none']), TokenRefSchema])
     case 'overflowBlock':
-      return z.enum(['visible', 'hidden', 'clip', 'scroll', 'auto'])
+      return z.union([z.enum(['visible', 'hidden', 'clip', 'scroll', 'auto']), TokenRefSchema])
     case 'overflowClipMargin':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'overflowClipMarginBlock':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'overflowClipMarginBlockEnd':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'overflowClipMarginBlockStart':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'overflowClipMarginBottom':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'overflowClipMarginInline':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'overflowClipMarginInlineEnd':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'overflowClipMarginInlineStart':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'overflowClipMarginLeft':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'overflowClipMarginRight':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'overflowClipMarginTop':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'overflowInline':
-      return z.enum(['visible', 'hidden', 'clip', 'scroll', 'auto'])
+      return z.union([z.enum(['visible', 'hidden', 'clip', 'scroll', 'auto']), TokenRefSchema])
     case 'overflowWrap':
-      return z.enum(['normal', 'break-word', 'anywhere'])
+      return z.union([z.enum(['normal', 'break-word', 'anywhere']), TokenRefSchema])
     case 'overflowX':
-      return z.enum(['visible', 'hidden', 'clip', 'scroll', 'auto'])
+      return z.union([z.enum(['visible', 'hidden', 'clip', 'scroll', 'auto']), TokenRefSchema])
     case 'overflowY':
-      return z.enum(['visible', 'hidden', 'clip', 'scroll', 'auto'])
+      return z.union([z.enum(['visible', 'hidden', 'clip', 'scroll', 'auto']), TokenRefSchema])
     case 'overlay':
-      return z.enum(['none', 'auto'])
+      return z.union([z.enum(['none', 'auto']), TokenRefSchema])
     case 'overscroll-behavior':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'overscroll-behavior-block':
-      return z.enum(['contain', 'none', 'auto', 'chain'])
+      return z.union([z.enum(['contain', 'none', 'auto', 'chain']), TokenRefSchema])
     case 'overscroll-behavior-inline':
-      return z.enum(['contain', 'none', 'auto', 'chain'])
+      return z.union([z.enum(['contain', 'none', 'auto', 'chain']), TokenRefSchema])
     case 'overscroll-behavior-x':
-      return z.enum(['contain', 'none', 'auto', 'chain'])
+      return z.union([z.enum(['contain', 'none', 'auto', 'chain']), TokenRefSchema])
     case 'overscroll-behavior-y':
-      return z.enum(['contain', 'none', 'auto', 'chain'])
+      return z.union([z.enum(['contain', 'none', 'auto', 'chain']), TokenRefSchema])
     case 'overscrollBehavior':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'overscrollBehaviorBlock':
-      return z.enum(['contain', 'none', 'auto', 'chain'])
+      return z.union([z.enum(['contain', 'none', 'auto', 'chain']), TokenRefSchema])
     case 'overscrollBehaviorInline':
-      return z.enum(['contain', 'none', 'auto', 'chain'])
+      return z.union([z.enum(['contain', 'none', 'auto', 'chain']), TokenRefSchema])
     case 'overscrollBehaviorX':
-      return z.enum(['contain', 'none', 'auto', 'chain'])
+      return z.union([z.enum(['contain', 'none', 'auto', 'chain']), TokenRefSchema])
     case 'overscrollBehaviorY':
-      return z.enum(['contain', 'none', 'auto', 'chain'])
+      return z.union([z.enum(['contain', 'none', 'auto', 'chain']), TokenRefSchema])
     case 'padding':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'padding-block':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'padding-block-end':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'padding-block-start':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'padding-bottom':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'padding-inline':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'padding-inline-end':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'padding-inline-start':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'padding-left':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'padding-right':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'padding-top':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'paddingBlock':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'paddingBlockEnd':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'paddingBlockStart':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'paddingBottom':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'paddingInline':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'paddingInlineEnd':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'paddingInlineStart':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'paddingLeft':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'paddingRight':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'paddingTop':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'page':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'page-break-after':
-      return z.enum(['auto', 'always', 'avoid', 'left', 'right', 'inherit'])
+      return z.union([z.enum(['auto', 'always', 'avoid', 'left', 'right', 'inherit']), TokenRefSchema])
     case 'page-break-before':
-      return z.enum(['auto', 'always', 'avoid', 'left', 'right', 'inherit'])
+      return z.union([z.enum(['auto', 'always', 'avoid', 'left', 'right', 'inherit']), TokenRefSchema])
     case 'page-break-inside':
-      return z.enum(['avoid', 'auto', 'inherit'])
+      return z.union([z.enum(['avoid', 'auto', 'inherit']), TokenRefSchema])
     case 'pageBreakAfter':
-      return z.enum(['auto', 'always', 'avoid', 'left', 'right', 'inherit'])
+      return z.union([z.enum(['auto', 'always', 'avoid', 'left', 'right', 'inherit']), TokenRefSchema])
     case 'pageBreakBefore':
-      return z.enum(['auto', 'always', 'avoid', 'left', 'right', 'inherit'])
+      return z.union([z.enum(['auto', 'always', 'avoid', 'left', 'right', 'inherit']), TokenRefSchema])
     case 'pageBreakInside':
-      return z.enum(['avoid', 'auto', 'inherit'])
+      return z.union([z.enum(['avoid', 'auto', 'inherit']), TokenRefSchema])
     case 'paint-order':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'paintOrder':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'path-length':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'pathLength':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'pause':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'pause-after':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'pause-before':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'pauseAfter':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'pauseBefore':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'perspective':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'perspective-origin':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'perspectiveOrigin':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'place-content':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'place-items':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'place-self':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'placeContent':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'placeItems':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'placeSelf':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'pointer-events':
-      return z.enum([
-        'auto',
-        'bounding-box',
-        'visiblePainted',
-        'visibleFill',
-        'visibleStroke',
-        'visible',
-        'painted',
-        'fill',
-        'stroke',
-        'all',
-        'none',
+      return z.union([
+        z.enum([
+          'auto',
+          'bounding-box',
+          'visiblePainted',
+          'visibleFill',
+          'visibleStroke',
+          'visible',
+          'painted',
+          'fill',
+          'stroke',
+          'all',
+          'none',
+        ]),
+        TokenRefSchema,
       ])
     case 'pointer-timeline':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'pointer-timeline-axis':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'pointer-timeline-name':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'pointerEvents':
-      return z.enum([
-        'auto',
-        'bounding-box',
-        'visiblePainted',
-        'visibleFill',
-        'visibleStroke',
-        'visible',
-        'painted',
-        'fill',
-        'stroke',
-        'all',
-        'none',
+      return z.union([
+        z.enum([
+          'auto',
+          'bounding-box',
+          'visiblePainted',
+          'visibleFill',
+          'visibleStroke',
+          'visible',
+          'painted',
+          'fill',
+          'stroke',
+          'all',
+          'none',
+        ]),
+        TokenRefSchema,
       ])
     case 'pointerTimeline':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'pointerTimelineAxis':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'pointerTimelineName':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'position':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'position-anchor':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'position-area':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'position-try':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'position-try-fallbacks':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'position-try-order':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'position-visibility':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'positionAnchor':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'positionArea':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'positionTry':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'positionTryFallbacks':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'positionTryOrder':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'positionVisibility':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'print-color-adjust':
-      return z.enum(['economy', 'exact'])
+      return z.union([z.enum(['economy', 'exact']), TokenRefSchema])
     case 'printColorAdjust':
-      return z.enum(['economy', 'exact'])
+      return z.union([z.enum(['economy', 'exact']), TokenRefSchema])
     case 'quotes':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'r':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'reading-flow':
-      return z.enum(['normal', 'source-order', 'flex-visual', 'flex-flow', 'grid-rows', 'grid-columns', 'grid-order'])
+      return z.union([
+        z.enum(['normal', 'source-order', 'flex-visual', 'flex-flow', 'grid-rows', 'grid-columns', 'grid-order']),
+        TokenRefSchema,
+      ])
     case 'reading-order':
-      return z.enum([]).or(z.number())
+      return z.union([z.enum([]).or(z.number()), TokenRefSchema])
     case 'readingFlow':
-      return z.enum(['normal', 'source-order', 'flex-visual', 'flex-flow', 'grid-rows', 'grid-columns', 'grid-order'])
+      return z.union([
+        z.enum(['normal', 'source-order', 'flex-visual', 'flex-flow', 'grid-rows', 'grid-columns', 'grid-order']),
+        TokenRefSchema,
+      ])
     case 'readingOrder':
-      return z.enum([]).or(z.number())
+      return z.union([z.enum([]).or(z.number()), TokenRefSchema])
     case 'region-fragment':
-      return z.enum(['auto', 'break'])
+      return z.union([z.enum(['auto', 'break']), TokenRefSchema])
     case 'regionFragment':
-      return z.enum(['auto', 'break'])
+      return z.union([z.enum(['auto', 'break']), TokenRefSchema])
     case 'resize':
-      return z.enum(['none', 'both', 'horizontal', 'vertical', 'block', 'inline'])
+      return z.union([z.enum(['none', 'both', 'horizontal', 'vertical', 'block', 'inline']), TokenRefSchema])
     case 'rest':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'rest-after':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'rest-before':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'restAfter':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'restBefore':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'right':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'rotate':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'row-gap':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'row-rule':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'row-rule-break':
-      return z.enum(['none', 'normal', 'intersection'])
+      return z.union([z.enum(['none', 'normal', 'intersection']), TokenRefSchema])
     case 'row-rule-color':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'row-rule-inset':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'row-rule-inset-cap':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'row-rule-inset-cap-end':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'row-rule-inset-cap-start':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'row-rule-inset-end':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'row-rule-inset-junction':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'row-rule-inset-junction-end':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'row-rule-inset-junction-start':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'row-rule-inset-start':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'row-rule-style':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'row-rule-visibility-items':
-      return z.enum(['all', 'around', 'between', 'normal'])
+      return z.union([z.enum(['all', 'around', 'between', 'normal']), TokenRefSchema])
     case 'row-rule-width':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'rowGap':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'rowRule':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'rowRuleBreak':
-      return z.enum(['none', 'normal', 'intersection'])
+      return z.union([z.enum(['none', 'normal', 'intersection']), TokenRefSchema])
     case 'rowRuleColor':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'rowRuleInset':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'rowRuleInsetCap':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'rowRuleInsetCapEnd':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'rowRuleInsetCapStart':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'rowRuleInsetEnd':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'rowRuleInsetJunction':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'rowRuleInsetJunctionEnd':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'rowRuleInsetJunctionStart':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'rowRuleInsetStart':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'rowRuleStyle':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'rowRuleVisibilityItems':
-      return z.enum(['all', 'around', 'between', 'normal'])
+      return z.union([z.enum(['all', 'around', 'between', 'normal']), TokenRefSchema])
     case 'rowRuleWidth':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'ruby-align':
-      return z.enum(['start', 'center', 'space-between', 'space-around'])
+      return z.union([z.enum(['start', 'center', 'space-between', 'space-around']), TokenRefSchema])
     case 'ruby-merge':
-      return z.enum(['separate', 'merge', 'auto'])
+      return z.union([z.enum(['separate', 'merge', 'auto']), TokenRefSchema])
     case 'ruby-overhang':
-      return z.enum(['auto', 'spaces'])
+      return z.union([z.enum(['auto', 'spaces']), TokenRefSchema])
     case 'ruby-position':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'rubyAlign':
-      return z.enum(['start', 'center', 'space-between', 'space-around'])
+      return z.union([z.enum(['start', 'center', 'space-between', 'space-around']), TokenRefSchema])
     case 'rubyMerge':
-      return z.enum(['separate', 'merge', 'auto'])
+      return z.union([z.enum(['separate', 'merge', 'auto']), TokenRefSchema])
     case 'rubyOverhang':
-      return z.enum(['auto', 'spaces'])
+      return z.union([z.enum(['auto', 'spaces']), TokenRefSchema])
     case 'rubyPosition':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'rule':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'rule-break':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'rule-color':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'rule-inset':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'rule-inset-cap':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'rule-inset-end':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'rule-inset-junction':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'rule-inset-start':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'rule-overlap':
-      return z.enum(['row-over-column', 'column-over-row'])
+      return z.union([z.enum(['row-over-column', 'column-over-row']), TokenRefSchema])
     case 'rule-style':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'rule-visibility-items':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'rule-width':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'ruleBreak':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'ruleColor':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'ruleInset':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'ruleInsetCap':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'ruleInsetEnd':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'ruleInsetJunction':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'ruleInsetStart':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'ruleOverlap':
-      return z.enum(['row-over-column', 'column-over-row'])
+      return z.union([z.enum(['row-over-column', 'column-over-row']), TokenRefSchema])
     case 'ruleStyle':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'ruleVisibilityItems':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'ruleWidth':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'rx':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'ry':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'scale':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'scroll-behavior':
-      return z.enum(['auto', 'smooth'])
+      return z.union([z.enum(['auto', 'smooth']), TokenRefSchema])
     case 'scroll-initial-target':
-      return z.enum(['none', 'nearest'])
+      return z.union([z.enum(['none', 'nearest']), TokenRefSchema])
     case 'scroll-margin':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'scroll-margin-block':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'scroll-margin-block-end':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'scroll-margin-block-start':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'scroll-margin-bottom':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'scroll-margin-inline':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'scroll-margin-inline-end':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'scroll-margin-inline-start':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'scroll-margin-left':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'scroll-margin-right':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'scroll-margin-top':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'scroll-marker-group':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'scroll-padding':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'scroll-padding-block':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'scroll-padding-block-end':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'scroll-padding-block-start':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'scroll-padding-bottom':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'scroll-padding-inline':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'scroll-padding-inline-end':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'scroll-padding-inline-start':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'scroll-padding-left':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'scroll-padding-right':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'scroll-padding-top':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'scroll-snap-align':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'scroll-snap-stop':
-      return z.enum(['normal', 'always'])
+      return z.union([z.enum(['normal', 'always']), TokenRefSchema])
     case 'scroll-snap-type':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'scroll-target-group':
-      return z.enum(['none', 'auto'])
+      return z.union([z.enum(['none', 'auto']), TokenRefSchema])
     case 'scroll-timeline':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'scroll-timeline-axis':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'scroll-timeline-name':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'scrollBehavior':
-      return z.enum(['auto', 'smooth'])
+      return z.union([z.enum(['auto', 'smooth']), TokenRefSchema])
     case 'scrollInitialTarget':
-      return z.enum(['none', 'nearest'])
+      return z.union([z.enum(['none', 'nearest']), TokenRefSchema])
     case 'scrollMargin':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'scrollMarginBlock':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'scrollMarginBlockEnd':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'scrollMarginBlockStart':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'scrollMarginBottom':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'scrollMarginInline':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'scrollMarginInlineEnd':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'scrollMarginInlineStart':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'scrollMarginLeft':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'scrollMarginRight':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'scrollMarginTop':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'scrollMarkerGroup':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'scrollPadding':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'scrollPaddingBlock':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'scrollPaddingBlockEnd':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'scrollPaddingBlockStart':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'scrollPaddingBottom':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'scrollPaddingInline':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'scrollPaddingInlineEnd':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'scrollPaddingInlineStart':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'scrollPaddingLeft':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'scrollPaddingRight':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'scrollPaddingTop':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'scrollSnapAlign':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'scrollSnapStop':
-      return z.enum(['normal', 'always'])
+      return z.union([z.enum(['normal', 'always']), TokenRefSchema])
     case 'scrollSnapType':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'scrollTargetGroup':
-      return z.enum(['none', 'auto'])
+      return z.union([z.enum(['none', 'auto']), TokenRefSchema])
     case 'scrollTimeline':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'scrollTimelineAxis':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'scrollTimelineName':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'scrollbar-color':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'scrollbar-gutter':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'scrollbar-width':
-      return z.enum(['auto', 'thin', 'none'])
+      return z.union([z.enum(['auto', 'thin', 'none']), TokenRefSchema])
     case 'scrollbarColor':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'scrollbarGutter':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'scrollbarWidth':
-      return z.enum(['auto', 'thin', 'none'])
+      return z.union([z.enum(['auto', 'thin', 'none']), TokenRefSchema])
     case 'shape-image-threshold':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'shape-inside':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'shape-margin':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'shape-outside':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'shape-padding':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'shape-rendering':
-      return z.enum(['auto', 'optimizeSpeed', 'crispEdges', 'geometricPrecision'])
+      return z.union([z.enum(['auto', 'optimizeSpeed', 'crispEdges', 'geometricPrecision']), TokenRefSchema])
     case 'shapeImageThreshold':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'shapeInside':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'shapeMargin':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'shapeOutside':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'shapePadding':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'shapeRendering':
-      return z.enum(['auto', 'optimizeSpeed', 'crispEdges', 'geometricPrecision'])
+      return z.union([z.enum(['auto', 'optimizeSpeed', 'crispEdges', 'geometricPrecision']), TokenRefSchema])
     case 'slider-orientation':
-      return z.enum(['auto', 'left-to-right', 'right-to-left', 'top-to-bottom', 'bottom-to-top'])
+      return z.union([
+        z.enum(['auto', 'left-to-right', 'right-to-left', 'top-to-bottom', 'bottom-to-top']),
+        TokenRefSchema,
+      ])
     case 'sliderOrientation':
-      return z.enum(['auto', 'left-to-right', 'right-to-left', 'top-to-bottom', 'bottom-to-top'])
+      return z.union([
+        z.enum(['auto', 'left-to-right', 'right-to-left', 'top-to-bottom', 'bottom-to-top']),
+        TokenRefSchema,
+      ])
     case 'spatial-navigation-action':
-      return z.enum(['auto', 'focus', 'scroll'])
+      return z.union([z.enum(['auto', 'focus', 'scroll']), TokenRefSchema])
     case 'spatial-navigation-contain':
-      return z.enum(['auto', 'contain'])
+      return z.union([z.enum(['auto', 'contain']), TokenRefSchema])
     case 'spatial-navigation-function':
-      return z.enum(['normal', 'grid'])
+      return z.union([z.enum(['normal', 'grid']), TokenRefSchema])
     case 'spatialNavigationAction':
-      return z.enum(['auto', 'focus', 'scroll'])
+      return z.union([z.enum(['auto', 'focus', 'scroll']), TokenRefSchema])
     case 'spatialNavigationContain':
-      return z.enum(['auto', 'contain'])
+      return z.union([z.enum(['auto', 'contain']), TokenRefSchema])
     case 'spatialNavigationFunction':
-      return z.enum(['normal', 'grid'])
+      return z.union([z.enum(['normal', 'grid']), TokenRefSchema])
     case 'speak':
-      return z.enum(['auto', 'never', 'always'])
+      return z.union([z.enum(['auto', 'never', 'always']), TokenRefSchema])
     case 'speak-as':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'speakAs':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'stop-color':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'stop-opacity':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'stopColor':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'stopOpacity':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'string-set':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'stringSet':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'stroke':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'stroke-align':
-      return z.enum(['center', 'inset', 'outset'])
+      return z.union([z.enum(['center', 'inset', 'outset']), TokenRefSchema])
     case 'stroke-alignment':
-      return z.enum(['center', 'inner', 'outer'])
+      return z.union([z.enum(['center', 'inner', 'outer']), TokenRefSchema])
     case 'stroke-break':
-      return z.enum(['bounding-box', 'slice', 'clone'])
+      return z.union([z.enum(['bounding-box', 'slice', 'clone']), TokenRefSchema])
     case 'stroke-color':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'stroke-dash-corner':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'stroke-dash-justify':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'stroke-dashadjust':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'stroke-dasharray':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'stroke-dashcorner':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'stroke-dashoffset':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'stroke-image':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'stroke-linecap':
-      return z.enum(['butt', 'round', 'square'])
+      return z.union([z.enum(['butt', 'round', 'square']), TokenRefSchema])
     case 'stroke-linejoin':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'stroke-miterlimit':
-      return z.enum([]).or(z.number())
+      return z.union([z.enum([]).or(z.number()), TokenRefSchema])
     case 'stroke-opacity':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'stroke-origin':
-      return z.enum(['match-parent', 'fill-box', 'stroke-box', 'content-box', 'padding-box', 'border-box'])
+      return z.union([
+        z.enum(['match-parent', 'fill-box', 'stroke-box', 'content-box', 'padding-box', 'border-box']),
+        TokenRefSchema,
+      ])
     case 'stroke-position':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'stroke-repeat':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'stroke-size':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'stroke-width':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'strokeAlign':
-      return z.enum(['center', 'inset', 'outset'])
+      return z.union([z.enum(['center', 'inset', 'outset']), TokenRefSchema])
     case 'strokeAlignment':
-      return z.enum(['center', 'inner', 'outer'])
+      return z.union([z.enum(['center', 'inner', 'outer']), TokenRefSchema])
     case 'strokeBreak':
-      return z.enum(['bounding-box', 'slice', 'clone'])
+      return z.union([z.enum(['bounding-box', 'slice', 'clone']), TokenRefSchema])
     case 'strokeColor':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'strokeDashCorner':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'strokeDashJustify':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'strokeDashadjust':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'strokeDasharray':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'strokeDashcorner':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'strokeDashoffset':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'strokeImage':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'strokeLinecap':
-      return z.enum(['butt', 'round', 'square'])
+      return z.union([z.enum(['butt', 'round', 'square']), TokenRefSchema])
     case 'strokeLinejoin':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'strokeMiterlimit':
-      return z.enum([]).or(z.number())
+      return z.union([z.enum([]).or(z.number()), TokenRefSchema])
     case 'strokeOpacity':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'strokeOrigin':
-      return z.enum(['match-parent', 'fill-box', 'stroke-box', 'content-box', 'padding-box', 'border-box'])
+      return z.union([
+        z.enum(['match-parent', 'fill-box', 'stroke-box', 'content-box', 'padding-box', 'border-box']),
+        TokenRefSchema,
+      ])
     case 'strokePosition':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'strokeRepeat':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'strokeSize':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'strokeWidth':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'tab-size':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'tabSize':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'table-layout':
-      return z.enum(['auto', 'fixed'])
+      return z.union([z.enum(['auto', 'fixed']), TokenRefSchema])
     case 'tableLayout':
-      return z.enum(['auto', 'fixed'])
+      return z.union([z.enum(['auto', 'fixed']), TokenRefSchema])
     case 'text-align':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'text-align-all':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'text-align-last':
-      return z.enum(['auto', 'start', 'end', 'left', 'right', 'center', 'justify', 'match-parent'])
+      return z.union([
+        z.enum(['auto', 'start', 'end', 'left', 'right', 'center', 'justify', 'match-parent']),
+        TokenRefSchema,
+      ])
     case 'text-anchor':
-      return z.enum(['start', 'middle', 'end'])
+      return z.union([z.enum(['start', 'middle', 'end']), TokenRefSchema])
     case 'text-autospace':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'text-box':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'text-box-edge':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'text-box-trim':
-      return z.enum(['none', 'trim-start', 'trim-end', 'trim-both'])
+      return z.union([z.enum(['none', 'trim-start', 'trim-end', 'trim-both']), TokenRefSchema])
     case 'text-combine-upright':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'text-decoration':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'text-decoration-color':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'text-decoration-inset':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'text-decoration-line':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'text-decoration-skip':
-      return z.enum(['none', 'auto'])
+      return z.union([z.enum(['none', 'auto']), TokenRefSchema])
     case 'text-decoration-skip-box':
-      return z.enum(['none', 'all'])
+      return z.union([z.enum(['none', 'all']), TokenRefSchema])
     case 'text-decoration-skip-ink':
-      return z.enum(['auto', 'none', 'all'])
+      return z.union([z.enum(['auto', 'none', 'all']), TokenRefSchema])
     case 'text-decoration-skip-self':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'text-decoration-skip-spaces':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'text-decoration-style':
-      return z.enum(['solid', 'double', 'dotted', 'dashed', 'wavy'])
+      return z.union([z.enum(['solid', 'double', 'dotted', 'dashed', 'wavy']), TokenRefSchema])
     case 'text-decoration-thickness':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'text-emphasis':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'text-emphasis-color':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'text-emphasis-position':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'text-emphasis-skip':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'text-emphasis-style':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'text-fit':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'text-group-align':
-      return z.enum(['none', 'start', 'end', 'left', 'right', 'center'])
+      return z.union([z.enum(['none', 'start', 'end', 'left', 'right', 'center']), TokenRefSchema])
     case 'text-indent':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'text-justify':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'text-orientation':
-      return z.enum(['mixed', 'upright', 'sideways'])
+      return z.union([z.enum(['mixed', 'upright', 'sideways']), TokenRefSchema])
     case 'text-overflow':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'text-rendering':
-      return z.enum(['auto', 'optimizeSpeed', 'optimizeLegibility', 'geometricPrecision'])
+      return z.union([z.enum(['auto', 'optimizeSpeed', 'optimizeLegibility', 'geometricPrecision']), TokenRefSchema])
     case 'text-shadow':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'text-size-adjust':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'text-spacing':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'text-spacing-trim':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'text-transform':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'text-underline-offset':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'text-underline-position':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'text-wrap':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'text-wrap-mode':
-      return z.enum(['wrap', 'nowrap'])
+      return z.union([z.enum(['wrap', 'nowrap']), TokenRefSchema])
     case 'text-wrap-style':
-      return z.enum(['auto', 'balance', 'stable', 'pretty', 'avoid-orphans'])
+      return z.union([z.enum(['auto', 'balance', 'stable', 'pretty', 'avoid-orphans']), TokenRefSchema])
     case 'textAlign':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'textAlignAll':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'textAlignLast':
-      return z.enum(['auto', 'start', 'end', 'left', 'right', 'center', 'justify', 'match-parent'])
+      return z.union([
+        z.enum(['auto', 'start', 'end', 'left', 'right', 'center', 'justify', 'match-parent']),
+        TokenRefSchema,
+      ])
     case 'textAnchor':
-      return z.enum(['start', 'middle', 'end'])
+      return z.union([z.enum(['start', 'middle', 'end']), TokenRefSchema])
     case 'textAutospace':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'textBox':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'textBoxEdge':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'textBoxTrim':
-      return z.enum(['none', 'trim-start', 'trim-end', 'trim-both'])
+      return z.union([z.enum(['none', 'trim-start', 'trim-end', 'trim-both']), TokenRefSchema])
     case 'textCombineUpright':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'textDecoration':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'textDecorationColor':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'textDecorationInset':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'textDecorationLine':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'textDecorationSkip':
-      return z.enum(['none', 'auto'])
+      return z.union([z.enum(['none', 'auto']), TokenRefSchema])
     case 'textDecorationSkipBox':
-      return z.enum(['none', 'all'])
+      return z.union([z.enum(['none', 'all']), TokenRefSchema])
     case 'textDecorationSkipInk':
-      return z.enum(['auto', 'none', 'all'])
+      return z.union([z.enum(['auto', 'none', 'all']), TokenRefSchema])
     case 'textDecorationSkipSelf':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'textDecorationSkipSpaces':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'textDecorationStyle':
-      return z.enum(['solid', 'double', 'dotted', 'dashed', 'wavy'])
+      return z.union([z.enum(['solid', 'double', 'dotted', 'dashed', 'wavy']), TokenRefSchema])
     case 'textDecorationThickness':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'textEmphasis':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'textEmphasisColor':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'textEmphasisPosition':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'textEmphasisSkip':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'textEmphasisStyle':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'textFit':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'textGroupAlign':
-      return z.enum(['none', 'start', 'end', 'left', 'right', 'center'])
+      return z.union([z.enum(['none', 'start', 'end', 'left', 'right', 'center']), TokenRefSchema])
     case 'textIndent':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'textJustify':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'textOrientation':
-      return z.enum(['mixed', 'upright', 'sideways'])
+      return z.union([z.enum(['mixed', 'upright', 'sideways']), TokenRefSchema])
     case 'textOverflow':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'textRendering':
-      return z.enum(['auto', 'optimizeSpeed', 'optimizeLegibility', 'geometricPrecision'])
+      return z.union([z.enum(['auto', 'optimizeSpeed', 'optimizeLegibility', 'geometricPrecision']), TokenRefSchema])
     case 'textShadow':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'textSizeAdjust':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'textSpacing':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'textSpacingTrim':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'textTransform':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'textUnderlineOffset':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'textUnderlinePosition':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'textWrap':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'textWrapMode':
-      return z.enum(['wrap', 'nowrap'])
+      return z.union([z.enum(['wrap', 'nowrap']), TokenRefSchema])
     case 'textWrapStyle':
-      return z.enum(['auto', 'balance', 'stable', 'pretty', 'avoid-orphans'])
+      return z.union([z.enum(['auto', 'balance', 'stable', 'pretty', 'avoid-orphans']), TokenRefSchema])
     case 'timeline-scope':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'timeline-trigger':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'timeline-trigger-activation-range':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'timeline-trigger-activation-range-end':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'timeline-trigger-activation-range-start':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'timeline-trigger-active-range':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'timeline-trigger-active-range-end':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'timeline-trigger-active-range-start':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'timeline-trigger-name':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'timeline-trigger-source':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'timelineScope':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'timelineTrigger':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'timelineTriggerActivationRange':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'timelineTriggerActivationRangeEnd':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'timelineTriggerActivationRangeStart':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'timelineTriggerActiveRange':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'timelineTriggerActiveRangeEnd':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'timelineTriggerActiveRangeStart':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'timelineTriggerName':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'timelineTriggerSource':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'top':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'touch-action':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'touchAction':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'transform':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'transform-box':
-      return z.enum(['content-box', 'border-box', 'fill-box', 'stroke-box', 'view-box'])
+      return z.union([z.enum(['content-box', 'border-box', 'fill-box', 'stroke-box', 'view-box']), TokenRefSchema])
     case 'transform-origin':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'transform-style':
-      return z.enum(['flat', 'preserve-3d'])
+      return z.union([z.enum(['flat', 'preserve-3d']), TokenRefSchema])
     case 'transformBox':
-      return z.enum(['content-box', 'border-box', 'fill-box', 'stroke-box', 'view-box'])
+      return z.union([z.enum(['content-box', 'border-box', 'fill-box', 'stroke-box', 'view-box']), TokenRefSchema])
     case 'transformOrigin':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'transformStyle':
-      return z.enum(['flat', 'preserve-3d'])
+      return z.union([z.enum(['flat', 'preserve-3d']), TokenRefSchema])
     case 'transition':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'transition-behavior':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'transition-delay':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'transition-duration':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'transition-property':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'transition-timing-function':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'transitionBehavior':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'transitionDelay':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'transitionDuration':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'transitionProperty':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'transitionTimingFunction':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'translate':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'trigger-scope':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'triggerScope':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'unicode-bidi':
-      return z.enum(['normal', 'embed', 'isolate', 'bidi-override', 'isolate-override', 'plaintext'])
+      return z.union([
+        z.enum(['normal', 'embed', 'isolate', 'bidi-override', 'isolate-override', 'plaintext']),
+        TokenRefSchema,
+      ])
     case 'unicodeBidi':
-      return z.enum(['normal', 'embed', 'isolate', 'bidi-override', 'isolate-override', 'plaintext'])
+      return z.union([
+        z.enum(['normal', 'embed', 'isolate', 'bidi-override', 'isolate-override', 'plaintext']),
+        TokenRefSchema,
+      ])
     case 'user-select':
-      return z.enum(['auto', 'text', 'none', 'contain', 'all'])
+      return z.union([z.enum(['auto', 'text', 'none', 'contain', 'all']), TokenRefSchema])
     case 'userSelect':
-      return z.enum(['auto', 'text', 'none', 'contain', 'all'])
+      return z.union([z.enum(['auto', 'text', 'none', 'contain', 'all']), TokenRefSchema])
     case 'vector-effect':
-      return z.enum(['none', 'non-scaling-stroke', 'non-scaling-size', 'non-rotation', 'fixed-position'])
+      return z.union([
+        z.enum(['none', 'non-scaling-stroke', 'non-scaling-size', 'non-rotation', 'fixed-position']),
+        TokenRefSchema,
+      ])
     case 'vectorEffect':
-      return z.enum(['none', 'non-scaling-stroke', 'non-scaling-size', 'non-rotation', 'fixed-position'])
+      return z.union([
+        z.enum(['none', 'non-scaling-stroke', 'non-scaling-size', 'non-rotation', 'fixed-position']),
+        TokenRefSchema,
+      ])
     case 'vertical-align':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'verticalAlign':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'view-timeline':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'view-timeline-axis':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'view-timeline-inset':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'view-timeline-name':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'view-transition-class':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'view-transition-group':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'view-transition-name':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'view-transition-scope':
-      return z.enum(['none', 'all'])
+      return z.union([z.enum(['none', 'all']), TokenRefSchema])
     case 'viewTimeline':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'viewTimelineAxis':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'viewTimelineInset':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'viewTimelineName':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'viewTransitionClass':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'viewTransitionGroup':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'viewTransitionName':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'viewTransitionScope':
-      return z.enum(['none', 'all'])
+      return z.union([z.enum(['none', 'all']), TokenRefSchema])
     case 'visibility':
-      return z.enum(['visible', 'hidden', 'force-hidden', 'collapse'])
+      return z.union([z.enum(['visible', 'hidden', 'force-hidden', 'collapse']), TokenRefSchema])
     case 'voice-balance':
-      return z.enum(['left', 'center', 'right', 'leftwards', 'rightwards']).or(z.number())
+      return z.union([z.enum(['left', 'center', 'right', 'leftwards', 'rightwards']).or(z.number()), TokenRefSchema])
     case 'voice-duration':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'voice-family':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'voice-pitch':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'voice-range':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'voice-rate':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'voice-stress':
-      return z.enum(['normal', 'strong', 'moderate', 'none', 'reduced'])
+      return z.union([z.enum(['normal', 'strong', 'moderate', 'none', 'reduced']), TokenRefSchema])
     case 'voice-volume':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'voiceBalance':
-      return z.enum(['left', 'center', 'right', 'leftwards', 'rightwards']).or(z.number())
+      return z.union([z.enum(['left', 'center', 'right', 'leftwards', 'rightwards']).or(z.number()), TokenRefSchema])
     case 'voiceDuration':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'voiceFamily':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'voicePitch':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'voiceRange':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'voiceRate':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'voiceStress':
-      return z.enum(['normal', 'strong', 'moderate', 'none', 'reduced'])
+      return z.union([z.enum(['normal', 'strong', 'moderate', 'none', 'reduced']), TokenRefSchema])
     case 'voiceVolume':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'webkitAlignContent':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'webkitAlignItems':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'webkitAlignSelf':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'webkitAnimation':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema, KeyframeRefSchema])
     case 'webkitAnimationDelay':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'webkitAnimationDirection':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'webkitAnimationDuration':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'webkitAnimationFillMode':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'webkitAnimationIterationCount':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'webkitAnimationName':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema, KeyframeRefSchema])
     case 'webkitAnimationPlayState':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'webkitAnimationTimingFunction':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'webkitAppearance':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'webkitBackfaceVisibility':
-      return z.enum(['visible', 'hidden'])
+      return z.union([z.enum(['visible', 'hidden']), TokenRefSchema])
     case 'webkitBackgroundClip':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'webkitBackgroundOrigin':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'webkitBackgroundSize':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'webkitBorderBottomLeftRadius':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'webkitBorderBottomRightRadius':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'webkitBorderRadius':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'webkitBorderTopLeftRadius':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'webkitBorderTopRightRadius':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'webkitBoxShadow':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'webkitBoxSizing':
-      return z.enum(['content-box', 'border-box'])
+      return z.union([z.enum(['content-box', 'border-box']), TokenRefSchema])
     case 'webkitFilter':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'webkitFlex':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'webkitFlexBasis':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'webkitFlexDirection':
-      return z.enum(['row', 'row-reverse', 'column', 'column-reverse'])
+      return z.union([z.enum(['row', 'row-reverse', 'column', 'column-reverse']), TokenRefSchema])
     case 'webkitFlexFlow':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'webkitFlexGrow':
-      return z.enum([]).or(z.number())
+      return z.union([z.enum([]).or(z.number()), TokenRefSchema])
     case 'webkitFlexShrink':
-      return z.enum([]).or(z.number())
+      return z.union([z.enum([]).or(z.number()), TokenRefSchema])
     case 'webkitFlexWrap':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'webkitJustifyContent':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'webkitLineClamp':
-      return z.enum(['none']).or(z.number())
+      return z.union([z.enum(['none']).or(z.number()), TokenRefSchema])
     case 'webkitMask':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'webkitMaskBoxImage':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'webkitMaskBoxImageOutset':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'webkitMaskBoxImageRepeat':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'webkitMaskBoxImageSlice':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'webkitMaskBoxImageSource':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'webkitMaskBoxImageWidth':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'webkitMaskClip':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'webkitMaskComposite':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'webkitMaskImage':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'webkitMaskOrigin':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'webkitMaskPosition':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'webkitMaskRepeat':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'webkitMaskSize':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'webkitOrder':
-      return z.enum([]).or(z.number())
+      return z.union([z.enum([]).or(z.number()), TokenRefSchema])
     case 'webkitPerspective':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'webkitPerspectiveOrigin':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'webkitTextFillColor':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'webkitTextSizeAdjust':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'webkitTextStroke':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'webkitTextStrokeColor':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'webkitTextStrokeWidth':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'webkitTransform':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'webkitTransformOrigin':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'webkitTransformStyle':
-      return z.enum(['flat', 'preserve-3d'])
+      return z.union([z.enum(['flat', 'preserve-3d']), TokenRefSchema])
     case 'webkitTransition':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'webkitTransitionDelay':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'webkitTransitionDuration':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'webkitTransitionProperty':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'webkitTransitionTimingFunction':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'webkitUserSelect':
-      return z.enum(['auto', 'text', 'none', 'contain', 'all'])
+      return z.union([z.enum(['auto', 'text', 'none', 'contain', 'all']), TokenRefSchema])
     case 'white-space':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'white-space-collapse':
-      return z.enum(['collapse', 'discard', 'preserve', 'preserve-breaks', 'preserve-spaces', 'break-spaces'])
+      return z.union([
+        z.enum(['collapse', 'discard', 'preserve', 'preserve-breaks', 'preserve-spaces', 'break-spaces']),
+        TokenRefSchema,
+      ])
     case 'white-space-trim':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'whiteSpace':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'whiteSpaceCollapse':
-      return z.enum(['collapse', 'discard', 'preserve', 'preserve-breaks', 'preserve-spaces', 'break-spaces'])
+      return z.union([
+        z.enum(['collapse', 'discard', 'preserve', 'preserve-breaks', 'preserve-spaces', 'break-spaces']),
+        TokenRefSchema,
+      ])
     case 'whiteSpaceTrim':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'widows':
-      return z.enum([]).or(z.number())
+      return z.union([z.enum([]).or(z.number()), TokenRefSchema])
     case 'width':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'will-change':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'willChange':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'window-drag':
-      return z.enum(['none', 'move'])
+      return z.union([z.enum(['none', 'move']), TokenRefSchema])
     case 'windowDrag':
-      return z.enum(['none', 'move'])
+      return z.union([z.enum(['none', 'move']), TokenRefSchema])
     case 'word-break':
-      return z.enum(['normal', 'break-all', 'keep-all', 'manual', 'auto-phrase', 'break-word'])
+      return z.union([
+        z.enum(['normal', 'break-all', 'keep-all', 'manual', 'auto-phrase', 'break-word']),
+        TokenRefSchema,
+      ])
     case 'word-space-transform':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'word-spacing':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'word-wrap':
-      return z.enum(['normal', 'break-word', 'anywhere'])
+      return z.union([z.enum(['normal', 'break-word', 'anywhere']), TokenRefSchema])
     case 'wordBreak':
-      return z.enum(['normal', 'break-all', 'keep-all', 'manual', 'auto-phrase', 'break-word'])
+      return z.union([
+        z.enum(['normal', 'break-all', 'keep-all', 'manual', 'auto-phrase', 'break-word']),
+        TokenRefSchema,
+      ])
     case 'wordSpaceTransform':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'wordSpacing':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'wordWrap':
-      return z.enum(['normal', 'break-word', 'anywhere'])
+      return z.union([z.enum(['normal', 'break-word', 'anywhere']), TokenRefSchema])
     case 'wrap-after':
-      return z.enum(['auto', 'avoid', 'avoid-line', 'avoid-flex', 'line', 'flex'])
+      return z.union([z.enum(['auto', 'avoid', 'avoid-line', 'avoid-flex', 'line', 'flex']), TokenRefSchema])
     case 'wrap-before':
-      return z.enum(['auto', 'avoid', 'avoid-line', 'avoid-flex', 'line', 'flex'])
+      return z.union([z.enum(['auto', 'avoid', 'avoid-line', 'avoid-flex', 'line', 'flex']), TokenRefSchema])
     case 'wrap-flow':
-      return z.enum(['auto', 'both', 'start', 'end', 'minimum', 'maximum', 'clear'])
+      return z.union([z.enum(['auto', 'both', 'start', 'end', 'minimum', 'maximum', 'clear']), TokenRefSchema])
     case 'wrap-inside':
-      return z.enum(['auto', 'avoid'])
+      return z.union([z.enum(['auto', 'avoid']), TokenRefSchema])
     case 'wrap-through':
-      return z.enum(['wrap', 'none'])
+      return z.union([z.enum(['wrap', 'none']), TokenRefSchema])
     case 'wrapAfter':
-      return z.enum(['auto', 'avoid', 'avoid-line', 'avoid-flex', 'line', 'flex'])
+      return z.union([z.enum(['auto', 'avoid', 'avoid-line', 'avoid-flex', 'line', 'flex']), TokenRefSchema])
     case 'wrapBefore':
-      return z.enum(['auto', 'avoid', 'avoid-line', 'avoid-flex', 'line', 'flex'])
+      return z.union([z.enum(['auto', 'avoid', 'avoid-line', 'avoid-flex', 'line', 'flex']), TokenRefSchema])
     case 'wrapFlow':
-      return z.enum(['auto', 'both', 'start', 'end', 'minimum', 'maximum', 'clear'])
+      return z.union([z.enum(['auto', 'both', 'start', 'end', 'minimum', 'maximum', 'clear']), TokenRefSchema])
     case 'wrapInside':
-      return z.enum(['auto', 'avoid'])
+      return z.union([z.enum(['auto', 'avoid']), TokenRefSchema])
     case 'wrapThrough':
-      return z.enum(['wrap', 'none'])
+      return z.union([z.enum(['wrap', 'none']), TokenRefSchema])
     case 'writing-mode':
-      return z.enum(['horizontal-tb', 'vertical-rl', 'vertical-lr', 'sideways-rl', 'sideways-lr'])
+      return z.union([
+        z.enum(['horizontal-tb', 'vertical-rl', 'vertical-lr', 'sideways-rl', 'sideways-lr']),
+        TokenRefSchema,
+      ])
     case 'writingMode':
-      return z.enum(['horizontal-tb', 'vertical-rl', 'vertical-lr', 'sideways-rl', 'sideways-lr'])
+      return z.union([
+        z.enum(['horizontal-tb', 'vertical-rl', 'vertical-lr', 'sideways-rl', 'sideways-lr']),
+        TokenRefSchema,
+      ])
     case 'x':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'y':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     case 'z-index':
-      return z.enum(['auto', 'inherit']).or(z.number())
+      return z.union([z.enum(['auto', 'inherit']).or(z.number()), TokenRefSchema])
     case 'zIndex':
-      return z.enum(['auto', 'inherit']).or(z.number())
+      return z.union([z.enum(['auto', 'inherit']).or(z.number()), TokenRefSchema])
     case 'zoom':
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
     default:
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
   }
 }
 
