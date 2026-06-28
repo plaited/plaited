@@ -1,6 +1,6 @@
 import { expect, test } from 'bun:test'
-import { createHostStyles, createStyles, joinStyles } from '../../client.ts'
-import { createHash, isElementStylesObject, isHostStylesObject, isStylesObject } from '../css.utils.ts'
+import { createStyles } from '../../client.ts'
+import { createHash, isElementStylesObject, isStylesObject } from '../css.utils.ts'
 
 test('createHash: produces consistent hash from strings', () => {
   const a = createHash('color', 'blue')
@@ -29,11 +29,14 @@ test('isElementStylesObject: returns true for valid ElementStylesObject', () => 
   expect(isElementStylesObject(elementStyles.button)).toBe(true)
 })
 
-test('isElementStylesObject: returns false for HostStylesObject', () => {
-  const hostStyles = createHostStyles({
-    color: 'red',
+test('isElementStylesObject: returns true for $host styles', () => {
+  const hostStyles = createStyles({
+    $host: {
+      color: 'red',
+    },
   })
-  expect(isElementStylesObject(hostStyles)).toBe(false)
+  // $host returns ElementStylesObject with empty classNames
+  expect(isElementStylesObject(hostStyles.$host)).toBe(true)
 })
 
 test('isElementStylesObject: returns false for invalid inputs', () => {
@@ -47,34 +50,6 @@ test('isElementStylesObject: returns false for invalid inputs', () => {
   expect(isElementStylesObject({ classNames: [], stylesheets: 'not-array' })).toBe(false)
 })
 
-test('isHostStylesObject: returns true for valid HostStylesObject', () => {
-  const hostStyles = createHostStyles({
-    color: 'red',
-    padding: '20px',
-  })
-  expect(isHostStylesObject(hostStyles)).toBe(true)
-})
-
-test('isHostStylesObject: returns false for ElementStylesObject', () => {
-  const elementStyles = createStyles({
-    button: {
-      color: 'blue',
-    },
-  })
-  expect(isHostStylesObject(elementStyles.button)).toBe(false)
-})
-
-test('isHostStylesObject: returns false for invalid inputs', () => {
-  expect(isHostStylesObject(null)).toBe(false)
-  expect(isHostStylesObject(undefined)).toBe(false)
-  expect(isHostStylesObject('string')).toBe(false)
-  expect(isHostStylesObject(123)).toBe(false)
-  expect(isHostStylesObject({})).toBe(false)
-  expect(isHostStylesObject({ classNames: [] })).toBe(false)
-  expect(isHostStylesObject({ stylesheets: 'not-array' })).toBe(false)
-  expect(isHostStylesObject({ classNames: [], stylesheets: [] })).toBe(false)
-})
-
 test('isStylesObject: returns true for ElementStylesObject', () => {
   const elementStyles = createStyles({
     button: {
@@ -84,11 +59,13 @@ test('isStylesObject: returns true for ElementStylesObject', () => {
   expect(isStylesObject(elementStyles.button)).toBe(true)
 })
 
-test('isStylesObject: returns true for HostStylesObject', () => {
-  const hostStyles = createHostStyles({
-    color: 'red',
+test('isStylesObject: returns true for $host ElementStylesObject', () => {
+  const hostStyles = createStyles({
+    $host: {
+      color: 'red',
+    },
   })
-  expect(isStylesObject(hostStyles)).toBe(true)
+  expect(isStylesObject(hostStyles.$host)).toBe(true)
 })
 
 test('isStylesObject: returns true for joined styles', () => {
@@ -97,10 +74,15 @@ test('isStylesObject: returns true for joined styles', () => {
       color: 'blue',
     },
   })
-  const hostStyles = createHostStyles({
-    padding: '10px',
+  const hostStyles = createStyles({
+    $host: {
+      padding: '10px',
+    },
   })
-  const joined = joinStyles(elementStyles.button, hostStyles)
+  const joined = {
+    classNames: [...elementStyles.button.classNames],
+    stylesheets: [...elementStyles.button.stylesheets, ...hostStyles.$host.stylesheets],
+  }
   expect(isStylesObject(joined)).toBe(true)
 })
 

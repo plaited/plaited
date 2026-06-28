@@ -1,41 +1,61 @@
-import type { CSSKeyFrames, StyleFunctionKeyframe } from './css.types.ts'
+import { InvalidKeyframeRefPositionError, MissingRegistryError, UnresolvedTokenRefError } from './css.errors.ts'
+import { cssPropertyValueSchema } from './css.schemas.ts'
+import type { CSSKeyFrames, CssRegistry, StyleFunctionKeyframe } from './css.types.ts'
 import { createHash, getRule, isTokenReference } from './css.utils.ts'
+
+/** @internal Heuristic: is `val` a {$tokenRef} or {$keyframeRef} object? */
+const isRefObj = (val: unknown): val is { $tokenRef: string } | { $keyframeRef: string } =>
+  typeof val === 'object' &&
+  val !== null &&
+  !isTokenReference(val) &&
+  ('$tokenRef' in (val as Record<string, unknown>) || '$keyframeRef' in (val as Record<string, unknown>))
 
 /**
  * Creates a CSS `@keyframes` animation with automatic hash-based identifier generation.
- * Returns a record mapping the animation name to a function that provides the keyframe stylesheets.
- * Supports design token references for animated property values.
  *
- * @template I - The identifier string type
- * @template T - The keyframe definition type
  * @param ident - Base identifier for the animation (will be hashed for uniqueness)
- * @param frames - Object defining animation keyframes using 'from', 'to', or percentage offsets
- * @returns Object mapping the animation name to a `StyleFunctionKeyframe` function. Destructure to extract:
- *   `const { fadeIn } = createKeyframes('fadeIn', {...})`. The function returns stylesheets and has an `id` property.
- *
- * @remarks
- * - The animation identifier is automatically hashed to prevent naming collisions
- * - Design token styles are included in the returned stylesheets array
- * - Access the `id` property for use in `animation` or `animation-name` CSS properties
- * - Invoke the function to get the stylesheets object for `joinStyles()`
- * - Keyframes can use 'from', 'to', or any percentage value (e.g., '25%', '75%')
- *
- * @see {@link CSSKeyFrames} for the keyframe definition structure
- * @see {@link StyleFunctionKeyframe} for the return type
- * @see {@link createTokens} for design token creation
+ * @param frames - Object defining animation keyframes
+ * @param registry - Optional registry for resolving $tokenRef refs
+ * @returns Object mapping the animation name to a StyleFunctionKeyframe
  */
 export const createKeyframes = <I extends string, T extends CSSKeyFrames>(
   ident: I,
   frames: T,
+  registry?: CssRegistry,
 ): Record<I, StyleFunctionKeyframe> => {
+  const validateValue = (prop: string, val: unknown) => {
+    if (!isTokenReference(val) && !isRefObj(val)) {
+      const schema = cssPropertyValueSchema(prop)
+      const result = schema.safeParse(val)
+      if (!result.success) {
+        throw new Error(`Invalid value for CSS property ${JSON.stringify(prop)} in keyframes: ${val}`)
+      }
+    }
+  }
+
+  const resolveRef = (val: { $tokenRef: string } | { $keyframeRef: string }): string => {
+    if ('$keyframeRef' in val) throw new InvalidKeyframeRefPositionError()
+    if (!registry) throw new MissingRegistryError('tokenRef', val.$tokenRef)
+    const entry = registry.tokens?.get(val.$tokenRef)
+    if (!entry) throw new UnresolvedTokenRefError(val.$tokenRef)
+    return entry.cssVar
+  }
+
   const stylesheets: string[] = []
   const arr: string[] = []
   for (const [value, props] of Object.entries(frames)) {
-    const step = []
+    const step: string[] = []
     for (const [prop, val] of Object.entries(props)) {
-      const isToken = isTokenReference(val)
-      isToken && stylesheets.push(...val.stylesheets)
-      step.push(getRule(prop, isToken ? val() : val))
+      validateValue(prop, val)
+      if (isRefObj(val)) {
+        const resolved = resolveRef(val)
+        step.push(getRule(prop, resolved))
+      } else if (isTokenReference(val)) {
+        stylesheets.push(...val.stylesheets)
+        step.push(getRule(prop, val()))
+      } else {
+        step.push(getRule(prop, val as string | number))
+      }
     }
     arr.push(`${value}{${step.join('')}}`)
   }

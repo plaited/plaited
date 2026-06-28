@@ -5,4 +5,4 @@ import { keyMirror } from '../utils.ts'
  *
  * @public
  */
-export const CSS_RESERVED_KEYS = keyMirror('$default', '$compoundSelectors')
+export const CSS_RESERVED_KEYS = keyMirror('$default', '$compoundSelectors', '$host', '$root', '$top')

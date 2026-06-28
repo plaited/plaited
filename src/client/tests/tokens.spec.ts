@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test'
-import { createHostStyles, createStyles, createTokens } from 'plaited/client'
+import { createStyles, createTokens } from 'plaited/client'
 
 test('createTokens: simple token with $value', () => {
   const { theme } = createTokens('theme', {
@@ -155,19 +155,21 @@ test('createTokens: integration with createStyles', () => {
   expect(testStyles.button).toMatchSnapshot()
 })
 
-test('createTokens: integration with createHostStyles', () => {
+test('createTokens: integration with $host', () => {
   const { colors } = createTokens('colors', {
     text: { $value: '#333' },
     background: { $value: '#fff' },
   })
 
-  const host = createHostStyles({
-    color: colors.text,
-    backgroundColor: colors.background,
-    padding: '20px',
+  const style = createStyles({
+    $host: {
+      color: colors.text,
+      backgroundColor: colors.background,
+      padding: '20px',
+    },
   })
 
-  expect(host).toMatchSnapshot()
+  expect(style.$host).toMatchSnapshot()
 })
 
 test('createTokens: multiple token groups combined', () => {

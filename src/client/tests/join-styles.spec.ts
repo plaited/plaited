@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test'
-import { createHostStyles, createStyles, createTokens, joinStyles } from 'plaited/client'
+import { createStyles, createTokens, joinStyles } from 'plaited/client'
 
 test('joinStyles: combines element styles with host styles', () => {
   const testStyles = createStyles({
@@ -17,10 +17,12 @@ test('joinStyles: combines element styles with host styles', () => {
       padding: '10px 16px',
     },
   })
-  const host = createHostStyles({
-    color: 'red',
+  const host = createStyles({
+    $host: {
+      color: 'red',
+    },
   })
-  expect(joinStyles(testStyles.button, testStyles.small, host)).toMatchSnapshot()
+  expect(joinStyles(testStyles.button, testStyles.small, host.$host)).toMatchSnapshot()
 })
 
 test('joinStyles: combines styles with design token references', () => {
@@ -49,10 +51,12 @@ test('joinStyles: combines styles with design token references', () => {
     },
   })
 
-  const hostStylesVariant = createHostStyles({
-    margin: spacing.small,
+  const hostStylesVariant = createStyles({
+    $host: {
+      margin: spacing.small,
+    },
   })
 
-  const combined = joinStyles(baseStyles.container, variantStyles.large, hostStylesVariant)
+  const combined = joinStyles(baseStyles.container, variantStyles.large, hostStylesVariant.$host)
   expect(combined).toMatchSnapshot()
 })
