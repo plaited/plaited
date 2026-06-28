@@ -34,8 +34,9 @@ import {
   VALID_PRIMITIVE_CHILDREN,
   VOID_TAGS,
 } from './template.constants.ts'
+import type { Bind, StyleRef } from './template.schemas.ts'
 import { DetailedHtmlAttributesSchema, ElementAttributeListSchema } from './template.schemas.ts'
-import type { Children, CustomElementTag, TemplateObject } from './template.types.ts'
+import type { Children, CustomElementTag, HtmlRegistry, TemplateObject } from './template.types.ts'
 
 /**
  * @internal
@@ -82,6 +83,35 @@ class InvalidAttributeError extends Error implements Error {
   override name = 'invalid_attribute'
 }
 
+/**
+ * @internal
+ * Error thrown when a `$styleRef` / `$bind` is encountered without a registry.
+ */
+class MissingRegistryError extends Error implements Error {
+  override name = 'missing_registry'
+}
+
+/**
+ * @internal
+ * Error thrown when a `$styleRef` cannot be found in the registry.
+ */
+class UnresolvedStyleRefError extends Error implements Error {
+  override name = 'unresolved_style_ref'
+}
+
+/**
+ * @internal
+ * Error thrown when a `$bind` path cannot be resolved from registry.data.
+ */
+class UnresolvedBindError extends Error implements Error {
+  override name = 'unresolved_bind'
+}
+
+/**
+ * @internal
+ * Error thrown when a `$bind` appears in an invalid position.
+ */
+
 export type CreateFragment = (children: Children) => TemplateObject
 
 export const fragment: CreateFragment = (_children) => {
@@ -117,16 +147,8 @@ const isCustomElementTag = (tag: string): tag is CustomElementTag => {
   return CUSTOM_ELEMENT_TAG_PATTERN.test(tag)
 }
 
-const normalizeAttributeKeys = (attrs: Record<string, unknown>): Record<string, unknown> => {
-  const normalized: Record<string, unknown> = {}
-  for (const [key, value] of Object.entries(attrs)) {
-    normalized[key.toLowerCase()] = value
-  }
-  return normalized
-}
-
 /** @internal Type signature for `h`. */
-export type CreateTemplate = (tag: string, attrs?: Record<string, unknown>) => TemplateObject
+export type CreateTemplate = (tag: string, attrs?: Record<string, unknown>, registry?: HtmlRegistry) => TemplateObject
 
 /**
  * @internal
@@ -134,9 +156,9 @@ export type CreateTemplate = (tag: string, attrs?: Record<string, unknown>) => T
  * properties handled by `h()` before attribute serialization.
  */
 type PlaitedAttrs = {
-  children?: Children
+  children?: Children | Bind
   stylesheets?: string[]
-  style?: CSSProperties
+  style?: CSSProperties | StyleRef[]
   [P_TRIGGER]?: Record<string, string>
   [P_SCALE]?: keyof typeof SCALE
   [P_FORM]?: string
@@ -149,11 +171,26 @@ type PlaitedAttrs = {
 
 /**
  * @internal
+ * Resolve a dotted path from a data context (e.g. 'customer.id' → data.customer.id).
+ * Returns `undefined` if the path does not exist.
+ */
+const resolveDataPath = (data: Record<string, unknown>, path: string): unknown => {
+  let current: unknown = data
+  for (const segment of path.split('.')) {
+    if (current == null || typeof current !== 'object') return undefined
+    current = (current as Record<string, unknown>)[segment]
+  }
+  return current
+}
+
+/**
+ * @internal
  * Creates Plaited template objects from JSX-like calls.
  * Core template factory with security-first design and style management.
  *
  * @param _tag - HTML/SVG tag name, custom element tag, or FunctionTemplate
  * @param attrs - Element attributes including children
+ * @param registry - Optional registry for resolving `$styleRef` / `$bind` refs
  * @returns TemplateObject with HTML, stylesheets, and identifier
  *
  * @throws {ScriptPolicyError} When `<script>` does not use a site-root JavaScript `src`
@@ -161,6 +198,9 @@ type PlaitedAttrs = {
  * @throws {InvalidAttributeTypeError} When non-primitive attribute values provided
  * @throws {InvalidCustomElementTagError} When a hyphenated tag is not a valid custom element tag
  * @throws {InvalidAttributeError} When attribute values fail per-tag schema validation
+ * @throws {MissingRegistryError} When a $styleRef/$bind is encountered without a registry
+ * @throws {UnresolvedStyleRefError} When a $styleRef cannot be found in the registry
+ * @throws {UnresolvedBindError} When a $bind path cannot be resolved
  *
  * @remarks
  * Security features:
@@ -171,7 +211,7 @@ type PlaitedAttrs = {
  * @see {@link h} for JSX factory alias
  * @see {@link fragment} for grouping elements
  */
-export const h: CreateTemplate = (_tag, attrs = {}) => {
+export const h: CreateTemplate = (_tag, attrs = {}, registry?) => {
   const safeAttrs = attrs as PlaitedAttrs
   const {
     children: _children,
@@ -187,8 +227,52 @@ export const h: CreateTemplate = (_tag, attrs = {}) => {
   } = safeAttrs
 
   let stylesheets = _stylesheets ?? []
+  const resolvedClassNames = new Set(classNames)
 
-  const normalizedAttributes = normalizeAttributeKeys(attributes)
+  // ── Resolve $styleRef (style[] array of StyleRef) ─────────────────
+  let resolvedStyle: CSSProperties | undefined
+  if (Array.isArray(style)) {
+    // style is an array → treat as StyleRef[]
+    if (!registry) throw new MissingRegistryError('$styleRef encountered without a registry')
+    if (!registry.styles) throw new MissingRegistryError('$styleRef encountered without registry.styles')
+    for (const ref of style) {
+      const refObj = ref as StyleRef
+      if (!refObj || typeof refObj !== 'object' || !('$styleRef' in refObj)) {
+        throw new InvalidAttributeTypeError('Expected $styleRef object in style array')
+      }
+      const resolved = registry.styles.get(refObj.$styleRef)
+      if (!resolved) throw new UnresolvedStyleRefError(`Unresolved style ref: ${refObj.$styleRef}`)
+      for (const cn of resolved.classNames) resolvedClassNames.add(cn)
+      stylesheets.push(...resolved.stylesheets)
+    }
+  } else if (style) {
+    resolvedStyle = style as CSSProperties
+  }
+
+  // ── Resolve $bind in attrs values ────────────────────────────────
+  const resolveAttr = (val: unknown): unknown => {
+    if (val && typeof val === 'object' && '$bind' in (val as Record<string, unknown>)) {
+      if (!registry?.data) throw new MissingRegistryError('$bind encountered without a registry')
+      const bindVal = val as Bind
+      const resolved = resolveDataPath(registry.data, bindVal.$bind)
+      if (resolved === undefined) {
+        throw new UnresolvedBindError(`Unresolved bind path: ${bindVal.$bind}`)
+      }
+      return resolved
+    }
+    return val
+  }
+
+  const normalizedAttributes: Record<string, unknown> = {}
+  for (const [key, value] of Object.entries(attributes)) {
+    normalizedAttributes[key.toLowerCase()] = resolveAttr(value)
+  }
+
+  // ── Resolve $bind in children/text ────────────────────────────────
+  let resolvedChildren = _children
+  if (_children && typeof _children === 'object' && '$bind' in (_children as Record<string, unknown>)) {
+    resolvedChildren = resolveAttr(_children) as Children | undefined
+  }
 
   const tag = htmlEscape(_tag.trim().toLowerCase())
   if (tag.includes('-') && !isCustomElementTag(tag)) {
@@ -196,7 +280,7 @@ export const h: CreateTemplate = (_tag, attrs = {}) => {
   }
 
   if (tag === 'script') {
-    if (_children !== undefined) {
+    if (resolvedChildren !== undefined) {
       throw new ScriptPolicyError('Script tags cannot contain inline content')
     }
     const src = normalizedAttributes.src
@@ -205,12 +289,37 @@ export const h: CreateTemplate = (_tag, attrs = {}) => {
     }
   }
 
-  // Schema-driven attribute validation.
+  // ── Schema validation on resolved attrs ────────────────────────────
+  const resolvedAttrs: Record<string, unknown> = {}
+  if (resolvedChildren !== undefined) resolvedAttrs.children = resolvedChildren
+  if (pTrigger) resolvedAttrs[P_TRIGGER] = pTrigger
+  if (pScale) resolvedAttrs[P_SCALE] = pScale
+  if (cls) resolvedAttrs.class = cls
+  if (classNames) resolvedAttrs.classNames = classNames
+  // Include normalized attrs minus keys handled by destructuring above.
+  const platedAttrKeys = new Set([
+    'children',
+    'style',
+    'stylesheets',
+    P_TRIGGER,
+    P_SCALE,
+    P_FORM,
+    'class',
+    'classnames',
+    'for',
+    'shadowrootmode',
+  ])
+  for (const [key, value] of Object.entries(normalizedAttributes)) {
+    if (!platedAttrKeys.has(key)) {
+      resolvedAttrs[key] = value
+    }
+  }
+
   const tagSchema =
     tag in ElementAttributeListSchema.shape
       ? ElementAttributeListSchema.shape[tag as keyof typeof ElementAttributeListSchema.shape]
       : DetailedHtmlAttributesSchema
-  const validationResult = tagSchema.safeParse(attrs)
+  const validationResult = tagSchema.safeParse(resolvedAttrs)
   if (!validationResult.success) {
     const issues = validationResult.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`).join('; ')
     throw new InvalidAttributeError(`Invalid attributes for <${tag}>: ${issues}`)
@@ -219,17 +328,16 @@ export const h: CreateTemplate = (_tag, attrs = {}) => {
   const start = [`<${tag} `]
   // Handle JavaScript-reserved words commonly used in HTML.
   if (htmlFor) start.push(`for="${htmlEscape(`${htmlFor}`)}" `)
-  const classes = new Set(classNames)
-  cls && classes.add(htmlEscape(cls))
-  if (classes.size) start.push(`class="${[...classes].join(' ')}" `)
+  cls && resolvedClassNames.add(htmlEscape(cls))
+  if (resolvedClassNames.size) start.push(`class="${[...resolvedClassNames].join(' ')}" `)
   if (pTrigger) {
     const value = Object.entries(pTrigger)
       .map<string>(([ev, req]) => `${ev}:${req}`)
       .join(' ')
     start.push(`${P_TRIGGER}="${htmlEscape(value)}" `)
   }
-  if (style) {
-    const value = Object.entries(style)
+  if (resolvedStyle) {
+    const value = Object.entries(resolvedStyle)
       // Convert camelCase style props into dash-case unless they are CSS variables.
       .map<string>(([prop, val]) => `${prop.startsWith('--') ? prop : kebabCase(prop)}:${val};`)
       .join(' ')
@@ -262,22 +370,28 @@ export const h: CreateTemplate = (_tag, attrs = {}) => {
   }
   start.push('>')
   const end: string[] = []
-  const children = Array.isArray(_children) ? _children.flat() : [_children]
+  const children = Array.isArray(resolvedChildren) ? resolvedChildren.flat() : [resolvedChildren]
   const length = children.length
   let highestChildScale: keyof typeof SCALE = SCALE.rel
   for (let i = 0; i < length; i++) {
     const child = children[i]
-    if (isTypeOf<Record<string, unknown>>(child, 'object') && child.$ === TEMPLATE_OBJECT_IDENTIFIER) {
-      end.push(...child.html)
-      stylesheets.unshift(...child.stylesheets)
-      const { scale } = child
+    if (
+      isTypeOf<Record<string, unknown>>(child, 'object') &&
+      (child as Record<string, unknown>).$ === TEMPLATE_OBJECT_IDENTIFIER
+    ) {
+      const tpl = child as TemplateObject
+      end.push(...tpl.html)
+      stylesheets.unshift(...tpl.stylesheets)
+      const { scale } = tpl
       if (scale !== SCALE.rel) {
         if (pScale === SCALE.rel) {
-          if (SCALE_RANK[scale] > SCALE_RANK[highestChildScale]) {
+          if (
+            (SCALE_RANK as Record<string, number>)[scale]! > (SCALE_RANK as Record<string, number>)[highestChildScale]!
+          ) {
             highestChildScale = scale
           }
         } else {
-          if (SCALE_RANK[scale] > SCALE_RANK[pScale]) {
+          if ((SCALE_RANK as Record<string, number>)[scale]! > (SCALE_RANK as Record<string, number>)[pScale]!) {
             throw new ScaleViolantionError(
               `Cannot nest higher structural order element (${scale}) inside a lower structural boundary container (${pScale}) at tag <${tag}>.`,
             )

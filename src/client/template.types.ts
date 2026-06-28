@@ -54,3 +54,24 @@ export type PlaitedAttributes = _PlaitedAttributes & { children?: Children }
  */
 // biome-ignore lint/suspicious/noExplicitAny: Allows custom data-* and other arbitrary HTML attributes
 export type DetailedHTMLAttributes = DetailedHtmlAttributes & Record<string, any>
+
+/**
+ * Registry of saved styles and data context for resolving `$styleRef` / `$bind`
+ * references at `h()` call time.
+ *
+ * @remarks
+ * - `styles` maps catalog-style ids to their resolved `ElementStylesObject`
+ *   (class names + stylesheets) from `createStyles`.
+ * - `data` supplies runtime values for `$bind` path resolution
+ *   (e.g. `{ 'customer.id': '123' }`).
+ *
+ * The registry is OPTIONAL — when absent and a `$styleRef` / `$bind` is
+ * encountered, `h()` throws `MissingRegistryError`. The literal-only flow
+ * (no refs, no registry) works unchanged.
+ *
+ * @public
+ */
+export type HtmlRegistry = {
+  styles?: Map<string, { classNames: string[]; stylesheets: string[] }>
+  data?: Record<string, unknown>
+}

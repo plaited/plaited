@@ -334,3 +334,63 @@ test('flow control wrappers pass through stylesheets from inner template', () =>
 
   expect(result.stylesheets).toContain('body { color: red; }')
 })
+
+// ── $styleRef / $bind resolution tests ─────────────────────────────────
+
+test('h: $styleRef resolves from registry and inlines classNames + stylesheets', () => {
+  const registry = {
+    styles: new Map([['button.base', { classNames: ['btn'], stylesheets: ['.btn { color: blue; }'] }]]),
+  }
+  const result = h('button', { style: [{ $styleRef: 'button.base' }] }, registry)
+  const html = result.html.join('')
+  expect(html).toContain('class="btn"')
+  expect(result.stylesheets).toContain('.btn { color: blue; }')
+})
+
+test('h: $styleRef - missing style fires MissingRegistryError', () => {
+  expect(() => h('div', { style: [{ $styleRef: 'button.base' }] })).toThrow(/without a registry/)
+})
+
+test('h: $styleRef - unresolvable style fires UnresolvedStyleRefError', () => {
+  const registry = { styles: new Map() }
+  expect(() => h('div', { style: [{ $styleRef: 'nonexistent' }] }, registry)).toThrow(/Unresolved style ref/)
+})
+
+test('h: $bind in text resolves from registry.data', () => {
+  const registry = { data: { customer: { name: 'Alice' } } }
+  const result = h('span', { children: { $bind: 'customer.name' } }, registry)
+  const html = result.html.join('')
+  expect(html).toContain('Alice')
+})
+
+test('h: $bind in attr value resolves from registry.data', () => {
+  const registry = { data: { customer: { id: '42' } } }
+  const result = h('div', { 'data-cid': { $bind: 'customer.id' } }, registry)
+  const html = result.html.join('')
+  expect(html).toContain('data-cid="42"')
+})
+
+test('h: $bind - no registry fires MissingRegistryError', () => {
+  expect(() => h('span', { children: { $bind: 'path' } })).toThrow(/without a registry/)
+})
+
+test('h: $bind - unresolvable path fires UnresolvedBindError', () => {
+  const registry = { data: {} }
+  expect(() => h('span', { children: { $bind: 'missing.path' } }, registry)).toThrow(/Unresolved bind path/)
+})
+
+test('h: literal path unchanged (no refs, no registry)', () => {
+  const result = h('button', { type: 'submit', children: 'Save' })
+  const html = result.html.join('')
+  expect(html).toContain('type="submit"')
+  expect(html).toContain('Save')
+})
+
+test('h: $styleRef coexists with class/classNames', () => {
+  const registry = {
+    styles: new Map([['btn.base', { classNames: ['btn'], stylesheets: [] }]]),
+  }
+  const result = h('button', { class: 'custom-class', style: [{ $styleRef: 'btn.base' }], children: 'Click' }, registry)
+  const html = result.html.join('')
+  expect(html).toContain('class="btn custom-class"')
+})
