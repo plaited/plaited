@@ -170,6 +170,18 @@ export const AriaAttributesSchema = z.object({
 /** @public */
 export type AriaAttributes = z.output<typeof AriaAttributesSchema>
 
+// ── Custom element tag ─────────────────────────────────────────────────────
+
+/**
+ * Schema for custom element tag names (must match `${string}-${string}` pattern).
+ *
+ * @public
+ */
+export const customElementTagSchema = z.string().regex(CUSTOM_ELEMENT_TAG_PATTERN)
+
+/** @public */
+export type CustomElementTag = z.output<typeof customElementTagSchema>
+
 // ── ARIA role ──────────────────────────────────────────────────────────────
 
 /**
@@ -252,42 +264,7 @@ export const ariaRoleSchema = z.enum([
 /** @public */
 export type AriaRole = z.output<typeof ariaRoleSchema>
 
-// ── Custom element tag ─────────────────────────────────────────────────────
-
-/**
- * Schema for custom element tag names (must match `${string}-${string}` pattern).
- *
- * @public
- */
-export const customElementTagSchema = z.string().regex(CUSTOM_ELEMENT_TAG_PATTERN)
-
-/** @public */
-export type CustomElementTag = z.output<typeof customElementTagSchema>
-
-// ── Children (id-ref form for catalog JSON) ────────────────────────────────
-
-/**
- * Schema for a child reference in the component catalog.
- * Children are either a single string/number ID ref or an array of ID refs.
- *
- * @public
- */
-export const childRefSchema = z.union([z.string(), z.number()])
-
-/** @public */
-export type ChildRef = z.output<typeof childRefSchema>
-
-/**
- * Schema for a collection of child references.
- *
- * @public
- */
-export const childrenRefsSchema = z.union([childRefSchema, z.array(childRefSchema)])
-
-/** @public */
-export type ChildrenRefs = z.output<typeof childrenRefsSchema>
-
-// ── Plaited-specific attributes ────────────────────────────────────────────
+// ── ARIA role ──────────────────────────────────────────────────────────────
 
 /**
  * Schema for Plaited-specific extension attributes (p-target, p-trigger, etc.).
