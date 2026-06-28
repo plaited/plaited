@@ -8,6 +8,7 @@
  * @packageDocumentation
  */
 
+import { resolve } from 'node:path'
 import * as z from 'zod'
 
 /**
@@ -314,11 +315,31 @@ export const makeCliRouter =
     const args = argv.slice(3)
     const commandNames = Object.keys(commands).sort()
 
+    // Handle --version / -v before command lookup.
+    // Read package.json at runtime via Bun.file — stays in sync with npm
+    // version bumps, including prerelease suffixes like -next.0.
+    if (command === '--version' || command === '-v') {
+      const pkgPath = resolve(import.meta.dir, '../../package.json')
+      const pkg = Bun.file(pkgPath)
+      if (await pkg.exists()) {
+        const { version } = await pkg.json()
+        console.log(version)
+      } else {
+        console.error('Could not read package.json for version')
+        process.exit(1)
+      }
+      process.exit(0)
+    }
+
     if (!command || command === '--help' || command === '-h') {
       console.error(`Usage: ${name} <command> [options]
        ${name} <command> --schema     # Discover input schema
        ${name} <command> '<json>'    # Structured JSON input
        ${name} --schema               # List all commands
+
+Flags:
+  --version, -v  Print version and exit
+  --help, -h     Show this help message
 
 Commands:
     ${commandNames.join(', ')}`)

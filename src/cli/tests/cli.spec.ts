@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'bun:test'
+import * as path from 'node:path'
 import * as z from 'zod'
 import { parseCli, parseCliRequest } from '../cli.ts'
 
@@ -8,6 +9,68 @@ const TestSchema = z.object({
 })
 
 const testOpts = { name: 'test-tool', outputSchema: z.object({}), help: 'test command' }
+
+describe('Router-level flags (subprocess)', () => {
+  test('--version prints the version and exits 0', async () => {
+    const proc = Bun.spawn(['bun', 'bin/plaited.ts', '--version'], {
+      stdout: 'pipe',
+      stderr: 'pipe',
+      cwd: path.resolve(import.meta.dir, '../../..'),
+    })
+    expect(await proc.exited).toBe(0)
+    const output = (await new Response(proc.stdout).text()).trim()
+    const pkg = await Bun.file(path.resolve(import.meta.dir, '../../../package.json')).json()
+    expect(output).toBe(pkg.version)
+  })
+
+  test('-v prints the version and exits 0', async () => {
+    const proc = Bun.spawn(['bun', 'bin/plaited.ts', '-v'], {
+      stdout: 'pipe',
+      stderr: 'pipe',
+      cwd: path.resolve(import.meta.dir, '../../..'),
+    })
+    expect(await proc.exited).toBe(0)
+    const pkg = await Bun.file(path.resolve(import.meta.dir, '../../../package.json')).json()
+    const output = (await new Response(proc.stdout).text()).trim()
+    expect(output).toBe(pkg.version)
+  })
+
+  test('--help exits 0 and includes command list with --version flag', async () => {
+    const proc = Bun.spawn(['bun', 'bin/plaited.ts', '--help'], {
+      stdout: 'pipe',
+      stderr: 'pipe',
+      cwd: path.resolve(import.meta.dir, '../../..'),
+    })
+    expect(await proc.exited).toBe(0)
+    const stderr = await new Response(proc.stderr).text()
+    expect(stderr).toContain('css-schemas')
+    expect(stderr).toContain('git-context')
+    expect(stderr).toContain('--version')
+  })
+
+  test('no args exits 1 and prints usage', async () => {
+    const proc = Bun.spawn(['bun', 'bin/plaited.ts'], {
+      stdout: 'pipe',
+      stderr: 'pipe',
+      cwd: path.resolve(import.meta.dir, '../../..'),
+    })
+    expect(await proc.exited).toBe(1)
+    const stderr = await new Response(proc.stderr).text()
+    expect(stderr).toContain('Commands')
+  })
+
+  test('--schema lists all commands', async () => {
+    const proc = Bun.spawn(['bun', 'bin/plaited.ts', '--schema'], {
+      stdout: 'pipe',
+      stderr: 'pipe',
+      cwd: path.resolve(import.meta.dir, '../../..'),
+    })
+    expect(await proc.exited).toBe(0)
+    const output = JSON.parse(await new Response(proc.stdout).text())
+    expect(output.commands).toContain('css-schemas')
+    expect(output.commands).toContain('git-context')
+  })
+})
 
 describe('parseCli', () => {
   test('parses valid JSON positional arg', async () => {

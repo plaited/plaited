@@ -1,38 +1,52 @@
 /**
- * @module generate-css-schemas
+ * @module css-schema-generator
  *
- * Generates `src/client/css.schemas.ts` from @webref/css CSS property data.
+ * Pure CSS schema generator — takes parsed @webref/css property data, returns
+ * the generated source code and counts. No I/O, no side effects.
+ *
  * Each property's `syntax` is parsed with css-tree's definitionSyntax.parse,
- * then classified into one of three Zod schema shapes:
- *
- * - Pure-keyword: only Keyword AST nodes → z.enum([...keywords])
- * - Keywords + <number>/<integer> type → z.enum([...keywords]).or(z.number())
- * - Everything else → z.union([z.string(), z.number()])
- *
- * Each property's styleDeclaration array provides the kebab and camel case keys.
- *
- * $ref position constraint: $keyframeRef is legal ONLY in animation/animation-name
- * value schemas (enforced structurally in the emitted switch).
- * $tokenRef is legal in every CSS property value.
+ * then classified into one of three Zod schema shapes.
  */
 
+/// <reference path="../../scripts/types/css-tree.d.ts" />
 import { definitionSyntax } from 'css-tree'
 
-// --- Types ---
+// ============================================================================
+// Types
+// ============================================================================
 
 type PropertyClassification = 'enum' | 'enum-or-number' | 'string-or-number'
+
 type PropertySyntax = {
   keywords: string[]
   classification: PropertyClassification
 }
 
-type PropertyEntry = {
+/**
+ * A single CSS property entry from @webref/css data.
+ *
+ * @public
+ */
+export type PropertyEntry = {
   name: string
   syntax: string
   styleDeclaration: string[]
 }
 
-// --- Keyframe-eligible property name set ---
+/**
+ * Result of a schema generation run.
+ *
+ * @public
+ */
+export type GeneratedCssSchemas = {
+  code: string
+  propertyCount: number
+  keywordEnumCount: number
+}
+
+// ============================================================================
+// Constants
+// ============================================================================
 
 const KEYFRAME_ELIGIBLE_NAMES = new Set([
   'animation',
@@ -46,7 +60,9 @@ const KEYFRAME_ELIGIBLE_NAMES = new Set([
   'webkitAnimationName',
 ])
 
-// --- Core logic ---
+// ============================================================================
+// Core classification logic (identical to scripts/generate-css-schemas.ts)
+// ============================================================================
 
 const classifyProperty = (syntax: string): PropertySyntax => {
   let ast: Record<string, unknown>
@@ -103,7 +119,9 @@ const classifyProperty = (syntax: string): PropertySyntax => {
   return { keywords, classification }
 }
 
-// --- Code generation ---
+// ============================================================================
+// Code generation helpers (identical to scripts/generate-css-schemas.ts)
+// ============================================================================
 
 const keywordsToEnum = (keywords: string[]): string => {
   const values = [...new Set(keywords)].map((k) => JSON.stringify(k)).join(', ')
@@ -141,24 +159,25 @@ const generatePropertyNames = (properties: PropertyEntry[]): string[] => {
   return [...names].sort()
 }
 
-// --- Main ---
+// ============================================================================
+// Public API
+// ============================================================================
 
-const main = async () => {
-  const cssJsonPath = new URL('../node_modules/@webref/css/css.json', import.meta.url)
-  const cssFile = Bun.file(cssJsonPath)
-  if (!(await cssFile.exists())) {
-    console.error(`@webref/css data not found at ${cssJsonPath.pathname}`)
-    console.error('Run: bun add -d @webref/css css-tree')
-    process.exit(1)
-  }
-  const cssJson = await cssFile.json()
-
+/**
+ * Generate CSS property schemas from parsed @webref/css data.
+ *
+ * @param cssJson - Parsed @webref/css JSON object with a `properties` array.
+ * @returns Generated source code with property count and keyword enum count.
+ *
+ * @public
+ */
+export const generateCssSchemas = (cssJson: { properties: PropertyEntry[] }): GeneratedCssSchemas => {
   const properties: PropertyEntry[] = cssJson.properties
-    .filter((p: Record<string, unknown>) => p.syntax)
-    .map((p: Record<string, unknown>) => ({
-      name: p.name as string,
-      syntax: p.syntax as string,
-      styleDeclaration: (p.styleDeclaration as string[]) ?? [p.name as string],
+    .filter((p) => p.syntax)
+    .map((p) => ({
+      name: p.name,
+      syntax: p.syntax,
+      styleDeclaration: p.styleDeclaration ?? [p.name],
     }))
 
   const allNames = generatePropertyNames(properties)
@@ -229,9 +248,11 @@ ${schemaCases}
     '',
   ].join('\n')
 
-  const outputPath = new URL('../src/client/css.schemas.ts', import.meta.url)
-  await Bun.write(outputPath, output)
-  console.log(`Generated ${outputPath.pathname}`)
-}
+  const keywordEnumCount = properties.filter((p) => classifyProperty(p.syntax).classification === 'enum').length
 
-main()
+  return {
+    code: output,
+    propertyCount: properties.length,
+    keywordEnumCount,
+  }
+}

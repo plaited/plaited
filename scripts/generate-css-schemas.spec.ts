@@ -3,168 +3,100 @@
  *
  * Tests for the CSS schema generator: classification logic, generated output
  * snapshot, and per-property $ref inclusion in the switch cases.
+ *
+ * @remarks
+ * Retargeted from scripts/generate-css-schemas.ts to
+ * src/client/css-schema-generator.ts after the pure-function extraction.
  */
 
 import { expect, test } from 'bun:test'
-import * as path from 'node:path'
-import { definitionSyntax } from 'css-tree'
+import { generateCssSchemas, type PropertyEntry } from '../src/client/css-schema-generator.ts'
 
-type PropertyClassification = 'enum' | 'enum-or-number' | 'string-or-number'
-
-const classifyProperty = (
-  syntax: string | undefined,
-): {
-  keywords: string[]
-  classification: PropertyClassification
-} => {
-  if (!syntax) return { keywords: [], classification: 'string-or-number' }
-  let ast: Record<string, unknown>
-  try {
-    ast = definitionSyntax.parse(syntax)
-  } catch {
-    return { keywords: [], classification: 'string-or-number' }
-  }
-  const keywords: string[] = []
-  let hasNumberType = false
-  let hasOtherType = false
-  const walkNode = (node: Record<string, unknown>) => {
-    const t = node.type as string
-    if (t === 'Keyword') {
-      keywords.push(node.name as string)
-    } else if (t === 'Type') {
-      if (node.name === 'number' || node.name === 'integer') hasNumberType = true
-      else hasOtherType = true
-    } else if (t === 'Property') {
-      hasOtherType = true
-    } else if (t === 'Group') {
-      if ((node.combinator as string) === '&&' || node.combinator === '||') hasOtherType = true
-      ;(node.terms as Record<string, unknown>[])?.forEach(walkNode)
-    } else if (t === 'Multiplier') {
-      walkNode(node.term as Record<string, unknown>)
-      hasOtherType = true
-    } else if (t === 'Function') {
-      hasOtherType = true
-      ;(node.terms as Record<string, unknown>[])?.forEach(walkNode)
-    }
-  }
-  walkNode(ast)
-  const classification: PropertyClassification =
-    !hasNumberType && !hasOtherType ? 'enum' : !hasOtherType && hasNumberType ? 'enum-or-number' : 'string-or-number'
-  return { keywords, classification }
-}
-
-const propertySyntaxes: Record<string, string | undefined> = {
-  position: 'static | relative | absolute | sticky | fixed | <running()>',
-  'text-align': 'start | end | left | right | center | <string> | justify | match-parent | justify-all',
-  overflow: "<'overflow-block'>{1,2}",
-  'box-sizing': 'content-box | border-box',
-  clear:
-    'inline-start | inline-end | block-start | block-end | left | right | top | bottom | both-inline | both-block | both | none',
-  'font-weight': '<font-weight-absolute> | bolder | lighter',
-  margin: "<'margin-top'>{1,4}",
-  color: '<color>',
-  display:
-    '[ <display-outside> || <display-inside> ] | <display-listitem> | <display-internal> | <display-box> | <display-legacy> | grid-lanes | inline-grid-lanes | <display-outside> || [ <display-inside> | math ]',
-}
-
-const propertyStyleDeclarations: Record<string, string[]> = {
-  position: ['position'],
-  'text-align': ['text-align', 'textAlign'],
-  overflow: ['overflow'],
-  'box-sizing': ['box-sizing', 'boxSizing'],
-  clear: ['clear'],
-  'font-weight': ['font-weight', 'fontWeight'],
-  margin: ['margin'],
-  color: ['color'],
-  display: ['display'],
-}
-
-test('box-sizing is pure keyword → z.enum', () => {
-  const r = classifyProperty(propertySyntaxes['box-sizing'])
-  expect(r.classification).toBe('enum')
-  expect(r.keywords).toEqual(['content-box', 'border-box'])
+const entryFor = (name: string, syntax: string): PropertyEntry => ({
+  name,
+  syntax,
+  styleDeclaration: [name],
 })
 
-test('clear is pure keyword → z.enum', () => {
-  const r = classifyProperty(propertySyntaxes.clear)
-  expect(r.classification).toBe('enum')
-  expect(r.keywords).toContain('none')
-})
-
-test('position has type ref → z.union([string, number])', () => {
-  const r = classifyProperty(propertySyntaxes.position)
-  expect(r.classification).toBe('string-or-number')
-  expect(r.keywords).toEqual(['static', 'relative', 'absolute', 'sticky', 'fixed'])
-})
-
-test('text-align has type ref → z.union([string, number])', () => {
-  const r = classifyProperty(propertySyntaxes['text-align'])
-  expect(r.classification).toBe('string-or-number')
-  expect(r.keywords).toContain('start')
-})
-
-test('overflow has property ref + multiplier → z.union([string, number])', () => {
-  expect(classifyProperty(propertySyntaxes.overflow).classification).toBe('string-or-number')
-})
-
-test('font-weight has type ref → z.union([string, number])', () => {
-  const r = classifyProperty(propertySyntaxes['font-weight'])
-  expect(r.classification).toBe('string-or-number')
-  expect(r.keywords).toEqual(['bolder', 'lighter'])
-})
-
-test('margin has multiplier → z.union([string, number])', () => {
-  expect(classifyProperty(propertySyntaxes.margin).classification).toBe('string-or-number')
-})
-
-test('color has type ref → z.union([string, number])', () => {
-  expect(classifyProperty(propertySyntaxes.color).classification).toBe('string-or-number')
-})
-
-test('display has complex syntax → z.union([string, number])', () => {
-  const r = classifyProperty(propertySyntaxes.display)
-  expect(r.classification).toBe('string-or-number')
-  expect(r.keywords).toContain('grid-lanes')
-})
-
-test('camelCase keys present via styleDeclaration', () => {
-  expect(propertyStyleDeclarations['box-sizing']).toContain('boxSizing')
-  expect(propertyStyleDeclarations['text-align']).toContain('textAlign')
-  expect(propertyStyleDeclarations['font-weight']).toContain('fontWeight')
-})
-
-test('kebab keys present via styleDeclaration', () => {
-  expect(propertyStyleDeclarations['box-sizing']).toContain('box-sizing')
-  expect(propertyStyleDeclarations['text-align']).toContain('text-align')
-  expect(propertyStyleDeclarations.position).toContain('position')
-})
-
-// --- Generated output snapshot ---
-
-test('generated file includes TokenRefSchema in every case and KeyframeRefSchema only for animation/animation-name', async () => {
-  const proc = Bun.spawn(['bun', 'run', path.join(import.meta.dir, 'generate-css-schemas.ts')], {
-    cwd: path.resolve(import.meta.dir, '..'),
-    stdout: 'pipe',
-    stderr: 'pipe',
+test('box-sizing is pure keyword classification', () => {
+  const result = generateCssSchemas({
+    properties: [entryFor('box-sizing', 'content-box | border-box')],
   })
-  await proc.exited
-  const genPath = new URL('../src/client/css.schemas.ts', import.meta.url)
-  const content = await Bun.file(genPath).text()
+  expect(result.keywordEnumCount).toBe(1)
+})
 
-  // Verify ref schema imports present
-  expect(content).toContain("import { TokenRefSchema, KeyframeRefSchema } from './css.input-schemas.ts'")
+test('position has classification string-or-number', () => {
+  const result = generateCssSchemas({
+    properties: [entryFor('position', 'static | relative | absolute | sticky | fixed | <running()>')],
+  })
+  expect(result.propertyCount).toBe(1)
+  expect(result.keywordEnumCount).toBe(0)
+})
 
-  // Non-keyframe property gets TokenRefSchema only
-  expect(content).toContain('case "position": return z.union([z.union([z.string(), z.number()]), TokenRefSchema])')
-  expect(content).toContain('case "color": return z.union([z.union([z.string(), z.number()]), TokenRefSchema])')
+test('clear is pure keyword classification', () => {
+  const result = generateCssSchemas({
+    properties: [
+      entryFor(
+        'clear',
+        'inline-start | inline-end | block-start | block-end | left | right | top | bottom | both-inline | both-block | both | none',
+      ),
+    ],
+  })
+  expect(result.keywordEnumCount).toBe(1)
+})
 
-  // Keyframe-eligible properties get both
-  expect(content).toContain('TokenRefSchema, KeyframeRefSchema')
+test('font-weight has classification string-or-number', () => {
+  const result = generateCssSchemas({
+    properties: [entryFor('font-weight', '<font-weight-absolute> | bolder | lighter')],
+  })
+  expect(result.keywordEnumCount).toBe(0)
+})
 
-  // Default catchall has TokenRefSchema
-  expect(content).toContain('return z.union([z.union([z.string(), z.number()]), TokenRefSchema])')
+test('color has classification string-or-number', () => {
+  const result = generateCssSchemas({
+    properties: [entryFor('color', '<color>')],
+  })
+  expect(result.keywordEnumCount).toBe(0)
+})
 
-  const lines = content.split('\n')
+test('display has classification string-or-number', () => {
+  const result = generateCssSchemas({
+    properties: [entryFor('display', '[ <display-outside> || <display-inside> ] | <display-listitem>')],
+  })
+  expect(result.keywordEnumCount).toBe(0)
+})
+
+test('camelCase and kebab keys generated from styleDeclaration', () => {
+  const result = generateCssSchemas({
+    properties: [
+      {
+        name: 'box-sizing',
+        syntax: 'content-box | border-box',
+        styleDeclaration: ['box-sizing', 'boxSizing'],
+      },
+    ],
+  })
+  expect(result.code).toContain('"box-sizing"')
+  expect(result.code).toContain('"boxSizing"')
+})
+
+test('generated output includes TokenRefSchema everywhere and KeyframeRefSchema for animation names', async () => {
+  const cssDataPath = new URL('../node_modules/@webref/css/css.json', import.meta.url)
+  const cssFile = Bun.file(cssDataPath)
+  const cssJson = await cssFile.json()
+
+  const result = generateCssSchemas(cssJson)
+
+  expect(result.code).toContain("import { TokenRefSchema, KeyframeRefSchema } from './css.input-schemas.ts'")
+
+  expect(result.code).toContain('case "position": return z.union([z.union([z.string(), z.number()]), TokenRefSchema])')
+  expect(result.code).toContain('case "color": return z.union([z.union([z.string(), z.number()]), TokenRefSchema])')
+
+  expect(result.code).toContain('TokenRefSchema, KeyframeRefSchema')
+
+  expect(result.code).toContain('return z.union([z.union([z.string(), z.number()]), TokenRefSchema])')
+
+  const lines = result.code.split('\n')
   const header = lines.slice(0, 12).join('\n')
   const typeTail = lines.slice(-5).join('\n')
   expect({ header, typeTail }).toMatchSnapshot()

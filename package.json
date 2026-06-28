@@ -42,7 +42,7 @@
     "check:package": "format-package --check",
     "check:types": "tsc --noEmit",
     "check:write": "biome check --write && format-package --write",
-    "generate:css-schemas": "bun run scripts/generate-css-schemas.ts",
+    "generate:css-schemas": "bun bin/plaited.ts css-schemas '{\"mode\":\"generate\"}'",
     "prepare": "git config core.hooksPath .hooks",
     "setup": "bash scripts/setup.sh",
     "setup:bun": "bash scripts/setup.sh bun",
