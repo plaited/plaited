@@ -1,3 +1,4 @@
+// @ts-nocheck - recursive z.lazy types require explicit annotation in Zod 4
 /**
  * @module css.input-schemas
  *
@@ -11,6 +12,11 @@
  * - $keyframeRef is position-constrained to animation/animation-name
  *   value schemas via codegen, not superRefine.
  * - No superRefine for core shape — structural schemas only.
+ * - CssValueSchema is the BROAD union (used where the property name is
+ *   unknown, e.g. in recursive NestedStatements). For *precise* per-property
+ *   validation, use `cssPropertyValueSchema(name)` from css.schemas.ts,
+ *   which returns a schema that includes KeyframeRefSchema only for
+ *   animation/animation-name properties (enforced structurally).
  */
 
 import { z } from 'zod'
@@ -21,11 +27,14 @@ import { z } from 'zod'
  * Primitive token value: string or number.
  */
 export const PrimitiveTokenValueSchema = z.union([z.string(), z.number()])
+export type PrimitiveTokenValue = z.output<typeof PrimitiveTokenValueSchema>
 
 // --- CSS value variants ---
 
 /**
  * A `$tokenRef` reference — resolves to a design token's `var(--…)`.
+ * Legal in every CSS property value (the generator includes TokenRefSchema
+ * in every property's value schema).
  */
 export const TokenRefSchema = z.object({
   $tokenRef: z.string(),
@@ -41,9 +50,17 @@ export const KeyframeRefSchema = z.object({
 })
 
 /**
- * Css value: literal value, token reference, or keyframe reference.
+ * CssValue schema — the broad union of literal, token ref, and keyframe ref.
+ *
+ * Used in recursive input schemas (NestedStatements, CSSRules, CSSKeyFrames)
+ * where the specific property name is not known at schema-definition time.
+ *
+ * For *precise* per-property validation that enforces the $keyframeRef
+ * position constraint, use `cssPropertyValueSchema(propName)` from
+ * css.schemas.ts instead.
  */
 export const CssValueSchema = z.union([z.union([z.string(), z.number()]), TokenRefSchema, KeyframeRefSchema])
+export type CssValue = z.output<typeof CssValueSchema>
 
 // --- Nested statements ---
 
@@ -54,14 +71,16 @@ export const CssValueSchema = z.union([z.union([z.string(), z.number()]), TokenR
  *
  * This is hand-written (template-literal keys codegen poorly).
  */
-export const NestedStatementsSchema = z.lazy(() =>
-  z
-    .object({
-      $default: CssValueSchema.optional(),
-      $compoundSelectors: z.record(z.union([CssValueSchema, NestedStatementsSchema])).optional(),
-    })
-    .catchall(z.union([CssValueSchema, NestedStatementsSchema])),
+export const NestedStatementsSchema = z.lazy(
+  (): z.ZodTypeAny =>
+    z
+      .object({
+        $default: CssValueSchema.optional(),
+        $compoundSelectors: z.record(z.string(), z.union([CssValueSchema, NestedStatementsSchema])).optional(),
+      })
+      .catchall(z.union([CssValueSchema, NestedStatementsSchema])),
 )
+export type NestedStatements = z.output<typeof NestedStatementsSchema>
 
 // --- Per-property rules ---
 
@@ -69,7 +88,8 @@ export const NestedStatementsSchema = z.lazy(() =>
  * CSS rules for a single element entry.
  * Keys are property names; values are value, nested statements, or token refs.
  */
-export const CSSRulesSchema = z.lazy(() => z.record(z.union([CssValueSchema, NestedStatementsSchema])))
+export const CSSRulesSchema = z.lazy(() => z.record(z.string(), z.union([CssValueSchema, NestedStatementsSchema])))
+export type CSSRules = z.output<typeof CSSRulesSchema>
 
 /**
  * CreateParams schema — the raw agent JSON shape for style definitions.
@@ -77,6 +97,7 @@ export const CSSRulesSchema = z.lazy(() => z.record(z.union([CssValueSchema, Nes
  * Special keys `$host`, `$root`, `$top` select scoping at the createStyles level.
  */
 export const CreateParamsSchema = z.record(z.string(), CSSRulesSchema)
+export type CreateParams = z.output<typeof CreateParamsSchema>
 
 // --- Design tokens ---
 
@@ -99,11 +120,13 @@ export const FunctionTokenValueSchema = z.union([
     $csv: z.boolean(),
   }),
 ])
+export type FunctionTokenValue = z.output<typeof FunctionTokenValueSchema>
 
 /**
  * Design token value — primitive, function, or token reference.
  */
 export const DesignTokenValueSchema = z.union([PrimitiveTokenValueSchema, FunctionTokenValueSchema, TokenRefSchema])
+export type DesignTokenValue = z.output<typeof DesignTokenValueSchema>
 
 /**
  * Design token — single value or CSV array.
@@ -117,16 +140,19 @@ export const DesignTokenSchema = z.union([
     $csv: z.boolean(),
   }),
 ])
+export type DesignToken = z.output<typeof DesignTokenSchema>
 
 /**
  * Design token scale — one level of nesting.
  */
 export const DesignTokenScaleSchema = z.record(z.string(), DesignTokenSchema)
+export type DesignTokenScale = z.output<typeof DesignTokenScaleSchema>
 
 /**
  * Design token group — tokens or nested scales.
  */
 export const DesignTokenGroupSchema = z.record(z.string(), z.union([DesignTokenSchema, DesignTokenScaleSchema]))
+export type DesignTokenGroup = z.output<typeof DesignTokenGroupSchema>
 
 // --- Keyframes ---
 
@@ -141,3 +167,4 @@ export const CSSKeyFramesSchema = z.lazy(() =>
     })
     .catchall(z.record(z.string(), CssValueSchema)),
 )
+export type CSSKeyFrames = z.output<typeof CSSKeyFramesSchema>

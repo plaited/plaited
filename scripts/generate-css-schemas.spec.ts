@@ -6,6 +6,7 @@
  */
 
 import { expect, test } from 'bun:test'
+import * as path from 'node:path'
 import { definitionSyntax } from 'css-tree'
 
 type PropertyClassification = 'enum' | 'enum-or-number' | 'string-or-number'
@@ -169,4 +170,51 @@ test('kebab keys present via styleDeclaration', () => {
   expect(propertyStyleDeclarations['box-sizing']).toContain('box-sizing')
   expect(propertyStyleDeclarations['text-align']).toContain('text-align')
   expect(propertyStyleDeclarations.position).toContain('position')
+})
+
+test('generated file includes TokenRefSchema in every property schema', async () => {
+  // Run the generator
+  const proc = Bun.spawn(['bun', 'run', path.join(import.meta.dir, 'generate-css-schemas.ts')], {
+    cwd: path.resolve(import.meta.dir, '..'),
+    stdout: 'pipe',
+    stderr: 'pipe',
+  })
+  await proc.exited
+
+  const genPath = new URL('../src/client/css.schemas.ts', import.meta.url)
+  const content = await Bun.file(genPath).text()
+
+  // Verify imports include TokenRefSchema and KeyframeRefSchema
+  expect(content).toContain("import { TokenRefSchema, KeyframeRefSchema } from './css.input-schemas.ts'")
+
+  // Verify keyframe-eligible properties include KeyframeRefSchema
+  expect(content).toContain(
+    'case "animation": return z.union([z.union([z.string(), z.number()]), TokenRefSchema, KeyframeRefSchema]',
+  )
+  expect(content).toContain(
+    'case "animationName": return z.union([z.union([z.string(), z.number()]), TokenRefSchema, KeyframeRefSchema]',
+  )
+  expect(content).toContain(
+    'case "-webkit-animation": return z.union([z.union([z.string(), z.number()]), TokenRefSchema, KeyframeRefSchema]',
+  )
+  expect(content).toContain(
+    'case "WebkitAnimationName": return z.union([z.union([z.string(), z.number()]), TokenRefSchema, KeyframeRefSchema]',
+  )
+
+  // Verify non-keyframe properties do NOT include KeyframeRefSchema
+  expect(content).toContain('case "position": return z.union([z.union([z.string(), z.number()]), TokenRefSchema]')
+  expect(content).toContain('case "color": return z.union([z.union([z.string(), z.number()]), TokenRefSchema]')
+  expect(content).toContain('case "margin": return z.union([z.union([z.string(), z.number()]), TokenRefSchema]')
+
+  // Verify default catchall includes TokenRefSchema but NOT KeyframeRefSchema
+  expect(content).toContain('return z.union([z.union([z.string(), z.number()]), TokenRefSchema])')
+
+  // Snapshot key sections
+  const lines = content.split('\n')
+  const header = lines.slice(0, 10).join('\n')
+  const kfCases = lines.filter((l) => l.includes('KeyframeRefSchema') && l.startsWith('  case')).join('\n')
+  // Extract the CSSProperties type ending
+  const typeTail = lines.slice(-5).join('\n')
+
+  expect({ header, keyframeCases: kfCases, typeTail }).toMatchSnapshot()
 })

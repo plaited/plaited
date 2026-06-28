@@ -11,6 +11,11 @@
  *
  * Each property's styleDeclaration array provides the kebab and camel case keys
  * emitted in the properties object schema.
+ *
+ * Position-constrained refs:
+ * - $tokenRef is legal in EVERY CSS property value.
+ * - $keyframeRef is legal ONLY in animation / animation-name value schemas
+ *   (enforced structurally in the emitted switch, not superRefine).
  */
 
 import { definitionSyntax } from 'css-tree'
@@ -28,6 +33,22 @@ type PropertyEntry = {
   syntax: string
   styleDeclaration: string[]
 }
+
+// --- Keyframe-eligible property name set ---
+// $keyframeRef is structurally constrained to these property names only
+// (including all casings emitted by styleDeclaration).
+
+const KEYFRAME_ELIGIBLE_NAMES = new Set([
+  'animation',
+  'animation-name',
+  'animationName',
+  '-webkit-animation',
+  'WebkitAnimation',
+  'webkitAnimation',
+  '-webkit-animation-name',
+  'WebkitAnimationName',
+  'webkitAnimationName',
+])
 
 // --- Core logic ---
 
@@ -93,7 +114,7 @@ const keywordsToEnum = (keywords: string[]): string => {
   return `z.enum([${values}])`
 }
 
-const generateValueSchema = (property: PropertyEntry): string => {
+const generateLiteralSchema = (property: PropertyEntry): string => {
   const { keywords, classification } = classifyProperty(property.syntax)
 
   switch (classification) {
@@ -104,6 +125,17 @@ const generateValueSchema = (property: PropertyEntry): string => {
     case 'string-or-number':
       return `z.union([z.string(), z.number()])`
   }
+}
+
+const isKeyframeEligible = (name: string): boolean => KEYFRAME_ELIGIBLE_NAMES.has(name)
+
+const generateValueSchema = (name: string, property: PropertyEntry): string => {
+  const literalSchema = generateLiteralSchema(property)
+
+  // Every property value gets TokenRefSchema; only keyframe-eligible ones get KeyframeRefSchema too.
+  const refs = isKeyframeEligible(name) ? 'TokenRefSchema, KeyframeRefSchema' : 'TokenRefSchema'
+
+  return `z.union([${literalSchema}, ${refs}])`
 }
 
 const generatePropertyNames = (properties: PropertyEntry[]): string[] => {
@@ -139,11 +171,20 @@ const main = async () => {
   const allNames = generatePropertyNames(properties)
   const propertyNameEntries = allNames.map((n) => JSON.stringify(n)).join(', ')
 
+  // Build a map from styleDeclaration name → property entry for quick lookup
+  const nameToProp = new Map<string, PropertyEntry>()
+  for (const prop of properties) {
+    for (const name of prop.styleDeclaration) {
+      nameToProp.set(name, prop)
+    }
+  }
+
   // Generate the switch-based value schema lookup
-  const schemaCases = properties
-    .map((prop) => {
-      const valueSchema = generateValueSchema(prop)
-      return prop.styleDeclaration.map((name) => `  case ${JSON.stringify(name)}: return ${valueSchema}`).join('\n')
+  const schemaCases = allNames
+    .map((name) => {
+      const prop = nameToProp.get(name)!
+      const valueSchema = generateValueSchema(name, prop)
+      return `  case ${JSON.stringify(name)}: return ${valueSchema}`
     })
     .join('\n')
 
@@ -151,7 +192,7 @@ const main = async () => {
   switch (prop) {
 ${schemaCases}
     default:
-      return z.union([z.string(), z.number()])
+      return z.union([z.union([z.string(), z.number()]), TokenRefSchema])
   }
 }`
 
@@ -172,6 +213,7 @@ ${schemaCases}
     ' * Do not edit manually.',
     ' */',
     "import { z } from 'zod'",
+    "import { TokenRefSchema, KeyframeRefSchema } from './css.input-schemas.ts'",
     '',
     '/**',
     ' * Schema for valid CSS property names (kebab and camel case).',
@@ -183,6 +225,12 @@ ${schemaCases}
     ' * Returns the appropriate Zod schema for a given CSS property name.',
     ' * Known properties map to their specific value schema.',
     ' * Unknown properties (e.g. `--*` custom properties) return a catchall.',
+    ' *',
+    ' * Position-constrained refs:',
+    ' * - $keyframeRef is legal ONLY in animation/animation-name value schemas',
+    ' *   (enforced structurally — this function returns KeyframeRefSchema only',
+    ' *    for those property names).',
+    ' * - $tokenRef is legal in every CSS property value.',
     ' */',
     `export const cssPropertyValueSchema = ${schemaCode}`,
     '',
