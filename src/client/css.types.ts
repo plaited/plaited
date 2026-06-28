@@ -22,23 +22,6 @@ export type CssRegistry = {
 }
 
 /**
- * A callable reference to a CSS custom property created by `createTokens`.
- * When called, returns the `var(--css-variable-name)` expression.
- * The `stylesheets` array holds the `:root{}` declarations that define the variable.
- *
- * @remarks
- * Compose token references into styles by passing them to `createStyles`
- * or `joinStyles`. The style deduplication in `createSSR`
- * ensures each declaration is emitted only once per connection.
- *
- * @public
- */
-export type DesignTokenReference = {
-  (): `var(--${string})`
-  stylesheets: string[]
-}
-
-/**
  * Type for defining nested CSS rules within a specific CSS property.
  * Allows specifying different values for a property based on conditions like
  * container queries, layer rules, media queries, supports queries, pseudo-classes,
@@ -47,17 +30,17 @@ export type DesignTokenReference = {
  */
 export type NestedStatements = {
   /** The default value for the CSS property. */
-  [CSS_RESERVED_KEYS.$default]?: CSSProperties[keyof CSSProperties] | DesignTokenReference
+  [CSS_RESERVED_KEYS.$default]?: CSSProperties[keyof CSSProperties]
   /** Compound host selectors — only valid within a `$host` block. */
   [CSS_RESERVED_KEYS.$compoundSelectors]?: {
-    [key: string]: CSSProperties[keyof CSSProperties] | NestedStatements | DesignTokenReference
+    [key: string]: CSSProperties[keyof CSSProperties] | NestedStatements
   }
   /** Rules applied based on at-rules (container, layer, media, supports, view-transition, etc.). */
-  [key: `@${string}`]: CSSProperties[keyof CSSProperties] | NestedStatements | DesignTokenReference
+  [key: `@${string}`]: CSSProperties[keyof CSSProperties] | NestedStatements
   /** Rules applied based on pseudo-classes (e.g., :hover, :focus). Can be nested further. */
-  [key: `:${string}`]: CSSProperties[keyof CSSProperties] | NestedStatements | DesignTokenReference
+  [key: `:${string}`]: CSSProperties[keyof CSSProperties] | NestedStatements
   /** Rules applied based on attribute selectors (e.g., [disabled], [data-state="active"]). Can be nested further. */
-  [key: `[${string}]`]: CSSProperties[keyof CSSProperties] | NestedStatements | DesignTokenReference
+  [key: `[${string}]`]: CSSProperties[keyof CSSProperties] | NestedStatements
 }
 
 /**
@@ -65,7 +48,7 @@ export type NestedStatements = {
  * Extends CSS properties to support nested statements and custom property objects.
  */
 export type CSSRules = {
-  [key in keyof CSSProperties]: CSSProperties[key] | NestedStatements | string | DesignTokenReference
+  [key in keyof CSSProperties]: CSSProperties[key] | NestedStatements | string
 }
 /**
  * Defines a collection of CSS class definitions. Each key represents a class name,
@@ -78,7 +61,7 @@ export type CSSRules = {
  * - `$top`  → top-level at-rules, unwrapped (no hashed class names)
  */
 export type CreateParams = {
-  [key: string]: CSSRules | CSSProperties[keyof CSSProperties] | DesignTokenReference
+  [key: string]: CSSRules | CSSProperties[keyof CSSProperties]
 }
 
 /**
@@ -114,15 +97,15 @@ export type ClassNames<T extends CreateParams> = {
 export type CSSKeyFrames = {
   /** Styles applied at the beginning (0%) of the animation. */
   from?: {
-    [key in keyof CSSProperties]: CSSProperties[key] | DesignTokenReference
+    [key in keyof CSSProperties]: CSSProperties[key]
   }
   /** Styles applied at the end (100%) of the animation. */
   to?: {
-    [key in keyof CSSProperties]: CSSProperties[key] | DesignTokenReference
+    [key in keyof CSSProperties]: CSSProperties[key]
   }
   /** Styles applied at specific percentage points during the animation. */
   [key: `${number}%`]: {
-    [key in keyof CSSProperties]: CSSProperties[key] | DesignTokenReference
+    [key in keyof CSSProperties]: CSSProperties[key]
   }
 }
 /**
@@ -133,83 +116,4 @@ export type CSSKeyFrames = {
 export type StyleFunctionKeyframe = {
   (): ElementStylesObject
   id: string
-}
-
-/**
- * Primitive value type accepted by design tokens — string or number.
- *
- * @public
- */
-export type PrimitiveTokenValue = string | number
-
-/** @internal Accepted argument types for CSS function tokens. */
-type FunctionTokenArguments = PrimitiveTokenValue | DesignTokenReference
-
-/**
- * A CSS function-based token value (e.g., `calc()`, `rgb()`, `clamp()`).
- * Specifies the function name, arguments, and whether arguments are comma-separated.
- *
- * @public
- */
-export type FunctionTokenValue =
-  | {
-      $function: string
-      $arguments: FunctionTokenArguments
-      $csv?: never
-    }
-  | {
-      $function: string
-      $arguments: FunctionTokenArguments[]
-      $csv: boolean
-    }
-
-/**
- * Union of all valid value types for a design token.
- *
- * @public
- */
-export type DesignTokenValue = PrimitiveTokenValue | FunctionTokenValue | DesignTokenReference
-
-/**
- * A design token with a single value or array of values.
- *
- * @public
- */
-export type DesignToken =
-  | {
-      $value: DesignTokenValue
-      $csv?: never
-    }
-  | {
-      $value: DesignTokenValue[]
-      $csv: boolean
-    }
-
-/**
- * A nested group of tokens for creating scales (e.g., sizes, colors).
- * Supports one level of nesting.
- */
-export type DesignTokenScale = {
-  [key: string]: DesignToken
-}
-
-/**
- * Defines a group of design tokens.
- * Tokens can be simple values or nested scales for organizing related values.
- */
-export type DesignTokenGroup = {
-  [key: string]: DesignToken | DesignTokenScale
-}
-
-/**
- * Maps a token group to reference functions.
- * For simple tokens, returns a DesignTokenReference.
- * For nested scales, returns an object mapping each key to a DesignTokenReference.
- */
-export type DesignTokenReferences<T extends DesignTokenGroup> = {
-  [K in keyof T]: T[K] extends DesignToken
-    ? DesignTokenReference
-    : T[K] extends DesignTokenScale
-      ? { [SK in keyof T[K]]: DesignTokenReference }
-      : never
 }

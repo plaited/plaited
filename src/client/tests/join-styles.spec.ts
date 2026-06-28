@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test'
-import { createStyles, createTokens, joinStyles } from 'plaited/client'
+import { createStyles, joinStyles } from 'plaited/client'
 
 test('joinStyles: combines element styles with host styles', () => {
   const testStyles = createStyles({
@@ -25,38 +25,37 @@ test('joinStyles: combines element styles with host styles', () => {
   expect(joinStyles(testStyles.button, testStyles.small, host.$host)).toMatchSnapshot()
 })
 
-test('joinStyles: combines styles with design token references', () => {
-  const { spacing } = createTokens('spacing', {
-    small: { $value: '8px' },
-    medium: { $value: '16px' },
-    large: { $value: '24px' },
-  })
-
-  const { typography } = createTokens('typography', {
-    heading: { $value: '2rem' },
-    body: { $value: '1rem' },
+test('joinStyles: combines styles with $root custom-property declarations', () => {
+  const rootDecls = createStyles({
+    $root: {
+      '--spacing-small': '8px',
+      '--spacing-medium': '16px',
+      '--spacing-large': '24px',
+      '--typography-heading': '2rem',
+      '--typography-body': '1rem',
+    },
   })
 
   const baseStyles = createStyles({
     container: {
-      padding: spacing.medium,
-      fontSize: typography.body,
+      padding: 'var(--spacing-medium)',
+      fontSize: 'var(--typography-body)',
     },
   })
 
   const variantStyles = createStyles({
     large: {
-      padding: spacing.large,
-      fontSize: typography.heading,
+      padding: 'var(--spacing-large)',
+      fontSize: 'var(--typography-heading)',
     },
   })
 
   const hostStylesVariant = createStyles({
     $host: {
-      margin: spacing.small,
+      margin: 'var(--spacing-small)',
     },
   })
 
-  const combined = joinStyles(baseStyles.container, variantStyles.large, hostStylesVariant.$host)
+  const combined = joinStyles(baseStyles.container, variantStyles.large, hostStylesVariant.$host, rootDecls.$root)
   expect(combined).toMatchSnapshot()
 })

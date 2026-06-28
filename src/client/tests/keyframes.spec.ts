@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test'
-import { createKeyframes, createTokens } from 'plaited/client'
+import { createKeyframes } from 'plaited/client'
 
 test('createKeyframes: generates named keyframes with unique id', () => {
   const { pulse } = createKeyframes('pulse', {
@@ -11,30 +11,15 @@ test('createKeyframes: generates named keyframes with unique id', () => {
   expect(pulse()).toMatchSnapshot()
 })
 
-test('createKeyframes: works with design token references', () => {
-  const { animations } = createTokens('animations', {
-    scale: {
-      $value: {
-        $function: 'scale',
-        $arguments: '1.2',
-      },
-    },
-    rotate: {
-      $value: {
-        $function: 'rotate',
-        $arguments: '360deg',
-      },
-    },
-  })
-
+test('createKeyframes: works with var() values', () => {
   const { spin } = createKeyframes('spin', {
     '0%': { transform: 'rotate(0deg)' },
-    '100%': { transform: animations.rotate },
+    '100%': { transform: 'var(--animations-rotate)' },
   })
 
   const { pulse } = createKeyframes('pulse', {
     '0%': { transform: 'scale(1)' },
-    '50%': { transform: animations.scale },
+    '50%': { transform: 'var(--animations-scale)' },
     '100%': { transform: 'scale(1)' },
   })
 

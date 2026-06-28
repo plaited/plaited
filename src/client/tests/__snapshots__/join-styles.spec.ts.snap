@@ -54,3 +54,28 @@ exports[`joinStyles: combines styles with design token references 1`] = `
   ],
 }
 `;
+
+exports[`joinStyles: combines styles with $root custom-property declarations 1`] = `
+{
+  "classNames": [
+    "container",
+    "cls_3ybe8ds",
+    "cls_1eddm3b",
+    "large",
+    "cls_3iwzlpi",
+    "cls_1l9nkm1",
+  ],
+  "stylesheets": [
+    ".cls_3ybe8ds{padding:var(--spacing-medium);}",
+    ".cls_1eddm3b{font-size:var(--typography-body);}",
+    ".cls_3iwzlpi{padding:var(--spacing-large);}",
+    ".cls_1l9nkm1{font-size:var(--typography-heading);}",
+    ":host{margin:var(--spacing-small);}",
+    ":root{--spacing-small:8px;}",
+    ":root{--spacing-medium:16px;}",
+    ":root{--spacing-large:24px;}",
+    ":root{--typography-heading:2rem;}",
+    ":root{--typography-body:1rem;}",
+  ],
+}
+`;

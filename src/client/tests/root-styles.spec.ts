@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test'
-import { createStyles, createTokens } from 'plaited/client'
+import { createStyles } from 'plaited/client'
 
 test('$root: supports simple properties', () => {
   const root = createStyles({
@@ -42,14 +42,11 @@ test('$root: supports nested media queries', () => {
   expect(root.$root.stylesheets).toMatchSnapshot()
 })
 
-test('$root: supports design token references', () => {
-  const { colors } = createTokens('colors', {
-    primary: { $value: '#007bff' },
-  })
-
+test('$root: can reference other $root custom properties via var()', () => {
   const root = createStyles({
     $root: {
-      '--brand-color': colors.primary,
+      '--color-primary': '#007bff',
+      '--brand-color': 'var(--color-primary)',
     },
   })
   expect(root.$root.stylesheets).toMatchSnapshot()

@@ -439,8 +439,6 @@ export const h: CreateTemplate = (_tag, attrs = {}, registry?) => {
   end.push(`</${tag}>`)
   if (tag === 'template' && attrs?.shadowrootmode && stylesheets.length) {
     const styles = `<style>${[...new Set(stylesheets)].join('')}</style>`
-      .replaceAll(/:root\{/g, ':host{')
-      .replaceAll(/:root\(([^)]+)\)/g, ':host')
     start.push(styles)
 
     stylesheets = []
