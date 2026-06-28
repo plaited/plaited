@@ -1,3 +1,4 @@
+import { cssPropertyValueSchema } from './css.schemas.ts'
 import type { CSSKeyFrames, StyleFunctionKeyframe } from './css.types.ts'
 import { createHash, getRule, isTokenReference } from './css.utils.ts'
 
@@ -28,11 +29,23 @@ export const createKeyframes = <I extends string, T extends CSSKeyFrames>(
   ident: I,
   frames: T,
 ): Record<I, StyleFunctionKeyframe> => {
+  // Validate keyframes catalog shape (skip DesignTokenReference callables)
+  const validateValue = (prop: string, val: unknown) => {
+    if (!isTokenReference(val)) {
+      const schema = cssPropertyValueSchema(prop)
+      const result = schema.safeParse(val)
+      if (!result.success) {
+        throw new Error(`Invalid value for CSS property ${JSON.stringify(prop)} in keyframes: ${val}`)
+      }
+    }
+  }
+
   const stylesheets: string[] = []
   const arr: string[] = []
   for (const [value, props] of Object.entries(frames)) {
     const step = []
     for (const [prop, val] of Object.entries(props)) {
+      validateValue(prop, val)
       const isToken = isTokenReference(val)
       isToken && stylesheets.push(...val.stylesheets)
       step.push(getRule(prop, isToken ? val() : val))

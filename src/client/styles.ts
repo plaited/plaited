@@ -1,5 +1,6 @@
 import { isTypeOf } from '../utils.ts'
 import { CSS_RESERVED_KEYS } from './css.constants.ts'
+import { cssPropertyNameSchema, cssPropertyValueSchema } from './css.schemas.ts'
 import type {
   ClassNames,
   CreateParams,
@@ -15,6 +16,62 @@ import { createHash, getRule, isTokenReference } from './css.utils.ts'
  * Checks if a value is a primitive (string or number).
  */
 const isPrimitive = (val: unknown): val is string | number => typeof val === 'string' || typeof val === 'number'
+
+/**
+ * @internal
+ * Error thrown when an unknown CSS property name is encountered.
+ */
+export class InvalidPropertyNameError extends Error {
+  override name = 'invalid_property_name'
+
+  constructor(prop: string) {
+    super(`Unknown CSS property name: ${JSON.stringify(prop)}`)
+  }
+}
+
+/**
+ * @internal
+ * Error thrown when a CSS property value fails validation.
+ */
+export class InvalidPropertyValueError extends Error {
+  override name = 'invalid_property_value'
+
+  constructor(prop: string, value: unknown) {
+    const valStr = isTypeOf<{ toString: () => string }>(value, 'object') ? JSON.stringify(value) : `${value}`
+    super(`Invalid value for CSS property ${JSON.stringify(prop)}: ${valStr}`)
+  }
+}
+
+/**
+ * @internal
+ * Validates a CSS property name against the schema. Unknown names throw.
+ * `--*` custom properties bypass the name check (they match at runtime via index signature).
+ */
+const assertPropertyName = (prop: string) => {
+  if (prop.startsWith('--')) return // CSS custom properties are open-ended
+  if (prop.startsWith(':')) return // pseudo-classes/elements (structural NestedStatements key)
+  if (prop.startsWith('@')) return // at-rules (structural NestedStatements key)
+  if (prop.startsWith('[')) return // attribute selectors (structural NestedStatements key)
+  if (prop === CSS_RESERVED_KEYS.$default || prop === CSS_RESERVED_KEYS.$compoundSelectors) return
+  const result = cssPropertyNameSchema.safeParse(prop)
+  if (!result.success) {
+    throw new InvalidPropertyNameError(prop)
+  }
+}
+
+/**
+ * @internal
+ * Validates a CSS property value against the per-property schema.
+ */
+const assertPropertyValue = (prop: string, value: unknown) => {
+  // Skip validation for DesignTokenReference callables (in-memory, post-materialization)
+  if (isTypeOf<() => unknown>(value, 'function')) return
+  const schema = cssPropertyValueSchema(prop)
+  const result = schema.safeParse(value)
+  if (!result.success) {
+    throw new InvalidPropertyValueError(prop, value)
+  }
+}
 
 /**
  * @internal
@@ -53,6 +110,10 @@ const formatClassStatement = ({
       }
     }
   } else {
+    // Validate terminal values (skip DesignTokenReference callables)
+    if (!isTokenReference(value)) {
+      assertPropertyValue(prop, value)
+    }
     const isToken = isTokenReference(value)
     isToken && tokenStyles.push(...(value as DesignTokenReference).stylesheets)
     const rule = getRule(prop, isToken ? (value as DesignTokenReference)() : (value as string | number))
@@ -94,6 +155,9 @@ const formatHostRules = (props: Record<string, unknown>): string[] => {
         })
       }
     } else {
+      if (!isTokenReference(value)) {
+        assertPropertyValue(prop, value)
+      }
       const isToken = isTokenReference(value)
       isToken && styles.push(...value.stylesheets)
       const arr = selectors.map((str) => `${str}{`)
@@ -104,6 +168,7 @@ const formatHostRules = (props: Record<string, unknown>): string[] => {
   }
 
   for (const [prop, value] of Object.entries(props)) {
+    assertPropertyName(prop)
     if (isPrimitive(value) || isTokenReference(value)) {
       formatHostProp({ prop, value })
       continue
@@ -145,6 +210,9 @@ const formatRootRules = (props: Record<string, unknown>): string[] => {
         walkRoot(prop, val, [...selectors, key])
       }
     } else {
+      if (!isTokenReference(value)) {
+        assertPropertyValue(prop, value)
+      }
       const isToken = isTokenReference(value)
       isToken && styles.push(...value.stylesheets)
       const arr = selectors.map((s) => `${s}{`)
@@ -155,6 +223,7 @@ const formatRootRules = (props: Record<string, unknown>): string[] => {
   }
 
   for (const [prop, value] of Object.entries(props)) {
+    assertPropertyName(prop)
     if (isPrimitive(value) || isTokenReference(value)) {
       walkRoot(prop, value, [])
     } else if (isTypeOf<Record<string, unknown>>(value, 'object')) {
@@ -179,6 +248,7 @@ const formatTopRules = (props: Record<string, unknown>): string[] => {
     } else if (isTypeOf<Record<string, unknown>>(value, 'object')) {
       const body: string[] = []
       for (const [prop, val] of Object.entries(value)) {
+        assertPropertyName(prop)
         if (isPrimitive(val) || isTokenReference(val)) {
           const isToken = isTokenReference(val)
           isToken && styles.push(...val.stylesheets)
@@ -257,6 +327,7 @@ export const createStyles = <T extends CreateParams>(classNames: T): ClassNames<
         CSSProperties[keyof CSSProperties] | DesignTokenReference | NestedStatements
       >
       for (const [prop, value] of Object.entries(rules)) {
+        assertPropertyName(prop)
         formatClassStatement({
           styles,
           value: value as CSSProperties[keyof CSSProperties] | DesignTokenReference | NestedStatements,

@@ -1,4 +1,5 @@
 import { isTypeOf, kebabCase } from '../utils.ts'
+import { CatalogDesignTokenGroupSchema } from './css.input-schemas.ts'
 import type {
   DesignToken,
   DesignTokenGroup,
@@ -115,6 +116,32 @@ export const createTokens = <I extends string, T extends DesignTokenGroup>(
   ident: I,
   group: T,
 ): Record<I, DesignTokenReferences<T>> => {
+  // Validate the input group against the catalog schema.
+  // Skip validation if any value contains post-materialization DesignTokenReference
+  // callables (the catalog schema only accepts literal agent JSON shapes).
+  const hasCallables = Object.values(group).some((v) => {
+    const walk = (obj: unknown): boolean => {
+      if (isTypeOf<() => unknown>(obj, 'function')) return true
+      if (isTypeOf<Record<string, unknown>>(obj, 'object')) {
+        return Object.values(obj).some(walk)
+      }
+      if (Array.isArray(obj)) {
+        return obj.some(walk)
+      }
+      return false
+    }
+    return walk(v)
+  })
+  if (!hasCallables) {
+    const validation = CatalogDesignTokenGroupSchema.safeParse(group)
+    if (!validation.success) {
+      const { issues } = validation.error
+      const firstIssue = issues[0]
+      const path = firstIssue?.path?.join('.') ?? '<root>'
+      throw new Error(`Invalid design token input: ${firstIssue?.message ?? 'validation failed'} at path: ${path}`)
+    }
+  }
+
   const identKebab = kebabCase(ident)
 
   const result = Object.entries(group).reduce(

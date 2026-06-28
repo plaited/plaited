@@ -1,5 +1,6 @@
 import { expect, test } from 'bun:test'
 import { createStyles, h } from 'plaited/client'
+import { InvalidPropertyNameError, InvalidPropertyValueError } from '../styles.ts'
 
 test('createStyles: supports simple rules', () => {
   const testStyles = createStyles({
@@ -87,4 +88,44 @@ test('createStyles: works with h via spread operator', () => {
     },
   })
   expect(h('button', testStyles.button)).toMatchSnapshot()
+})
+
+test('createStyles: throws InvalidPropertyNameError for unknown property', () => {
+  expect(() => {
+    createStyles({
+      button: { unknownProp: 'red' },
+    })
+  }).toThrow(InvalidPropertyNameError)
+})
+
+test('createStyles: throws InvalidPropertyValueError for invalid enum value', () => {
+  expect(() => {
+    createStyles({
+      button: { 'box-sizing': 'not-a-valid-value' },
+    })
+  }).toThrow(InvalidPropertyValueError)
+})
+
+test('createStyles: accepts valid literal values', () => {
+  expect(() => {
+    createStyles({
+      button: { color: 'red', 'box-sizing': 'border-box' },
+    })
+  }).not.toThrow()
+})
+
+test('createStyles: accepts --* custom properties', () => {
+  expect(() => {
+    createStyles({
+      button: { '--custom-prop': '42px' },
+    })
+  }).not.toThrow()
+})
+
+test('createStyles: validates $host nested values', () => {
+  expect(() => {
+    createStyles({
+      $host: { badProp: 'red' },
+    })
+  }).toThrow(InvalidPropertyNameError)
 })

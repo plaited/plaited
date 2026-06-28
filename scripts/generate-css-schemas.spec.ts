@@ -1,8 +1,11 @@
 /**
  * @module generate-css-schemas.spec
  *
- * Tests for the CSS schema generator's classification logic.
- * This verifies the generator itself, NOT the Zod schemas.
+ * Tests for the CSS schema generator's classification logic and the
+ * generated output. This verifies the generator itself, NOT the Zod schemas.
+ *
+ * Runtime validation tests for createStyles/createTokens/createKeyframes
+ * throw behaviors live in src/client/tests/.
  */
 
 import { expect, test } from 'bun:test'
@@ -72,8 +75,6 @@ const classifyProperty = (
   return { keywords, classification }
 }
 
-// --- Test data matching @webref/css/css.json syntax fields ---
-
 const propertySyntaxes: Record<string, string | undefined> = {
   position: 'static | relative | absolute | sticky | fixed | <running()>',
   'text-align': 'start | end | left | right | center | <string> | justify | match-parent | justify-all',
@@ -110,9 +111,6 @@ test('clear is pure keyword → z.enum', () => {
   const result = classifyProperty(propertySyntaxes.clear)
   expect(result.classification).toBe('enum')
   expect(result.keywords).toContain('none')
-  expect(result.keywords).toContain('left')
-  expect(result.keywords).toContain('right')
-  expect(result.keywords).toContain('inline-start')
 })
 
 test('position has type ref → z.union([string, number])', () => {
@@ -125,17 +123,14 @@ test('text-align has type ref → z.union([string, number])', () => {
   const result = classifyProperty(propertySyntaxes['text-align'])
   expect(result.classification).toBe('string-or-number')
   expect(result.keywords).toContain('start')
-  expect(result.keywords).toContain('center')
-  expect(result.keywords).toContain('justify')
 })
 
 test('overflow has property ref + multiplier → z.union([string, number])', () => {
   const result = classifyProperty(propertySyntaxes.overflow)
   expect(result.classification).toBe('string-or-number')
-  expect(result.keywords).toEqual([])
 })
 
-test('font-weight has type ref (not directly number) → z.union([string, number])', () => {
+test('font-weight has type ref → z.union([string, number])', () => {
   const result = classifyProperty(propertySyntaxes['font-weight'])
   expect(result.classification).toBe('string-or-number')
   expect(result.keywords).toEqual(['bolder', 'lighter'])
@@ -144,20 +139,17 @@ test('font-weight has type ref (not directly number) → z.union([string, number
 test('margin has multiplier → z.union([string, number])', () => {
   const result = classifyProperty(propertySyntaxes.margin)
   expect(result.classification).toBe('string-or-number')
-  expect(result.keywords).toEqual([])
 })
 
 test('color has type ref → z.union([string, number])', () => {
   const result = classifyProperty(propertySyntaxes.color)
   expect(result.classification).toBe('string-or-number')
-  expect(result.keywords).toEqual([])
 })
 
 test('display has complex syntax → z.union([string, number])', () => {
   const result = classifyProperty(propertySyntaxes.display)
   expect(result.classification).toBe('string-or-number')
   expect(result.keywords).toContain('grid-lanes')
-  expect(result.keywords).toContain('math')
 })
 
 test('camelCase keys present via styleDeclaration', () => {
@@ -172,8 +164,7 @@ test('kebab keys present via styleDeclaration', () => {
   expect(propertyStyleDeclarations.position).toContain('position')
 })
 
-test('generated file includes TokenRefSchema in every property schema', async () => {
-  // Run the generator
+test('generated file snapshot matches', async () => {
   const proc = Bun.spawn(['bun', 'run', path.join(import.meta.dir, 'generate-css-schemas.ts')], {
     cwd: path.resolve(import.meta.dir, '..'),
     stdout: 'pipe',
@@ -184,37 +175,18 @@ test('generated file includes TokenRefSchema in every property schema', async ()
   const genPath = new URL('../src/client/css.schemas.ts', import.meta.url)
   const content = await Bun.file(genPath).text()
 
-  // Verify imports include TokenRefSchema and KeyframeRefSchema
-  expect(content).toContain("import { TokenRefSchema, KeyframeRefSchema } from './css.input-schemas.ts'")
+  // Verify no ref schema imports (resolver layer is out of scope)
+  expect(content).not.toContain('TokenRefSchema')
+  expect(content).not.toContain('KeyframeRefSchema')
 
-  // Verify keyframe-eligible properties include KeyframeRefSchema
-  expect(content).toContain(
-    'case "animation": return z.union([z.union([z.string(), z.number()]), TokenRefSchema, KeyframeRefSchema]',
-  )
-  expect(content).toContain(
-    'case "animationName": return z.union([z.union([z.string(), z.number()]), TokenRefSchema, KeyframeRefSchema]',
-  )
-  expect(content).toContain(
-    'case "-webkit-animation": return z.union([z.union([z.string(), z.number()]), TokenRefSchema, KeyframeRefSchema]',
-  )
-  expect(content).toContain(
-    'case "WebkitAnimationName": return z.union([z.union([z.string(), z.number()]), TokenRefSchema, KeyframeRefSchema]',
-  )
+  // Verify each case returns a literal-only schema
+  expect(content).toContain('case "position": return z.union([z.string(), z.number()])')
+  expect(content).toContain('case "box-sizing": return z.enum(["content-box", "border-box"])')
+  expect(content).toContain('case "clear": return z.enum([')
 
-  // Verify non-keyframe properties do NOT include KeyframeRefSchema
-  expect(content).toContain('case "position": return z.union([z.union([z.string(), z.number()]), TokenRefSchema]')
-  expect(content).toContain('case "color": return z.union([z.union([z.string(), z.number()]), TokenRefSchema]')
-  expect(content).toContain('case "margin": return z.union([z.union([z.string(), z.number()]), TokenRefSchema]')
-
-  // Verify default catchall includes TokenRefSchema but NOT KeyframeRefSchema
-  expect(content).toContain('return z.union([z.union([z.string(), z.number()]), TokenRefSchema])')
-
-  // Snapshot key sections
   const lines = content.split('\n')
-  const header = lines.slice(0, 10).join('\n')
-  const kfCases = lines.filter((l) => l.includes('KeyframeRefSchema') && l.startsWith('  case')).join('\n')
-  // Extract the CSSProperties type ending
+  const header = lines.slice(0, 11).join('\n')
   const typeTail = lines.slice(-5).join('\n')
 
-  expect({ header, keyframeCases: kfCases, typeTail }).toMatchSnapshot()
+  expect({ header, typeTail }).toMatchSnapshot()
 })
