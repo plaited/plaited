@@ -9,8 +9,8 @@ export type { CSSProperties }
  * The `stylesheets` array holds the `:root{}` declarations that define the variable.
  *
  * @remarks
- * Compose token references into styles by passing them to `createStyles`,
- * `createHostStyles`, or `joinStyles`. The style deduplication in `createSSR`
+ * Compose token references into styles by passing them to `createStyles`
+ * or `joinStyles`. The style deduplication in `createSSR`
  * ensures each declaration is emitted only once per connection.
  *
  * @public
@@ -24,17 +24,18 @@ export type DesignTokenReference = {
  * Type for defining nested CSS rules within a specific CSS property.
  * Allows specifying different values for a property based on conditions like
  * container queries, layer rules, media queries, supports queries, pseudo-classes,
- * or attribute selectors.
+ * attribute selectors, or compound host selectors.
  *
  */
 export type NestedStatements = {
   /** The default value for the CSS property. */
   [CSS_RESERVED_KEYS.$default]?: CSSProperties[keyof CSSProperties] | DesignTokenReference
-  /** Rules applied based on container queries, layers, media queries, or supports queries. */
-  [key: `@${'container' | 'layer' | 'media' | 'supports' | 'view-transition'}${string}`]:
-    | CSSProperties[keyof CSSProperties]
-    | NestedStatements
-    | DesignTokenReference
+  /** Compound host selectors — only valid within a `$host` block. */
+  [CSS_RESERVED_KEYS.$compoundSelectors]?: {
+    [key: string]: CSSProperties[keyof CSSProperties] | NestedStatements | DesignTokenReference
+  }
+  /** Rules applied based on at-rules (container, layer, media, supports, view-transition, etc.). */
+  [key: `@${string}`]: CSSProperties[keyof CSSProperties] | NestedStatements | DesignTokenReference
   /** Rules applied based on pseudo-classes (e.g., :hover, :focus). Can be nested further. */
   [key: `:${string}`]: CSSProperties[keyof CSSProperties] | NestedStatements | DesignTokenReference
   /** Rules applied based on attribute selectors (e.g., [disabled], [data-state="active"]). Can be nested further. */
@@ -52,9 +53,14 @@ export type CSSRules = {
  * Defines a collection of CSS class definitions. Each key represents a class name,
  * and its value is an object containing CSS properties. Properties can have simple values,
  * nested rules defined by {@link NestedStatements}, or token references.
+ *
+ * Three reserved keys at the top level select special scoping:
+ * - `$host` → `:host{...}` rules (no hashed class names)
+ * - `$root` → `:root{...}` rules (no hashed class names)
+ * - `$top`  → top-level at-rules, unwrapped (no hashed class names)
  */
 export type CreateParams = {
-  [key: string]: CSSRules
+  [key: string]: CSSRules | CSSProperties[keyof CSSProperties] | DesignTokenReference
 }
 
 /**
@@ -69,21 +75,9 @@ export type ElementStylesObject = {
 }
 
 /**
- * Represents the output of `createHostStyles` for host element styling.
- * Contains only stylesheets because host styles do not produce class names.
- */
-export type HostStylesObject = {
-  /** A single class name or an array of class names. */
-  classNames?: never
-  /** Stylesheets generated for the host style definition. */
-  stylesheets: string[]
-}
-
-/**
  * Union type representing any style object output from css functions.
- * Can be either element styles (with classes) or host styles (without classes).
  */
-export type StylesObject = ElementStylesObject | HostStylesObject
+export type StylesObject = ElementStylesObject
 
 /**
  * Maps style definition keys to their generated ElementStylesObject.
@@ -93,30 +87,6 @@ export type StylesObject = ElementStylesObject | HostStylesObject
  */
 export type ClassNames<T extends CreateParams> = {
   [key in keyof T]: ElementStylesObject
-}
-
-/**
- * Defines the parameter structure for `createHostStyles`.
- * Extends CSS properties with support for nested statements, custom properties,
- * and compound selectors for conditional host styling.
- */
-export type CreateHostParams = {
-  [key in keyof CSSProperties]:
-    | CSSProperties[key]
-    | DesignTokenReference
-    | (NestedStatements & {
-        [CSS_RESERVED_KEYS.$compoundSelectors]?: {
-          [key: string]: CSSProperties[keyof CSSProperties] | NestedStatements | DesignTokenReference
-        }
-      })
-}
-
-/**
- * Defines the parameter structure for `createRootStyles`.
- * Extends CSS properties with support for nested statements and custom properties.
- */
-export type CreateRootParams = {
-  [key in keyof CSSProperties]: CSSProperties[key] | DesignTokenReference | NestedStatements
 }
 
 /**
@@ -143,7 +113,7 @@ export type CSSKeyFrames = {
  * for referencing the animation in CSS.
  */
 export type StyleFunctionKeyframe = {
-  (): HostStylesObject
+  (): ElementStylesObject
   id: string
 }
 

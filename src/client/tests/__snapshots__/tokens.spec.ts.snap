@@ -164,3 +164,16 @@ exports[`createTokens: used as CSS values in styles 3`] = `
   ],
 }
 `;
+
+exports[`createTokens: integration with $host 1`] = `
+{
+  "classNames": [],
+  "stylesheets": [
+    ":root{--colors-text:#333;}",
+    ":host{color:var(--colors-text);}",
+    ":root{--colors-background:#fff;}",
+    ":host{background-color:var(--colors-background);}",
+    ":host{padding:20px;}",
+  ],
+}
+`;

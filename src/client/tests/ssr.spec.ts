@@ -1,31 +1,35 @@
 import { expect, test } from 'bun:test'
-import { createHostStyles, createStyles, h, ssr } from 'plaited/client'
+import { createStyles, h, ssr } from 'plaited/client'
 
 test('ssr: Replaces :host{ with :root{ for SSR', () => {
-  const hostStyles = createHostStyles({
-    color: 'blue',
-    padding: '20px',
+  const hostStyles = createStyles({
+    $host: {
+      color: 'blue',
+      padding: '20px',
+    },
   })
 
-  const rendered = ssr([h('div', { ...hostStyles, children: 'Host styles test' })])
+  const rendered = ssr([h('div', { ...hostStyles.$host, children: 'Host styles test' })])
 
   expect(rendered).not.toContain(':host{')
   expect(rendered).toContain(':root{')
 })
 
 test('ssr: Replaces :host(<selector>) with :root<selector> for SSR', () => {
-  const hostStyles = createHostStyles({
-    color: {
-      $default: 'blue',
-      $compoundSelectors: {
-        '.dark': 'white',
-        '[disabled]': 'gray',
-        ':hover': 'lightblue',
+  const hostStyles = createStyles({
+    $host: {
+      color: {
+        $default: 'blue',
+        $compoundSelectors: {
+          '.dark': 'white',
+          '[disabled]': 'gray',
+          ':hover': 'lightblue',
+        },
       },
     },
   })
 
-  const rendered = ssr([h('div', { ...hostStyles, children: 'Host selector styles test' })])
+  const rendered = ssr([h('div', { ...hostStyles.$host, children: 'Host selector styles test' })])
 
   expect(rendered).not.toContain(':host(')
   expect(rendered).not.toContain(':host.')
