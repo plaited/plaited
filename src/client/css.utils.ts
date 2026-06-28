@@ -1,5 +1,5 @@
 import { isTypeOf, kebabCase } from '../utils.ts'
-import type { DesignTokenReference, ElementStylesObject, StylesObject } from './css.types.ts'
+import type { ElementStylesObject, StylesObject } from './css.types.ts'
 
 /**
  * Fast non-cryptographic string hashing using djb2 algorithm.
@@ -37,10 +37,6 @@ const caseProp = (prop: string) => (prop.startsWith('--') ? prop : kebabCase(pro
 
 /** @internal Formats a single CSS property-value pair as `prop:value;`. */
 export const getRule = (prop: string, value: string | number) => `${caseProp(prop)}:${value};`
-
-/** @internal Type guard: returns true if `ref` is a `DesignTokenReference` function. */
-export const isTokenReference = (ref: unknown): ref is DesignTokenReference =>
-  isTypeOf<DesignTokenReference>(ref, 'function')
 
 /**
  * Type guard to identify ElementStylesObject (styles with class names).

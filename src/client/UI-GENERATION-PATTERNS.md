@@ -140,17 +140,17 @@ The authoring format is a **flat list of components with stable IDs and
 > `h()` calls — the flat list is the *persisted* shape; the nested `TemplateObject`
 > is the *materialized* shape.
 
-### 3.2 The four catalogs
+### 3.2 The three catalogs
 
-Four peer catalogs, each persisted as JSONL (one entry per line, each entry
+Three peer catalogs, each persisted as JSONL (one entry per line, each entry
 > carrying a globally-unique `id` used as the ref path). Materialization order
-> is `tokens` → `keyframes` → `styles` → `components` (each resolves the prior
-> kind's refs).
+> is `keyframes` → `styles` → `components` (each resolves the prior kind's
+> refs). Design tokens are declared as `$root` or `$host` entries within
+> `styles.jsonl`, not in a separate catalog.
 
 ```txt
-tokens.jsonl      — design tokens (CSS custom properties)
 keyframes.jsonl   — @keyframes animations
-styles.jsonl      — style definitions (hashed classes / :host / :root / @top)
+styles.jsonl      — style definitions (hashed classes / :host / :root / $top)
 components.jsonl  — the flat component list (tag + attrs + style refs + children)
 ```
 
@@ -176,19 +176,6 @@ Paths are unique within a catalog kind; the kind discriminates across
 > data value with no stylesheets.
 
 ### 3.4 The catalog JSON shapes
-
-#### tokens.jsonl
-
-Faithful to `DesignToken` / `FunctionTokenValue`. The non-serializable
-> `DesignTokenReference` (a callable) becomes a **materialized in-memory form**;
-> its serializable persistence form is `{$tokenRef}`.
-
-```jsonc
-{ "id": "color.primary", "$value": "#007bff" }
-{ "id": "color.brand",  "$value": { "$function": "rgb", "$arguments": [0, 123, 255] } }
-{ "id": "color.accent", "$value": { "$tokenRef": "color.primary" } }          // alias
-{ "id": "font.stack",   "$value": [{ "$tokenRef": "font.base" }, "sans-serif"], "$csv": true }
-```
 
 #### keyframes.jsonl
 
@@ -271,7 +258,7 @@ DB layer (src/server/, in flux — likely DuckDB over the JSONL files)
     │  query tokens/keyframes/styles/components by id/path
     ▼
 ref resolver  →  materializes $tokenRef/$keyframeRef/$styleRef
-    │  (createTokens / createKeyframes / createStyles — unchanged utils)
+    │  (createKeyframes / createStyles)
     ▼
 Proxy/Reflect assembler  →  walks the flat component list, recurses children,
     │  resolves style/text/attrs refs, calls h()/fragment()/$for/$val/$slot
@@ -285,14 +272,24 @@ HTMLRewriter pass  →  inject stable p-target ids, translate action→p-trigger
 render / attrs message  →  WebSocket  →  Controller (setHTMLUnsafe)
 ```
 
-`createTokens` / `createKeyframes` / `createStyles` / `h` / `fragment` /
+`createKeyframes` / `createStyles` / `h` / `fragment` /
 > `$for` / `$val` / `$switch` / `$slot` / `joinStyles` keep their in-memory
 > output shapes. The refactor adds a **path-ref resolution layer above them**
-> that turns the kinded `$ref` JSON into the callables/objects these utils
-> already consume. The DB layer (how JSONL is queried) is a separate `src/server/`
+> that turns the kinded `$ref` JSON into the values these utils already
+> consume. The DB layer (how JSONL is queried) is a separate `src/server/`
 > concern independent of these shapes.
 
-### 3.6 Relationship to A2UI / server-as-agent
+### 3.6 Design-system constraints (future)
+
+> A separate `DESIGN.md`-style intent spec will be loaded by the resolver as
+> design-system constraints (distinct from the execution utils). This enables
+> hybrid intent-based genUI: the agent communicates design intent through a
+> structured constraint document, and the resolver enforces those constraints
+> during materialization. Not built here — this note captures the direction so
+> the deletion of `createTokens` reads as "remove the standalone token util in
+> favor of `createStyles` + future constraints layer," not "remove tokens."
+
+### 3.7 Relationship to A2UI / server-as-agent
 
 These shapes are the **shared internal vocabulary** for the server-side agent's
 > own UI decisions. Separately, the Plaited server can also be an **A2A agent**
@@ -774,17 +771,15 @@ Inside templates, map semantic choices to actual styles:
 
 ```ts
 import { createStyles, joinStyles } from './styles.ts'
-import { createTokens } from './tokens.ts'
 
-const tokens = createTokens('app', {
-  color: {
-    dangerBg: { $value: '#fef2f2' },
-    dangerBorder: { $value: '#fca5a5' },
-    successBg: { $value: '#f0fdf4' },
-    // ...
+// Declare design tokens inline via $root — no separate token utility
+const rootDeclarations = createStyles({
+  $root: {
+    '--app-color-danger-bg': '#fef2f2',
+    '--app-color-danger-border': '#fca5a5',
+    '--app-color-success-bg': '#f0fdf4',
   },
 })
-const { color } = tokens
 
 const styles = createStyles({
   card: {
@@ -793,12 +788,12 @@ const styles = createStyles({
     padding: '16px',
   },
   dangerCard: {
-    backgroundColor: color.dangerBg,
-    borderColor: color.dangerBorder,
+    backgroundColor: 'var(--app-color-danger-bg)',
+    borderColor: 'var(--app-color-danger-border)',
   },
   successCard: {
-    backgroundColor: color.successBg,
-    borderColor: color.successBorder,
+    backgroundColor: 'var(--app-color-success-bg)',
+    borderColor: 'var(--app-color-success-border)',
   },
 })
 

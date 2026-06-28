@@ -1,13 +1,12 @@
 import { InvalidKeyframeRefPositionError, MissingRegistryError, UnresolvedTokenRefError } from './css.errors.ts'
 import { cssPropertyValueSchema } from './css.schemas.ts'
 import type { CSSKeyFrames, CssRegistry, StyleFunctionKeyframe } from './css.types.ts'
-import { createHash, getRule, isTokenReference } from './css.utils.ts'
+import { createHash, getRule } from './css.utils.ts'
 
 /** @internal Heuristic: is `val` a {$tokenRef} or {$keyframeRef} object? */
 const isRefObj = (val: unknown): val is { $tokenRef: string } | { $keyframeRef: string } =>
   typeof val === 'object' &&
   val !== null &&
-  !isTokenReference(val) &&
   ('$tokenRef' in (val as Record<string, unknown>) || '$keyframeRef' in (val as Record<string, unknown>))
 
 /**
@@ -24,7 +23,7 @@ export const createKeyframes = <I extends string, T extends CSSKeyFrames>(
   registry?: CssRegistry,
 ): Record<I, StyleFunctionKeyframe> => {
   const validateValue = (prop: string, val: unknown) => {
-    if (!isTokenReference(val) && !isRefObj(val)) {
+    if (!isRefObj(val)) {
       const schema = cssPropertyValueSchema(prop)
       const result = schema.safeParse(val)
       if (!result.success) {
@@ -50,9 +49,6 @@ export const createKeyframes = <I extends string, T extends CSSKeyFrames>(
       if (isRefObj(val)) {
         const resolved = resolveRef(val)
         step.push(getRule(prop, resolved))
-      } else if (isTokenReference(val)) {
-        stylesheets.push(...val.stylesheets)
-        step.push(getRule(prop, val()))
       } else {
         step.push(getRule(prop, val as string | number))
       }

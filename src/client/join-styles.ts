@@ -1,5 +1,4 @@
-import type { DesignTokenReference, StylesObject } from './css.types.ts'
-import { isTokenReference } from './css.utils.ts'
+import type { StylesObject } from './css.types.ts'
 
 /**
  * Combines multiple style objects or design token references into a single unified style object.
@@ -18,19 +17,13 @@ import { isTokenReference } from './css.utils.ts'
  *
  * @see {@link StylesObject} for the return type structure
  * @see {@link createStyles} for creating style objects
- * @see {@link createTokens} for creating design token references
+ * @see {@link createStyles} for creating custom-property declarations via `$root`/`$host`
  */
-export const joinStyles = <T extends (StylesObject | DesignTokenReference | undefined | false)[]>(
-  ...styleObjects: T
-) => {
+export const joinStyles = <T extends (StylesObject | undefined | false)[]>(...styleObjects: T) => {
   const cls: string[] = []
   const style: string[] = []
   for (const styleObject of styleObjects) {
     if (!styleObject) continue
-    if (isTokenReference(styleObject)) {
-      style.push(...styleObject.stylesheets)
-      continue
-    }
     const { classNames, stylesheets } = styleObject
     classNames && cls.push(...classNames)
     style.push(...(Array.isArray(stylesheets) ? stylesheets : [stylesheets]))

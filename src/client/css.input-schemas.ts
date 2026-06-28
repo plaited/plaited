@@ -86,62 +86,6 @@ export type CatalogCSSRules = z.output<typeof CatalogCSSRulesSchema>
 export const CatalogCreateParamsSchema = z.record(z.string(), CatalogCSSRulesSchema)
 export type CatalogCreateParams = z.output<typeof CatalogCreateParamsSchema>
 
-// --- Design tokens (catalog JSON shape) ---
-
-/**
- * Function arguments — literals or $tokenRef.
- */
-const CatalogFunctionTokenArgumentsSchema = z.union([PrimitiveValueSchema, TokenRefSchema])
-
-/**
- * Function token value — e.g., `calc()`, `rgb()`, `clamp()`.
- */
-export const CatalogFunctionTokenValueSchema = z.union([
-  z.object({
-    $function: z.string(),
-    $arguments: CatalogFunctionTokenArgumentsSchema,
-  }),
-  z.object({
-    $function: z.string(),
-    $arguments: z.array(CatalogFunctionTokenArgumentsSchema),
-    $csv: z.boolean(),
-  }),
-])
-export type CatalogFunctionTokenValue = z.output<typeof CatalogFunctionTokenValueSchema>
-
-/**
- * Design token value — primitive, function-based, or $tokenRef.
- */
-export const CatalogDesignTokenValueSchema = z.union([
-  PrimitiveValueSchema,
-  CatalogFunctionTokenValueSchema,
-  TokenRefSchema,
-])
-export type CatalogDesignTokenValue = z.output<typeof CatalogDesignTokenValueSchema>
-
-/**
- * Design token — single value or CSV array.
- */
-export const CatalogDesignTokenSchema = z.union([
-  z.object({
-    $value: CatalogDesignTokenValueSchema,
-  }),
-  z.object({
-    $value: z.array(CatalogDesignTokenValueSchema),
-    $csv: z.boolean(),
-  }),
-])
-export type CatalogDesignToken = z.output<typeof CatalogDesignTokenSchema>
-
-export const CatalogDesignTokenScaleSchema = z.record(z.string(), CatalogDesignTokenSchema)
-export type CatalogDesignTokenScale = z.output<typeof CatalogDesignTokenScaleSchema>
-
-export const CatalogDesignTokenGroupSchema = z.record(
-  z.string(),
-  z.union([CatalogDesignTokenSchema, CatalogDesignTokenScaleSchema]),
-)
-export type CatalogDesignTokenGroup = z.output<typeof CatalogDesignTokenGroupSchema>
-
 // --- Keyframes (catalog JSON shape) ---
 
 export const CatalogCSSKeyFramesSchema = z.lazy(() =>

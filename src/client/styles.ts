@@ -9,15 +9,8 @@ import {
   UnresolvedTokenRefError,
 } from './css.errors.ts'
 import { cssPropertyNameSchema, cssPropertyValueSchema } from './css.schemas.ts'
-import type {
-  ClassNames,
-  CreateParams,
-  CssRegistry,
-  DesignTokenReference,
-  ElementStylesObject,
-  NestedStatements,
-} from './css.types.ts'
-import { createHash, getRule, isTokenReference } from './css.utils.ts'
+import type { ClassNames, CreateParams, CssRegistry, ElementStylesObject, NestedStatements } from './css.types.ts'
+import { createHash, getRule } from './css.utils.ts'
 
 /**
  * @internal
@@ -50,7 +43,6 @@ const assertPropertyValue = (prop: string, value: unknown) => {
  */
 const isRefObject = (val: unknown): val is Record<string, string> =>
   isTypeOf<Record<string, string>>(val, 'object') &&
-  !isTokenReference(val) &&
   (Object.hasOwn(val, '$tokenRef') || Object.hasOwn(val, '$keyframeRef'))
 
 /**
@@ -132,10 +124,8 @@ const formatClassStatement = ({
       }
     }
   } else {
-    if (!isTokenReference(value)) assertPropertyValue(prop, value)
-    const isToken = isTokenReference(value)
-    isToken && tokenStyles.push(...(value as DesignTokenReference).stylesheets)
-    const rule = getRule(prop, isToken ? (value as DesignTokenReference)() : (value as string | number))
+    assertPropertyValue(prop, value)
+    const rule = getRule(prop, value as string | number)
     const arr = selectors.map((str) => (str.startsWith('@') ? `${str}{` : `&${str}{`))
     styles.push(`{${arr.join('')}${rule}${'}'.repeat(arr.length)}}`)
   }
@@ -173,19 +163,15 @@ const formatHostRules = (props: Record<string, unknown>, registry?: CssRegistry)
         formatHostProp({ prop, value: val, selectors: [...selectors, key], host })
       }
     } else {
-      if (!isTokenReference(value)) assertPropertyValue(prop, value)
-      const isToken = isTokenReference(value)
-      isToken && styles.push(...value.stylesheets)
+      assertPropertyValue(prop, value)
       const arr = selectors.map((str) => `${str}{`)
-      styles.push(
-        `${host}{${arr.join('')}${getRule(prop, isToken ? (value as DesignTokenReference)() : (value as string | number))}${'}'.repeat(arr.length)}}`,
-      )
+      styles.push(`${host}{${arr.join('')}${getRule(prop, value as string | number)}${'}'.repeat(arr.length)}}`)
     }
   }
 
   for (const [prop, value] of Object.entries(props)) {
     assertPropertyName(prop)
-    if (isPrimitive(value) || isTokenReference(value) || isRefObject(value)) {
+    if (isPrimitive(value) || isRefObject(value)) {
       formatHostProp({ prop, value })
       continue
     }
@@ -224,19 +210,15 @@ const formatRootRules = (props: Record<string, unknown>, registry?: CssRegistry)
         walkRoot(prop, val, [...selectors, key])
       }
     } else {
-      if (!isTokenReference(value)) assertPropertyValue(prop, value)
-      const isToken = isTokenReference(value)
-      isToken && styles.push(...value.stylesheets)
+      assertPropertyValue(prop, value)
       const arr = selectors.map((s) => `${s}{`)
-      styles.push(
-        `:root{${arr.join('')}${getRule(prop, isToken ? (value as DesignTokenReference)() : (value as string | number))}${'}'.repeat(arr.length)}}`,
-      )
+      styles.push(`:root{${arr.join('')}${getRule(prop, value as string | number)}${'}'.repeat(arr.length)}}`)
     }
   }
 
   for (const [prop, value] of Object.entries(props)) {
     assertPropertyName(prop)
-    if (isPrimitive(value) || isTokenReference(value) || isRefObject(value)) {
+    if (isPrimitive(value) || isRefObject(value)) {
       walkRoot(prop, value, [])
     } else if (isTypeOf<Record<string, unknown>>(value, 'object')) {
       walkRoot(prop, value, [])
@@ -261,10 +243,8 @@ const formatTopRules = (props: Record<string, unknown>, registry?: CssRegistry):
           styles.push(...refStyles)
           assertPropertyValue(prop, resolved)
           body.push(getRule(prop, resolved))
-        } else if (isPrimitive(val) || isTokenReference(val)) {
-          const isToken = isTokenReference(val)
-          isToken && styles.push(...val.stylesheets)
-          body.push(getRule(prop, isToken ? val() : val))
+        } else if (isPrimitive(val)) {
+          body.push(getRule(prop, val))
         }
       }
       if (body.length) styles.push(`${atRule}{${body.join('')}}`)
@@ -292,7 +272,7 @@ export const createStyles = <T extends CreateParams>(classNames: T, registry?: C
     (acc, [cls, props]) => {
       if (cls === CSS_RESERVED_KEYS.$host) {
         const hostProps = props as Record<string, unknown>
-        if (isTypeOf<Record<string, unknown>>(hostProps, 'object') && !isTokenReference(hostProps)) {
+        if (isTypeOf<Record<string, unknown>>(hostProps, 'object')) {
           const stylesheets = formatHostRules(hostProps, registry)
           acc[CSS_RESERVED_KEYS.$host as keyof T] = { classNames: [], stylesheets } as ElementStylesObject
           return acc
@@ -301,7 +281,7 @@ export const createStyles = <T extends CreateParams>(classNames: T, registry?: C
 
       if (cls === CSS_RESERVED_KEYS.$root) {
         const rootProps = props as Record<string, unknown>
-        if (isTypeOf<Record<string, unknown>>(rootProps, 'object') && !isTokenReference(rootProps)) {
+        if (isTypeOf<Record<string, unknown>>(rootProps, 'object')) {
           const stylesheets = formatRootRules(rootProps, registry)
           acc[CSS_RESERVED_KEYS.$root as keyof T] = { classNames: [], stylesheets } as ElementStylesObject
           return acc
@@ -310,7 +290,7 @@ export const createStyles = <T extends CreateParams>(classNames: T, registry?: C
 
       if (cls === CSS_RESERVED_KEYS.$top) {
         const topProps = props as Record<string, unknown>
-        if (isTypeOf<Record<string, unknown>>(topProps, 'object') && !isTokenReference(topProps)) {
+        if (isTypeOf<Record<string, unknown>>(topProps, 'object')) {
           const stylesheets = formatTopRules(topProps, registry)
           acc[CSS_RESERVED_KEYS.$top as keyof T] = { classNames: [], stylesheets } as ElementStylesObject
           return acc
