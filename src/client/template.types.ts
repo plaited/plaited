@@ -1341,3 +1341,20 @@ export type Attrs<T extends DetailedHTMLAttributes = DetailedHTMLAttributes> = D
  * Custom element names must contain at least one hyphen (`-`).
  */
 export type CustomElementTag = `${string}-${string}`
+
+// ── Re-exports from template.schemas.ts ───────────────────────────────
+// These schemas provide runtime-validatable equivalents of the attribute
+// types above for agent-generated component catalog validation.
+//
+// Types prefixed with Schema are directly derived from Zod schemas
+// (z.output<typeof XSchema>) and are the source of truth for validated
+// JSON shapes. The hand-written types above are kept for runtime
+// template-factory compatibility (InferAttrs<T> resolution).
+export type {
+  AriaAttributes,
+  AriaRole,
+  CustomElementTag as SchemaCustomElementTag,
+  DetailedSvgAttributes as SchemaDetailedSvgAttributes,
+  ElementAttributeList as SchemaElementAttributeList,
+  PlaitedAttributes as SchemaPlaitedAttributes,
+} from './template.schemas.ts'
