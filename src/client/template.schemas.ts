@@ -89,6 +89,15 @@ const inputTypeSchema = z.enum([
  */
 const cssPropertiesSchema: z.ZodType<CSSProperties> = z.record(z.string(), z.union([z.string(), z.number()]))
 
+/**
+ * Minimal schema for a resolved StylesObject — classNames + stylesheets.
+ * @internal
+ */
+const stylesObjectSchema = z.object({
+  classNames: z.array(z.string()),
+  stylesheets: z.array(z.string()),
+})
+
 // ── ARIA ───────────────────────────────────────────────────────────────────
 
 /**
@@ -281,6 +290,7 @@ export const PlaitedAttributesSchema = z.object({
   stylesheets: z.array(z.string()).optional(),
   classNames: z.array(z.string()).optional(),
   style: cssPropertiesSchema.optional(),
+  styles: z.array(stylesObjectSchema).optional(),
 })
 
 /** @public */

@@ -146,8 +146,7 @@ type PlaitedAttrs = {
  * Core template factory with security-first design and style management.
  *
  * @param _tag - HTML/SVG tag name, custom element tag, or FunctionTemplate
- * @param attrs - Element attributes including children
- * @param registry - Optional registry for resolving `$styleRef` / `$bind` refs
+ * @param attrs - Element attributes including children and resolved styles
  * @returns TemplateObject with HTML, stylesheets, and identifier
  *
  * @throws {ScriptPolicyError} When `<script>` does not use a site-root JavaScript `src`
@@ -155,9 +154,6 @@ type PlaitedAttrs = {
  * @throws {InvalidAttributeTypeError} When non-primitive attribute values provided
  * @throws {InvalidCustomElementTagError} When a hyphenated tag is not a valid custom element tag
  * @throws {InvalidAttributeError} When attribute values fail per-tag schema validation
- * @throws {MissingRegistryError} When a $styleRef/$bind is encountered without a registry
- * @throws {UnresolvedStyleRefError} When a $styleRef cannot be found in the registry
- * @throws {UnresolvedBindError} When a $bind path cannot be resolved
  *
  * @remarks
  * Security features:
