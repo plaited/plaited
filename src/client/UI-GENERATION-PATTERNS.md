@@ -770,7 +770,7 @@ Good (semantic selection):
 Inside templates, map semantic choices to actual styles:
 
 ```ts
-import { createStyles, joinStyles } from './styles.ts'
+import { createStyles } from './styles.ts'
 
 // Declare design tokens inline via $root — no separate token utility
 const rootDeclarations = createStyles({
@@ -811,7 +811,7 @@ export const CardTemplate = defineTemplate({
     }[attrs.tone ?? 'neutral']
 
     return h('div', {
-      ...joinStyles(styles.card, toneStyle),
+      styles: [styles.card, toneStyle],
       children: attrs.children,
     })
   },
