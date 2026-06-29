@@ -18,7 +18,7 @@
  */
 
 import { htmlEscape, isTypeOf, kebabCase, trueTypeOf } from '../utils.ts'
-import type { CSSProperties } from './css.types.ts'
+import type { CSSProperties, StylesObject } from './css.types.ts'
 import {
   BOOLEAN_ATTRS,
   CUSTOM_ELEMENT_TAG_PATTERN,
@@ -34,9 +34,8 @@ import {
   VALID_PRIMITIVE_CHILDREN,
   VOID_TAGS,
 } from './template.constants.ts'
-import type { Bind, StyleRef } from './template.schemas.ts'
 import { DetailedHtmlAttributesSchema, ElementAttributeListSchema } from './template.schemas.ts'
-import type { Children, CustomElementTag, HtmlRegistry, TemplateObject } from './template.types.ts'
+import type { Children, CustomElementTag, TemplateObject } from './template.types.ts'
 
 /**
  * @internal
@@ -83,46 +82,6 @@ class InvalidAttributeError extends Error implements Error {
   override name = 'invalid_attribute'
 }
 
-/**
- * @internal
- * Error thrown when a `$styleRef` / `$bind` is encountered without a registry.
- */
-class MissingRegistryError extends Error implements Error {
-  override name = 'missing_registry'
-}
-
-/**
- * @internal
- * Error thrown when a `$styleRef` cannot be found in the registry.
- */
-class UnresolvedStyleRefError extends Error implements Error {
-  override name = 'unresolved_style_ref'
-}
-
-/**
- * @internal
- * Error thrown when a `$bind` path cannot be resolved from registry.data.
- */
-class UnresolvedBindError extends Error implements Error {
-  override name = 'unresolved_bind'
-}
-
-/**
- * @internal
- * Error thrown when a `$bind` appears in an invalid position.
- */
-class InvalidBindPositionError extends Error implements Error {
-  override name = 'invalid_bind_position'
-}
-
-/**
- * @internal
- * Error thrown when a `$styleRef` appears outside the `style[]` array.
- */
-class InvalidStyleRefPositionError extends Error implements Error {
-  override name = 'invalid_style_ref_position'
-}
-
 export type CreateFragment = (children: Children) => TemplateObject
 
 export const fragment: CreateFragment = (_children) => {
@@ -159,7 +118,7 @@ const isCustomElementTag = (tag: string): tag is CustomElementTag => {
 }
 
 /** @internal Type signature for `h`. */
-export type CreateTemplate = (tag: string, attrs?: Record<string, unknown>, registry?: HtmlRegistry) => TemplateObject
+export type CreateTemplate = (tag: string, attrs?: Record<string, unknown>) => TemplateObject
 
 /**
  * @internal
@@ -167,9 +126,10 @@ export type CreateTemplate = (tag: string, attrs?: Record<string, unknown>, regi
  * properties handled by `h()` before attribute serialization.
  */
 type PlaitedAttrs = {
-  children?: Children | Bind
+  children?: Children
   stylesheets?: string[]
-  style?: CSSProperties | StyleRef[]
+  style?: CSSProperties
+  styles?: StylesObject[]
   [P_TRIGGER]?: Record<string, string>
   [P_SCALE]?: keyof typeof SCALE
   [P_FORM]?: string
@@ -182,26 +142,11 @@ type PlaitedAttrs = {
 
 /**
  * @internal
- * Resolve a dotted path from a data context (e.g. 'customer.id' → data.customer.id).
- * Returns `undefined` if the path does not exist.
- */
-const resolveDataPath = (data: Record<string, unknown>, path: string): unknown => {
-  let current: unknown = data
-  for (const segment of path.split('.')) {
-    if (current == null || typeof current !== 'object') return undefined
-    current = (current as Record<string, unknown>)[segment]
-  }
-  return current
-}
-
-/**
- * @internal
  * Creates Plaited template objects from JSX-like calls.
  * Core template factory with security-first design and style management.
  *
  * @param _tag - HTML/SVG tag name, custom element tag, or FunctionTemplate
- * @param attrs - Element attributes including children
- * @param registry - Optional registry for resolving `$styleRef` / `$bind` refs
+ * @param attrs - Element attributes including children and resolved styles
  * @returns TemplateObject with HTML, stylesheets, and identifier
  *
  * @throws {ScriptPolicyError} When `<script>` does not use a site-root JavaScript `src`
@@ -209,9 +154,6 @@ const resolveDataPath = (data: Record<string, unknown>, path: string): unknown =
  * @throws {InvalidAttributeTypeError} When non-primitive attribute values provided
  * @throws {InvalidCustomElementTagError} When a hyphenated tag is not a valid custom element tag
  * @throws {InvalidAttributeError} When attribute values fail per-tag schema validation
- * @throws {MissingRegistryError} When a $styleRef/$bind is encountered without a registry
- * @throws {UnresolvedStyleRefError} When a $styleRef cannot be found in the registry
- * @throws {UnresolvedBindError} When a $bind path cannot be resolved
  *
  * @remarks
  * Security features:
@@ -222,12 +164,13 @@ const resolveDataPath = (data: Record<string, unknown>, path: string): unknown =
  * @see {@link h} for JSX factory alias
  * @see {@link fragment} for grouping elements
  */
-export const h: CreateTemplate = (_tag, attrs = {}, registry?) => {
+export const h: CreateTemplate = (_tag, attrs = {}) => {
   const safeAttrs = attrs as PlaitedAttrs
   const {
     children: _children,
     stylesheets: _stylesheets,
-    style,
+    style: resolvedStyle,
+    styles,
     [P_TRIGGER]: pTrigger,
     [P_SCALE]: pScale = 'rel',
     [P_FORM]: pForm,
@@ -240,72 +183,21 @@ export const h: CreateTemplate = (_tag, attrs = {}, registry?) => {
   let stylesheets = _stylesheets ?? []
   const resolvedClassNames = new Set(classNames)
 
-  // ── Resolve $styleRef (style[] array of StyleRef) ─────────────────
-  let resolvedStyle: CSSProperties | undefined
-  if (Array.isArray(style)) {
-    // style is an array → treat as StyleRef[]
-    // First, validate no $bind refs in style[] (position check independent of registry)
-    for (const ref of style) {
-      if (ref && typeof ref === 'object') {
-        const refObj = ref as Record<string, unknown>
-        if ('$bind' in refObj) {
-          throw new InvalidBindPositionError('`$bind` is not legal in the `style[]` array')
-        }
-      }
+  // ── Accumulate resolved StylesObject[] ─────────────────────────
+  if (styles) {
+    for (const styleObj of styles) {
+      if (!styleObj) continue
+      for (const cn of styleObj.classNames) resolvedClassNames.add(cn)
+      stylesheets.push(...styleObj.stylesheets)
     }
-    if (!registry) throw new MissingRegistryError('$styleRef encountered without a registry')
-    if (!registry.styles) throw new MissingRegistryError('$styleRef encountered without registry.styles')
-    for (const ref of style) {
-      if (!ref || typeof ref !== 'object') {
-        throw new InvalidAttributeTypeError('Expected $styleRef object in style array')
-      }
-      const refObj = ref as Record<string, unknown>
-      if (!('$styleRef' in refObj)) {
-        throw new InvalidAttributeTypeError('Expected $styleRef object in style array')
-      }
-      const styleRef = ref as StyleRef
-      const resolved = registry.styles.get(styleRef.$styleRef)
-      if (!resolved) throw new UnresolvedStyleRefError(`Unresolved style ref: ${styleRef.$styleRef}`)
-      for (const cn of resolved.classNames) resolvedClassNames.add(cn)
-      stylesheets.push(...resolved.stylesheets)
-    }
-  } else if (style) {
-    resolvedStyle = style as CSSProperties
-  }
-
-  // ── Resolve $bind in attrs values ────────────────────────────────
-  const resolveAttr = (val: unknown, attrKey: string): unknown => {
-    if (val && typeof val === 'object') {
-      const obj = val as Record<string, unknown>
-      // $styleRef is only legal in the style[] array
-      if ('$styleRef' in obj) {
-        throw new InvalidStyleRefPositionError(
-          `\`$styleRef\` is only legal in the \`style[]\` array, found as \`${attrKey}\``,
-        )
-      }
-      if ('$bind' in obj) {
-        if (!registry?.data) throw new MissingRegistryError('$bind encountered without a registry')
-        const bindVal = val as Bind
-        const resolved = resolveDataPath(registry.data, bindVal.$bind)
-        if (resolved === undefined) {
-          throw new UnresolvedBindError(`Unresolved bind path: ${bindVal.$bind}`)
-        }
-        return resolved
-      }
-    }
-    return val
   }
 
   const normalizedAttributes: Record<string, unknown> = {}
   for (const [key, value] of Object.entries(attributes)) {
-    normalizedAttributes[key.toLowerCase()] = resolveAttr(value, key)
+    normalizedAttributes[key.toLowerCase()] = value
   }
 
-  // ── Resolve $bind in children/text ────────────────────────────────
-  let resolvedChildren = _children
-  if (_children && typeof _children === 'object' && '$bind' in (_children as Record<string, unknown>)) {
-    resolvedChildren = resolveAttr(_children, 'children') as Children | undefined
-  }
+  const resolvedChildren = _children
 
   const tag = htmlEscape(_tag.trim().toLowerCase())
   if (tag.includes('-') && !isCustomElementTag(tag)) {

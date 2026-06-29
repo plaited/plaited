@@ -6,11 +6,11 @@
  *
  * @remarks
  * Retargeted from scripts/generate-css-schemas.ts to
- * src/client/css-schema-generator.ts after the pure-function extraction.
+ * src/cli/css-schemas.ts after the pure-function extraction and inlining.
  */
 
 import { expect, test } from 'bun:test'
-import { generateCssSchemas, type PropertyEntry } from '../src/client/css-schema-generator.ts'
+import { generateCssSchemas, type PropertyEntry } from '../src/cli/css-schemas.ts'
 
 const entryFor = (name: string, syntax: string): PropertyEntry => ({
   name,
