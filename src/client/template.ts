@@ -17,7 +17,7 @@
  * @see {@link createStyles} for style creation
  */
 
-import { htmlEscape, isTypeOf, kebabCase, trueTypeOf } from '../utils.ts'
+import { htmlEscape, isTypeOf, trueTypeOf } from '../utils.ts'
 import {
   BOOLEAN_ATTRS,
   CHILDREN,
@@ -215,7 +215,7 @@ export const h = (
   if (style) {
     const value = Object.entries(style)
       // Convert camelCase style props into dash-case unless they are CSS variables.
-      .map<string>(([prop, val]) => `${prop.startsWith('--') ? prop : kebabCase(prop)}:${val};`)
+      .map<string>(([prop, val]) => `${prop}:${val};`)
       .join(' ')
     start.push(`style="${htmlEscape(value)}" `)
   }

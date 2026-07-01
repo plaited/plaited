@@ -2,7 +2,7 @@
  * @module generate-css-schemas.spec
  *
  * Tests for the CSS schema generator: classification logic, generated output
- * snapshot, and per-property $ref inclusion in the switch cases.
+ * snapshot, and per-property schema in the object format.
  *
  * @remarks
  * Retargeted from scripts/generate-css-schemas.ts to
@@ -18,6 +18,9 @@ const entryFor = (name: string, syntax: string): PropertyEntry => ({
   styleDeclaration: [name],
 })
 
+// 6 hardcoded vendor entries are always added to the output
+export const HARDCODED_ENTRY_COUNT = 6
+
 test('box-sizing is pure keyword classification', () => {
   const result = generateCssSchemas({
     properties: [entryFor('box-sizing', 'content-box | border-box')],
@@ -29,7 +32,7 @@ test('position has classification string-or-number', () => {
   const result = generateCssSchemas({
     properties: [entryFor('position', 'static | relative | absolute | sticky | fixed | <running()>')],
   })
-  expect(result.propertyCount).toBe(1)
+  expect(result.propertyCount).toBe(1 + HARDCODED_ENTRY_COUNT)
   expect(result.keywordEnumCount).toBe(0)
 })
 
@@ -66,7 +69,7 @@ test('display has classification string-or-number', () => {
   expect(result.keywordEnumCount).toBe(0)
 })
 
-test('camelCase and kebab keys generated from styleDeclaration', () => {
+test('only kebab-case keys from styleDeclaration, camelCase dropped', () => {
   const result = generateCssSchemas({
     properties: [
       {
@@ -77,27 +80,48 @@ test('camelCase and kebab keys generated from styleDeclaration', () => {
     ],
   })
   expect(result.code).toContain('"box-sizing"')
-  expect(result.code).toContain('"boxSizing"')
+  expect(result.code).not.toContain('"boxSizing"')
 })
 
-test('generated output includes TokenRefSchema everywhere and KeyframeRefSchema for animation names', async () => {
+test('hardcoded vendor entries appear in output', () => {
+  const result = generateCssSchemas({ properties: [] })
+  expect(result.code).toContain('"-webkit-user-select"')
+  expect(result.code).toContain('"-webkit-appearance"')
+  expect(result.code).toContain('"-webkit-backdrop-filter"')
+  expect(result.code).toContain('"-webkit-box-orient"')
+  expect(result.code).toContain('"-webkit-hyphens"')
+  expect(result.code).toContain('"-webkit-line-clamp"')
+  expect(result.propertyCount).toBe(HARDCODED_ENTRY_COUNT)
+})
+
+test('generated output uses z.object with catchall, no ref schemas', async () => {
   const cssDataPath = new URL('../node_modules/@webref/css/css.json', import.meta.url)
   const cssFile = Bun.file(cssDataPath)
   const cssJson = await cssFile.json()
 
   const result = generateCssSchemas(cssJson)
 
-  expect(result.code).toContain("import { TokenRefSchema, KeyframeRefSchema } from './css.input-schemas.ts'")
+  // No TokenRefSchema or KeyframeRefSchema imports
+  expect(result.code).not.toContain('TokenRefSchema')
+  expect(result.code).not.toContain('KeyframeRefSchema')
 
-  expect(result.code).toContain('case "position": return z.union([z.union([z.string(), z.number()]), TokenRefSchema])')
-  expect(result.code).toContain('case "color": return z.union([z.union([z.string(), z.number()]), TokenRefSchema])')
+  // Uses z.object with catchall
+  expect(result.code).toContain('export const cssPropertySchema = z.object({')
+  expect(result.code).toContain('.catchall(z.union([z.string(), z.number()]))')
 
-  expect(result.code).toContain('TokenRefSchema, KeyframeRefSchema')
+  // Has specific value schemas in object format
+  expect(result.code).toContain('"position": z.union([z.string(), z.number()])')
+  expect(result.code).toContain('"color": z.union([z.string(), z.number()])')
 
-  expect(result.code).toContain('return z.union([z.union([z.string(), z.number()]), TokenRefSchema])')
+  // No switch function
+  expect(result.code).not.toContain('switch (prop)')
+
+  // Types exported
+  expect(result.code).toContain('export const cssPropertyNameSchema = cssPropertySchema.keyof()')
+  expect(result.code).toContain('export type CSSProperties = z.output<typeof cssPropertySchema>')
 
   const lines = result.code.split('\n')
-  const header = lines.slice(0, 12).join('\n')
+  const header = lines.slice(0, 10).join('\n')
   const typeTail = lines.slice(-5).join('\n')
   expect({ header, typeTail }).toMatchSnapshot()
 })

@@ -1,5 +1,4 @@
 import { expect, test } from 'bun:test'
-import { createStyles, h } from 'plaited/client'
 import {
   InvalidKeyframeRefPositionError,
   InvalidPropertyNameError,
@@ -7,6 +6,8 @@ import {
   MissingRegistryError,
   UnresolvedTokenRefError,
 } from '../css.errors.ts'
+import { createKeyframes, createStyles } from '../css.ts'
+import { h } from '../template.ts'
 
 test('createStyles: supports simple rules', () => {
   const testStyles = createStyles({
@@ -93,7 +94,7 @@ test('createStyles: works with h via spread operator', () => {
       },
     },
   })
-  expect(h('button', testStyles.button)).toMatchSnapshot()
+  expect(h('button', { styles: [testStyles.button] })).toMatchSnapshot()
 })
 
 test('createStyles: throws InvalidPropertyNameError for unknown property', () => {
@@ -191,4 +192,30 @@ test('createStyles: literal path (no ref) works without registry', () => {
   expect(() => {
     createStyles({ btn: { color: 'red', 'box-sizing': 'border-box' } })
   }).not.toThrow()
+})
+
+test('createKeyframes: generates named keyframes with unique id', () => {
+  const { pulse } = createKeyframes('pulse', {
+    '0%': { transform: 'scale(1)' },
+    '50%': { transform: 'scale(1.1)' },
+    '100%': { transform: 'scale(1)' },
+  })
+  expect(pulse.id.startsWith('pulse_')).toBeTruthy()
+  expect(pulse()).toMatchSnapshot()
+})
+
+test('createKeyframes: works with var() values', () => {
+  const { spin } = createKeyframes('spin', {
+    '0%': { transform: 'rotate(0deg)' },
+    '100%': { transform: 'var(--animations-rotate)' },
+  })
+
+  const { pulse } = createKeyframes('pulse', {
+    '0%': { transform: 'scale(1)' },
+    '50%': { transform: 'var(--animations-scale)' },
+    '100%': { transform: 'scale(1)' },
+  })
+
+  expect(spin()).toMatchSnapshot()
+  expect(pulse()).toMatchSnapshot()
 })
