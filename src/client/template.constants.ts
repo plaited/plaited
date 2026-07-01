@@ -36,6 +36,14 @@ export const P_SCALE = 'p-scale'
 
 export const P_FORM = 'p-form'
 
+export const CHILDREN = 'children'
+
+export const STYLE = 'style'
+
+export const STYLES = 'styles'
+
+export const CLASS = 'class'
+
 /**
  * Matches site-root JavaScript module paths accepted by bootstrap script tags
  * and controller module imports.

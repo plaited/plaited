@@ -15,7 +15,19 @@
 
 import * as z from 'zod'
 import type { CSSProperties } from './css.types.ts'
-import { CUSTOM_ELEMENT_TAG_PATTERN, P_FORM, P_SCALE, P_TARGET, P_TRIGGER, SCALE } from './template.constants.ts'
+import {
+  CHILDREN,
+  CLASS,
+  CUSTOM_ELEMENT_TAG_PATTERN,
+  P_FORM,
+  P_SCALE,
+  P_TARGET,
+  P_TRIGGER,
+  SCALE,
+  STYLE,
+  STYLES,
+  TEMPLATE_OBJECT_IDENTIFIER,
+} from './template.constants.ts'
 
 // ── Internal helper schemas (not exported) ────────────────────────────────
 
@@ -94,18 +106,13 @@ const cssPropertiesSchema: z.ZodType<CSSProperties> = z.record(z.string(), z.uni
  * @internal
  */
 const stylesObjectSchema = z.object({
-  classNames: z.array(z.string()),
+  classNames: z.array(z.string()).optional(),
   stylesheets: z.array(z.string()),
 })
 
 // ── ARIA ───────────────────────────────────────────────────────────────────
 
-/**
- * Schema for WAI-ARIA attributes.
- *
- * @public
- */
-export const AriaAttributesSchema = z.object({
+const AriaAttributesSchema = z.object({
   'aria-activedescendant': z.string().optional(),
   'aria-atomic': booleanishSchema.optional(),
   'aria-autocomplete': z.enum(['none', 'inline', 'list', 'both']).optional(),
@@ -176,11 +183,6 @@ export const AriaAttributesSchema = z.object({
   'aria-valuetext': z.string().optional(),
 })
 
-/** @public */
-export type AriaAttributes = z.output<typeof AriaAttributesSchema>
-
-// ── Custom element tag ─────────────────────────────────────────────────────
-
 /**
  * Schema for custom element tag names (must match `${string}-${string}` pattern).
  *
@@ -189,16 +191,9 @@ export type AriaAttributes = z.output<typeof AriaAttributesSchema>
 export const customElementTagSchema = z.string().regex(CUSTOM_ELEMENT_TAG_PATTERN)
 
 /** @public */
-export type CustomElementTag = z.output<typeof customElementTagSchema>
+export type CustomElementTag = `${string}-${string}`
 
-// ── ARIA role ──────────────────────────────────────────────────────────────
-
-/**
- * Schema for the ARIA `role` attribute.
- *
- * @public
- */
-export const ariaRoleSchema = z.enum([
+const ariaRoleSchema = z.enum([
   'alert',
   'alertdialog',
   'application',
@@ -270,41 +265,58 @@ export const ariaRoleSchema = z.enum([
   'treeitem',
 ])
 
-/** @public */
-export type AriaRole = z.output<typeof ariaRoleSchema>
-
-// ── ARIA role ──────────────────────────────────────────────────────────────
-
-/**
- * Schema for Plaited-specific extension attributes (p-target, p-trigger, etc.).
- *
- * @public
- */
-export const PlaitedAttributesSchema = z.object({
-  class: z.string().optional(),
-  children: z.any().optional(),
-  [P_TARGET]: z.union([z.string(), z.number()]).optional(),
-  [P_TRIGGER]: z.record(z.string(), z.string()).optional(),
-  [P_SCALE]: z.enum(Object.values(SCALE) as [string, ...string[]]).optional(),
-  [P_FORM]: z.string().optional(),
-  stylesheets: z.array(z.string()).optional(),
-  classNames: z.array(z.string()).optional(),
-  style: cssPropertiesSchema.optional(),
-  styles: z.array(stylesObjectSchema).optional(),
+const TemplateObjectSchema = z.object({
+  html: z.array(z.string()),
+  stylesheets: z.array(z.string()),
+  scale: z.literal(Object.values(SCALE)),
+  $: z.literal(TEMPLATE_OBJECT_IDENTIFIER),
 })
 
-/** @public */
-export type PlaitedAttributes = z.output<typeof PlaitedAttributesSchema>
+/**
+ * Represents the internal structure produced by Plaited's JSX factory (`h`).
+ * This object contains the processed HTML strings and associated metadata needed for rendering.
+ *
+ * @property html - An array of string fragments representing the HTML structure.
+ * @property stylesheets - CSS stylesheets collected from this template and its children.
+ * @property $ - A unique symbol (`TEMPLATE_OBJECT_IDENTIFIER`) used as a type guard to identify Plaited template objects.
+ */
+export type TemplateObject = z.output<typeof TemplateObjectSchema>
 
-// ── Standard HTML attributes ───────────────────────────────────────────────
+const ChildSchema = z.union([z.string(), z.number(), TemplateObjectSchema])
+
+/**
+ * Represents the valid primitive types that can be rendered directly as children within hyperscript.
+ * This includes numbers (which are converted to strings) and strings. TemplateObjects are also valid children for composition.
+ */
+export type Child = z.output<typeof ChildSchema>
+
+export const ChildrenSchema = z.union([ChildSchema, z.array(ChildSchema)])
+
+/**
+ * Represents the children prop in hyperscript. It can be a single valid child (`Child`) or an array of children.
+ */
+export type Children = z.output<typeof ChildrenSchema>
+
+const PlaitedAttributesSchema = z.object({
+  [CHILDREN]: ChildrenSchema.optional(),
+  [CLASS]: z.string().optional(),
+  [P_FORM]: z.string().optional(),
+  [P_SCALE]: z.enum(Object.values(SCALE)).optional(),
+  [P_TARGET]: z.union([z.string(), z.number()]).optional(),
+  [P_TRIGGER]: z.record(z.string(), z.string()).optional(),
+  [STYLE]: cssPropertiesSchema.optional(),
+  [STYLES]: z.array(stylesObjectSchema).optional(),
+})
 
 /**
  * Schema for standard HTML attributes combined with ARIA and Plaited attributes.
  *
  * @public
  */
-export const HtmlAttributesSchema = AriaAttributesSchema.merge(PlaitedAttributesSchema).merge(
-  z.object({
+export const DetailedHTMLAttributesSchema = z
+  .object({
+    ...PlaitedAttributesSchema.shape,
+    ...AriaAttributesSchema.shape,
     // Standard HTML Attributes
     accesskey: z.string().optional(),
     autofocus: z.boolean().optional(),
@@ -355,209 +367,134 @@ export const HtmlAttributesSchema = AriaAttributesSchema.merge(PlaitedAttributes
     // Living Standard
     inputmode: z.enum(['none', 'text', 'tel', 'url', 'email', 'numeric', 'decimal', 'search']).optional(),
     is: z.string().optional(),
-  }),
-)
+  })
+  .catchall(z.union([z.string(), z.number(), z.boolean()]))
 
 /** @public */
-export type HtmlAttributes = z.output<typeof HtmlAttributesSchema>
-
-// ── Detailed HTML attributes ──
-
-/**
- * Schema extending `HtmlAttributesSchema` with a catchall for `data-*` and
- * arbitrary custom attributes.
- *
- * The catchall uses `z.any()` to match the runtime `Record<string, any>`
- * escape hatch — at validation time, extra keys are accepted without
- * narrowing their values (since runtime properties like `classNames`,
- * `style`, `p-trigger` carry non-primitive types that would conflict with
- * a `string | number | boolean` index signature).
- *
- * Catalog-json validation can add a tighter constraint via `.pipe()` or
- * `.catchall(z.union([z.string(), z.number(), z.boolean()]))`.
- *
- * @public
- */
-export const DetailedHtmlAttributesSchema = HtmlAttributesSchema.catchall(z.any())
-
-/** @public */
-export type DetailedHtmlAttributes = z.output<typeof DetailedHtmlAttributesSchema>
+export type DetailedHTMLAttributes = z.output<typeof DetailedHTMLAttributesSchema>
 
 // ── Element-specific attribute schemas ─────────────────────────────────────
 
-/** @public */
-export const detailedAnchorHtmlAttributesSchema = DetailedHtmlAttributesSchema.and(
-  z.object({
-    download: z.boolean().optional(),
-    href: z.string().optional(),
-    hreflang: z.string().optional(),
-    media: z.string().optional(),
-    ping: z.string().optional(),
-    target: anchorTargetSchema.optional(),
-    type: z.string().optional(),
-    referrerpolicy: referrerPolicySchema.optional(),
-  }),
-)
-
-/** @public */
-export type DetailedAnchorHtmlAttributes = z.output<typeof detailedAnchorHtmlAttributesSchema>
+/** @internal */
+const DetailedAnchorHTMLAttributesSchema = z.object({
+  ...DetailedHTMLAttributesSchema.shape,
+  download: z.boolean().optional(),
+  href: z.string().optional(),
+  hreflang: z.string().optional(),
+  media: z.string().optional(),
+  ping: z.string().optional(),
+  target: anchorTargetSchema.optional(),
+  type: z.string().optional(),
+  referrerpolicy: referrerPolicySchema.optional(),
+})
 
 /**
  * Schema for media element attributes (used by audio, video).
  *
- * @public
+ * @internal
  */
-export const DetailedMediaHtmlAttributesSchema = DetailedHtmlAttributesSchema.and(
-  z.object({
-    autoplay: z.boolean().optional(),
-    controls: z.boolean().optional(),
-    controlslist: z.string().optional(),
-    crossorigin: crossOriginSchema.optional(),
-    loop: z.boolean().optional(),
-    mediagroup: z.string().optional(),
-    muted: z.boolean().optional(),
-    playsinline: z.boolean().optional(),
-    preload: z.string().optional(),
-    src: z.string().optional(),
-  }),
-)
+const DetailedMediaHTMLAttributesSchema = z.object({
+  ...DetailedHTMLAttributesSchema.shape,
+  autoplay: z.boolean().optional(),
+  controls: z.boolean().optional(),
+  controlslist: z.string().optional(),
+  crossorigin: crossOriginSchema.optional(),
+  loop: z.boolean().optional(),
+  mediagroup: z.string().optional(),
+  muted: z.boolean().optional(),
+  playsinline: z.boolean().optional(),
+  preload: z.string().optional(),
+  src: z.string().optional(),
+})
 
-/** @public */
-export type DetailedMediaHtmlAttributes = z.output<typeof DetailedMediaHtmlAttributesSchema>
+/** @internal */
+const DetailedAreaHTMLAttributesSchema = z.object({
+  ...DetailedHTMLAttributesSchema.shape,
+  alt: z.string().optional(),
+  coords: z.string().optional(),
+  download: z.boolean().optional(),
+  href: z.string().optional(),
+  hreflang: z.string().optional(),
+  media: z.string().optional(),
+  referrerpolicy: referrerPolicySchema.optional(),
+  shape: z.string().optional(),
+  target: z.string().optional(),
+})
 
-/** @public */
-export const detailedAreaHtmlAttributesSchema = DetailedHtmlAttributesSchema.and(
-  z.object({
-    alt: z.string().optional(),
-    coords: z.string().optional(),
-    download: z.boolean().optional(),
-    href: z.string().optional(),
-    hreflang: z.string().optional(),
-    media: z.string().optional(),
-    referrerpolicy: referrerPolicySchema.optional(),
-    shape: z.string().optional(),
-    target: z.string().optional(),
-  }),
-)
+/** @internal */
+const DetailedBaseHTMLAttributesSchema = z.object({
+  ...DetailedHTMLAttributesSchema.shape,
+  href: z.string().optional(),
+  target: z.string().optional(),
+})
 
-/** @public */
-export type DetailedAreaHtmlAttributes = z.output<typeof detailedAreaHtmlAttributesSchema>
+/** @internal */
+const DetailedBlockquoteHTMLAttributesSchema = z.object({
+  ...DetailedHTMLAttributesSchema.shape,
+  cite: z.string().optional(),
+})
 
-/** @public */
-export const detailedBaseHtmlAttributesSchema = DetailedHtmlAttributesSchema.and(
-  z.object({
-    href: z.string().optional(),
-    target: z.string().optional(),
-  }),
-)
+/** @internal */
+const DetailedButtonHTMLAttributesSchema = z.object({
+  ...DetailedHTMLAttributesSchema.shape,
+  disabled: z.boolean().optional(),
+  form: z.string().optional(),
+  formaction: z.string().optional(),
+  formenctype: z.string().optional(),
+  formmethod: z.string().optional(),
+  formnovalidate: z.boolean().optional(),
+  formtarget: z.string().optional(),
+  name: z.string().optional(),
+  type: z.enum(['submit', 'reset', 'button']).optional(),
+  value: z.union([z.string(), z.number()]).optional(),
+})
 
-/** @public */
-export type DetailedBaseHtmlAttributes = z.output<typeof detailedBaseHtmlAttributesSchema>
+/** @internal */
+const DetailedCanvasHTMLAttributesSchema = z.object({
+  ...DetailedHTMLAttributesSchema.shape,
+  height: z.union([z.number(), z.string()]).optional(),
+  width: z.union([z.number(), z.string()]).optional(),
+})
 
-/** @public */
-export const detailedBlockquoteHtmlAttributesSchema = DetailedHtmlAttributesSchema.and(
-  z.object({
-    cite: z.string().optional(),
-  }),
-)
+/** @internal */
+const DetailedColHTMLAttributesSchema = z.object({
+  ...DetailedHTMLAttributesSchema.shape,
+  span: z.number().optional(),
+  width: z.union([z.number(), z.string()]).optional(),
+})
 
-/** @public */
-export type DetailedBlockquoteHtmlAttributes = z.output<typeof detailedBlockquoteHtmlAttributesSchema>
-
-/** @public */
-export const detailedButtonHtmlAttributesSchema = DetailedHtmlAttributesSchema.and(
-  z.object({
-    disabled: z.boolean().optional(),
-    form: z.string().optional(),
-    formaction: z.string().optional(),
-    formenctype: z.string().optional(),
-    formmethod: z.string().optional(),
-    formnovalidate: z.boolean().optional(),
-    formtarget: z.string().optional(),
-    name: z.string().optional(),
-    type: z.enum(['submit', 'reset', 'button']).optional(),
-    value: z.union([z.string(), z.number()]).optional(),
-  }),
-)
-
-/** @public */
-export type DetailedButtonHtmlAttributes = z.output<typeof detailedButtonHtmlAttributesSchema>
-
-/** @public */
-export const detailedCanvasHtmlAttributesSchema = DetailedHtmlAttributesSchema.and(
-  z.object({
-    height: z.union([z.number(), z.string()]).optional(),
-    width: z.union([z.number(), z.string()]).optional(),
-  }),
-)
-
-/** @public */
-export type DetailedCanvasHtmlAttributes = z.output<typeof detailedCanvasHtmlAttributesSchema>
-
-/** @public */
-export const detailedColHtmlAttributesSchema = DetailedHtmlAttributesSchema.and(
-  z.object({
-    span: z.number().optional(),
-    width: z.union([z.number(), z.string()]).optional(),
-  }),
-)
-
-/** @public */
-export type DetailedColHtmlAttributes = z.output<typeof detailedColHtmlAttributesSchema>
-
-/** @public */
-export const detailedColgroupHtmlAttributesSchema = DetailedHtmlAttributesSchema.and(
+const DetailedColgroupHTMLAttributesSchema = DetailedHTMLAttributesSchema.and(
   z.object({
     span: z.number().optional(),
   }),
 )
 
-/** @public */
-export type DetailedColgroupHtmlAttributes = z.output<typeof detailedColgroupHtmlAttributesSchema>
-
-/** @public */
-export const detailedDataHtmlAttributesSchema = DetailedHtmlAttributesSchema.and(
+const DetailedDataHTMLAttributesSchema = DetailedHTMLAttributesSchema.and(
   z.object({
     value: z.union([z.string(), z.number()]).optional(),
   }),
 )
 
-/** @public */
-export type DetailedDataHtmlAttributes = z.output<typeof detailedDataHtmlAttributesSchema>
-
-/** @public */
-export const detailedDetailsHtmlAttributesSchema = DetailedHtmlAttributesSchema.and(
+const DetailedDetailsHTMLAttributesSchema = DetailedHTMLAttributesSchema.and(
   z.object({
     open: z.boolean().optional(),
   }),
 )
 
-/** @public */
-export type DetailedDetailsHtmlAttributes = z.output<typeof detailedDetailsHtmlAttributesSchema>
-
-/** @public */
-export const detailedDelHtmlAttributesSchema = DetailedHtmlAttributesSchema.and(
+const DetailedDelHTMLAttributesSchema = DetailedHTMLAttributesSchema.and(
   z.object({
     cite: z.string().optional(),
     datetime: z.string().optional(),
   }),
 )
 
-/** @public */
-export type DetailedDelHtmlAttributes = z.output<typeof detailedDelHtmlAttributesSchema>
-
-/** @public */
-export const detailedDialogHtmlAttributesSchema = DetailedHtmlAttributesSchema.and(
+const DetailedDialogHTMLAttributesSchema = DetailedHTMLAttributesSchema.and(
   z.object({
     open: z.boolean().optional(),
   }),
 )
 
-/** @public */
-export type DetailedDialogHtmlAttributes = z.output<typeof detailedDialogHtmlAttributesSchema>
-
-/** @public */
-export const detailedEmbedHtmlAttributesSchema = DetailedHtmlAttributesSchema.and(
+const DetailedEmbedHTMLAttributesSchema = DetailedHTMLAttributesSchema.and(
   z.object({
     height: z.union([z.number(), z.string()]).optional(),
     src: z.string().optional(),
@@ -566,11 +503,7 @@ export const detailedEmbedHtmlAttributesSchema = DetailedHtmlAttributesSchema.an
   }),
 )
 
-/** @public */
-export type DetailedEmbedHtmlAttributes = z.output<typeof detailedEmbedHtmlAttributesSchema>
-
-/** @public */
-export const detailedFieldsetHtmlAttributesSchema = DetailedHtmlAttributesSchema.and(
+const DetailedFieldsetHTMLAttributesSchema = DetailedHTMLAttributesSchema.and(
   z.object({
     disabled: z.boolean().optional(),
     form: z.string().optional(),
@@ -578,11 +511,7 @@ export const detailedFieldsetHtmlAttributesSchema = DetailedHtmlAttributesSchema
   }),
 )
 
-/** @public */
-export type DetailedFieldsetHtmlAttributes = z.output<typeof detailedFieldsetHtmlAttributesSchema>
-
-/** @public */
-export const detailedFormHtmlAttributesSchema = DetailedHtmlAttributesSchema.and(
+const DetailedFormHTMLAttributesSchema = DetailedHTMLAttributesSchema.and(
   z.object({
     'accept-charset': z.string().optional(),
     action: z.never().optional(),
@@ -597,21 +526,13 @@ export const detailedFormHtmlAttributesSchema = DetailedHtmlAttributesSchema.and
   }),
 )
 
-/** @public */
-export type DetailedFormHtmlAttributes = z.output<typeof detailedFormHtmlAttributesSchema>
-
-/** @public */
-export const detailedHtmlHtmlAttributesSchema = DetailedHtmlAttributesSchema.and(
+const DetailedHTMLHTMLAttributesSchema = DetailedHTMLAttributesSchema.and(
   z.object({
     manifest: z.string().optional(),
   }),
 )
 
-/** @public */
-export type DetailedHtmlHtmlAttributes = z.output<typeof detailedHtmlHtmlAttributesSchema>
-
-/** @public */
-export const detailedIframeHtmlAttributesSchema = DetailedHtmlAttributesSchema.and(
+const DetailedIframeHTMLAttributesSchema = DetailedHTMLAttributesSchema.and(
   z.object({
     allow: z.string().optional(),
     height: z.union([z.number(), z.string()]).optional(),
@@ -626,11 +547,7 @@ export const detailedIframeHtmlAttributesSchema = DetailedHtmlAttributesSchema.a
   }),
 )
 
-/** @public */
-export type DetailedIframeHtmlAttributes = z.output<typeof detailedIframeHtmlAttributesSchema>
-
-/** @public */
-export const detailedImgHtmlAttributesSchema = DetailedHtmlAttributesSchema.and(
+const DetailedImgHTMLAttributesSchema = DetailedHTMLAttributesSchema.and(
   z.object({
     alt: z.string().optional(),
     crossorigin: crossOriginSchema.optional(),
@@ -646,22 +563,14 @@ export const detailedImgHtmlAttributesSchema = DetailedHtmlAttributesSchema.and(
   }),
 )
 
-/** @public */
-export type DetailedImgHtmlAttributes = z.output<typeof detailedImgHtmlAttributesSchema>
-
-/** @public */
-export const detailedInsHtmlAttributesSchema = DetailedHtmlAttributesSchema.and(
+const DetailedInsHTMLAttributesSchema = DetailedHTMLAttributesSchema.and(
   z.object({
     cite: z.string().optional(),
     datetime: z.string().optional(),
   }),
 )
 
-/** @public */
-export type DetailedInsHtmlAttributes = z.output<typeof detailedInsHtmlAttributesSchema>
-
-/** @public */
-export const detailedInputHtmlAttributesSchema = DetailedHtmlAttributesSchema.and(
+const DetailedInputHTMLAttributesSchema = DetailedHTMLAttributesSchema.and(
   z.object({
     accept: z.string().optional(),
     alt: z.string().optional(),
@@ -697,32 +606,20 @@ export const detailedInputHtmlAttributesSchema = DetailedHtmlAttributesSchema.an
   }),
 )
 
-/** @public */
-export type DetailedInputHtmlAttributes = z.output<typeof detailedInputHtmlAttributesSchema>
-
-/** @public */
-export const detailedLabelHtmlAttributesSchema = DetailedHtmlAttributesSchema.and(
+const DetailedLabelHTMLAttributesSchema = DetailedHTMLAttributesSchema.and(
   z.object({
     form: z.string().optional(),
     for: z.string().optional(),
   }),
 )
 
-/** @public */
-export type DetailedLabelHtmlAttributes = z.output<typeof detailedLabelHtmlAttributesSchema>
-
-/** @public */
-export const detailedLiHtmlAttributesSchema = DetailedHtmlAttributesSchema.and(
+const DetailedLiHTMLAttributesSchema = DetailedHTMLAttributesSchema.and(
   z.object({
     value: z.union([z.string(), z.number()]).optional(),
   }),
 )
 
-/** @public */
-export type DetailedLiHtmlAttributes = z.output<typeof detailedLiHtmlAttributesSchema>
-
-/** @public */
-export const detailedLinkHtmlAttributesSchema = DetailedHtmlAttributesSchema.and(
+const DetailedLinkHTMLAttributesSchema = DetailedHTMLAttributesSchema.and(
   z.object({
     as: z.string().optional(),
     crossorigin: crossOriginSchema.optional(),
@@ -740,38 +637,22 @@ export const detailedLinkHtmlAttributesSchema = DetailedHtmlAttributesSchema.and
   }),
 )
 
-/** @public */
-export type DetailedLinkHtmlAttributes = z.output<typeof detailedLinkHtmlAttributesSchema>
-
-/** @public */
-export const detailedMapHtmlAttributesSchema = DetailedHtmlAttributesSchema.and(
+const DetailedMapHTMLAttributesSchema = DetailedHTMLAttributesSchema.and(
   z.object({
     name: z.string().optional(),
   }),
 )
 
-/** @public */
-export type DetailedMapHtmlAttributes = z.output<typeof detailedMapHtmlAttributesSchema>
-
-/** @public */
-export const detailedMenuHtmlAttributesSchema = DetailedHtmlAttributesSchema.and(
+const DetailedMenuHTMLAttributesSchema = DetailedHTMLAttributesSchema.and(
   z.object({
     type: z.string().optional(),
   }),
 )
 
-/** @public */
-export type DetailedMenuHtmlAttributes = z.output<typeof detailedMenuHtmlAttributesSchema>
-
 // Audio is DetailedMediaHTMLAttributes
-/** @public */
-export const detailedAudioHtmlAttributesSchema = DetailedMediaHtmlAttributesSchema
+const DetailedAudioHTMLAttributesSchema = DetailedMediaHTMLAttributesSchema
 
-/** @public */
-export type DetailedAudioHtmlAttributes = z.output<typeof detailedAudioHtmlAttributesSchema>
-
-/** @public */
-export const detailedMetaHtmlAttributesSchema = DetailedHtmlAttributesSchema.and(
+const DetailedMetaHTMLAttributesSchema = DetailedHTMLAttributesSchema.and(
   z.object({
     charset: z.string().optional(),
     'http-equiv': z.string().optional(),
@@ -781,11 +662,7 @@ export const detailedMetaHtmlAttributesSchema = DetailedHtmlAttributesSchema.and
   }),
 )
 
-/** @public */
-export type DetailedMetaHtmlAttributes = z.output<typeof detailedMetaHtmlAttributesSchema>
-
-/** @public */
-export const detailedMeterHtmlAttributesSchema = DetailedHtmlAttributesSchema.and(
+const DetailedMeterHTMLAttributesSchema = DetailedHTMLAttributesSchema.and(
   z.object({
     form: z.string().optional(),
     high: z.number().optional(),
@@ -797,21 +674,13 @@ export const detailedMeterHtmlAttributesSchema = DetailedHtmlAttributesSchema.an
   }),
 )
 
-/** @public */
-export type DetailedMeterHtmlAttributes = z.output<typeof detailedMeterHtmlAttributesSchema>
-
-/** @public */
-export const detailedQuoteHtmlAttributesSchema = DetailedHtmlAttributesSchema.and(
+const DetailedQuoteHTMLAttributesSchema = DetailedHTMLAttributesSchema.and(
   z.object({
     cite: z.string().optional(),
   }),
 )
 
-/** @public */
-export type DetailedQuoteHtmlAttributes = z.output<typeof detailedQuoteHtmlAttributesSchema>
-
-/** @public */
-export const detailedObjectHtmlAttributesSchema = DetailedHtmlAttributesSchema.and(
+const DetailedObjectHTMLAttributesSchema = DetailedHTMLAttributesSchema.and(
   z.object({
     classid: z.string().optional(),
     data: z.string().optional(),
@@ -824,11 +693,7 @@ export const detailedObjectHtmlAttributesSchema = DetailedHtmlAttributesSchema.a
   }),
 )
 
-/** @public */
-export type DetailedObjectHtmlAttributes = z.output<typeof detailedObjectHtmlAttributesSchema>
-
-/** @public */
-export const detailedOlHtmlAttributesSchema = DetailedHtmlAttributesSchema.and(
+const DetailedOlHTMLAttributesSchema = DetailedHTMLAttributesSchema.and(
   z.object({
     reversed: z.boolean().optional(),
     start: z.number().optional(),
@@ -836,22 +701,14 @@ export const detailedOlHtmlAttributesSchema = DetailedHtmlAttributesSchema.and(
   }),
 )
 
-/** @public */
-export type DetailedOlHtmlAttributes = z.output<typeof detailedOlHtmlAttributesSchema>
-
-/** @public */
-export const detailedOptgroupHtmlAttributesSchema = DetailedHtmlAttributesSchema.and(
+const DetailedOptgroupHTMLAttributesSchema = DetailedHTMLAttributesSchema.and(
   z.object({
     disabled: z.boolean().optional(),
     label: z.string().optional(),
   }),
 )
 
-/** @public */
-export type DetailedOptgroupHtmlAttributes = z.output<typeof detailedOptgroupHtmlAttributesSchema>
-
-/** @public */
-export const detailedOptionHtmlAttributesSchema = DetailedHtmlAttributesSchema.and(
+const DetailedOptionHTMLAttributesSchema = DetailedHTMLAttributesSchema.and(
   z.object({
     disabled: z.boolean().optional(),
     label: z.string().optional(),
@@ -860,11 +717,7 @@ export const detailedOptionHtmlAttributesSchema = DetailedHtmlAttributesSchema.a
   }),
 )
 
-/** @public */
-export type DetailedOptionHtmlAttributes = z.output<typeof detailedOptionHtmlAttributesSchema>
-
-/** @public */
-export const detailedOutputHtmlAttributesSchema = DetailedHtmlAttributesSchema.and(
+const DetailedOutputHTMLAttributesSchema = DetailedHTMLAttributesSchema.and(
   z.object({
     form: z.string().optional(),
     for: z.string().optional(),
@@ -872,32 +725,20 @@ export const detailedOutputHtmlAttributesSchema = DetailedHtmlAttributesSchema.a
   }),
 )
 
-/** @public */
-export type DetailedOutputHtmlAttributes = z.output<typeof detailedOutputHtmlAttributesSchema>
-
-/** @public */
-export const detailedProgressHtmlAttributesSchema = DetailedHtmlAttributesSchema.and(
+const DetailedProgressHTMLAttributesSchema = DetailedHTMLAttributesSchema.and(
   z.object({
     max: z.union([z.number(), z.string()]).optional(),
     value: z.union([z.string(), z.number()]).optional(),
   }),
 )
 
-/** @public */
-export type DetailedProgressHtmlAttributes = z.output<typeof detailedProgressHtmlAttributesSchema>
-
-/** @public */
-export const detailedSlotHtmlAttributesSchema = DetailedHtmlAttributesSchema.and(
+const DetailedSlotHTMLAttributesSchema = DetailedHTMLAttributesSchema.and(
   z.object({
     name: z.string().optional(),
   }),
 )
 
-/** @public */
-export type DetailedSlotHtmlAttributes = z.output<typeof detailedSlotHtmlAttributesSchema>
-
-/** @public */
-export const detailedScriptHtmlAttributesSchema = DetailedHtmlAttributesSchema.and(
+const DetailedScriptHTMLAttributesSchema = DetailedHTMLAttributesSchema.and(
   z.object({
     async: z.boolean().optional(),
     crossorigin: crossOriginSchema.optional(),
@@ -910,11 +751,7 @@ export const detailedScriptHtmlAttributesSchema = DetailedHtmlAttributesSchema.a
   }),
 )
 
-/** @public */
-export type DetailedScriptHtmlAttributes = z.output<typeof detailedScriptHtmlAttributesSchema>
-
-/** @public */
-export const detailedSelectHtmlAttributesSchema = DetailedHtmlAttributesSchema.and(
+const DetailedSelectHTMLAttributesSchema = DetailedHTMLAttributesSchema.and(
   z.object({
     autocomplete: z.string().optional(),
     disabled: z.boolean().optional(),
@@ -927,11 +764,7 @@ export const detailedSelectHtmlAttributesSchema = DetailedHtmlAttributesSchema.a
   }),
 )
 
-/** @public */
-export type DetailedSelectHtmlAttributes = z.output<typeof detailedSelectHtmlAttributesSchema>
-
-/** @public */
-export const detailedSourceHtmlAttributesSchema = DetailedHtmlAttributesSchema.and(
+const DetailedSourceHTMLAttributesSchema = DetailedHTMLAttributesSchema.and(
   z.object({
     height: z.union([z.number(), z.string()]).optional(),
     media: z.string().optional(),
@@ -943,21 +776,13 @@ export const detailedSourceHtmlAttributesSchema = DetailedHtmlAttributesSchema.a
   }),
 )
 
-/** @public */
-export type DetailedSourceHtmlAttributes = z.output<typeof detailedSourceHtmlAttributesSchema>
-
-/** @public */
-export const detailedStyleHtmlAttributesSchema = DetailedHtmlAttributesSchema.and(
+const DetailedStyleHTMLAttributesSchema = DetailedHTMLAttributesSchema.and(
   z.object({
     media: z.string().optional(),
   }),
 )
 
-/** @public */
-export type DetailedStyleHtmlAttributes = z.output<typeof detailedStyleHtmlAttributesSchema>
-
-/** @public */
-export const detailedTableHtmlAttributesSchema = DetailedHtmlAttributesSchema.and(
+const DetailedTableHTMLAttributesSchema = DetailedHTMLAttributesSchema.and(
   z.object({
     align: z.enum(['left', 'center', 'right']).optional(),
     bgcolor: z.string().optional(),
@@ -971,11 +796,7 @@ export const detailedTableHtmlAttributesSchema = DetailedHtmlAttributesSchema.an
   }),
 )
 
-/** @public */
-export type DetailedTableHtmlAttributes = z.output<typeof detailedTableHtmlAttributesSchema>
-
-/** @public */
-export const detailedTemplateHtmlAttributesSchema = DetailedHtmlAttributesSchema.and(
+const DetailedTemplateHTMLAttributesSchema = DetailedHTMLAttributesSchema.and(
   z.object({
     shadowrootmode: z.enum(['open', 'closed']).optional(),
     shadowrootdelegatesfocus: z.boolean().optional(),
@@ -983,11 +804,7 @@ export const detailedTemplateHtmlAttributesSchema = DetailedHtmlAttributesSchema
   }),
 )
 
-/** @public */
-export type DetailedTemplateHtmlAttributes = z.output<typeof detailedTemplateHtmlAttributesSchema>
-
-/** @public */
-export const detailedTextareaHtmlAttributesSchema = DetailedHtmlAttributesSchema.and(
+const DetailedTextareaHTMLAttributesSchema = DetailedHTMLAttributesSchema.and(
   z.object({
     autocomplete: z.string().optional(),
     cols: z.number().optional(),
@@ -1006,11 +823,7 @@ export const detailedTextareaHtmlAttributesSchema = DetailedHtmlAttributesSchema
   }),
 )
 
-/** @public */
-export type DetailedTextareaHtmlAttributes = z.output<typeof detailedTextareaHtmlAttributesSchema>
-
-/** @public */
-export const detailedTdHtmlAttributesSchema = DetailedHtmlAttributesSchema.and(
+const DetailedTdHTMLAttributesSchema = DetailedHTMLAttributesSchema.and(
   z.object({
     align: z.enum(['left', 'center', 'right', 'justify', 'char']).optional(),
     colspan: z.number().optional(),
@@ -1024,11 +837,7 @@ export const detailedTdHtmlAttributesSchema = DetailedHtmlAttributesSchema.and(
   }),
 )
 
-/** @public */
-export type DetailedTdHtmlAttributes = z.output<typeof detailedTdHtmlAttributesSchema>
-
-/** @public */
-export const detailedThHtmlAttributesSchema = DetailedHtmlAttributesSchema.and(
+const DetailedThHTMLAttributesSchema = DetailedHTMLAttributesSchema.and(
   z.object({
     align: z.enum(['left', 'center', 'right', 'justify', 'char']).optional(),
     colspan: z.number().optional(),
@@ -1039,21 +848,13 @@ export const detailedThHtmlAttributesSchema = DetailedHtmlAttributesSchema.and(
   }),
 )
 
-/** @public */
-export type DetailedThHtmlAttributes = z.output<typeof detailedThHtmlAttributesSchema>
-
-/** @public */
-export const detailedTimeHtmlAttributesSchema = DetailedHtmlAttributesSchema.and(
+const DetailedTimeHTMLAttributesSchema = DetailedHTMLAttributesSchema.and(
   z.object({
     datetime: z.string().optional(),
   }),
 )
 
-/** @public */
-export type DetailedTimeHtmlAttributes = z.output<typeof detailedTimeHtmlAttributesSchema>
-
-/** @public */
-export const detailedTrackHtmlAttributesSchema = DetailedHtmlAttributesSchema.and(
+const DetailedTrackHTMLAttributesSchema = DetailedHTMLAttributesSchema.and(
   z.object({
     default: z.boolean().optional(),
     kind: z.enum(['subtitles', 'captions', 'descriptions', 'chapters', 'metadata']).optional(),
@@ -1063,11 +864,7 @@ export const detailedTrackHtmlAttributesSchema = DetailedHtmlAttributesSchema.an
   }),
 )
 
-/** @public */
-export type DetailedTrackHtmlAttributes = z.output<typeof detailedTrackHtmlAttributesSchema>
-
-/** @public */
-export const detailedVideoHtmlAttributesSchema = DetailedMediaHtmlAttributesSchema.and(
+const DetailedVideoHTMLAttributesSchema = DetailedMediaHTMLAttributesSchema.and(
   z.object({
     height: z.string().optional(),
     playsinline: z.boolean().optional(),
@@ -1078,11 +875,7 @@ export const detailedVideoHtmlAttributesSchema = DetailedMediaHtmlAttributesSche
   }),
 )
 
-/** @public */
-export type DetailedVideoHtmlAttributes = z.output<typeof detailedVideoHtmlAttributesSchema>
-
-/** @public */
-export const detailedWebViewHtmlAttributesSchema = DetailedHtmlAttributesSchema.and(
+const DetailedWebViewHTMLAttributesSchema = DetailedHTMLAttributesSchema.and(
   z.object({
     src: z.string().optional(),
     nodeintegration: z.boolean().optional(),
@@ -1100,17 +893,14 @@ export const detailedWebViewHtmlAttributesSchema = DetailedHtmlAttributesSchema.
   }),
 )
 
-/** @public */
-export type DetailedWebViewHtmlAttributes = z.output<typeof detailedWebViewHtmlAttributesSchema>
-
 // ── SVG attributes ─────────────────────────────────────────────────────────
 
 /**
- * Schema for SVG element attributes, extending detailed HTML attributes.
+ * Schema for SVG element attributes, extending Detailed HTML attributes.
  *
- * @public
+ * @internal
  */
-export const DetailedSvgAttributesSchema = DetailedHtmlAttributesSchema.and(
+const DetailedSvgAttributesSchema = DetailedHTMLAttributesSchema.and(
   z.object({
     'accent-height': z.number().optional(),
     accumulate: z.union([z.enum(['none', 'sum']), z.string()]).optional(),
@@ -1372,9 +1162,6 @@ export const DetailedSvgAttributesSchema = DetailedHtmlAttributesSchema.and(
   }),
 )
 
-/** @public */
-export type DetailedSvgAttributes = z.output<typeof DetailedSvgAttributesSchema>
-
 // ── Element attribute list ─────────────────────────────────────────────────
 
 /**
@@ -1382,252 +1169,247 @@ export type DetailedSvgAttributes = z.output<typeof DetailedSvgAttributesSchema>
  *
  * @public
  */
-export const ElementAttributeListSchema = z
-  .object({
-    a: detailedAnchorHtmlAttributesSchema,
-    abbr: DetailedHtmlAttributesSchema,
-    address: DetailedHtmlAttributesSchema,
-    area: detailedAreaHtmlAttributesSchema,
-    article: DetailedHtmlAttributesSchema,
-    aside: DetailedHtmlAttributesSchema,
-    audio: detailedAudioHtmlAttributesSchema,
-    b: DetailedHtmlAttributesSchema,
-    base: detailedBaseHtmlAttributesSchema,
-    bdi: DetailedHtmlAttributesSchema,
-    bdo: DetailedHtmlAttributesSchema,
-    big: DetailedHtmlAttributesSchema,
-    blockquote: detailedBlockquoteHtmlAttributesSchema,
-    body: DetailedHtmlAttributesSchema,
-    br: DetailedHtmlAttributesSchema,
-    button: detailedButtonHtmlAttributesSchema,
-    canvas: detailedCanvasHtmlAttributesSchema,
-    caption: DetailedHtmlAttributesSchema,
-    cite: DetailedHtmlAttributesSchema,
-    code: DetailedHtmlAttributesSchema,
-    col: detailedColHtmlAttributesSchema,
-    colgroup: detailedColgroupHtmlAttributesSchema,
-    data: detailedDataHtmlAttributesSchema,
-    datalist: DetailedHtmlAttributesSchema,
-    dd: DetailedHtmlAttributesSchema,
-    del: detailedDelHtmlAttributesSchema,
-    details: detailedDetailsHtmlAttributesSchema,
-    dfn: DetailedHtmlAttributesSchema,
-    dialog: detailedDialogHtmlAttributesSchema,
-    div: DetailedHtmlAttributesSchema,
-    dl: DetailedHtmlAttributesSchema,
-    dt: DetailedHtmlAttributesSchema,
-    em: DetailedHtmlAttributesSchema,
-    embed: detailedEmbedHtmlAttributesSchema,
-    fieldset: detailedFieldsetHtmlAttributesSchema,
-    figcaption: DetailedHtmlAttributesSchema,
-    figure: DetailedHtmlAttributesSchema,
-    footer: DetailedHtmlAttributesSchema,
-    form: detailedFormHtmlAttributesSchema,
-    h1: DetailedHtmlAttributesSchema,
-    h2: DetailedHtmlAttributesSchema,
-    h3: DetailedHtmlAttributesSchema,
-    h4: DetailedHtmlAttributesSchema,
-    h5: DetailedHtmlAttributesSchema,
-    h6: DetailedHtmlAttributesSchema,
-    head: DetailedHtmlAttributesSchema,
-    header: DetailedHtmlAttributesSchema,
-    hgroup: DetailedHtmlAttributesSchema,
-    hr: DetailedHtmlAttributesSchema,
-    html: detailedHtmlHtmlAttributesSchema,
-    i: DetailedHtmlAttributesSchema,
-    iframe: detailedIframeHtmlAttributesSchema,
-    img: detailedImgHtmlAttributesSchema,
-    input: detailedInputHtmlAttributesSchema,
-    ins: detailedInsHtmlAttributesSchema,
-    kbd: DetailedHtmlAttributesSchema,
-    label: detailedLabelHtmlAttributesSchema,
-    legend: DetailedHtmlAttributesSchema,
-    li: detailedLiHtmlAttributesSchema,
-    link: detailedLinkHtmlAttributesSchema,
-    main: DetailedHtmlAttributesSchema,
-    map: detailedMapHtmlAttributesSchema,
-    mark: DetailedHtmlAttributesSchema,
-    menu: detailedMenuHtmlAttributesSchema,
-    menuitem: DetailedHtmlAttributesSchema,
-    meta: detailedMetaHtmlAttributesSchema,
-    meter: detailedMeterHtmlAttributesSchema,
-    nav: DetailedHtmlAttributesSchema,
-    noscript: DetailedHtmlAttributesSchema,
-    object: detailedObjectHtmlAttributesSchema,
-    ol: detailedOlHtmlAttributesSchema,
-    optgroup: detailedOptgroupHtmlAttributesSchema,
-    option: detailedOptionHtmlAttributesSchema,
-    output: detailedOutputHtmlAttributesSchema,
-    p: DetailedHtmlAttributesSchema,
-    picture: DetailedHtmlAttributesSchema,
-    pre: DetailedHtmlAttributesSchema,
-    progress: detailedProgressHtmlAttributesSchema,
-    q: detailedQuoteHtmlAttributesSchema,
-    rp: DetailedHtmlAttributesSchema,
-    rt: DetailedHtmlAttributesSchema,
-    ruby: DetailedHtmlAttributesSchema,
-    s: DetailedHtmlAttributesSchema,
-    samp: DetailedHtmlAttributesSchema,
-    script: detailedScriptHtmlAttributesSchema,
-    search: DetailedHtmlAttributesSchema,
-    section: DetailedHtmlAttributesSchema,
-    select: detailedSelectHtmlAttributesSchema,
-    slot: detailedSlotHtmlAttributesSchema,
-    small: DetailedHtmlAttributesSchema,
-    source: detailedSourceHtmlAttributesSchema,
-    span: DetailedHtmlAttributesSchema,
-    strong: DetailedHtmlAttributesSchema,
-    style: detailedStyleHtmlAttributesSchema,
-    sub: DetailedHtmlAttributesSchema,
-    summary: DetailedHtmlAttributesSchema,
-    sup: DetailedHtmlAttributesSchema,
-    table: detailedTableHtmlAttributesSchema,
-    template: detailedTemplateHtmlAttributesSchema,
-    tbody: DetailedHtmlAttributesSchema,
-    td: detailedTdHtmlAttributesSchema,
-    textarea: detailedTextareaHtmlAttributesSchema,
-    tfoot: DetailedHtmlAttributesSchema,
-    th: detailedThHtmlAttributesSchema,
-    thead: DetailedHtmlAttributesSchema,
-    time: detailedTimeHtmlAttributesSchema,
-    title: DetailedHtmlAttributesSchema,
-    tr: DetailedHtmlAttributesSchema,
-    track: detailedTrackHtmlAttributesSchema,
-    u: DetailedHtmlAttributesSchema,
-    ul: DetailedHtmlAttributesSchema,
-    var: DetailedHtmlAttributesSchema,
-    video: detailedVideoHtmlAttributesSchema,
-    wbr: DetailedHtmlAttributesSchema,
-    webview: detailedWebViewHtmlAttributesSchema,
-    // SVG
-    svg: DetailedSvgAttributesSchema,
-    animate: DetailedSvgAttributesSchema,
-    circle: DetailedSvgAttributesSchema,
-    animateMotion: DetailedSvgAttributesSchema,
-    animateTransform: DetailedSvgAttributesSchema,
-    clipPath: DetailedSvgAttributesSchema,
-    defs: DetailedSvgAttributesSchema,
-    desc: DetailedSvgAttributesSchema,
-    ellipse: DetailedSvgAttributesSchema,
-    feBlend: DetailedSvgAttributesSchema,
-    feColorMatrix: DetailedSvgAttributesSchema,
-    feComponentTransfer: DetailedSvgAttributesSchema,
-    feComposite: DetailedSvgAttributesSchema,
-    feConvolveMatrix: DetailedSvgAttributesSchema,
-    feDiffuseLighting: DetailedSvgAttributesSchema,
-    feDisplacementMap: DetailedSvgAttributesSchema,
-    feDistantLight: DetailedSvgAttributesSchema,
-    feDropShadow: DetailedSvgAttributesSchema,
-    feFlood: DetailedSvgAttributesSchema,
-    feFuncA: DetailedSvgAttributesSchema,
-    feFuncB: DetailedSvgAttributesSchema,
-    feFuncG: DetailedSvgAttributesSchema,
-    feFuncR: DetailedSvgAttributesSchema,
-    feGaussianBlur: DetailedSvgAttributesSchema,
-    feImage: DetailedSvgAttributesSchema,
-    feMerge: DetailedSvgAttributesSchema,
-    feMergeNode: DetailedSvgAttributesSchema,
-    feMorphology: DetailedSvgAttributesSchema,
-    feOffset: DetailedSvgAttributesSchema,
-    fePointLight: DetailedSvgAttributesSchema,
-    feSpecularLighting: DetailedSvgAttributesSchema,
-    feSpotLight: DetailedSvgAttributesSchema,
-    feTile: DetailedSvgAttributesSchema,
-    feTurbulence: DetailedSvgAttributesSchema,
-    filter: DetailedSvgAttributesSchema,
-    foreignObject: DetailedSvgAttributesSchema,
-    g: DetailedSvgAttributesSchema,
-    image: DetailedSvgAttributesSchema,
-    line: DetailedSvgAttributesSchema,
-    linearGradient: DetailedSvgAttributesSchema,
-    marker: DetailedSvgAttributesSchema,
-    mask: DetailedSvgAttributesSchema,
-    metadata: DetailedSvgAttributesSchema,
-    mpath: DetailedSvgAttributesSchema,
-    path: DetailedSvgAttributesSchema,
-    pattern: DetailedSvgAttributesSchema,
-    polygon: DetailedSvgAttributesSchema,
-    polyline: DetailedSvgAttributesSchema,
-    radialGradient: DetailedSvgAttributesSchema,
-    rect: DetailedSvgAttributesSchema,
-    set: DetailedSvgAttributesSchema,
-    stop: DetailedSvgAttributesSchema,
-    switch: DetailedSvgAttributesSchema,
-    symbol: DetailedSvgAttributesSchema,
-    text: DetailedSvgAttributesSchema,
-    textPath: DetailedSvgAttributesSchema,
-    tspan: DetailedSvgAttributesSchema,
-    use: DetailedSvgAttributesSchema,
-    view: DetailedSvgAttributesSchema,
-  })
-  .catchall(DetailedHtmlAttributesSchema)
+export const ElementAttributeListSchema = z.object({
+  a: DetailedAnchorHTMLAttributesSchema,
+  abbr: DetailedHTMLAttributesSchema,
+  address: DetailedHTMLAttributesSchema,
+  area: DetailedAreaHTMLAttributesSchema,
+  article: DetailedHTMLAttributesSchema,
+  aside: DetailedHTMLAttributesSchema,
+  audio: DetailedAudioHTMLAttributesSchema,
+  b: DetailedHTMLAttributesSchema,
+  base: DetailedBaseHTMLAttributesSchema,
+  bdi: DetailedHTMLAttributesSchema,
+  bdo: DetailedHTMLAttributesSchema,
+  big: DetailedHTMLAttributesSchema,
+  blockquote: DetailedBlockquoteHTMLAttributesSchema,
+  body: DetailedHTMLAttributesSchema,
+  br: DetailedHTMLAttributesSchema,
+  button: DetailedButtonHTMLAttributesSchema,
+  canvas: DetailedCanvasHTMLAttributesSchema,
+  caption: DetailedHTMLAttributesSchema,
+  cite: DetailedHTMLAttributesSchema,
+  code: DetailedHTMLAttributesSchema,
+  col: DetailedColHTMLAttributesSchema,
+  colgroup: DetailedColgroupHTMLAttributesSchema,
+  data: DetailedDataHTMLAttributesSchema,
+  datalist: DetailedHTMLAttributesSchema,
+  dd: DetailedHTMLAttributesSchema,
+  del: DetailedDelHTMLAttributesSchema,
+  details: DetailedDetailsHTMLAttributesSchema,
+  dfn: DetailedHTMLAttributesSchema,
+  dialog: DetailedDialogHTMLAttributesSchema,
+  div: DetailedHTMLAttributesSchema,
+  dl: DetailedHTMLAttributesSchema,
+  dt: DetailedHTMLAttributesSchema,
+  em: DetailedHTMLAttributesSchema,
+  embed: DetailedEmbedHTMLAttributesSchema,
+  fieldset: DetailedFieldsetHTMLAttributesSchema,
+  figcaption: DetailedHTMLAttributesSchema,
+  figure: DetailedHTMLAttributesSchema,
+  footer: DetailedHTMLAttributesSchema,
+  form: DetailedFormHTMLAttributesSchema,
+  h1: DetailedHTMLAttributesSchema,
+  h2: DetailedHTMLAttributesSchema,
+  h3: DetailedHTMLAttributesSchema,
+  h4: DetailedHTMLAttributesSchema,
+  h5: DetailedHTMLAttributesSchema,
+  h6: DetailedHTMLAttributesSchema,
+  head: DetailedHTMLAttributesSchema,
+  header: DetailedHTMLAttributesSchema,
+  hgroup: DetailedHTMLAttributesSchema,
+  hr: DetailedHTMLAttributesSchema,
+  html: DetailedHTMLHTMLAttributesSchema,
+  i: DetailedHTMLAttributesSchema,
+  iframe: DetailedIframeHTMLAttributesSchema,
+  img: DetailedImgHTMLAttributesSchema,
+  input: DetailedInputHTMLAttributesSchema,
+  ins: DetailedInsHTMLAttributesSchema,
+  kbd: DetailedHTMLAttributesSchema,
+  label: DetailedLabelHTMLAttributesSchema,
+  legend: DetailedHTMLAttributesSchema,
+  li: DetailedLiHTMLAttributesSchema,
+  link: DetailedLinkHTMLAttributesSchema,
+  main: DetailedHTMLAttributesSchema,
+  map: DetailedMapHTMLAttributesSchema,
+  mark: DetailedHTMLAttributesSchema,
+  menu: DetailedMenuHTMLAttributesSchema,
+  menuitem: DetailedHTMLAttributesSchema,
+  meta: DetailedMetaHTMLAttributesSchema,
+  meter: DetailedMeterHTMLAttributesSchema,
+  nav: DetailedHTMLAttributesSchema,
+  noscript: DetailedHTMLAttributesSchema,
+  object: DetailedObjectHTMLAttributesSchema,
+  ol: DetailedOlHTMLAttributesSchema,
+  optgroup: DetailedOptgroupHTMLAttributesSchema,
+  option: DetailedOptionHTMLAttributesSchema,
+  output: DetailedOutputHTMLAttributesSchema,
+  p: DetailedHTMLAttributesSchema,
+  picture: DetailedHTMLAttributesSchema,
+  pre: DetailedHTMLAttributesSchema,
+  progress: DetailedProgressHTMLAttributesSchema,
+  q: DetailedQuoteHTMLAttributesSchema,
+  rp: DetailedHTMLAttributesSchema,
+  rt: DetailedHTMLAttributesSchema,
+  ruby: DetailedHTMLAttributesSchema,
+  s: DetailedHTMLAttributesSchema,
+  samp: DetailedHTMLAttributesSchema,
+  script: DetailedScriptHTMLAttributesSchema,
+  search: DetailedHTMLAttributesSchema,
+  section: DetailedHTMLAttributesSchema,
+  select: DetailedSelectHTMLAttributesSchema,
+  slot: DetailedSlotHTMLAttributesSchema,
+  small: DetailedHTMLAttributesSchema,
+  source: DetailedSourceHTMLAttributesSchema,
+  span: DetailedHTMLAttributesSchema,
+  strong: DetailedHTMLAttributesSchema,
+  style: DetailedStyleHTMLAttributesSchema,
+  sub: DetailedHTMLAttributesSchema,
+  summary: DetailedHTMLAttributesSchema,
+  sup: DetailedHTMLAttributesSchema,
+  table: DetailedTableHTMLAttributesSchema,
+  template: DetailedTemplateHTMLAttributesSchema,
+  tbody: DetailedHTMLAttributesSchema,
+  td: DetailedTdHTMLAttributesSchema,
+  textarea: DetailedTextareaHTMLAttributesSchema,
+  tfoot: DetailedHTMLAttributesSchema,
+  th: DetailedThHTMLAttributesSchema,
+  thead: DetailedHTMLAttributesSchema,
+  time: DetailedTimeHTMLAttributesSchema,
+  title: DetailedHTMLAttributesSchema,
+  tr: DetailedHTMLAttributesSchema,
+  track: DetailedTrackHTMLAttributesSchema,
+  u: DetailedHTMLAttributesSchema,
+  ul: DetailedHTMLAttributesSchema,
+  var: DetailedHTMLAttributesSchema,
+  video: DetailedVideoHTMLAttributesSchema,
+  wbr: DetailedHTMLAttributesSchema,
+  webview: DetailedWebViewHTMLAttributesSchema,
+  // SVG
+  svg: DetailedSvgAttributesSchema,
+  animate: DetailedSvgAttributesSchema,
+  circle: DetailedSvgAttributesSchema,
+  animateMotion: DetailedSvgAttributesSchema,
+  animateTransform: DetailedSvgAttributesSchema,
+  clipPath: DetailedSvgAttributesSchema,
+  defs: DetailedSvgAttributesSchema,
+  desc: DetailedSvgAttributesSchema,
+  ellipse: DetailedSvgAttributesSchema,
+  feBlend: DetailedSvgAttributesSchema,
+  feColorMatrix: DetailedSvgAttributesSchema,
+  feComponentTransfer: DetailedSvgAttributesSchema,
+  feComposite: DetailedSvgAttributesSchema,
+  feConvolveMatrix: DetailedSvgAttributesSchema,
+  feDiffuseLighting: DetailedSvgAttributesSchema,
+  feDisplacementMap: DetailedSvgAttributesSchema,
+  feDistantLight: DetailedSvgAttributesSchema,
+  feDropShadow: DetailedSvgAttributesSchema,
+  feFlood: DetailedSvgAttributesSchema,
+  feFuncA: DetailedSvgAttributesSchema,
+  feFuncB: DetailedSvgAttributesSchema,
+  feFuncG: DetailedSvgAttributesSchema,
+  feFuncR: DetailedSvgAttributesSchema,
+  feGaussianBlur: DetailedSvgAttributesSchema,
+  feImage: DetailedSvgAttributesSchema,
+  feMerge: DetailedSvgAttributesSchema,
+  feMergeNode: DetailedSvgAttributesSchema,
+  feMorphology: DetailedSvgAttributesSchema,
+  feOffset: DetailedSvgAttributesSchema,
+  fePointLight: DetailedSvgAttributesSchema,
+  feSpecularLighting: DetailedSvgAttributesSchema,
+  feSpotLight: DetailedSvgAttributesSchema,
+  feTile: DetailedSvgAttributesSchema,
+  feTurbulence: DetailedSvgAttributesSchema,
+  filter: DetailedSvgAttributesSchema,
+  foreignObject: DetailedSvgAttributesSchema,
+  g: DetailedSvgAttributesSchema,
+  image: DetailedSvgAttributesSchema,
+  line: DetailedSvgAttributesSchema,
+  linearGradient: DetailedSvgAttributesSchema,
+  marker: DetailedSvgAttributesSchema,
+  mask: DetailedSvgAttributesSchema,
+  metadata: DetailedSvgAttributesSchema,
+  mpath: DetailedSvgAttributesSchema,
+  path: DetailedSvgAttributesSchema,
+  pattern: DetailedSvgAttributesSchema,
+  polygon: DetailedSvgAttributesSchema,
+  polyline: DetailedSvgAttributesSchema,
+  radialGradient: DetailedSvgAttributesSchema,
+  rect: DetailedSvgAttributesSchema,
+  set: DetailedSvgAttributesSchema,
+  stop: DetailedSvgAttributesSchema,
+  switch: DetailedSvgAttributesSchema,
+  symbol: DetailedSvgAttributesSchema,
+  text: DetailedSvgAttributesSchema,
+  textPath: DetailedSvgAttributesSchema,
+  tspan: DetailedSvgAttributesSchema,
+  use: DetailedSvgAttributesSchema,
+  view: DetailedSvgAttributesSchema,
+})
 
 /** @public */
 export type ElementAttributeList = z.output<typeof ElementAttributeListSchema>
 
-// ── Component catalog schemas (§3.4 of UI-GENERATION-PATTERNS.md) ─────
+// // ── Component catalog schemas ────────────────────────────────
 
-/**
- * Schema for a `$styleRef` reference — a closed-enum discriminated ref
- * that appears only within a component's `style[]` array.
- *
- * @public
- */
-export const styleRefSchema = z.object({ $styleRef: z.string() })
+// /**
+//  * Schema for a `$styleRef` reference — a closed-enum discriminated ref
+//  * that appears only within a component's `style[]` array.
+//  *
+//  * @internal
+//  */
+// const styleRefSchema = z.object({ $styleRef: z.string() })
 
-/** @public */
-export type StyleRef = z.output<typeof styleRefSchema>
+// /**
+//  * Schema for a `$bind` reference — a closed-enum discriminated ref
+//  * that appears only in `text`/content values or inside `attrs` values.
+//  *
+//  * @internal
+//  */
+// const bindSchema = z.object({ $bind: z.string() })
 
-/**
- * Schema for a `$bind` reference — a closed-enum discriminated ref
- * that appears only in `text`/content values or inside `attrs` values.
- *
- * @public
- */
-export const bindSchema = z.object({ $bind: z.string() })
+// /** @internal */
+// type Bind = z.output<typeof bindSchema>
 
-/** @public */
-export type Bind = z.output<typeof bindSchema>
+// /**
+//  * Schema for a single component entry in the flat component catalog.
+//  *
+//  * @remarks
+//  * Components are flat adjacency-list nodes (not nested trees):
+//  * - `id` — globally unique identifier used as the ref path in `children`
+//  * - `tag` — intrinsic HTML/SVG tag name or custom element tag
+//  * - `attrs` — plain HTML attributes (including `data-*`, `p-trigger`, etc.)
+//  * - `style` — array of `$styleRef` references (position-constrained)
+//  * - `children` — array of component `id` refs (resolved by the assembler)
+//  * - `text` — literal string/number content or a `$bind` reference
+//  *
+//  * Position constraints (structural, not superRefine):
+//  * - `$styleRef` is only legal as an element of `style[]`
+//  * - `$bind` is only legal in `text` or `attrs` values
+//  *
+//  * Cross-catalog id existence is NOT validated here (resolver's job).
+//  *
+//  * @internal
+//  */
+// const componentEntrySchema = z.object({
+//   id: z.string(),
+//   tag: z.union([ElementAttributeListSchema.keyof(), customElementTagSchema]),
+//   attrs: DetailedHTMLAttributesSchema.optional(),
+//   style: z.array(styleRefSchema).optional(),
+//   children: z.array(z.union([z.string(), z.number()])).optional(),
+//   text: z.union([z.string(), z.number(), bindSchema]).optional(),
+// })
 
-/**
- * Schema for a single component entry in the flat component catalog.
- *
- * @remarks
- * Components are flat adjacency-list nodes (not nested trees):
- * - `id` — globally unique identifier used as the ref path in `children`
- * - `tag` — intrinsic HTML/SVG tag name or custom element tag
- * - `attrs` — plain HTML attributes (including `data-*`, `p-trigger`, etc.)
- * - `style` — array of `$styleRef` references (position-constrained)
- * - `children` — array of component `id` refs (resolved by the assembler)
- * - `text` — literal string/number content or a `$bind` reference
- *
- * Position constraints (structural, not superRefine):
- * - `$styleRef` is only legal as an element of `style[]`
- * - `$bind` is only legal in `text` or `attrs` values
- *
- * Cross-catalog id existence is NOT validated here (resolver's job).
- *
- * @public
- */
-export const componentEntrySchema = z.object({
-  id: z.string(),
-  tag: z.union([ElementAttributeListSchema.keyof(), customElementTagSchema]),
-  attrs: DetailedHtmlAttributesSchema.optional(),
-  style: z.array(styleRefSchema).optional(),
-  children: z.array(z.union([z.string(), z.number()])).optional(),
-  text: z.union([z.string(), z.number(), bindSchema]).optional(),
-})
+// /** @internal */
+// type ComponentEntry = z.output<typeof componentEntrySchema>
 
-/** @public */
-export type ComponentEntry = z.output<typeof componentEntrySchema>
+// /**
+//  * Schema for a complete component catalog — an ordered array of
+//  * flat adjacency-list component entries.
+//  *
+//  * @internal
+//  */
+// const componentCatalogSchema = z.array(componentEntrySchema)
 
-/**
- * Schema for a complete component catalog — an ordered array of
- * flat adjacency-list component entries.
- *
- * @public
- */
-export const componentCatalogSchema = z.array(componentEntrySchema)
-
-/** @public */
-export type ComponentCatalog = z.output<typeof componentCatalogSchema>
+// /** @internal */
+// type ComponentCatalog = z.output<typeof componentCatalogSchema>

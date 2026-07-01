@@ -18,24 +18,33 @@
  */
 
 import { htmlEscape, isTypeOf, kebabCase, trueTypeOf } from '../utils.ts'
-import type { CSSProperties, StylesObject } from './css.types.ts'
 import {
   BOOLEAN_ATTRS,
+  CHILDREN,
   CUSTOM_ELEMENT_TAG_PATTERN,
   FLOW_CONTROL_HELPERS,
   P_FORM,
   P_SCALE,
+  P_TARGET,
   P_TRIGGER,
   PRIMITIVES,
   SCALE,
   SCALE_RANK,
   SITE_ROOT_JAVASCRIPT_PATH_PATTERN,
+  STYLE,
+  STYLES,
   TEMPLATE_OBJECT_IDENTIFIER,
   VALID_PRIMITIVE_CHILDREN,
   VOID_TAGS,
 } from './template.constants.ts'
-import { DetailedHtmlAttributesSchema, ElementAttributeListSchema } from './template.schemas.ts'
-import type { Children, CustomElementTag, TemplateObject } from './template.types.ts'
+import {
+  type Children,
+  type CustomElementTag,
+  type DetailedHTMLAttributes,
+  DetailedHTMLAttributesSchema,
+  ElementAttributeListSchema,
+  type TemplateObject,
+} from './template.schemas.ts'
 
 /**
  * @internal
@@ -82,9 +91,7 @@ class InvalidAttributeError extends Error implements Error {
   override name = 'invalid_attribute'
 }
 
-export type CreateFragment = (children: Children) => TemplateObject
-
-export const fragment: CreateFragment = (_children) => {
+export const fragment = (_children: Children): TemplateObject => {
   const children = Array.isArray(_children) ? _children.flat() : [_children]
   const html: string[] = []
   const stylesheets: string[] = []
@@ -117,32 +124,11 @@ const isCustomElementTag = (tag: string): tag is CustomElementTag => {
   return CUSTOM_ELEMENT_TAG_PATTERN.test(tag)
 }
 
-/** @internal Type signature for `h`. */
-export type CreateTemplate = (tag: string, attrs?: Record<string, unknown>) => TemplateObject
+const DESTRUCTURED_ATTRIBUTES = new Set([CHILDREN, 'class', P_FORM, P_SCALE, P_TARGET, P_TRIGGER, STYLE, STYLES])
 
 /**
  * @internal
- * Local type for safe destructuring — mirrors the Plaited-specific
- * properties handled by `h()` before attribute serialization.
- */
-type PlaitedAttrs = {
-  children?: Children
-  stylesheets?: string[]
-  style?: CSSProperties
-  styles?: StylesObject[]
-  [P_TRIGGER]?: Record<string, string>
-  [P_SCALE]?: keyof typeof SCALE
-  [P_FORM]?: string
-  class?: string
-  classNames?: string[]
-  for?: string
-  shadowrootmode?: 'open' | 'closed'
-  [key: string]: unknown
-}
-
-/**
- * @internal
- * Creates Plaited template objects from JSX-like calls.
+ * Creates Plaited template objects from hyperscript-like calls.
  * Core template factory with security-first design and style management.
  *
  * @param _tag - HTML/SVG tag name, custom element tag, or FunctionTemplate
@@ -160,52 +146,42 @@ type PlaitedAttrs = {
  * - Automatic HTML escaping
  * - No inline event handlers
  * - External site-root script bootstrap only
- *
- * @see {@link h} for JSX factory alias
- * @see {@link fragment} for grouping elements
  */
-export const h: CreateTemplate = (_tag, attrs = {}) => {
-  const safeAttrs = attrs as PlaitedAttrs
-  const {
+export const h = (
+  _tag: string,
+  {
     children: _children,
-    stylesheets: _stylesheets,
-    style: resolvedStyle,
-    styles,
-    [P_TRIGGER]: pTrigger,
-    [P_SCALE]: pScale = 'rel',
-    [P_FORM]: pForm,
     class: cls,
-    classNames,
-    for: htmlFor,
-    ...attributes
-  } = safeAttrs
-
-  let stylesheets = _stylesheets ?? []
-  const resolvedClassNames = new Set(classNames)
-
-  // ── Accumulate resolved StylesObject[] ─────────────────────────
-  if (styles) {
-    for (const styleObj of styles) {
-      if (!styleObj) continue
-      for (const cn of styleObj.classNames) resolvedClassNames.add(cn)
-      stylesheets.push(...styleObj.stylesheets)
-    }
-  }
-
-  const normalizedAttributes: Record<string, unknown> = {}
-  for (const [key, value] of Object.entries(attributes)) {
-    normalizedAttributes[key.toLowerCase()] = value
-  }
-
-  const resolvedChildren = _children
-
+    [P_FORM]: pForm,
+    [P_SCALE]: pScale = 'rel',
+    [P_TRIGGER]: pTrigger,
+    style,
+    styles,
+    ...attrs
+  }: DetailedHTMLAttributes = {},
+): TemplateObject => {
   const tag = htmlEscape(_tag.trim().toLowerCase())
   if (tag.includes('-') && !isCustomElementTag(tag)) {
     throw new InvalidCustomElementTagError(`Invalid custom element tag: ${tag}`)
   }
+  const normalizedAttributes: DetailedHTMLAttributes = {}
+  for (const [key, value] of Object.entries(attrs)) {
+    const normalizedKey = key.toLowerCase()
+    if (DESTRUCTURED_ATTRIBUTES.has(normalizedKey)) continue
+    normalizedAttributes[normalizedKey] = value
+  }
+  const tagSchema =
+    tag in ElementAttributeListSchema.shape
+      ? ElementAttributeListSchema.shape[tag as keyof typeof ElementAttributeListSchema.shape]
+      : DetailedHTMLAttributesSchema
+  const validationResult = tagSchema.safeParse(normalizedAttributes)
+  if (!validationResult.success) {
+    const issues = validationResult.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`).join('; ')
+    throw new InvalidAttributeError(`Invalid attributes for <${tag}>: ${issues}`)
+  }
 
   if (tag === 'script') {
-    if (resolvedChildren !== undefined) {
+    if (_children !== undefined) {
       throw new ScriptPolicyError('Script tags cannot contain inline content')
     }
     const src = normalizedAttributes.src
@@ -214,55 +190,30 @@ export const h: CreateTemplate = (_tag, attrs = {}) => {
     }
   }
 
-  // ── Schema validation on resolved attrs ────────────────────────────
-  const resolvedAttrs: Record<string, unknown> = {}
-  if (resolvedChildren !== undefined) resolvedAttrs.children = resolvedChildren
-  if (pTrigger) resolvedAttrs[P_TRIGGER] = pTrigger
-  if (pScale) resolvedAttrs[P_SCALE] = pScale
-  if (cls) resolvedAttrs.class = cls
-  if (classNames) resolvedAttrs.classNames = classNames
-  // Include normalized attrs minus keys handled by destructuring above.
-  const platedAttrKeys = new Set([
-    'children',
-    'style',
-    'stylesheets',
-    P_TRIGGER,
-    P_SCALE,
-    P_FORM,
-    'class',
-    'classnames',
-    'for',
-    'shadowrootmode',
-  ])
-  for (const [key, value] of Object.entries(normalizedAttributes)) {
-    if (!platedAttrKeys.has(key)) {
-      resolvedAttrs[key] = value
+  let classNames = new Set<string>()
+  let stylesheets = []
+  // ── Accumulate resolved StylesObject[] ─────────────────────────
+  if (styles) {
+    for (const styleObj of styles) {
+      if (styleObj.classNames) {
+        classNames = new Set([...classNames, ...styleObj.classNames])
+      }
+      stylesheets.push(...styleObj.stylesheets)
     }
-  }
-
-  const tagSchema =
-    tag in ElementAttributeListSchema.shape
-      ? ElementAttributeListSchema.shape[tag as keyof typeof ElementAttributeListSchema.shape]
-      : DetailedHtmlAttributesSchema
-  const validationResult = tagSchema.safeParse(resolvedAttrs)
-  if (!validationResult.success) {
-    const issues = validationResult.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`).join('; ')
-    throw new InvalidAttributeError(`Invalid attributes for <${tag}>: ${issues}`)
   }
 
   const start = [`<${tag} `]
   // Handle JavaScript-reserved words commonly used in HTML.
-  if (htmlFor) start.push(`for="${htmlEscape(`${htmlFor}`)}" `)
-  cls && resolvedClassNames.add(htmlEscape(cls))
-  if (resolvedClassNames.size) start.push(`class="${[...resolvedClassNames].join(' ')}" `)
+  cls && classNames.add(htmlEscape(cls))
+  if (classNames.size) start.push(`class="${[...classNames].join(' ')}" `)
   if (pTrigger) {
     const value = Object.entries(pTrigger)
       .map<string>(([ev, req]) => `${ev}:${req}`)
       .join(' ')
     start.push(`${P_TRIGGER}="${htmlEscape(value)}" `)
   }
-  if (resolvedStyle) {
-    const value = Object.entries(resolvedStyle)
+  if (style) {
+    const value = Object.entries(style)
       // Convert camelCase style props into dash-case unless they are CSS variables.
       .map<string>(([prop, val]) => `${prop.startsWith('--') ? prop : kebabCase(prop)}:${val};`)
       .join(' ')
@@ -295,7 +246,7 @@ export const h: CreateTemplate = (_tag, attrs = {}) => {
   }
   start.push('>')
   const end: string[] = []
-  const children = Array.isArray(resolvedChildren) ? resolvedChildren.flat() : [resolvedChildren]
+  const children = Array.isArray(_children) ? _children.flat() : [_children]
   const length = children.length
   let highestChildScale: keyof typeof SCALE = SCALE.rel
   for (let i = 0; i < length; i++) {
