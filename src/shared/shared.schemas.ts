@@ -23,6 +23,16 @@ export const BPEventSchema = z.object({
   type: z.string(),
   detail: JsonObjectSchema.optional(),
   topic: z.string().optional(),
+  /**
+   * Opaque, non-serializable side-channel for carrying non-JSON values (File,
+   * Blob, FormData, ArrayBuffer, structured-clone values) straight to handlers.
+   *
+   * @remarks
+   * `detail` stays JSON for frontier analysis; `payload` never participates
+   * in event matching and never appears in any {@link SnapshotMessage} variant.
+   * Frontier analysis snapshots field-pick `type`/`detail` only.
+   */
+  payload: z.unknown().optional(),
 })
 
 /** @public */

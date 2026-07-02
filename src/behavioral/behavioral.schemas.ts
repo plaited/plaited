@@ -16,7 +16,7 @@ export const BPListenerSchema = z.object({
 
 export type BPListener = {
   type: string
-  detailSchema?: z.ZodType<JsonObject>
+  detailSchema?: z.ZodType<unknown>
   detailMatch?: keyof typeof DETAIL_MATCH
   topic?: string
 }

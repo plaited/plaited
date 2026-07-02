@@ -43,12 +43,48 @@ const normalizeListeners = (listener: BPListener | BPListener[]) =>
  * Serializes the pending set into a snapshot-friendly thread list.
  */
 const serializePending = (pending: Set<PendingBid>) =>
-  Array.from(pending).map(({ waitFor, block, interrupt, generator: _gen, ...rest }) => ({
+  Array.from(pending).map(({ waitFor, block, interrupt, request, generator: _gen, ...rest }) => ({
     ...rest,
+    // request is field-picked to { type, detail } so the opaque `payload`
+    // side-channel never enters any SnapshotMessage (frontier-analysis invariant).
+    ...(request && {
+      request: {
+        type: request.type,
+        ...(request.detail === undefined ? {} : { detail: request.detail }),
+      },
+    }),
     ...(waitFor && { waitFor: normalizeListeners(waitFor) }),
     ...(block && { block: normalizeListeners(block) }),
     ...(interrupt && { interrupt: normalizeListeners(interrupt) }),
   }))
+
+/**
+ * @internal
+ * Projects a {@link CandidateBid} to the JSON-only snapshot shape (`priority`,
+ * `type`, `detail`, `ingress`, `topic`), omitting the opaque `payload` side-channel.
+ *
+ * Frontiers must stay JSON so frontier analysis (snapshot replay/matching) and the
+ * visited-set key never observe non-serializable values.
+ */
+const toCandidateSnapshot = ({ priority, type, detail, ingress, topic }: CandidateBid) => ({
+  priority,
+  type,
+  ...(detail === undefined ? {} : { detail }),
+  ...(ingress === undefined ? {} : { ingress }),
+  ...(topic === undefined ? {} : { topic }),
+})
+
+/**
+ * @internal
+ * Projects the selected candidate to the JSON-only {@link SnapshotEvent} shape
+ * (`type`, `detail`, `ingress`, `topic`), omitting `payload`.
+ */
+const toSelectedSnapshot = ({ type, detail, ingress, topic }: CandidateBid) => ({
+  type,
+  ...(detail === undefined ? {} : { detail }),
+  ...(ingress === undefined ? {} : { ingress }),
+  ...(topic === undefined ? {} : { topic }),
+})
 
 const createPublisher = <T>() => {
   const listeners = new Set<(value: T) => void | Promise<void>>()
@@ -175,8 +211,8 @@ export const behavioral: Behavioral = () => {
       kind: SNAPSHOT_MESSAGE_KINDS.frontier,
       step,
       status: frontier.status,
-      candidates,
-      enabled,
+      candidates: candidates.map(toCandidateSnapshot),
+      enabled: enabled.map(toCandidateSnapshot),
     })
 
     if (frontier.status === FRONTIER_STATUS.ready) {
@@ -187,7 +223,7 @@ export const behavioral: Behavioral = () => {
       snapshotPublisher({
         kind: SNAPSHOT_MESSAGE_KINDS.selection,
         step,
-        selected,
+        selected: toSelectedSnapshot(selected),
       })
       nextStep(selected)
       return
@@ -219,7 +255,12 @@ export const behavioral: Behavioral = () => {
       running,
       pending,
     })
-    actionPublisher({ type: selectedEvent.type, detail: selectedEvent.detail, topic: selectedEvent.topic })
+    actionPublisher({
+      type: selectedEvent.type,
+      detail: selectedEvent.detail,
+      topic: selectedEvent.topic,
+      ...(selectedEvent.payload === undefined ? {} : { payload: selectedEvent.payload }),
+    })
 
     /**
      * @internal
@@ -288,7 +329,11 @@ export const behavioral: Behavioral = () => {
       if (data.type === type) {
         try {
           if (once) disconnect()
-          await handler(data.detail as Parameters<typeof handler>[0], disconnect)
+          await handler(
+            data.detail as Parameters<typeof handler>[0],
+            disconnect,
+            data.payload as Parameters<typeof handler>[2],
+          )
         } catch (error) {
           const message: FeedbackError = {
             kind: SNAPSHOT_MESSAGE_KINDS.feedback_error,

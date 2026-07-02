@@ -108,6 +108,8 @@ export type CandidateBid = {
   type: string
   /** Optional detail payload of the requested event, contains any data associated with this event. */
   detail?: BPEvent['detail']
+  /** Opaque non-JSON side-channel carried from the triggering event to handlers. Never participates in matching. */
+  payload?: unknown
 
   ingress?: true
   topic?: string
@@ -180,11 +182,23 @@ export type SnapshotListener = (msg: SnapshotMessage) => void | Promise<void>
 // biome-ignore lint/suspicious/noExplicitAny: Default event map allows any detail type, constrained by Handlers<T>
 export type EventDetails = Record<string, any>
 
-export type Handler<T> = (detail: T, disconnect: Disconnect) => void | Promise<void>
+/**
+ * A feedback handler invoked when a matching event is selected and published.
+ *
+ * @typeParam T - Detail payload type for the event.
+ * @typeParam P - Opaque `payload` type carried alongside `detail` for non-JSON
+ * side-channel data (File, Blob, FormData, etc.). Defaults to `unknown`.
+ *
+ * @param detail - The JSON-serializable event detail.
+ * @param disconnect - Cleanup function to unsubscribe this handler.
+ * @param payload - Opaque non-JSON side-channel value, if one was supplied on the event.
+ * @returns `void` or `Promise<void>`. Thrown errors surface as `feedback_error` snapshots.
+ */
+export type Handler<T, P = unknown> = (detail: T, disconnect: Disconnect, payload?: P) => void | Promise<void>
 
-export type AddHandler = <T extends JsonObject | undefined = undefined>(
+export type AddHandler = <T extends JsonObject | undefined = undefined, P = unknown>(
   type: string,
-  handler: Handler<T>,
+  handler: Handler<T, P>,
   once?: true,
 ) => () => void
 
