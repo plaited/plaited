@@ -14,7 +14,7 @@
  */
 
 import * as z from 'zod'
-import type { CSSProperties } from './css.types.ts'
+import { cssPropertySchema } from './css.schemas.ts'
 import {
   CHILDREN,
   CLASS,
@@ -93,13 +93,6 @@ const inputTypeSchema = z.enum([
   'url',
   'week',
 ])
-
-/**
- * Placeholder schema for CSSProperties until a dedicated CSS schemas file exists.
- * Type-constrained to match the CSSProperties type from css.types.ts.
- * @internal
- */
-const cssPropertiesSchema: z.ZodType<CSSProperties> = z.record(z.string(), z.union([z.string(), z.number()]))
 
 /**
  * Minimal schema for a resolved StylesObject — classNames + stylesheets.
@@ -304,7 +297,7 @@ const PlaitedAttributesSchema = z.object({
   [P_SCALE]: z.enum(Object.values(SCALE)).optional(),
   [P_TARGET]: z.union([z.string(), z.number()]).optional(),
   [P_TRIGGER]: z.record(z.string(), z.string()).optional(),
-  [STYLE]: cssPropertiesSchema.optional(),
+  [STYLE]: cssPropertySchema.optional(),
   [STYLES]: z.array(stylesObjectSchema).optional(),
 })
 
@@ -1352,66 +1345,4 @@ export const ElementAttributeListSchema = z
 /** @public */
 export type ElementAttributeList = z.output<typeof ElementAttributeListSchema>
 
-// // ── Component catalog schemas ────────────────────────────────
-
-// /**
-//  * Schema for a `$styleRef` reference — a closed-enum discriminated ref
-//  * that appears only within a component's `style[]` array.
-//  *
-//  * @internal
-//  */
-// const styleRefSchema = z.object({ $styleRef: z.string() })
-
-// /**
-//  * Schema for a `$bind` reference — a closed-enum discriminated ref
-//  * that appears only in `text`/content values or inside `attrs` values.
-//  *
-//  * @internal
-//  */
-// const bindSchema = z.object({ $bind: z.string() })
-
-// /** @internal */
-// type Bind = z.output<typeof bindSchema>
-
-// /**
-//  * Schema for a single component entry in the flat component catalog.
-//  *
-//  * @remarks
-//  * Components are flat adjacency-list nodes (not nested trees):
-//  * - `id` — globally unique identifier used as the ref path in `children`
-//  * - `tag` — intrinsic HTML/SVG tag name or custom element tag
-//  * - `attrs` — plain HTML attributes (including `data-*`, `p-trigger`, etc.)
-//  * - `style` — array of `$styleRef` references (position-constrained)
-//  * - `children` — array of component `id` refs (resolved by the assembler)
-//  * - `text` — literal string/number content or a `$bind` reference
-//  *
-//  * Position constraints (structural, not superRefine):
-//  * - `$styleRef` is only legal as an element of `style[]`
-//  * - `$bind` is only legal in `text` or `attrs` values
-//  *
-//  * Cross-catalog id existence is NOT validated here (resolver's job).
-//  *
-//  * @internal
-//  */
-// const componentEntrySchema = z.object({
-//   id: z.string(),
-//   tag: z.union([ElementAttributeListSchema.keyof(), customElementTagSchema]),
-//   attrs: DetailedHTMLAttributesSchema.optional(),
-//   style: z.array(styleRefSchema).optional(),
-//   children: z.array(z.union([z.string(), z.number()])).optional(),
-//   text: z.union([z.string(), z.number(), bindSchema]).optional(),
-// })
-
-// /** @internal */
-// type ComponentEntry = z.output<typeof componentEntrySchema>
-
-// /**
-//  * Schema for a complete component catalog — an ordered array of
-//  * flat adjacency-list component entries.
-//  *
-//  * @internal
-//  */
-// const componentCatalogSchema = z.array(componentEntrySchema)
-
-// /** @internal */
-// type ComponentCatalog = z.output<typeof componentCatalogSchema>
+//

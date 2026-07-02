@@ -54,12 +54,12 @@ export type GeneratedCssSchemas = {
 }
 
 const HARDCODED_VENDOR_ENTRIES: Record<string, string> = {
-  '-webkit-appearance': 'z.union([z.string(), z.number()])',
-  '-webkit-backdrop-filter': 'z.union([z.string(), z.number()])',
-  '-webkit-box-orient': 'z.union([z.string(), z.number()])',
-  '-webkit-hyphens': 'z.union([z.string(), z.number()])',
-  '-webkit-line-clamp': "z.enum(['none']).or(z.number())",
-  '-webkit-user-select': "z.enum(['auto', 'text', 'none', 'contain', 'all'])",
+  '-webkit-appearance': 'z.union([z.string(), z.number(), tokenRefSchema])',
+  '-webkit-backdrop-filter': 'z.union([z.string(), z.number(), tokenRefSchema])',
+  '-webkit-box-orient': 'z.union([z.string(), z.number(), tokenRefSchema])',
+  '-webkit-hyphens': 'z.union([z.string(), z.number(), tokenRefSchema])',
+  '-webkit-line-clamp': "z.enum(['none']).or(z.number()).or(tokenRefSchema)",
+  '-webkit-user-select': "z.enum(['auto', 'text', 'none', 'contain', 'all']).or(tokenRefSchema)",
 }
 
 const classifyProperty = (syntax: string): PropertySyntax => {
@@ -135,9 +135,12 @@ const generateLiteralSchema = (property: PropertyEntry): string => {
   }
 }
 
-const generateValueSchema = (property: PropertyEntry): string => {
+const KEYFRAME_ELIGIBLE_NAMES = new Set(['animation', 'animation-name'])
+
+const generateValueSchema = (name: string, property: PropertyEntry): string => {
   const literalSchema = generateLiteralSchema(property)
-  return literalSchema
+  const refs = KEYFRAME_ELIGIBLE_NAMES.has(name) ? 'tokenRefSchema, keyframeRefSchema' : 'tokenRefSchema'
+  return `z.union([${literalSchema}, ${refs}])`
 }
 
 const generatePropertyNames = (properties: PropertyEntry[]): string[] => {
@@ -185,19 +188,18 @@ export const generateCssSchemas = (cssJson: { properties: PropertyEntry[] }): Ge
   for (const prop of properties) {
     for (const name of prop.styleDeclaration) {
       nameToProp.set(name, prop)
-      const valueSchema = generateValueSchema(prop)
-      objectEntries.push(`  ${JSON.stringify(name)}: ${valueSchema}`)
+      const valueSchema = generateValueSchema(name, prop)
+      objectEntries.push(`  ${JSON.stringify(name)}: ${valueSchema}.optional()`)
     }
   }
 
   // Add hardcoded vendor entries
   for (const [name, schema] of Object.entries(HARDCODED_VENDOR_ENTRIES)) {
-    objectEntries.push(`  ${JSON.stringify(name)}: ${schema}`)
+    objectEntries.push(`  ${JSON.stringify(name)}: ${schema}.optional()`)
     allNames.push(name)
   }
 
   allNames.sort()
-  const propertyNameEntries = allNames.map((n) => JSON.stringify(n)).join(', ')
 
   const objectCode = objectEntries.join(',\n')
 
@@ -209,13 +211,16 @@ export const generateCssSchemas = (cssJson: { properties: PropertyEntry[] }): Ge
     ' * Do not edit manually.',
     ' */',
     "import { z } from 'zod'",
+    "import { KEYFRAME_REF_PATTERN, TOKEN_REF_PATTERN } from './css.constants.ts'",
     '',
+    'const tokenRefSchema = z.string().regex(TOKEN_REF_PATTERN)',
+    'const keyframeRefSchema = z.string().regex(KEYFRAME_REF_PATTERN)',
     '/**',
     ' * Schema mapping kebab-case CSS property names to their value schemas.',
     ' * Unknown properties (e.g. `--*` custom properties) fall through to',
     ' * the catchall: `z.union([z.string(), z.number()])`.',
     ' */',
-    `export const cssPropertySchema = z.object({\n${objectCode},\n}).catchall(z.union([z.string(), z.number()]))`,
+    `export const cssPropertySchema = z.object({\n${objectCode},\n}).catchall(z.union([z.string(), z.number(), tokenRefSchema]))`,
     '',
     '/**',
     ' * Schema for valid CSS property names — keyof derived from cssPropertySchema.',

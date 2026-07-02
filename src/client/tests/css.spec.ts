@@ -1,19 +1,12 @@
 import { expect, test } from 'bun:test'
-import {
-  InvalidKeyframeRefPositionError,
-  InvalidPropertyNameError,
-  InvalidPropertyValueError,
-  MissingRegistryError,
-  UnresolvedTokenRefError,
-} from '../css.errors.ts'
-import { createKeyframes, createStyles } from '../css.ts'
+import { createKeyframes, createStyles, InvalidPropertyNameError, InvalidPropertyValueError } from '../css.ts'
 import { h } from '../template.ts'
 
 test('createStyles: supports simple rules', () => {
   const testStyles = createStyles({
     simpleRules: {
-      fontSize: `16px`,
-      lineHeight: 1.5,
+      'font-size': `16px`,
+      'line-height': 1.5,
       color: 'rgb(60,60,60)',
     },
   })
@@ -23,7 +16,7 @@ test('createStyles: supports simple rules', () => {
 test('createStyles: supports custom props', () => {
   const testStyles = createStyles({
     customProps: {
-      '--customColor': 'red',
+      '--custom-prop-name': 'red',
       '--custom-color': 'red',
     },
   })
@@ -33,7 +26,7 @@ test('createStyles: supports custom props', () => {
 test('createStyles: supports pseudo-classes', () => {
   const testStyles = createStyles({
     pseudoClass: {
-      backgroundColor: {
+      'background-color': {
         $default: 'lightblue',
         ':hover': 'blue',
         ':active': 'darkblue',
@@ -137,57 +130,6 @@ test('createStyles: validates $host nested values', () => {
   }).toThrow(InvalidPropertyNameError)
 })
 
-test('createStyles: resolves $tokenRef from registry and inlines var(--…)', () => {
-  const registry = {
-    tokens: new Map([
-      ['color.primary', { cssVar: 'var(--color-primary)' as const, stylesheets: [':root{--color-primary:blue;}'] }],
-    ]),
-  }
-  const style = createStyles(
-    {
-      btn: { color: { $tokenRef: 'color.primary' } },
-    },
-    registry,
-  )
-  expect(style.btn.classNames).toEqual(['btn', expect.stringMatching(/^cls_/)])
-  expect(style.btn.stylesheets).toContain(':root{--color-primary:blue;}')
-  expect(style.btn.stylesheets.some((s: string) => s.includes('var(--color-primary)'))).toBe(true)
-})
-
-test('createStyles: $tokenRef without registry throws MissingRegistryError', () => {
-  expect(() => {
-    createStyles({ btn: { color: { $tokenRef: 'color.primary' } } })
-  }).toThrow(MissingRegistryError)
-})
-
-test('createStyles: missing $tokenRef in registry throws UnresolvedTokenRefError', () => {
-  expect(() => {
-    createStyles({ btn: { color: { $tokenRef: 'missing.token' } } }, { tokens: new Map() })
-  }).toThrow(UnresolvedTokenRefError)
-})
-
-test('createStyles: $keyframeRef under color throws InvalidKeyframeRefPositionError', () => {
-  expect(() => {
-    createStyles({ btn: { color: { $keyframeRef: 'fadeIn' } } }, { keyframes: new Map() })
-  }).toThrow(InvalidKeyframeRefPositionError)
-})
-
-test('createStyles: $keyframeRef under animation-name resolves to hashed id', () => {
-  const registry = {
-    keyframes: new Map([['fadeIn', { id: 'fadeIn_cls123', stylesheets: ['@keyframes fadeIn_cls123{}'] }]]),
-    tokens: new Map(),
-  }
-  const style = createStyles(
-    {
-      anim: { 'animation-name': { $keyframeRef: 'fadeIn' } },
-    },
-    registry,
-  )
-  expect(style.anim.classNames).toEqual(['anim', expect.stringMatching(/^cls_/)])
-  expect(style.anim.stylesheets.some((s: string) => s.includes('animation-name:fadeIn_cls123'))).toBe(true)
-  expect(style.anim.stylesheets).toContain('@keyframes fadeIn_cls123{}')
-})
-
 test('createStyles: literal path (no ref) works without registry', () => {
   expect(() => {
     createStyles({ btn: { color: 'red', 'box-sizing': 'border-box' } })
@@ -218,4 +160,116 @@ test('createKeyframes: works with var() values', () => {
 
   expect(spin()).toMatchSnapshot()
   expect(pulse()).toMatchSnapshot()
+})
+
+test('createStyles: empty class object produces empty result', () => {
+  const result = createStyles({})
+  expect(result).toEqual({})
+})
+
+test('createStyles: zero and empty string are valid values', () => {
+  const result = createStyles({
+    box: {
+      width: 0,
+      opacity: 0.5,
+      margin: '',
+    },
+  })
+  expect(result.box.classNames.length).toBeGreaterThanOrEqual(1)
+  expect(result.box.stylesheets.length).toBeGreaterThanOrEqual(1)
+})
+
+test('createStyles: deterministic output — same input produces same hash', () => {
+  const a = createStyles({ btn: { color: 'red' } })
+  const b = createStyles({ btn: { color: 'red' } })
+  expect(a.btn.classNames).toEqual(b.btn.classNames)
+  expect(a.btn.stylesheets).toEqual(b.btn.stylesheets)
+})
+
+test('createStyles: $root with custom properties', () => {
+  const result = createStyles({
+    $root: {
+      '--primary': 'blue',
+      '--secondary': 'gray',
+    },
+  })
+  expect(result.$root.classNames).toEqual([])
+  expect(result.$root.stylesheets.length).toBeGreaterThanOrEqual(1)
+  expect(result.$root.stylesheets.some((s) => s.startsWith(':root'))).toBe(true)
+})
+
+test('createStyles: $root with pseudo-class within property', () => {
+  const result = createStyles({
+    $root: {
+      color: {
+        $default: 'red',
+        ':hover': 'blue',
+      },
+    },
+  })
+  expect(result.$root.classNames).toEqual([])
+  // Should have at least two stylesheets (default + :hover)
+  expect(result.$root.stylesheets.length).toBeGreaterThanOrEqual(2)
+})
+
+test('createStyles: $host with compound selectors', () => {
+  const result = createStyles({
+    $host: {
+      color: {
+        $compoundSelectors: {
+          '[data-theme="dark"]': {
+            $default: 'white',
+            ':hover': 'lightgray',
+          },
+        },
+      },
+    },
+  })
+  expect(result.$host.classNames).toEqual([])
+  expect(result.$host.stylesheets.length).toBeGreaterThanOrEqual(1)
+})
+
+test('createStyles: $top with @media at-rule', () => {
+  const result = createStyles({
+    $top: {
+      '@media (prefers-color-scheme: dark)': {
+        '--bg': 'black',
+      },
+    },
+  })
+  expect(result.$top.classNames).toEqual([])
+  expect(result.$top.stylesheets.some((s) => s.startsWith('@media'))).toBe(true)
+})
+
+test('createStyles: enum property with valid value', () => {
+  expect(() => {
+    createStyles({ flex: { display: 'flex' } })
+  }).not.toThrow()
+})
+
+test('createStyles: enum-or-number property with valid number', () => {
+  expect(() => {
+    createStyles({ grow: { 'flex-grow': 2 } })
+  }).not.toThrow()
+})
+
+test('createStyles: border shorthand is string-or-number', () => {
+  expect(() => {
+    createStyles({ border: { border: '1px solid black' } })
+  }).not.toThrow()
+})
+
+test('createKeyframes: multiple named keyframe sets in one call', () => {
+  const result = createKeyframes('anim', {
+    '0%': { opacity: 0 },
+    '50%': { opacity: 0.5 },
+    '100%': { opacity: 1 },
+  })
+  const { anim } = result
+  expect(anim.id.startsWith('anim_')).toBeTruthy()
+  const out = anim()
+  expect(out.stylesheets.length).toBe(1)
+  expect(out.stylesheets[0]).toContain('@keyframes')
+  expect(out.stylesheets[0]).toContain('0%')
+  expect(out.stylesheets[0]).toContain('100%')
 })

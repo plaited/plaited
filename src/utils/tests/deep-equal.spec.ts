@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test'
-import { deepEqual } from '../../utils'
+import { deepEqual } from '../../utils.ts'
 
 test('deepEqual()', () => {
   /** Primitive values */

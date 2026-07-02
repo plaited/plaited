@@ -1,5 +1,5 @@
 import * as z from 'zod'
-import type { BPListener, Spec, SpecIdioms, BPListenerSchema } from './behavioral.schemas.ts'
+import type { BPListener, BPListenerSchema, Spec, SpecIdioms } from './behavioral.schemas.ts'
 import type { Idioms, RulesFunction } from './behavioral.types.ts'
 import { sync, thread } from './behavioral.utils.ts'
 

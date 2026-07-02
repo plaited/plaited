@@ -1,6 +1,6 @@
 // Bun Snapshot v1, https://bun.sh/docs/test/snapshots
 
-exports[`generated output uses z.object with catchall, no ref schemas 1`] = `
+exports[`generated output uses z.object with catchall and token/keyframe ref schemas 1`] = `
 {
   "header": 
 "// @ts-nocheck
@@ -10,9 +10,11 @@ exports[`generated output uses z.object with catchall, no ref schemas 1`] = `
  * Do not edit manually.
  */
 import { z } from 'zod'
+import { KEYFRAME_REF_PATTERN, TOKEN_REF_PATTERN } from './css.constants.ts'
 
-/**
- * Schema mapping kebab-case CSS property names to their value schemas."
+const tokenRefSchema = z.string().regex(TOKEN_REF_PATTERN)
+const keyframeRefSchema = z.string().regex(KEYFRAME_REF_PATTERN)
+/**"
 ,
   "typeTail": 
 " *

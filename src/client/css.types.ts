@@ -1,8 +1,6 @@
 import type { CSS_RESERVED_KEYS } from './css.constants.ts'
 import type { CSSProperties } from './css.schemas.ts'
 
-export type { CSSProperties }
-
 /**
  * Registry for inline $ref resolution.
  * Populated from saved catalog (JSONL) entries — how the registry is

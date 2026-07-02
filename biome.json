@@ -83,7 +83,7 @@
   },
   "overrides": [
     {
-      "includes": ["framework/**/*.ts", "framework/**/*.tsx"],
+      "includes": ["src/**/*.ts"],
       "linter": {
         "rules": {
           "complexity": { "noArguments": "error" },
@@ -92,15 +92,7 @@
       }
     },
     {
-      "includes": [
-        "framework/**/tests/**/*",
-        "scripts/**/*",
-        "skills/**/*",
-        "src/cli/**/*",
-        "bin/*",
-        "src/**/*-cli.ts",
-        "framework/src/agent/agent.ts"
-      ],
+      "includes": ["src/**/tests/**/*", "scripts/**/*", "skills/**/*", "src/cli/**/*", "bin/*", "src/cli/**"],
       "linter": {
         "rules": {
           "suspicious": {
