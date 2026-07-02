@@ -25,12 +25,12 @@ export const ensureArray = <T>(obj: T | T[] = []) => (Array.isArray(obj) ? obj :
  * @internal
  * Creates a checker function to determine if a given BPListener matches a CandidateBid.
  */
-export const isListeningFor = ({ type, detail, topic }: CandidateBid) => {
+export const isListeningFor = ({ type, detail, page }: CandidateBid) => {
   return (listener: BPListener): boolean => {
-    const topicMatches = listener.topic ? topic === listener.topic : true
+    const pageMatches = listener.page ? page === listener.page : true
     const schemaMatches = listener.detailSchema ? listener.detailSchema.safeParse(detail).success : true
     const detailMatches = listener.detailMatch === 'invalid' ? !schemaMatches : schemaMatches
-    return listener.type === type && topicMatches && detailMatches
+    return listener.type === type && pageMatches && detailMatches
   }
 }
 
@@ -47,13 +47,13 @@ export const computeFrontier = ({ pending }: { pending: Set<PendingBid> }): Fron
   const blocked: BPListener[] = []
   const candidates: CandidateBid[] = []
 
-  for (const { request, priority, block, ingress, topic } of pending) {
+  for (const { request, priority, block, ingress, page } of pending) {
     block && blocked.push(...ensureArray(block))
     request &&
       candidates.push({
         priority,
         ingress,
-        topic,
+        page,
         ...request,
       })
   }
@@ -78,7 +78,7 @@ export const computeFrontier = ({ pending }: { pending: Set<PendingBid> }): Fron
 
 export const advanceRunningToPending = (running: Set<RunningBid>, pending: Set<PendingBid>) => {
   for (const bid of running) {
-    const { generator, priority, label, ingress, topic } = bid
+    const { generator, priority, label, ingress, page } = bid
     const { value, done } = generator.next()
     !done &&
       pending.add({
@@ -86,7 +86,7 @@ export const advanceRunningToPending = (running: Set<RunningBid>, pending: Set<P
         ingress,
         label,
         generator,
-        topic,
+        page,
         ...value,
       })
     running.delete(bid)
@@ -95,7 +95,7 @@ export const advanceRunningToPending = (running: Set<RunningBid>, pending: Set<P
 
 const eventMatchesCandidate = (request: BPEvent, selectedEvent: CandidateBid) => {
   if (selectedEvent.type !== request.type) return false
-  if (selectedEvent.topic && selectedEvent.topic !== request.topic) return false
+  if (selectedEvent.page && selectedEvent.page !== request.page) return false
   return deepEqual(request.detail, selectedEvent.detail)
 }
 

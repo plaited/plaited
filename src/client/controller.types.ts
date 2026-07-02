@@ -112,7 +112,7 @@ export type ControllerExtensionParams<
   event: ElementEvent<T, TEvent>
   /** Registers a cleanup callback invoked when the controller disconnects. */
   addDisconnect: (disconnect: Disconnect) => void
-  /** Triggers a behavioral event on the controller's topic. */
+  /** Triggers a behavioral event on the controller's page. */
   trigger: Trigger
 }
 

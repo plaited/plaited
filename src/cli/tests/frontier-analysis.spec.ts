@@ -54,4 +54,19 @@ describe('frontierAnalysisCli', () => {
     expect(output.frontier.candidates).toHaveLength(1)
     expect(output.frontier.candidates[0]!.type).toBe('start')
   })
+
+  test('verify on a page file discovers threads via extractThreads and runs', async () => {
+    const pagePath = resolve(import.meta.dir, 'fixtures/page.ts')
+    const { exitCode, stdout, stderr } = await runCli({
+      mode: 'verify',
+      threads: [pagePath],
+      snapshotMessages: [{ kind: 'selection', step: 0, selected: { type: 'tick' } }],
+    })
+
+    expect(exitCode).toBe(0)
+    expect(stderr).not.toContain('No behavioral thread exports found')
+    const output = JSON.parse(stdout)
+    expect(output.mode).toBe('verify')
+    expect(output.status).toBe('verified')
+  })
 })

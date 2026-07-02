@@ -81,7 +81,7 @@ export type RunningBid = {
   /** Internal iterator representing the thread's execution state. Holds the current position in the rule sequence. */
   generator: IterableIterator<Idioms>
   ingress?: true
-  topic?: string
+  page?: string
 }
 
 /**
@@ -112,7 +112,7 @@ export type CandidateBid = {
   payload?: unknown
 
   ingress?: true
-  topic?: string
+  page?: string
 }
 
 /**

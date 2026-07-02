@@ -61,29 +61,29 @@ const serializePending = (pending: Set<PendingBid>) =>
 /**
  * @internal
  * Projects a {@link CandidateBid} to the JSON-only snapshot shape (`priority`,
- * `type`, `detail`, `ingress`, `topic`), omitting the opaque `payload` side-channel.
+ * `type`, `detail`, `ingress`, `page`), omitting the opaque `payload` side-channel.
  *
  * Frontiers must stay JSON so frontier analysis (snapshot replay/matching) and the
  * visited-set key never observe non-serializable values.
  */
-const toCandidateSnapshot = ({ priority, type, detail, ingress, topic }: CandidateBid) => ({
+const toCandidateSnapshot = ({ priority, type, detail, ingress, page }: CandidateBid) => ({
   priority,
   type,
   ...(detail === undefined ? {} : { detail }),
   ...(ingress === undefined ? {} : { ingress }),
-  ...(topic === undefined ? {} : { topic }),
+  ...(page === undefined ? {} : { page }),
 })
 
 /**
  * @internal
  * Projects the selected candidate to the JSON-only {@link SnapshotEvent} shape
- * (`type`, `detail`, `ingress`, `topic`), omitting `payload`.
+ * (`type`, `detail`, `ingress`, `page`), omitting `payload`.
  */
-const toSelectedSnapshot = ({ type, detail, ingress, topic }: CandidateBid) => ({
+const toSelectedSnapshot = ({ type, detail, ingress, page }: CandidateBid) => ({
   type,
   ...(detail === undefined ? {} : { detail }),
   ...(ingress === undefined ? {} : { ingress }),
-  ...(topic === undefined ? {} : { topic }),
+  ...(page === undefined ? {} : { page }),
 })
 
 const createPublisher = <T>() => {
@@ -258,7 +258,7 @@ export const behavioral: Behavioral = () => {
     actionPublisher({
       type: selectedEvent.type,
       detail: selectedEvent.detail,
-      topic: selectedEvent.topic,
+      page: selectedEvent.page,
       ...(selectedEvent.payload === undefined ? {} : { payload: selectedEvent.payload }),
     })
 

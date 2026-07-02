@@ -7,6 +7,7 @@
 
 import { isAbsolute, resolve } from 'node:path'
 import * as z from 'zod'
+import { isPage } from '../behavioral/define-page.ts'
 import type {
   BPEvent,
   CandidateBid,
@@ -61,30 +62,34 @@ const ExploreOptionsShape = {
   maxDepth: z.number().int().nonnegative().optional(),
 }
 
+const ThreadsSchema = z
+  .array(z.string())
+  .describe('Paths to behavioral thread files or page files (page exports expose threads via extractThreads).')
+
 const ReplayInputSchema = z.strictObject({
   mode: z.literal(BEHAVIORAL_FRONTIER_MODES.replay),
-  threads: z.array(z.string()),
+  threads: ThreadsSchema,
   cwd: z.string().optional(),
   snapshotMessages: SnapshotMessagesSchema.optional(),
 })
 
 const ExploreInputSchema = z.strictObject({
   mode: z.literal(BEHAVIORAL_FRONTIER_MODES.explore),
-  threads: z.array(z.string()),
+  threads: ThreadsSchema,
   cwd: z.string().optional(),
   ...ExploreOptionsShape,
 })
 
 const VerifyInputSchema = z.strictObject({
   mode: z.literal(BEHAVIORAL_FRONTIER_MODES.verify),
-  threads: z.array(z.string()),
+  threads: ThreadsSchema,
   cwd: z.string().optional(),
   ...ExploreOptionsShape,
 })
 
 const BehavioralFrontierInputSchema = z
   .discriminatedUnion('mode', [ReplayInputSchema, ExploreInputSchema, VerifyInputSchema])
-  .describe('Replay, explore, or verify behavioral frontiers from snapshotMessages plus thread file paths.')
+  .describe('Replay, explore, or verify behavioral frontiers from snapshotMessages plus thread or page file paths.')
 
 type BehavioralFrontierInput = z.infer<typeof BehavioralFrontierInputSchema>
 
@@ -149,14 +154,14 @@ const createFrontierSnapshot = ({ frontier, step }: { frontier: Frontier; step: 
       type: candidate.type,
       ...(candidate.detail === undefined ? {} : { detail: candidate.detail }),
       ...(candidate.ingress === undefined ? {} : { ingress: candidate.ingress }),
-      ...(candidate.topic === undefined ? {} : { topic: candidate.topic }),
+      ...(candidate.page === undefined ? {} : { page: candidate.page }),
     })),
     enabled: frontier.enabled.map((candidate) => ({
       priority: candidate.priority,
       type: candidate.type,
       ...(candidate.detail === undefined ? {} : { detail: candidate.detail }),
       ...(candidate.ingress === undefined ? {} : { ingress: candidate.ingress }),
-      ...(candidate.topic === undefined ? {} : { topic: candidate.topic }),
+      ...(candidate.page === undefined ? {} : { page: candidate.page }),
     })),
   })
 
@@ -173,7 +178,7 @@ const createSelectionSnapshot = ({
     type: event.type,
     ...(event.detail === undefined ? {} : { detail: event.detail }),
     ...(event.ingress === undefined ? {} : { ingress: event.ingress }),
-    ...(event.topic === undefined ? {} : { topic: event.topic }),
+    ...(event.page === undefined ? {} : { page: event.page }),
   },
 })
 
@@ -183,7 +188,7 @@ const createDeadlockSnapshot = ({ step }: { step: number }): SnapshotMessage => 
 })
 
 const matchesSelectedEvent = ({ candidate, selected }: { candidate: CandidateBid; selected: SnapshotEvent }) =>
-  candidate.type === selected.type && candidate.topic === selected.topic && deepEqual(candidate.detail, selected.detail)
+  candidate.type === selected.type && candidate.page === selected.page && deepEqual(candidate.detail, selected.detail)
 
 const addIngressTriggerToPending = ({ pending, selected }: { pending: Set<PendingBid>; selected: SnapshotEvent }) => {
   const triggerThread = function* () {
@@ -191,7 +196,7 @@ const addIngressTriggerToPending = ({ pending, selected }: { pending: Set<Pendin
       request: {
         type: selected.type,
         ...(selected.detail === undefined ? {} : { detail: selected.detail }),
-        ...(selected.topic === undefined ? {} : { topic: selected.topic }),
+        ...(selected.page === undefined ? {} : { page: selected.page }),
       },
     }
   }
@@ -313,14 +318,14 @@ const triggerAffectsPendingBid = ({ pendingBid, trigger }: { pendingBid: Pending
     priority: 0,
     type: trigger.type,
     ...(trigger.detail === undefined ? {} : { detail: trigger.detail }),
-    ...(trigger.topic === undefined ? {} : { topic: trigger.topic }),
+    ...(trigger.page === undefined ? {} : { page: trigger.page }),
     ingress: true as const,
   }
 
   return (
     (pendingBid.request !== undefined &&
       pendingBid.request.type === trigger.type &&
-      pendingBid.request.topic === trigger.topic &&
+      pendingBid.request.page === trigger.page &&
       deepEqual(pendingBid.request.detail, trigger.detail)) ||
     ensureArray(pendingBid.waitFor).some(isListeningFor(candidate)) ||
     ensureArray(pendingBid.interrupt).some(isListeningFor(candidate))
@@ -352,7 +357,7 @@ const getRequestSuccessors = ({
         type: candidate.type,
         ...(candidate.detail === undefined ? {} : { detail: candidate.detail }),
         ...(candidate.ingress === undefined ? {} : { ingress: candidate.ingress }),
-        ...(candidate.topic === undefined ? {} : { topic: candidate.topic }),
+        ...(candidate.page === undefined ? {} : { page: candidate.page }),
       },
     }),
   )
@@ -383,7 +388,7 @@ const getTriggerSuccessors = ({
       event: {
         type: trigger.type,
         ...(trigger.detail === undefined ? {} : { detail: trigger.detail }),
-        ...(trigger.topic === undefined ? {} : { topic: trigger.topic }),
+        ...(trigger.page === undefined ? {} : { page: trigger.page }),
         ingress: true,
       },
     })
@@ -527,6 +532,8 @@ const loadThreads = async ({ cwd, paths }: { cwd?: string; paths: string[] }): P
     for (const [key, exportValue] of Object.entries(mod)) {
       if (isThread(exportValue)) {
         threadEntries.push([key, exportValue])
+      } else if (isPage(exportValue)) {
+        threadEntries.push(...(await exportValue.extractThreads()))
       }
     }
   }
@@ -620,7 +627,8 @@ export const frontierAnalysisCli = makeCli({
   outputSchema: BehavioralFrontierOutputSchema,
   help: [
     'Thread input options:',
-    '  - threads: array of paths to behavioral thread files',
+    '  - threads: array of paths to behavioral thread files or page files',
+    '    (page exports expose threads via extractThreads)',
     '',
     'Replay/explore/verify options:',
     '  - snapshotMessages: prior snapshot stream prefix',
