@@ -43,14 +43,6 @@ export const STYLES = 'styles'
 
 export const CLASS = 'class'
 
-/**
- * Matches site-root JavaScript module paths accepted by bootstrap script tags
- * and controller module imports.
- *
- * @public
- */
-export const SITE_ROOT_JAVASCRIPT_PATH_PATTERN = /^\/(?!\/)[^\s\\?#]+\.js(?:[?#][^\s\\]*)?$/
-
 /** Pattern for lowercase custom element tags after template tag normalization. */
 export const CUSTOM_ELEMENT_TAG_PATTERN = /^[a-z][.0-9_a-z-]*-[.0-9_a-z-]*$/
 

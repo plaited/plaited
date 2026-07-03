@@ -22,7 +22,7 @@
         "@types/node": "25.9.1",
         "@types/sinon": "21.0.1",
         "@varlock/1password-plugin": "^1.1.0",
-        "@webref/css": "^8.6.0",
+        "@webref/css": "^8.6.1",
         "axe-core": "4.11.4",
         "beautify": "0.0.8",
         "commitlint": "21.0.1",
@@ -437,7 +437,7 @@
 
     "@varlock/1password-plugin": ["@varlock/1password-plugin@1.2.0", "", { "peerDependencies": { "varlock": "^1.6.0" } }, "sha512-uRSiVW67/AXbmTfpIyTWF/hot/MVE6+uzt8i6SOyALXHj7bHFeMqJiHjRjbiKGXDD9s7y8WIZkkQRYDCaUCILw=="],
 
-    "@webref/css": ["@webref/css@8.6.0", "", { "peerDependencies": { "css-tree": "^3.2.1" } }, "sha512-8eyHktfLcI6OjnLsO/SVnWFlgcfyhnVX1GLDFVQ0YrNOsXsXHvOctRbkCW9Nl9Q8o59se/o5fWSw1dV0l0+4lQ=="],
+    "@webref/css": ["@webref/css@8.6.1", "", { "peerDependencies": { "css-tree": "^3.2.1" } }, "sha512-eY5rwSLOSDIQz0Js++txlzgGTef6A4bVMYBGbV9tGT6RsrIVGUiPHYQePQEZ/GlPaAhM4WOnuknNUs+ADeLokA=="],
 
     "@youdotcom-oss/api": ["@youdotcom-oss/api@0.5.2", "", { "dependencies": { "zod": "^4.3.6" }, "bin": { "ydc": "bin/cli.js" } }, "sha512-3ppZJ7OcR7JDvtGpWMxFqE3H1cXshybQE+43Qjg3ciJeC2776Q8LWTQJfdm60nZEh3AdReJHuFeReMqFaHkStA=="],
 

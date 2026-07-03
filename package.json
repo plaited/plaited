@@ -79,7 +79,7 @@
     "@types/node": "25.9.1",
     "@types/sinon": "21.0.1",
     "@varlock/1password-plugin": "^1.1.0",
-    "@webref/css": "^8.6.0",
+    "@webref/css": "^8.6.1",
     "axe-core": "4.11.4",
     "beautify": "0.0.8",
     "commitlint": "21.0.1",

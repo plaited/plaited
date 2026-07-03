@@ -31,4 +31,4 @@ export const PAGE_EVENTS = keyMirror('pagereveal', 'pageswap', 'pagehide', 'page
 
 export const P_FORM_TRIGGER = 'p-form-trigger'
 
-export const FLAT_NODE_KINDS = keyMirror('element')
+export const FLAT_NODE_KINDS = keyMirror('element', 'child')
