@@ -105,8 +105,9 @@ because:
 - `src/client/css.types.ts` — already has the registry shape
   (`tokens?: Map<...>`, `keyframes?: Map<...>`). Align.
 - `src/client/css.constants.ts` — `CSS_RESERVED_KEYS`.
-- `src/client/resolve-template-refs.ts` — old `$styleRef`/`$bind` resolver.
-  `resolveDataPath` (dotted) is the one to replace with JSON Pointer.
+- `src/client/resolve-template-refs.ts` — old `resolveDataPath` (dotted path
+  resolver) and `resolveTemplateRefs`. Read to understand the old pattern, then
+  delete in Commit 1 — nothing in the new architecture needs it.
 - `src/client/ssr.ts` — one `h()` callsite to migrate; the join+inject logic
   stays.
 - `src/shared/shared.constants.ts` — the regex patterns (ingestion parser).
@@ -145,6 +146,9 @@ that validates the already-shipped `shared.constants.ts` patterns.
    `template.ts` `$`-helpers produce) — not live imports from `template.ts`.
    This keeps the parser and its tests self-contained for deletion in Commit 2.
    Generate the fixture strings once by inspecting the current output format.
+6. **Delete `resolve-template-refs.ts`** — the old dotted-path resolver and
+   `resolveTemplateRefs` are dead code in the new model. Remove the file, its
+   test spec, and its re-export in `src/client.ts`.
 
 ### Verify before commit
 - `bun --bun tsc --noEmit` clean for touched files.
