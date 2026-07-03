@@ -25,7 +25,7 @@ import {
 } from './controller.errors.ts'
 import type { ControllerConstructorArgs, ControllerExtension } from './controller.types.ts'
 import { DelegatedListener } from './delegated-listener.ts'
-import { BOOLEAN_ATTRS, P_FORM, P_TARGET, P_TRIGGER } from './template.constants.ts'
+import { BOOLEAN_ATTRS, P_FORM, P_TARGET, P_TRIGGER } from './html.constants.ts'
 
 const delegates = new WeakMap<EventTarget, DelegatedListener>()
 

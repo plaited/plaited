@@ -16,8 +16,8 @@
  * - Shadow DOM polyfills not included
  */
 import { htmlEscape, isTypeOf } from '../utils.ts'
-import { CONNECT_PLAITED_ROUTE, TEMPLATE_OBJECT_IDENTIFIER, VALID_PRIMITIVE_CHILDREN } from './template.constants.ts'
-import type { TemplateObject } from './template.schemas.ts'
+import { CONNECT_PLAITED_ROUTE, TEMPLATE_OBJECT_IDENTIFIER, VALID_PRIMITIVE_CHILDREN } from './html.constants.ts'
+import type { TemplateObject } from './html.schemas.ts'
 import { h } from './template.ts'
 
 export const ssr = (templates: TemplateObject[]) => {

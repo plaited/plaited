@@ -36,7 +36,7 @@ import {
   TEMPLATE_OBJECT_IDENTIFIER,
   VALID_PRIMITIVE_CHILDREN,
   VOID_TAGS,
-} from './template.constants.ts'
+} from './html.constants.ts'
 import {
   type Children,
   type CustomElementTag,
@@ -44,7 +44,7 @@ import {
   DetailedHTMLAttributesSchema,
   ElementAttributeListSchema,
   type TemplateObject,
-} from './template.schemas.ts'
+} from './html.schemas.ts'
 
 /**
  * @internal

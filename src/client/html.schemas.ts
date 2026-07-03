@@ -27,7 +27,7 @@ import {
   STYLE,
   STYLES,
   TEMPLATE_OBJECT_IDENTIFIER,
-} from './template.constants.ts'
+} from './html.constants.ts'
 
 // ── Internal helper schemas (not exported) ────────────────────────────────
 
@@ -258,7 +258,7 @@ const ariaRoleSchema = z.enum([
   'treeitem',
 ])
 
-const TemplateObjectSchema = z.object({
+export const TemplateObjectSchema = z.object({
   html: z.array(z.string()),
   stylesheets: z.array(z.string()),
   scale: z.literal(Object.values(SCALE)),

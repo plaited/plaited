@@ -1,4 +1,4 @@
-import { CONNECT_PLAITED_ROUTE } from '../../template.constants.ts'
+import { CONNECT_PLAITED_ROUTE } from '../../html.constants.ts'
 
 export { CONNECT_PLAITED_ROUTE }
 
