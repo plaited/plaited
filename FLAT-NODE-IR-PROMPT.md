@@ -140,9 +140,11 @@ that validates the already-shipped `shared.constants.ts` patterns.
 5. **Ingestion parser** — `parseMarkers(html: string): FlatNode[]` using the
    `FLOW_CONTROL_*` / `TOKEN_REF_PATTERN` / `KEYFRAME_REF_PATTERN` regex from
    `shared.constants.ts` to convert a marker-bearing HTML string into
-   kinded-ref nodes. This is the bridge validating the regex work. Test with
-   real `$for`/`$val`/`$switch`/`$token`/`$keyframe` outputs from the current
-   `template.ts` `$`-helpers (they still emit markers — use them as fixtures).
+   kinded-ref nodes. This is the bridge validating the regex work. Tests use
+   static marker-bearing HTML fixture strings (shaped like what the current
+   `template.ts` `$`-helpers produce) — not live imports from `template.ts`.
+   This keeps the parser and its tests self-contained for deletion in Commit 2.
+   Generate the fixture strings once by inspecting the current output format.
 
 ### Verify before commit
 - `bun --bun tsc --noEmit` clean for touched files.
@@ -174,7 +176,9 @@ produces IR, it doesn't execute it.
 4. **Migrate `ssr.ts`** — replace its one `h('script', ...)` callsite with the
    Proxy. `ssr()`'s join + `<style>` inject + `:host`→`:root` logic stays.
 5. **Delete `h()` / `$`-helpers / `fragment`** from `template.ts` once nothing
-   imports them (search first; `resolve-template-refs.ts` only mentions `h()` in comments). Keep the ingestion parser (Commit 1) as the legacy bridge.
+   imports them (search first; `resolve-template-refs.ts` only mentions `h()` in comments).
+   Also delete the ingestion parser from Commit 1 — markers don't exist in the
+   target end state; the parser was a bootstrap-only bridge.
 
 ### Verify before commit
 - `bun --bun tsc --noEmit` clean.
