@@ -266,7 +266,7 @@ const TemplateObjectSchema = z.object({
 })
 
 /**
- * Represents the internal structure produced by Plaited's JSX factory (`h`).
+ * Represents the internal structure produced by Plaited's hyperscript factory (`h`).
  * This object contains the processed HTML strings and associated metadata needed for rendering.
  *
  * @property html - An array of string fragments representing the HTML structure.

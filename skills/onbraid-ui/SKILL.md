@@ -14,7 +14,7 @@ element controllers, browser/server controller protocol, or UI tests.
 
 The UI model is server-driven and island-scoped:
 
-- the server or agent produces JSX templates
+- the server or agent produces hyperscript templates
 - `createSSR()` serializes templates into HTML strings
 - `useController()` registers topic-scoped custom elements
 - each island connects to `/ws` using its `p-topic` value as the WebSocket subprotocol
@@ -168,7 +168,7 @@ transport.
 
 ## Rendering Rules
 
-JSX creates template objects, not DOM nodes.
+hyperscript creates template objects, not DOM nodes.
 
 Important rules:
 

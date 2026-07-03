@@ -2,8 +2,8 @@
  * @internal
  * @module create-template
  *
- * Purpose: JSX template creation system for Plaited with security-first design.
- * Converts JSX calls into template objects with HTML escaping, event binding, and style management.
+ * Purpose: hyperscript template creation system for Plaited with security-first design.
+ * Converts hyperscript calls into template objects with HTML escaping, event binding, and style management.
  *
  * @remarks
  * Key features:

@@ -1,8 +1,7 @@
 /*
  * @internal
- * @module jsx.constants
  *
- * Central constants for JSX runtime, template creation, and DOM serialization.
+ * Central constants for hyperscript runtime, template creation, and DOM serialization.
  * Defines Plaited's special attributes and DOM behavior.
  *
  * @remarks

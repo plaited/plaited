@@ -3,7 +3,7 @@
  * @module create-ssr
  *
  * Server-side rendering engine for Plaited templates.
- * Converts JSX to static HTML with style collection and injection.
+ * Converts hyperscript to static HTML with style collection and injection.
  *
  * @remarks
  * Implementation details:

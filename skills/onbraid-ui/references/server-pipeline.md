@@ -2,7 +2,7 @@
 
 ## Overview
 
-The server pipeline converts JSX templates into HTML strings with per-connection
+The server pipeline converts hyperscript templates into HTML strings with per-connection
 style deduplication. An agent uses this pipeline to generate UI that streams to
 the browser as initial HTML or as pushed controller `render` messages.
 
@@ -10,12 +10,12 @@ the browser as initial HTML or as pushed controller `render` messages.
 
 ```mermaid
 flowchart LR
-    JSX["JSX Call<br/>h(tag, attrs, children)"]
+    hyperscript["hyperscript Call<br/>h(tag, attrs, children)"]
     TO["TemplateObject<br/>{ html[], stylesheets[], registry[] }"]
     SSR["createSSR().render()"]
     HTML["HTML String<br/>+ deduped &lt;style&gt;"]
 
-    JSX --> TO --> SSR --> HTML
+    hyperscript --> TO --> SSR --> HTML
 ```
 
 ### Stage 1: Template Creation
