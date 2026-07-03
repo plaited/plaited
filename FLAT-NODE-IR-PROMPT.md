@@ -34,8 +34,7 @@ because:
 
 1. **A2UI's flat adjacency list** (`{id, type, props, children: [id...]}`) is
    easier for an LLM to generate, updateable by ID, and separates structure
-   from data. See `src/client/UI-GENERATION-PATTERNS.md` §3 (catalog concept,
-   somewhat outdated but directionally correct).
+   from data.
 2. **Kinded `$ref` objects** are
    schema-enforceable and position-constrained — strictly better than scanning
    comment markers with regex.
@@ -114,8 +113,6 @@ because:
 - `src/shared/shared.schemas.ts` — `RenderMessage` (the output contract).
 - `scripts/generate-css-schemas.spec.ts` + `src/cli/css-schemas.ts` — the
   auto-generator; update to emit object-ref form.
-- `src/client/UI-GENERATION-PATTERNS.md` — design doc; update §3 to match the
-  locked vocabulary when code lands (keep docs in sync per AGENTS.md).
 
 ---
 
