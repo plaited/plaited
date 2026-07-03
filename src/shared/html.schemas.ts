@@ -16,7 +16,6 @@
 import * as z from 'zod'
 import { cssPropertySchema } from './css.schemas.ts'
 import {
-  CHILDREN,
   CLASS,
   CUSTOM_ELEMENT_TAG_PATTERN,
   P_FORM,
@@ -27,7 +26,10 @@ import {
   STYLE,
   STYLES,
   TEMPLATE_OBJECT_IDENTIFIER,
+  VOID_TAGS,
 } from './html.constants.ts'
+import { FLAT_NODE_KINDS } from './shared.constants.ts'
+import { JsonObjectSchema } from './shared.schemas.ts'
 
 // ── Internal helper schemas (not exported) ────────────────────────────────
 
@@ -176,16 +178,6 @@ const AriaAttributesSchema = z.object({
   'aria-valuetext': z.string().optional(),
 })
 
-/**
- * Schema for custom element tag names (must match `${string}-${string}` pattern).
- *
- * @public
- */
-export const customElementTagSchema = z.string().regex(CUSTOM_ELEMENT_TAG_PATTERN)
-
-/** @public */
-export type CustomElementTag = `${string}-${string}`
-
 const ariaRoleSchema = z.enum([
   'alert',
   'alertdialog',
@@ -291,7 +283,6 @@ export const ChildrenSchema = z.union([ChildSchema, z.array(ChildSchema)])
 export type Children = z.output<typeof ChildrenSchema>
 
 const PlaitedAttributesSchema = z.object({
-  [CHILDREN]: ChildrenSchema.optional(),
   [CLASS]: z.string().optional(),
   [P_FORM]: z.string().optional(),
   [P_SCALE]: z.enum(Object.values(SCALE)).optional(),
@@ -363,10 +354,52 @@ export const DetailedHTMLAttributesSchema = z
   })
   .catchall(z.union([z.string(), z.number(), z.boolean()]))
 
+/**
+ * Schema for custom element tag names (must match `${string}-${string}` pattern).
+ *
+ * @public
+ */
+export const CustomElementTagSchema = z.string().regex(CUSTOM_ELEMENT_TAG_PATTERN)
+
 /** @public */
-export type DetailedHTMLAttributes = z.output<typeof DetailedHTMLAttributesSchema>
+export type CustomElementTag = `${string}-${string}`
+
+export const ElementNodeSchema = z.object({
+  kind: z.literal(FLAT_NODE_KINDS.element),
+  tag: z.string(),
+  children: ChildrenSchema.optional(),
+  attributes: DetailedHTMLAttributesSchema.optional(),
+  meta: JsonObjectSchema.optional(),
+})
+
+const makeElementNode = (tag: string, attrs?: z.ZodObject) =>
+  z.object({
+    ...ElementNodeSchema.shape,
+    tag: z.literal(tag),
+    ...(VOID_TAGS.has(tag) ? { children: z.never().optional() } : {}),
+    attributes: z
+      .object({
+        ...ElementNodeSchema.shape.attributes.unwrap().shape,
+        ...attrs?.shape,
+      })
+      .optional(),
+  })
 
 // ── Element-specific attribute schemas ─────────────────────────────────────
+
+const AnchorNodeSchema = makeElementNode(
+  'a',
+  z.object({
+    download: z.boolean().optional(),
+    href: z.string().optional(),
+    hreflang: z.string().optional(),
+    media: z.string().optional(),
+    ping: z.string().optional(),
+    target: anchorTargetSchema.optional(),
+    type: z.string().optional(),
+    referrerpolicy: referrerPolicySchema.optional(),
+  }),
+)
 
 /** @internal */
 const DetailedAnchorHTMLAttributesSchema = z.object({
@@ -1345,4 +1378,7 @@ export const ElementAttributeListSchema = z
 /** @public */
 export type ElementAttributeList = z.output<typeof ElementAttributeListSchema>
 
-//
+const getElemmentSchema = (tag: string) => {
+  const schemas = new Map<string, z.ZodObject>([[AnchorNodeSchema.shape.tag.value, AnchorNodeSchema]])
+  return schemas.get(tag) ?? ElementNodeSchema
+}

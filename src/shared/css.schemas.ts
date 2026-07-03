@@ -5,7 +5,7 @@
  * Do not edit manually.
  */
 import { z } from 'zod'
-import { KEYFRAME_REF_PATTERN, TOKEN_REF_PATTERN } from '../shared/shared.constants.ts'
+import { KEYFRAME_REF_PATTERN, TOKEN_REF_PATTERN } from './shared.constants.ts'
 
 const tokenRefSchema = z.string().regex(TOKEN_REF_PATTERN)
 const keyframeRefSchema = z.string().regex(KEYFRAME_REF_PATTERN)

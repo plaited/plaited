@@ -17,7 +17,6 @@
  * @see {@link createStyles} for style creation
  */
 
-import { htmlEscape, isTypeOf, trueTypeOf } from '../utils.ts'
 import {
   BOOLEAN_ATTRS,
   CHILDREN,
@@ -36,7 +35,7 @@ import {
   TEMPLATE_OBJECT_IDENTIFIER,
   VALID_PRIMITIVE_CHILDREN,
   VOID_TAGS,
-} from './html.constants.ts'
+} from '../shared/html.constants.ts'
 import {
   type Children,
   type CustomElementTag,
@@ -44,7 +43,8 @@ import {
   DetailedHTMLAttributesSchema,
   ElementAttributeListSchema,
   type TemplateObject,
-} from './html.schemas.ts'
+} from '../shared/html.schemas.ts'
+import { htmlEscape, isTypeOf, trueTypeOf } from '../utils.ts'
 
 /**
  * @internal

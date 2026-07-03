@@ -219,3 +219,13 @@ export const ClientMessageSchema = z.discriminatedUnion('type', [
 
 /** @public */
 export type ClientMessage = z.output<typeof ClientMessageSchema>
+
+// FLAT NODE SCHEMAS
+// {
+//   "kind": "element",
+//   "tag": "ul",
+//   "children": [
+//     { "kind": "$for", "path": "/items", "template": "item-row" }
+//   ]
+// }
+//

@@ -1,4 +1,5 @@
 import type { BPEvent, Disconnect } from '../behavioral.ts'
+import { BOOLEAN_ATTRS, P_FORM, P_TARGET, P_TRIGGER } from '../shared/html.constants.ts'
 import {
   CONTROLLER_TO_SERVER_EVENTS,
   P_FORM_TRIGGER,
@@ -25,7 +26,6 @@ import {
 } from './controller.errors.ts'
 import type { ControllerConstructorArgs, ControllerExtension } from './controller.types.ts'
 import { DelegatedListener } from './delegated-listener.ts'
-import { BOOLEAN_ATTRS, P_FORM, P_TARGET, P_TRIGGER } from './html.constants.ts'
 
 const delegates = new WeakMap<EventTarget, DelegatedListener>()
 

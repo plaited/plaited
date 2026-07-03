@@ -1,5 +1,5 @@
-import type { CSS_RESERVED_KEYS } from './css.constants.ts'
-import type { CSSProperties } from './css.schemas.ts'
+import type { CSS_RESERVED_KEYS } from '../shared/css.constants.ts'
+import type { CSSProperties } from '../shared/css.schemas.ts'
 
 /**
  * Registry for inline $ref resolution.

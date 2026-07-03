@@ -1,6 +1,6 @@
+import { CSS_RESERVED_KEYS } from '../shared/css.constants.ts'
+import { cssPropertyNameSchema, cssPropertySchema } from '../shared/css.schemas.ts'
 import { isTypeOf, kebabCase } from '../utils.ts'
-import { CSS_RESERVED_KEYS } from './css.constants.ts'
-import { cssPropertyNameSchema, cssPropertySchema } from './css.schemas.ts'
 import type {
   ClassNames,
   CreateParams,

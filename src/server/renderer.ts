@@ -1,11 +1,18 @@
-import { type TemplateObject, TemplateObjectSchema } from './html.schemas.ts'
+import { type TemplateObject, TemplateObjectSchema } from '../shared/html.schemas.ts'
+import { FLAT_NODE_KINDS } from '../shared.ts'
+import { SCALE, TEMPLATE_OBJECT_IDENTIFIER } from './html.constants.ts'
 
 export class Renderer {
   constructor() {
     // Todo Resolver callback fo here it can be called byt any of our private methods.
     // The render buulds up the #templateObject
   }
-  #templateObject?: TemplateObject
+  #templateObject: TemplateObject = {
+    html: [],
+    scale: SCALE.rel,
+    stylesheets: [],
+    $: TEMPLATE_OBJECT_IDENTIFIER,
+  }
   async #element() {}
   async #class() {}
   async #host() {}
@@ -37,8 +44,22 @@ export class Renderer {
   }
   getTemplateObject(nodes): TemplateObject {
     // this takes flatnodes as a list of them
-    this.#templateObject = undefined
+    this.#templateObject = {
+      html: [],
+      scale: SCALE.rel,
+      stylesheets: [],
+      $: TEMPLATE_OBJECT_IDENTIFIER,
+    }
     for (const node of nodes) {
+      switch (kind) {
+        case FLAT_NODE_KINDS.$element:
+          this.#class(node)
+          break
+        case FLAT_NODE_KINDS.$class:
+          this.#class(node)
+          break
+        case FLAT_NODE_KINDS.
+      }
     }
   }
 }

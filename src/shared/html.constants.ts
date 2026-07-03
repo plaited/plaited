@@ -126,12 +126,6 @@ export const BOOLEAN_ATTRS = new Set([
   'open',
   'popover',
   'shadowrootdelegatesfocus',
-  // Electron webview-specific attributes.
-  'nodeintegration',
-  'nodeintegrationinsubframes',
-  'plugins',
-  'disablewebsecurity',
-  'allowpopups',
 ])
 /**
  * A Set containing strings representing JavaScript primitive type names, obtained via `typeof` or `trueTypeOf`.
