@@ -32,14 +32,11 @@ Plaited's UI layer currently builds HTML via `h()` (hyperscript in
 was planned to resolve them. We are abandoning that path for a structural model
 because:
 
-1. **JSX is gone.** `tsconfig` has no `jsx` setting; `h()` has exactly one real
-   callsite (`src/client/ssr.ts`'s script tag). Nothing blocks a rewrite.
-2. **A2UI's flat adjacency list** (`{id, type, props, children: [id...]}`) is
+1. **A2UI's flat adjacency list** (`{id, type, props, children: [id...]}`) is
    easier for an LLM to generate, updateable by ID, and separates structure
    from data. See `src/client/UI-GENERATION-PATTERNS.md` §3 (catalog concept,
    somewhat outdated but directionally correct).
-3. **Kinded `$ref` objects** (already used in `src/client/css.ts` for
-   `{$tokenRef}`/`{$styleRef}` and sketched in §3.3's "four kinded refs") are
+2. **Kinded `$ref` objects** are
    schema-enforceable and position-constrained — strictly better than scanning
    comment markers with regex.
 
