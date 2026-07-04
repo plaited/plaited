@@ -300,28 +300,6 @@ export const ASchema = z.object({
   [STYLES]: StylesObjectSchema.optional(),
 })
 
-function unionFromObjectAndSchema<T extends z.ZodRawShape, A extends z.ZodTypeAny>(
-  zodObject: z.ZodObject<T>,
-  appendSchema: A,
-) {
-  // 1. Extract individual schemas from the object properties
-  const shapeSchemas = Object.values(zodObject.shape) as z.ZodTypeAny[]
-
-  // 2. Combine the object shape schemas with the extra schema
-  const allSchemas = [...shapeSchemas, appendSchema] as const
-
-  // 3. Zod requires a tuple with at least two elements for z.union()
-  if (allSchemas.length < 2) {
-    throw new Error('Union requires at least 2 schemas.')
-  }
-
-  // Type assertion ensures TypeScript infers the exact union array types
-  return z.union(allSchemas as unknown as [z.ZodTypeAny, z.ZodTypeAny, ...z.ZodTypeAny[]]) as z.ZodUnion<
-    [...{ [K in keyof T]: T[K] }, A]
-  >
-}
-const BSchema = unionFromObjectAndSchema(ASchema, RefSchema)
-
 /**
  * Schema for standard HTML attributes combined with ARIA and Plaited attributes.
  *

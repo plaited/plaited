@@ -225,3 +225,16 @@ export const RefSchema = z.object({ [REF_KEYS.$id]: z.string(), [REF_KEYS.$path]
 
 /** @public */
 export type Ref = z.output<typeof RefSchema>
+
+export const mergeRefSchema = <T extends z.ZodRawShape>(
+  zodObject: z.ZodObject<T>,
+): z.ZodObject<{ [K in keyof T]: z.ZodUnion<[T[K], typeof RefSchema]> }> => {
+  const shape = zodObject.shape
+  const newShape: Record<string, z.ZodTypeAny> = {}
+  const keys: string[] = Object.keys(shape)
+  for (let i = 0; i < keys.length; i++) {
+    const key = keys[i]!
+    newShape[key] = z.union([shape[key]!, RefSchema.optional()])
+  }
+  return z.object(newShape) as z.ZodObject<{ [K in keyof T]: z.ZodUnion<[T[K], typeof RefSchema]> }>
+}
