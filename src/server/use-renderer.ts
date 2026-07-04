@@ -1,13 +1,17 @@
+import type * as z from 'zod'
 import {
   BOOLEAN_ATTRS,
-  type Child,
   CLASS,
   type DetailedHTMLAttributes,
+  ElementAttributeListSchema,
   type ElementNode,
   ElementNodeSchema,
   FLAT_NODE_KINDS,
+  getNodeSchema,
+  JsonObjectSchema,
   P_SCALE,
   P_TRIGGER,
+  PlaitedAttributesSchema,
   PRIMITIVES,
   type Ref,
   RefSchema,
@@ -17,7 +21,6 @@ import {
   STYLES,
   TEMPLATE_OBJECT_IDENTIFIER,
   type TemplateObject,
-  TemplateObjectSchema,
   VALID_PRIMITIVE_CHILDREN,
   VOID_TAGS,
 } from '../shared.ts'
@@ -70,37 +73,31 @@ const DESTRUCTURED_ATTRIBUTES = new Set([CLASS, P_SCALE, P_TRIGGER, STYLE, STYLE
  */
 const SITE_ROOT_JAVASCRIPT_PATH_PATTERN = /^\/(?!\/)[^\s\\?#]+\.js(?:[?#][^\s\\]*)?$/
 
-type QueryReturn = string | number | ElementNode
+type QueryReturn = string | number | Element
 export type Query = (arg: Ref) => Promise<QueryReturn> | QueryReturn
 
-export class Renderer {
-  constructor({ query }: { query: Query }) {
-    // Todo Resolver callback fo here it can be called byt any of our private methods.
-    // The render buulds up the #templateObject
-    this.#query = query
-  }
-  #query: Query
-  #templateObject: TemplateObject = {
-    html: [],
-    scale: SCALE.rel,
-    stylesheets: [],
-    $: TEMPLATE_OBJECT_IDENTIFIER,
-  }
+const validateAttribute = (schema: z.ZodAny) =>
+  schema.refine(
+    (data) => {
+      const isRefSchema = RefSchema.safeParse(data).success
+      !isRefSchema
+    },
+    { message: 'Data matches the excluded schema' },
+  )
 
-  async #class() {}
-  async #host() {}
-  async #root() {}
-  async #top() {}
-  async #keyframe() {}
-  async #token() {}
-  async #style() {}
-  async #template() {}
-  async #switch() {}
-  async #path() {}
+const hasTag = (node: unknown): node is ElementNode => ElementNodeSchema.safeParse(node).success
+
+const validateNode = (node: unknown) => {
+  const schema =
 }
 
 const useRenderer = ({ query }: { query: Query }) => {
-  return async ({ tag, attributes = {}, children = [] }: ElementNode): Promise<TemplateObject> => {
+  const getStyleAttributeRef = async (ref: Ref) => {
+    const val = await query(ref)
+    const schema =  validateAttribute()
+    schema.parse(val)
+  }
+  const createTemplateObject = async ({ tag, attributes = {}, children = [] }: ElementNode): Promise<TemplateObject> => {
     const {
       [CLASS]: cls,
       [P_SCALE]: pScale = SCALE.rel,
@@ -129,7 +126,10 @@ const useRenderer = ({ query }: { query: Query }) => {
     let classNames = new Set<string>()
     let stylesheets = []
     // ── Accumulate resolved StylesObject[] ─────────────────────────
-    if (styles) {
+    if (RefSchema.safeParse(styles).success) {
+      const { success } = RefSchema.safeParse(styles)
+      const validateAttribute
+      getElementSchema(tag).shape.attributes['style'].parse(data)
       for (const styleObj of styles) {
         if (styleObj.classNames) {
           classNames = new Set([...classNames, ...styleObj.classNames])
@@ -140,7 +140,9 @@ const useRenderer = ({ query }: { query: Query }) => {
 
     const start = [`<${tag} `]
     // Handle JavaScript-reserved words commonly used in HTML.
-    cls && classNames.add(htmlEscape(cls))
+    if (cls) {
+      classNames.add(htmlEscape(cls))
+    }
     if (classNames.size) start.push(`class="${[...classNames].join(' ')}" `)
     if (pTrigger) {
       const value = Object.entries(pTrigger)
@@ -190,7 +192,7 @@ const useRenderer = ({ query }: { query: Query }) => {
       const ref = RefSchema.safeParse(child)
       if (ref.success) {
         const result = await query(ref.data)
-        const node = ElementNodeSchema.safeParse(result)
+        const node = ElementSchema.safeParse(result)
         if (node.success) {
           const render = useRenderer({ query })
           const tpl = await render(node.data)
@@ -234,5 +236,8 @@ const useRenderer = ({ query }: { query: Query }) => {
       $: TEMPLATE_OBJECT_IDENTIFIER,
       scale: pScale === SCALE.rel ? highestChildScale : pScale,
     }
+  }
+  return {
+    render,
   }
 }

@@ -47,6 +47,17 @@ export const CLASS = 'class'
 export const CUSTOM_ELEMENT_TAG_PATTERN = /^[a-z][.0-9_a-z-]*-[.0-9_a-z-]*$/
 
 /**
+ * Pattern for lowercase unknown/non-standard HTML tag names that are not custom elements
+ * (i.e., do not contain a hyphen). Matches any lowercase tag name starting with a letter
+ * followed by zero or more lowercase letters or digits. These are tags unknown to the HTML
+ * spec that are not valid custom elements — the browser treats them as generic inline elements.
+ *
+ * @example 'mycomponent', 'x-app-root' — would NOT match (has hyphen, belongs to CUSTOM_ELEMENT_TAG_PATTERN)
+ * @example 'myapp', 'thing', 'foo123' — would match
+ */
+export const UNKNOWN_TAG_PATTERN = /^[a-z][a-z0-9]*$/
+
+/**
  * A Set containing HTML and SVG tag names that are considered "void elements".
  * Void elements cannot have any content (neither HTML nor text nodes) and are
  * represented with a self-closing tag in HTML serialization (e.g., `<br />`, `<img src="..." />`).

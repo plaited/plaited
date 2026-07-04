@@ -26,10 +26,11 @@ import {
   STYLE,
   STYLES,
   TEMPLATE_OBJECT_IDENTIFIER,
+  UNKNOWN_TAG_PATTERN,
   VOID_TAGS,
 } from './html.constants.ts'
 import { FLAT_NODE_KINDS } from './shared.constants.ts'
-import { JsonObjectSchema } from './shared.schemas.ts'
+import { JsonObjectSchema, RefSchema } from './shared.schemas.ts'
 
 // ── Internal helper schemas (not exported) ────────────────────────────────
 
@@ -37,25 +38,25 @@ import { JsonObjectSchema } from './shared.schemas.ts'
  * Booleanish — `boolean | 'true' | 'false'`.
  * @internal
  */
-const booleanishSchema = z.union([z.boolean(), z.enum(['true', 'false'])])
+const BooleanishSchema = z.union([z.boolean(), z.enum(['true', 'false'])])
 
 /**
  * Cross-origin attribute value.
  * @internal
  */
-const crossOriginSchema = z.enum(['anonymous', 'use-credentials', ''])
+const CrossOriginSchema = z.enum(['anonymous', 'use-credentials', ''])
 
 /**
  * Anchor target attribute values.
  * @internal
  */
-const anchorTargetSchema = z.enum(['_self', '_blank', '_parent', '_top'])
+const AnchorTargetSchema = z.enum(['_self', '_blank', '_parent', '_top'])
 
 /**
  * Referrer policy attribute values.
  * @internal
  */
-const referrerPolicySchema = z.enum([
+const ReferrerPolicySchema = z.enum([
   '',
   'no-referrer',
   'no-referrer-when-downgrade',
@@ -71,7 +72,7 @@ const referrerPolicySchema = z.enum([
  * Input `type` attribute values.
  * @internal
  */
-const inputTypeSchema = z.enum([
+const InputTypeSchema = z.enum([
   'button',
   'checkbox',
   'color',
@@ -100,85 +101,92 @@ const inputTypeSchema = z.enum([
  * Minimal schema for a resolved StylesObject — classNames + stylesheets.
  * @internal
  */
-const stylesObjectSchema = z.object({
+const StylesObjectSchema = z.object({
   classNames: z.array(z.string()).optional(),
   stylesheets: z.array(z.string()),
 })
 
+export const ChildSchema = z.union([RefSchema, z.number(), z.string()])
+
 // ── ARIA ───────────────────────────────────────────────────────────────────
 
 const AriaAttributesSchema = z.object({
-  'aria-activedescendant': z.string().optional(),
-  'aria-atomic': booleanishSchema.optional(),
-  'aria-autocomplete': z.enum(['none', 'inline', 'list', 'both']).optional(),
-  'aria-braillelabel': z.string().optional(),
-  'aria-brailleroledescription': z.string().optional(),
-  'aria-busy': booleanishSchema.optional(),
-  'aria-checked': z.union([z.boolean(), z.enum(['false', 'mixed', 'true'])]).optional(),
-  'aria-colcount': z.number().optional(),
-  'aria-colindex': z.number().optional(),
-  'aria-colindextext': z.string().optional(),
-  'aria-colspan': z.number().optional(),
-  'aria-controls': z.string().optional(),
+  'aria-activedescendant': z.union([z.string(), RefSchema]).optional(),
+  'aria-atomic': z.union([BooleanishSchema, RefSchema]).optional(),
+  'aria-autocomplete': z.union([z.enum(['none', 'inline', 'list', 'both']), RefSchema]).optional(),
+  'aria-braillelabel': z.union([z.string(), RefSchema]).optional(),
+  'aria-brailleroledescription': z.union([z.string(), RefSchema]).optional(),
+  'aria-busy': z.union([BooleanishSchema, RefSchema]).optional(),
+  'aria-checked': z.union([z.union([z.boolean(), z.enum(['false', 'mixed', 'true'])]), RefSchema]).optional(),
+  'aria-colcount': z.union([z.number(), RefSchema]).optional(),
+  'aria-colindex': z.union([z.number(), RefSchema]).optional(),
+  'aria-colindextext': z.union([z.string(), RefSchema]).optional(),
+  'aria-colspan': z.union([z.number(), RefSchema]).optional(),
+  'aria-controls': z.union([z.string(), RefSchema]).optional(),
   'aria-current': z
-    .union([z.boolean(), z.enum(['false', 'true', 'page', 'step', 'location', 'date', 'time'])])
+    .union([z.union([z.boolean(), z.enum(['false', 'true', 'page', 'step', 'location', 'date', 'time'])]), RefSchema])
     .optional(),
-  'aria-describedby': z.string().optional(),
-  'aria-description': z.string().optional(),
-  'aria-details': z.string().optional(),
-  'aria-disabled': booleanishSchema.optional(),
-  'aria-errormessage': z.string().optional(),
-  'aria-expanded': booleanishSchema.optional(),
-  'aria-flowto': z.string().optional(),
+  'aria-describedby': z.union([z.string(), RefSchema]).optional(),
+  'aria-description': z.union([z.string(), RefSchema]).optional(),
+  'aria-details': z.union([z.string(), RefSchema]).optional(),
+  'aria-disabled': z.union([BooleanishSchema, RefSchema]).optional(),
+  'aria-errormessage': z.union([z.string(), RefSchema]).optional(),
+  'aria-expanded': z.union([BooleanishSchema, RefSchema]).optional(),
+  'aria-flowto': z.union([z.string(), RefSchema]).optional(),
   'aria-haspopup': z
-    .union([z.boolean(), z.enum(['false', 'true', 'menu', 'listbox', 'tree', 'grid', 'dialog'])])
+    .union([z.union([z.boolean(), z.enum(['false', 'true', 'menu', 'listbox', 'tree', 'grid', 'dialog'])]), RefSchema])
     .optional(),
-  'aria-hidden': booleanishSchema.optional(),
-  'aria-invalid': z.union([z.boolean(), z.enum(['false', 'true', 'grammar', 'spelling'])]).optional(),
-  'aria-keyshortcuts': z.string().optional(),
-  'aria-label': z.string().optional(),
-  'aria-labelledby': z.string().optional(),
-  'aria-level': z.number().optional(),
-  'aria-live': z.enum(['off', 'assertive', 'polite']).optional(),
-  'aria-modal': booleanishSchema.optional(),
-  'aria-multiline': booleanishSchema.optional(),
-  'aria-multiselectable': booleanishSchema.optional(),
-  'aria-orientation': z.enum(['horizontal', 'vertical']).optional(),
-  'aria-owns': z.string().optional(),
-  'aria-placeholder': z.string().optional(),
-  'aria-posinset': z.number().optional(),
-  'aria-pressed': z.union([z.boolean(), z.enum(['false', 'mixed', 'true'])]).optional(),
-  'aria-readonly': booleanishSchema.optional(),
+  'aria-hidden': z.union([BooleanishSchema, RefSchema]).optional(),
+  'aria-invalid': z
+    .union([z.union([z.boolean(), z.enum(['false', 'true', 'grammar', 'spelling'])]), RefSchema])
+    .optional(),
+  'aria-keyshortcuts': z.union([z.string(), RefSchema]).optional(),
+  'aria-label': z.union([z.string(), RefSchema]).optional(),
+  'aria-labelledby': z.union([z.string(), RefSchema]).optional(),
+  'aria-level': z.union([z.number(), RefSchema]).optional(),
+  'aria-live': z.union([z.enum(['off', 'assertive', 'polite']), RefSchema]).optional(),
+  'aria-modal': z.union([BooleanishSchema, RefSchema]).optional(),
+  'aria-multiline': z.union([BooleanishSchema, RefSchema]).optional(),
+  'aria-multiselectable': z.union([BooleanishSchema, RefSchema]).optional(),
+  'aria-orientation': z.union([z.enum(['horizontal', 'vertical']), RefSchema]).optional(),
+  'aria-owns': z.union([z.string(), RefSchema]).optional(),
+  'aria-placeholder': z.union([z.string(), RefSchema]).optional(),
+  'aria-posinset': z.union([z.number(), RefSchema]).optional(),
+  'aria-pressed': z.union([z.union([z.boolean(), z.enum(['false', 'mixed', 'true'])]), RefSchema]).optional(),
+  'aria-readonly': z.union([BooleanishSchema, RefSchema]).optional(),
   'aria-relevant': z
-    .enum([
-      'additions',
-      'additions removals',
-      'additions text',
-      'all',
-      'removals',
-      'removals additions',
-      'removals text',
-      'text',
-      'text additions',
-      'text removals',
+    .union([
+      z.enum([
+        'additions',
+        'additions removals',
+        'additions text',
+        'all',
+        'removals',
+        'removals additions',
+        'removals text',
+        'text',
+        'text additions',
+        'text removals',
+      ]),
+      RefSchema,
     ])
     .optional(),
-  'aria-required': booleanishSchema.optional(),
-  'aria-roledescription': z.string().optional(),
-  'aria-rowcount': z.number().optional(),
-  'aria-rowindex': z.number().optional(),
-  'aria-rowindextext': z.string().optional(),
-  'aria-rowspan': z.number().optional(),
-  'aria-selected': booleanishSchema.optional(),
-  'aria-setsize': z.number().optional(),
-  'aria-sort': z.enum(['none', 'ascending', 'descending', 'other']).optional(),
-  'aria-valuemax': z.number().optional(),
-  'aria-valuemin': z.number().optional(),
-  'aria-valuenow': z.number().optional(),
-  'aria-valuetext': z.string().optional(),
+  'aria-required': z.union([BooleanishSchema, RefSchema]).optional(),
+  'aria-roledescription': z.union([z.string(), RefSchema]).optional(),
+  'aria-rowcount': z.union([z.number(), RefSchema]).optional(),
+  'aria-rowindex': z.union([z.number(), RefSchema]).optional(),
+  'aria-rowindextext': z.union([z.string(), RefSchema]).optional(),
+  'aria-rowspan': z.union([z.number(), RefSchema]).optional(),
+  'aria-selected': z.union([BooleanishSchema, RefSchema]).optional(),
+  'aria-setsize': z.union([z.number(), RefSchema]).optional(),
+  'aria-sort': z.union([z.enum(['none', 'ascending', 'descending', 'other']), RefSchema]).optional(),
+  'aria-valuemax': z.union([z.number(), RefSchema]).optional(),
+  'aria-valuemin': z.union([z.number(), RefSchema]).optional(),
+  'aria-valuenow': z.union([z.number(), RefSchema]).optional(),
+  'aria-valuetext': z.union([z.string(), RefSchema]).optional(),
 })
 
-const ariaRoleSchema = z.enum([
+const AriaRoleSchema = z.enum([
   'alert',
   'alertdialog',
   'application',
@@ -267,18 +275,6 @@ export const TemplateObjectSchema = z.object({
  */
 export type TemplateObject = z.output<typeof TemplateObjectSchema>
 
-export const RefSchema = z.object({ id: z.string(), path: z.string() })
-
-export type Ref = z.output<typeof RefSchema>
-
-export const ChildSchema = z.union([RefSchema, z.number(), z.string()])
-
-/**
- * Represents the valid primitive types that can be rendered directly as children within hyperscript.
- * This includes numbers (which are converted to strings) and strings. TemplateObjects are also valid children for composition.
- */
-export type Child = z.output<typeof ChildSchema>
-
 export const ChildrenSchema = z.array(ChildSchema)
 
 /**
@@ -286,15 +282,45 @@ export const ChildrenSchema = z.array(ChildSchema)
  */
 export type Children = z.output<typeof ChildrenSchema>
 
-const PlaitedAttributesSchema = z.object({
+export const PlaitedAttributesSchema = z.object({
+  [CLASS]: z.union([z.string(), RefSchema]).optional(),
+  [P_SCALE]: z.union([z.enum(Object.values(SCALE)), RefSchema]).optional(),
+  [P_TARGET]: z.union([z.union([z.string(), z.number()]), RefSchema]).optional(),
+  [P_TRIGGER]: z.union([z.record(z.string(), z.string()), RefSchema]).optional(),
+  [STYLE]: z.union([cssPropertySchema, RefSchema]).optional(),
+  [STYLES]: z.union([z.array(StylesObjectSchema), RefSchema]).optional(),
+})
+
+export const ASchema = z.object({
   [CLASS]: z.string().optional(),
-  [P_FORM]: z.string().optional(),
   [P_SCALE]: z.enum(Object.values(SCALE)).optional(),
-  [P_TARGET]: z.union([z.string(), z.number()]).optional(),
+  [P_TARGET]: z.union([z.union([z.string(), z.number()])]).optional(),
   [P_TRIGGER]: z.record(z.string(), z.string()).optional(),
   [STYLE]: cssPropertySchema.optional(),
-  [STYLES]: z.array(stylesObjectSchema).optional(),
+  [STYLES]: StylesObjectSchema.optional(),
 })
+
+function unionFromObjectAndSchema<T extends z.ZodRawShape, A extends z.ZodTypeAny>(
+  zodObject: z.ZodObject<T>,
+  appendSchema: A,
+) {
+  // 1. Extract individual schemas from the object properties
+  const shapeSchemas = Object.values(zodObject.shape) as z.ZodTypeAny[]
+
+  // 2. Combine the object shape schemas with the extra schema
+  const allSchemas = [...shapeSchemas, appendSchema] as const
+
+  // 3. Zod requires a tuple with at least two elements for z.union()
+  if (allSchemas.length < 2) {
+    throw new Error('Union requires at least 2 schemas.')
+  }
+
+  // Type assertion ensures TypeScript infers the exact union array types
+  return z.union(allSchemas as unknown as [z.ZodTypeAny, z.ZodTypeAny, ...z.ZodTypeAny[]]) as z.ZodUnion<
+    [...{ [K in keyof T]: T[K] }, A]
+  >
+}
+const BSchema = unionFromObjectAndSchema(ASchema, RefSchema)
 
 /**
  * Schema for standard HTML attributes combined with ARIA and Plaited attributes.
@@ -306,59 +332,989 @@ export const DetailedHTMLAttributesSchema = z
     ...PlaitedAttributesSchema.shape,
     ...AriaAttributesSchema.shape,
     // Standard HTML Attributes
-    accesskey: z.string().optional(),
-    autofocus: z.boolean().optional(),
-    contenteditable: z.union([booleanishSchema, z.enum(['inherit', 'plaintext-only'])]).optional(),
-    dir: z.string().optional(),
-    draggable: booleanishSchema.optional(),
-    hidden: z.boolean().optional(),
-    id: z.union([z.string(), z.number()]).optional(),
-    lang: z.string().optional(),
-    nonce: z.string().optional(),
-    placeholder: z.string().optional(),
-    slot: z.string().optional(),
-    spellcheck: booleanishSchema.optional(),
-    tabindex: z.number().optional(),
-    title: z.string().optional(),
-    translate: z.enum(['yes', 'no']).optional(),
+    accesskey: z.union([z.string(), RefSchema]).optional(),
+    autofocus: z.union([z.boolean(), RefSchema]).optional(),
+    contenteditable: z
+      .union([z.union([BooleanishSchema, z.enum(['inherit', 'plaintext-only'])]), RefSchema])
+      .optional(),
+    dir: z.union([z.string(), RefSchema]).optional(),
+    draggable: z.union([BooleanishSchema, RefSchema]).optional(),
+    hidden: z.union([z.boolean(), RefSchema]).optional(),
+    id: z.union([z.union([z.string(), z.number()]), RefSchema]).optional(),
+    lang: z.union([z.string(), RefSchema]).optional(),
+    nonce: z.union([z.string(), RefSchema]).optional(),
+    placeholder: z.union([z.string(), RefSchema]).optional(),
+    slot: z.union([z.string(), RefSchema]).optional(),
+    spellcheck: z.union([BooleanishSchema, RefSchema]).optional(),
+    tabindex: z.union([z.number(), RefSchema]).optional(),
+    title: z.union([z.string(), RefSchema]).optional(),
+    translate: z.union([z.enum(['yes', 'no']), RefSchema]).optional(),
 
     // WAI-ARIA
-    role: ariaRoleSchema.optional(),
+    role: z.union([AriaRoleSchema, RefSchema]).optional(),
 
     // RDFa Attributes
-    about: z.string().optional(),
-    content: z.string().optional(),
-    datatype: z.string().optional(),
-    prefix: z.string().optional(),
-    property: z.string().optional(),
-    rel: z.string().optional(),
-    resource: z.string().optional(),
-    rev: z.string().optional(),
-    typeof: z.string().optional(),
-    vocab: z.string().optional(),
+    about: z.union([z.string(), RefSchema]).optional(),
+    content: z.union([z.string(), RefSchema]).optional(),
+    datatype: z.union([z.string(), RefSchema]).optional(),
+    prefix: z.union([z.string(), RefSchema]).optional(),
+    property: z.union([z.string(), RefSchema]).optional(),
+    rel: z.union([z.string(), RefSchema]).optional(),
+    resource: z.union([z.string(), RefSchema]).optional(),
+    rev: z.union([z.string(), RefSchema]).optional(),
+    typeof: z.union([z.string(), RefSchema]).optional(),
+    vocab: z.union([z.string(), RefSchema]).optional(),
 
     // Non-standard Attributes
-    autocapitalize: z.enum(['off', 'none', 'on', 'sentences', 'words', 'characters']).optional(),
-    autocorrect: z.enum(['on', 'off']).optional(),
-    autosave: z.string().optional(),
-    itemprop: z.string().optional(),
-    itemscope: z.boolean().optional(),
-    itemtype: z.string().optional(),
-    itemid: z.string().optional(),
-    itemref: z.string().optional(),
-    results: z.number().optional(),
-    security: z.string().optional(),
+    autocapitalize: z.union([z.enum(['off', 'none', 'on', 'sentences', 'words', 'characters']), RefSchema]).optional(),
+    autocorrect: z.union([z.enum(['on', 'off']), RefSchema]).optional(),
+    autosave: z.union([z.string(), RefSchema]).optional(),
+    itemprop: z.union([z.string(), RefSchema]).optional(),
+    itemscope: z.union([z.boolean(), RefSchema]).optional(),
+    itemtype: z.union([z.string(), RefSchema]).optional(),
+    itemid: z.union([z.string(), RefSchema]).optional(),
+    itemref: z.union([z.string(), RefSchema]).optional(),
+    results: z.union([z.number(), RefSchema]).optional(),
+    security: z.union([z.string(), RefSchema]).optional(),
 
     // Standard HTML attributes not covered above
-    for: z.string().optional(),
+    for: z.union([z.string(), RefSchema]).optional(),
 
     // Living Standard
-    inputmode: z.enum(['none', 'text', 'tel', 'url', 'email', 'numeric', 'decimal', 'search']).optional(),
-    is: z.string().optional(),
+    inputmode: z
+      .union([z.enum(['none', 'text', 'tel', 'url', 'email', 'numeric', 'decimal', 'search']), RefSchema])
+      .optional(),
+    is: z.union([z.string(), RefSchema]).optional(),
   })
-  .catchall(z.union([z.string(), z.number(), z.boolean()]))
+  .catchall(z.union([z.string(), z.number(), z.boolean(), RefSchema]))
 
 export type DetailedHTMLAttributes = z.output<typeof DetailedHTMLAttributesSchema>
+
+// ── Element nodes ─────────────────────────────────────────────────────────
+
+// HTML elements with tag-specific attributes
+
+const DetailedAnchorHTMLAttributesSchema = z.object({
+  ...DetailedHTMLAttributesSchema.shape,
+  download: z.union([z.boolean(), RefSchema]).optional(),
+  href: z.union([z.string(), RefSchema]).optional(),
+  hreflang: z.union([z.string(), RefSchema]).optional(),
+  media: z.union([z.string(), RefSchema]).optional(),
+  ping: z.union([z.string(), RefSchema]).optional(),
+  target: z.union([AnchorTargetSchema, RefSchema]).optional(),
+  type: z.union([z.string(), RefSchema]).optional(),
+  referrerpolicy: z.union([ReferrerPolicySchema, RefSchema]).optional(),
+})
+
+const DetailedAreaHTMLAttributesSchema = z.object({
+  ...DetailedHTMLAttributesSchema.shape,
+  alt: z.union([z.string(), RefSchema]).optional(),
+  coords: z.union([z.string(), RefSchema]).optional(),
+  download: z.union([z.boolean(), RefSchema]).optional(),
+  href: z.union([z.string(), RefSchema]).optional(),
+  hreflang: z.union([z.string(), RefSchema]).optional(),
+  media: z.union([z.string(), RefSchema]).optional(),
+  referrerpolicy: z.union([ReferrerPolicySchema, RefSchema]).optional(),
+  shape: z.union([z.string(), RefSchema]).optional(),
+  target: z.union([z.string(), RefSchema]).optional(),
+})
+
+const DetailedBaseHTMLAttributesSchema = z.object({
+  ...DetailedHTMLAttributesSchema.shape,
+  href: z.union([z.string(), RefSchema]).optional(),
+  target: z.union([z.string(), RefSchema]).optional(),
+})
+
+const DetailedBlockquoteHTMLAttributesSchema = z.object({
+  ...DetailedHTMLAttributesSchema.shape,
+  cite: z.union([z.string(), RefSchema]).optional(),
+})
+
+const DetailedButtonHTMLAttributesSchema = z.object({
+  ...DetailedHTMLAttributesSchema.shape,
+  disabled: z.union([z.boolean(), RefSchema]).optional(),
+  form: z.union([z.string(), RefSchema]).optional(),
+  formaction: z.union([z.string(), RefSchema]).optional(),
+  formenctype: z.union([z.string(), RefSchema]).optional(),
+  formmethod: z.union([z.string(), RefSchema]).optional(),
+  formnovalidate: z.union([z.boolean(), RefSchema]).optional(),
+  formtarget: z.union([z.string(), RefSchema]).optional(),
+  name: z.union([z.string(), RefSchema]).optional(),
+  type: z.union([z.enum(['submit', 'reset', 'button']), RefSchema]).optional(),
+  value: z.union([z.union([z.string(), z.number()]), RefSchema]).optional(),
+})
+
+const DetailedCanvasHTMLAttributesSchema = z.object({
+  ...DetailedHTMLAttributesSchema.shape,
+  height: z.union([z.union([z.number(), z.string()]), RefSchema]).optional(),
+  width: z.union([z.union([z.number(), z.string()]), RefSchema]).optional(),
+})
+
+const DetailedColHTMLAttributesSchema = z.object({
+  ...DetailedHTMLAttributesSchema.shape,
+  span: z.union([z.number(), RefSchema]).optional(),
+  width: z.union([z.union([z.number(), z.string()]), RefSchema]).optional(),
+})
+
+const DetailedColgroupHTMLAttributesSchema = z.object({
+  ...DetailedHTMLAttributesSchema.shape,
+  span: z.union([z.number(), RefSchema]).optional(),
+})
+
+const DetailedDataHTMLAttributesSchema = z.object({
+  ...DetailedHTMLAttributesSchema.shape,
+  value: z.union([z.union([z.string(), z.number()]), RefSchema]).optional(),
+})
+
+const DetailedDetailsHTMLAttributesSchema = z.object({
+  ...DetailedHTMLAttributesSchema.shape,
+  open: z.union([z.boolean(), RefSchema]).optional(),
+})
+
+const DetailedDelHTMLAttributesSchema = z.object({
+  ...DetailedHTMLAttributesSchema.shape,
+  cite: z.union([z.string(), RefSchema]).optional(),
+  datetime: z.union([z.string(), RefSchema]).optional(),
+})
+
+const DetailedDialogHTMLAttributesSchema = z.object({
+  ...DetailedHTMLAttributesSchema.shape,
+  open: z.union([z.boolean(), RefSchema]).optional(),
+})
+
+const DetailedEmbedHTMLAttributesSchema = z.object({
+  ...DetailedHTMLAttributesSchema.shape,
+  height: z.union([z.union([z.number(), z.string()]), RefSchema]).optional(),
+  src: z.union([z.string(), RefSchema]).optional(),
+  type: z.union([z.string(), RefSchema]).optional(),
+  width: z.union([z.union([z.number(), z.string()]), RefSchema]).optional(),
+})
+
+const DetailedFieldsetHTMLAttributesSchema = z.object({
+  ...DetailedHTMLAttributesSchema.shape,
+  disabled: z.union([z.boolean(), RefSchema]).optional(),
+  form: z.union([z.string(), RefSchema]).optional(),
+  name: z.union([z.string(), RefSchema]).optional(),
+})
+
+const DetailedFormHTMLAttributesSchema = z.object({
+  ...DetailedHTMLAttributesSchema.shape,
+  'accept-charset': z.union([z.string(), RefSchema]).optional(),
+  action: z.never().optional(),
+  autocomplete: z.union([z.string(), RefSchema]).optional(),
+  enctype: z.union([z.string(), RefSchema]).optional(),
+  method: z.union([z.string(), RefSchema]).optional(),
+  name: z.union([z.string(), RefSchema]).optional(),
+  novalidate: z.union([z.boolean(), RefSchema]).optional(),
+  target: z.union([z.string(), RefSchema]).optional(),
+  [P_TRIGGER]: z.never().optional(),
+  [P_FORM]: z.union([z.string(), RefSchema]),
+})
+
+const DetailedHtmlHTMLAttributesSchema = z.object({
+  ...DetailedHTMLAttributesSchema.shape,
+  manifest: z.union([z.string(), RefSchema]).optional(),
+})
+
+const DetailedIframeHTMLAttributesSchema = z.object({
+  ...DetailedHTMLAttributesSchema.shape,
+  allow: z.union([z.string(), RefSchema]).optional(),
+  height: z.union([z.union([z.number(), z.string()]), RefSchema]).optional(),
+  loading: z.union([z.enum(['eager', 'lazy']), RefSchema]).optional(),
+  name: z.union([z.string(), RefSchema]).optional(),
+  referrerpolicy: z.union([ReferrerPolicySchema, RefSchema]).optional(),
+  sandbox: z.union([z.string(), RefSchema]).optional(),
+  seamless: z.union([z.boolean(), RefSchema]).optional(),
+  src: z.union([z.string(), RefSchema]).optional(),
+  srcdoc: z.union([z.string(), RefSchema]).optional(),
+  width: z.union([z.union([z.number(), z.string()]), RefSchema]).optional(),
+})
+
+const DetailedImgHTMLAttributesSchema = z.object({
+  ...DetailedHTMLAttributesSchema.shape,
+  alt: z.union([z.string(), RefSchema]).optional(),
+  crossorigin: z.union([CrossOriginSchema, RefSchema]).optional(),
+  decoding: z.union([z.enum(['async', 'auto', 'sync']), RefSchema]).optional(),
+  height: z.union([z.union([z.number(), z.string()]), RefSchema]).optional(),
+  loading: z.union([z.enum(['eager', 'lazy']), RefSchema]).optional(),
+  referrerpolicy: z.union([ReferrerPolicySchema, RefSchema]).optional(),
+  sizes: z.union([z.string(), RefSchema]).optional(),
+  src: z.union([z.string(), RefSchema]).optional(),
+  srcset: z.union([z.string(), RefSchema]).optional(),
+  usemap: z.union([z.string(), RefSchema]).optional(),
+  width: z.union([z.union([z.number(), z.string()]), RefSchema]).optional(),
+})
+
+const DetailedInputHTMLAttributesSchema = z.object({
+  ...DetailedHTMLAttributesSchema.shape,
+  accept: z.union([z.string(), RefSchema]).optional(),
+  alt: z.union([z.string(), RefSchema]).optional(),
+  autocomplete: z.union([z.string(), RefSchema]).optional(),
+  capture: z.union([z.union([z.boolean(), z.enum(['user', 'environment'])]), RefSchema]).optional(),
+  checked: z.union([z.boolean(), RefSchema]).optional(),
+  disabled: z.union([z.boolean(), RefSchema]).optional(),
+  enterkeyhint: z.union([z.enum(['enter', 'done', 'go', 'next', 'previous', 'search', 'send']), RefSchema]).optional(),
+  form: z.union([z.string(), RefSchema]).optional(),
+  formaction: z.union([z.string(), RefSchema]).optional(),
+  formenctype: z.union([z.string(), RefSchema]).optional(),
+  formmethod: z.union([z.string(), RefSchema]).optional(),
+  formnovalidate: z.union([z.boolean(), RefSchema]).optional(),
+  formtarget: z.union([z.string(), RefSchema]).optional(),
+  height: z.union([z.union([z.number(), z.string()]), RefSchema]).optional(),
+  list: z.union([z.string(), RefSchema]).optional(),
+  max: z.union([z.union([z.number(), z.string()]), RefSchema]).optional(),
+  maxlength: z.union([z.number(), RefSchema]).optional(),
+  min: z.union([z.union([z.number(), z.string()]), RefSchema]).optional(),
+  minlength: z.union([z.number(), RefSchema]).optional(),
+  multiple: z.union([z.boolean(), RefSchema]).optional(),
+  name: z.union([z.string(), RefSchema]).optional(),
+  pattern: z.union([z.string(), RefSchema]).optional(),
+  placeholder: z.union([z.string(), RefSchema]).optional(),
+  readonly: z.union([z.boolean(), RefSchema]).optional(),
+  required: z.union([z.boolean(), RefSchema]).optional(),
+  size: z.union([z.number(), RefSchema]).optional(),
+  src: z.union([z.string(), RefSchema]).optional(),
+  step: z.union([z.union([z.number(), z.string()]), RefSchema]).optional(),
+  type: z.union([InputTypeSchema, RefSchema]).optional(),
+  value: z.union([z.union([z.string(), z.number()]), RefSchema]).optional(),
+  width: z.union([z.union([z.number(), z.string()]), RefSchema]).optional(),
+})
+
+const DetailedInsHTMLAttributesSchema = z.object({
+  ...DetailedHTMLAttributesSchema.shape,
+  cite: z.union([z.string(), RefSchema]).optional(),
+  datetime: z.union([z.string(), RefSchema]).optional(),
+})
+
+const DetailedLabelHTMLAttributesSchema = z.object({
+  ...DetailedHTMLAttributesSchema.shape,
+  form: z.union([z.string(), RefSchema]).optional(),
+  for: z.union([z.string(), RefSchema]).optional(),
+})
+
+const DetailedLiHTMLAttributesSchema = z.object({
+  ...DetailedHTMLAttributesSchema.shape,
+  value: z.union([z.union([z.string(), z.number()]), RefSchema]).optional(),
+})
+
+const DetailedLinkHTMLAttributesSchema = z.object({
+  ...DetailedHTMLAttributesSchema.shape,
+  as: z.union([z.string(), RefSchema]).optional(),
+  crossorigin: z.union([CrossOriginSchema, RefSchema]).optional(),
+  fetchPriority: z.union([z.enum(['high', 'low', 'auto']), RefSchema]).optional(),
+  href: z.union([z.string(), RefSchema]).optional(),
+  hreflang: z.union([z.string(), RefSchema]).optional(),
+  integrity: z.union([z.string(), RefSchema]).optional(),
+  media: z.union([z.string(), RefSchema]).optional(),
+  imagesrcset: z.union([z.string(), RefSchema]).optional(),
+  imagesizes: z.union([z.string(), RefSchema]).optional(),
+  referrerpolicy: z.union([ReferrerPolicySchema, RefSchema]).optional(),
+  sizes: z.union([z.string(), RefSchema]).optional(),
+  type: z.union([z.string(), RefSchema]).optional(),
+  charSet: z.union([z.string(), RefSchema]).optional(),
+})
+
+const DetailedMapHTMLAttributesSchema = z.object({
+  ...DetailedHTMLAttributesSchema.shape,
+  name: z.union([z.string(), RefSchema]).optional(),
+})
+
+const DetailedMenuHTMLAttributesSchema = z.object({
+  ...DetailedHTMLAttributesSchema.shape,
+  type: z.union([z.string(), RefSchema]).optional(),
+})
+
+const DetailedMetaHTMLAttributesSchema = z.object({
+  ...DetailedHTMLAttributesSchema.shape,
+  charset: z.union([z.string(), RefSchema]).optional(),
+  'http-equiv': z.union([z.string(), RefSchema]).optional(),
+  name: z.union([z.string(), RefSchema]).optional(),
+  media: z.union([z.string(), RefSchema]).optional(),
+  content: z.union([z.string(), RefSchema]).optional(),
+})
+
+const DetailedMeterHTMLAttributesSchema = z.object({
+  ...DetailedHTMLAttributesSchema.shape,
+  form: z.union([z.string(), RefSchema]).optional(),
+  high: z.union([z.number(), RefSchema]).optional(),
+  low: z.union([z.number(), RefSchema]).optional(),
+  max: z.union([z.union([z.number(), z.string()]), RefSchema]).optional(),
+  min: z.union([z.union([z.number(), z.string()]), RefSchema]).optional(),
+  optimum: z.union([z.number(), RefSchema]).optional(),
+  value: z.union([z.union([z.string(), z.number()]), RefSchema]).optional(),
+})
+
+const DetailedObjectHTMLAttributesSchema = z.object({
+  ...DetailedHTMLAttributesSchema.shape,
+  classid: z.union([z.string(), RefSchema]).optional(),
+  data: z.union([z.string(), RefSchema]).optional(),
+  form: z.union([z.string(), RefSchema]).optional(),
+  height: z.union([z.union([z.number(), z.string()]), RefSchema]).optional(),
+  name: z.union([z.string(), RefSchema]).optional(),
+  type: z.union([z.string(), RefSchema]).optional(),
+  usemap: z.union([z.string(), RefSchema]).optional(),
+  width: z.union([z.union([z.number(), z.string()]), RefSchema]).optional(),
+})
+
+const DetailedOlHTMLAttributesSchema = z.object({
+  ...DetailedHTMLAttributesSchema.shape,
+  reversed: z.union([z.boolean(), RefSchema]).optional(),
+  start: z.union([z.number(), RefSchema]).optional(),
+  type: z.union([z.enum(['1', 'a', 'A', 'i', 'I']), RefSchema]).optional(),
+})
+
+const DetailedOptgroupHTMLAttributesSchema = z.object({
+  ...DetailedHTMLAttributesSchema.shape,
+  disabled: z.union([z.boolean(), RefSchema]).optional(),
+  label: z.union([z.string(), RefSchema]).optional(),
+})
+
+const DetailedOptionHTMLAttributesSchema = z.object({
+  ...DetailedHTMLAttributesSchema.shape,
+  disabled: z.union([z.boolean(), RefSchema]).optional(),
+  label: z.union([z.string(), RefSchema]).optional(),
+  selected: z.union([z.boolean(), RefSchema]).optional(),
+  value: z.union([z.union([z.string(), z.number()]), RefSchema]).optional(),
+})
+
+const DetailedOutputHTMLAttributesSchema = z.object({
+  ...DetailedHTMLAttributesSchema.shape,
+  form: z.union([z.string(), RefSchema]).optional(),
+  for: z.union([z.string(), RefSchema]).optional(),
+  name: z.union([z.string(), RefSchema]).optional(),
+})
+
+const DetailedProgressHTMLAttributesSchema = z.object({
+  ...DetailedHTMLAttributesSchema.shape,
+  max: z.union([z.union([z.number(), z.string()]), RefSchema]).optional(),
+  value: z.union([z.union([z.string(), z.number()]), RefSchema]).optional(),
+})
+
+const DetailedQuoteHTMLAttributesSchema = z.object({
+  ...DetailedHTMLAttributesSchema.shape,
+  cite: z.union([z.string(), RefSchema]).optional(),
+})
+
+const DetailedSlotHTMLAttributesSchema = z.object({
+  ...DetailedHTMLAttributesSchema.shape,
+  name: z.union([z.string(), RefSchema]).optional(),
+})
+
+const DetailedScriptHTMLAttributesSchema = z.object({
+  ...DetailedHTMLAttributesSchema.shape,
+  async: z.union([z.boolean(), RefSchema]).optional(),
+  crossorigin: z.union([CrossOriginSchema, RefSchema]).optional(),
+  defer: z.union([z.boolean(), RefSchema]).optional(),
+  integrity: z.union([z.string(), RefSchema]).optional(),
+  nomodule: z.union([z.boolean(), RefSchema]).optional(),
+  referrerpolicy: z.union([ReferrerPolicySchema, RefSchema]).optional(),
+  src: z.union([z.string(), RefSchema]).optional(),
+  type: z.union([z.string(), RefSchema]).optional(),
+})
+
+const DetailedSelectHTMLAttributesSchema = z.object({
+  ...DetailedHTMLAttributesSchema.shape,
+  autocomplete: z.union([z.string(), RefSchema]).optional(),
+  disabled: z.union([z.boolean(), RefSchema]).optional(),
+  form: z.union([z.string(), RefSchema]).optional(),
+  multiple: z.union([z.boolean(), RefSchema]).optional(),
+  name: z.union([z.string(), RefSchema]).optional(),
+  required: z.union([z.boolean(), RefSchema]).optional(),
+  size: z.union([z.number(), RefSchema]).optional(),
+  value: z.union([z.union([z.string(), z.number()]), RefSchema]).optional(),
+})
+
+const DetailedSourceHTMLAttributesSchema = z.object({
+  ...DetailedHTMLAttributesSchema.shape,
+  height: z.union([z.union([z.number(), z.string()]), RefSchema]).optional(),
+  media: z.union([z.string(), RefSchema]).optional(),
+  sizes: z.union([z.string(), RefSchema]).optional(),
+  src: z.union([z.string(), RefSchema]).optional(),
+  srcset: z.union([z.string(), RefSchema]).optional(),
+  type: z.union([z.string(), RefSchema]).optional(),
+  width: z.union([z.union([z.number(), z.string()]), RefSchema]).optional(),
+})
+
+const DetailedStyleHTMLAttributesSchema = z.object({
+  ...DetailedHTMLAttributesSchema.shape,
+  media: z.union([z.string(), RefSchema]).optional(),
+})
+
+const DetailedTableHTMLAttributesSchema = z.object({
+  ...DetailedHTMLAttributesSchema.shape,
+  align: z.union([z.enum(['left', 'center', 'right']), RefSchema]).optional(),
+  bgcolor: z.union([z.string(), RefSchema]).optional(),
+  border: z.union([z.number(), RefSchema]).optional(),
+  cellpadding: z.union([z.union([z.number(), z.string()]), RefSchema]).optional(),
+  cellspacing: z.union([z.union([z.number(), z.string()]), RefSchema]).optional(),
+  frame: z.union([z.boolean(), RefSchema]).optional(),
+  rules: z.union([z.enum(['none', 'groups', 'rows', 'columns', 'all']), RefSchema]).optional(),
+  summary: z.union([z.string(), RefSchema]).optional(),
+  width: z.union([z.union([z.number(), z.string()]), RefSchema]).optional(),
+})
+
+const DetailedTemplateHTMLAttributesSchema = z.object({
+  ...DetailedHTMLAttributesSchema.shape,
+  shadowrootmode: z.union([z.enum(['open', 'closed']), RefSchema]).optional(),
+  shadowrootdelegatesfocus: z.union([z.boolean(), RefSchema]).optional(),
+  shadowrootclonable: z.union([z.boolean(), RefSchema]).optional(),
+})
+
+const DetailedTextareaHTMLAttributesSchema = z.object({
+  ...DetailedHTMLAttributesSchema.shape,
+  autocomplete: z.union([z.string(), RefSchema]).optional(),
+  cols: z.union([z.number(), RefSchema]).optional(),
+  dirname: z.union([z.string(), RefSchema]).optional(),
+  disabled: z.union([z.boolean(), RefSchema]).optional(),
+  form: z.union([z.string(), RefSchema]).optional(),
+  maxlength: z.union([z.number(), RefSchema]).optional(),
+  minlength: z.union([z.number(), RefSchema]).optional(),
+  name: z.union([z.string(), RefSchema]).optional(),
+  placeholder: z.union([z.string(), RefSchema]).optional(),
+  readonly: z.union([z.boolean(), RefSchema]).optional(),
+  required: z.union([z.boolean(), RefSchema]).optional(),
+  rows: z.union([z.number(), RefSchema]).optional(),
+  value: z.union([z.union([z.string(), z.number()]), RefSchema]).optional(),
+  wrap: z.union([z.string(), RefSchema]).optional(),
+})
+
+const DetailedTdHTMLAttributesSchema = z.object({
+  ...DetailedHTMLAttributesSchema.shape,
+  align: z.union([z.enum(['left', 'center', 'right', 'justify', 'char']), RefSchema]).optional(),
+  colspan: z.union([z.number(), RefSchema]).optional(),
+  headers: z.union([z.string(), RefSchema]).optional(),
+  rowspan: z.union([z.number(), RefSchema]).optional(),
+  scope: z.union([z.string(), RefSchema]).optional(),
+  abbr: z.union([z.string(), RefSchema]).optional(),
+  height: z.union([z.string(), RefSchema]).optional(),
+  width: z.union([z.string(), RefSchema]).optional(),
+  valign: z.union([z.enum(['top', 'middle', 'bottom', 'baseline']), RefSchema]).optional(),
+})
+
+const DetailedThHTMLAttributesSchema = z.object({
+  ...DetailedHTMLAttributesSchema.shape,
+  align: z.union([z.enum(['left', 'center', 'right', 'justify', 'char']), RefSchema]).optional(),
+  colspan: z.union([z.number(), RefSchema]).optional(),
+  headers: z.union([z.string(), RefSchema]).optional(),
+  rowspan: z.union([z.number(), RefSchema]).optional(),
+  scope: z.union([z.string(), RefSchema]).optional(),
+  abbr: z.union([z.string(), RefSchema]).optional(),
+})
+
+const DetailedTimeHTMLAttributesSchema = z.object({
+  ...DetailedHTMLAttributesSchema.shape,
+  datetime: z.union([z.string(), RefSchema]).optional(),
+})
+
+const DetailedTrackHTMLAttributesSchema = z.object({
+  ...DetailedHTMLAttributesSchema.shape,
+  default: z.union([z.boolean(), RefSchema]).optional(),
+  kind: z.union([z.enum(['subtitles', 'captions', 'descriptions', 'chapters', 'metadata']), RefSchema]).optional(),
+  label: z.union([z.string(), RefSchema]).optional(),
+  src: z.union([z.string(), RefSchema]).optional(),
+  srclang: z.union([z.string(), RefSchema]).optional(),
+})
+
+// Media-based elements
+
+const DetailedAudioHTMLAttributesSchema = z.object({
+  ...DetailedHTMLAttributesSchema.shape,
+  autoplay: z.union([z.boolean(), RefSchema]).optional(),
+  controls: z.union([z.boolean(), RefSchema]).optional(),
+  controlslist: z.union([z.string(), RefSchema]).optional(),
+  crossorigin: z.union([CrossOriginSchema, RefSchema]).optional(),
+  loop: z.union([z.boolean(), RefSchema]).optional(),
+  mediagroup: z.union([z.string(), RefSchema]).optional(),
+  muted: z.union([z.boolean(), RefSchema]).optional(),
+  playsinline: z.union([z.boolean(), RefSchema]).optional(),
+  preload: z.union([z.string(), RefSchema]).optional(),
+  src: z.union([z.string(), RefSchema]).optional(),
+})
+
+const DetailedVideoHTMLAttributesSchema = z.object({
+  ...DetailedAudioHTMLAttributesSchema.shape,
+  height: z.union([z.string(), RefSchema]).optional(),
+  playsinline: z.union([z.boolean(), RefSchema]).optional(),
+  poster: z.union([z.string(), RefSchema]).optional(),
+  width: z.union([z.string(), RefSchema]).optional(),
+  disablepictureinpicture: z.union([z.boolean(), RefSchema]).optional(),
+  disableremoteplayback: z.union([z.boolean(), RefSchema]).optional(),
+})
+
+// ── SVG Attributes ─────────────────────────────────────────────────────────
+
+const DetailedSVGAttributesSchema = z.object({
+  ...DetailedHTMLAttributesSchema.shape,
+  'accent-height': z.union([z.number(), RefSchema]).optional(),
+  accumulate: z.union([z.union([z.enum(['none', 'sum']), z.string()]), RefSchema]).optional(),
+  additive: z.union([z.union([z.enum(['replace', 'sum']), z.string()]), RefSchema]).optional(),
+  'alignment-baseline': z
+    .union([
+      z.union([
+        z.enum([
+          'auto',
+          'baseline',
+          'before-edge',
+          'text-before-edge',
+          'middle',
+          'central',
+          'after-edge',
+          'text-after-edge',
+          'ideographic',
+          'alphabetic',
+          'hanging',
+          'mathematical',
+          'inherit',
+        ]),
+        z.string(),
+      ]),
+      RefSchema,
+    ])
+    .optional(),
+  allowReorder: z.union([z.union([z.enum(['no', 'yes']), z.string()]), RefSchema]).optional(),
+  amplitude: z.union([z.union([z.number(), z.string()]), RefSchema]).optional(),
+  attributeName: z.union([z.string(), RefSchema]).optional(),
+  attributeType: z.union([z.string(), RefSchema]).optional(),
+  autoReverse: z.union([BooleanishSchema, RefSchema]).optional(),
+  azimuth: z.union([z.number(), RefSchema]).optional(),
+  baseFrequency: z.union([z.union([z.number(), z.string()]), RefSchema]).optional(),
+  'baseline-shift': z.union([z.union([z.enum(['sub', 'super']), z.number(), z.string()]), RefSchema]).optional(),
+  baseProfile: z.union([z.string(), RefSchema]).optional(),
+  begin: z.union([z.union([z.number(), z.string()]), RefSchema]).optional(),
+  bias: z.union([z.union([z.number(), z.string()]), RefSchema]).optional(),
+  by: z.union([z.union([z.number(), z.string()]), RefSchema]).optional(),
+  calcMode: z.union([z.union([z.enum(['discrete', 'linear', 'paced', 'spline']), z.string()]), RefSchema]).optional(),
+  'clip-path': z.union([z.string(), RefSchema]).optional(),
+  'clip-rule': z.union([z.union([z.enum(['nonzero', 'evenodd', 'inherit']), z.string()]), RefSchema]).optional(),
+  clipPathUnits: z
+    .union([z.union([z.enum(['userSpaceOnUse', 'objectBoundingBox']), z.string()]), RefSchema])
+    .optional(),
+  color: z.union([z.string(), RefSchema]).optional(),
+  'color-interpolation': z
+    .union([z.union([z.enum(['auto', 'sRGB', 'linearRGB', 'inherit']), z.string()]), RefSchema])
+    .optional(),
+  'color-interpolation-filters': z.union([z.string(), RefSchema]).optional(),
+  'color-rendering': z.union([z.union([z.number(), z.string()]), RefSchema]).optional(),
+  contentScriptType: z.union([z.string(), RefSchema]).optional(),
+  contentStyleType: z.union([z.string(), RefSchema]).optional(),
+  cursor: z.union([z.string(), RefSchema]).optional(),
+  cx: z.union([z.string(), RefSchema]).optional(),
+  cy: z.union([z.string(), RefSchema]).optional(),
+  d: z.union([z.string(), RefSchema]).optional(),
+  decoding: z.union([z.union([z.enum(['sync', 'async', 'auto']), z.string()]), RefSchema]).optional(),
+  diffuseConstant: z.union([z.union([z.number(), z.string()]), RefSchema]).optional(),
+  direction: z.union([z.union([z.enum(['ltr', 'rtl']), z.string()]), RefSchema]).optional(),
+  display: z.union([z.string(), RefSchema]).optional(),
+  divisor: z.union([z.union([z.number(), z.string()]), RefSchema]).optional(),
+  'dominant-baseline': z
+    .union([
+      z.union([
+        z.enum([
+          'auto',
+          'text-bottom',
+          'alphabetic',
+          'ideographic',
+          'middle',
+          'central',
+          'mathematical',
+          'hanging',
+          'text-top',
+        ]),
+        z.string(),
+      ]),
+      RefSchema,
+    ])
+    .optional(),
+  dur: z.union([z.union([z.enum(['media', 'indefinite']), z.number(), z.string()]), RefSchema]).optional(),
+  dx: z.union([z.union([z.number(), z.string()]), RefSchema]).optional(),
+  dy: z.union([z.union([z.number(), z.number(), z.string()]), RefSchema]).optional(),
+  edgeMode: z.union([z.string(), RefSchema]).optional(),
+  elevation: z.union([z.union([z.number(), z.string()]), RefSchema]).optional(),
+  end: z.union([z.string(), RefSchema]).optional(),
+  exponent: z.union([z.union([z.number(), z.string()]), RefSchema]).optional(),
+  fill: z.union([z.string(), RefSchema]).optional(),
+  'fill-opacity': z.union([z.union([z.number(), z.string()]), RefSchema]).optional(),
+  'fill-rule': z.union([z.union([z.enum(['nonzero', 'evenodd', 'inherit']), z.string()]), RefSchema]).optional(),
+  filter: z.union([z.string(), RefSchema]).optional(),
+  filterRes: z.union([z.union([z.number(), z.string()]), RefSchema]).optional(),
+  filterUnits: z.union([z.union([z.enum(['userSpaceOnUse', 'objectBoundingBox']), z.string()]), RefSchema]).optional(),
+  'flood-color': z.union([z.string(), RefSchema]).optional(),
+  'flood-opacity': z.union([z.union([z.number(), z.string()]), RefSchema]).optional(),
+  focusable: z.union([z.union([BooleanishSchema, z.literal('auto')]), RefSchema]).optional(),
+  'font-family': z.union([z.string(), RefSchema]).optional(),
+  'font-size': z.union([z.string(), RefSchema]).optional(),
+  'font-size-adjust': z.union([z.string(), RefSchema]).optional(),
+  'font-stretch': z.union([z.string(), RefSchema]).optional(),
+  'font-style': z.union([z.string(), RefSchema]).optional(),
+  'font-variant': z.union([z.string(), RefSchema]).optional(),
+  'font-weight': z.union([z.string(), RefSchema]).optional(),
+  fr: z.union([z.string(), RefSchema]).optional(),
+  from: z.union([z.string(), RefSchema]).optional(),
+  fx: z.union([z.string(), RefSchema]).optional(),
+  fy: z.union([z.string(), RefSchema]).optional(),
+  gradientTransform: z.union([z.string(), RefSchema]).optional(),
+  gradientUnits: z
+    .union([z.union([z.enum(['userSpaceOnUse', 'objectBoundingBox']), z.string()]), RefSchema])
+    .optional(),
+  href: z.union([z.string(), RefSchema]).optional(),
+  'image-rendering': z
+    .union([z.union([z.enum(['auto', 'optimizeSpeed', 'optimizeQuality']), z.string()]), RefSchema])
+    .optional(),
+  in: z
+    .union([
+      z.union([
+        z.enum(['SourceGraphic', 'SourceAlpha', 'BackgroundImage', 'BackgroundAlpha', 'FillPaint', 'StrokePaint']),
+        z.string(),
+      ]),
+      RefSchema,
+    ])
+    .optional(),
+  in2: z
+    .union([
+      z.union([
+        z.enum(['SourceGraphic', 'SourceAlpha', 'BackgroundImage', 'BackgroundAlpha', 'FillPaint', 'StrokePaint']),
+        z.string(),
+      ]),
+      RefSchema,
+    ])
+    .optional(),
+  intercept: z.union([z.union([z.number(), z.string()]), RefSchema]).optional(),
+  k1: z.union([z.union([z.number(), z.string()]), RefSchema]).optional(),
+  k2: z.union([z.union([z.number(), z.string()]), RefSchema]).optional(),
+  k3: z.union([z.union([z.number(), z.string()]), RefSchema]).optional(),
+  k4: z.union([z.union([z.number(), z.string()]), RefSchema]).optional(),
+  kernelMatrix: z.union([z.string(), RefSchema]).optional(),
+  kernelUnitLength: z.union([z.string(), RefSchema]).optional(),
+  keyPoints: z.union([z.string(), RefSchema]).optional(),
+  keySplines: z.union([z.string(), RefSchema]).optional(),
+  keyTimes: z.union([z.string(), RefSchema]).optional(),
+  lengthAdjust: z.union([z.union([z.enum(['spacing', 'spacingAndGlyphs']), z.string()]), RefSchema]).optional(),
+  'letter-spacing': z.union([z.union([z.number(), z.string()]), RefSchema]).optional(),
+  'lighting-color': z.union([z.string(), RefSchema]).optional(),
+  limitingConeAngle: z.union([z.union([z.number(), z.string()]), RefSchema]).optional(),
+  'marker-end': z.union([z.string(), RefSchema]).optional(),
+  'marker-mid': z.union([z.string(), RefSchema]).optional(),
+  'marker-start': z.union([z.string(), RefSchema]).optional(),
+  markerHeight: z.union([z.union([z.string(), z.number()]), RefSchema]).optional(),
+  markerUnits: z.union([z.union([z.enum(['userSpaceOnUse', 'strokeWidth']), z.string()]), RefSchema]).optional(),
+  markerWidth: z.union([z.union([z.string(), z.number()]), RefSchema]).optional(),
+  mask: z.union([z.string(), RefSchema]).optional(),
+  maskContentUnits: z
+    .union([z.union([z.enum(['userSpaceOnUse', 'objectBoundingBox']), z.string()]), RefSchema])
+    .optional(),
+  maskUnits: z.union([z.union([z.enum(['userSpaceOnUse', 'objectBoundingBox']), z.string()]), RefSchema]).optional(),
+  method: z.union([z.enum(['align', 'stretch']), RefSchema]).optional(),
+  mode: z.union([z.string(), RefSchema]).optional(),
+  numOctaves: z.union([z.union([z.number(), z.string()]), RefSchema]).optional(),
+  offset: z.union([z.string(), RefSchema]).optional(),
+  opacity: z.union([z.union([z.number(), z.string()]), RefSchema]).optional(),
+  operator: z.union([z.string(), RefSchema]).optional(),
+  order: z.union([z.union([z.number(), z.string()]), RefSchema]).optional(),
+  orient: z.union([z.union([z.number(), z.string()]), RefSchema]).optional(),
+  origin: z.union([z.string(), RefSchema]).optional(),
+  overflow: z.union([z.union([z.enum(['visible', 'hidden', 'scroll', 'auto']), z.string()]), RefSchema]).optional(),
+  'overline-position': z.union([z.union([z.number(), z.string()]), RefSchema]).optional(),
+  'overline-thickness': z.union([z.union([z.number(), z.string()]), RefSchema]).optional(),
+  'paint-order': z.union([z.string(), RefSchema]).optional(),
+  path: z.union([z.string(), RefSchema]).optional(),
+  pathLength: z.union([z.union([z.number(), z.string()]), RefSchema]).optional(),
+  patternContentUnits: z
+    .union([z.union([z.enum(['userSpaceOnUse', 'objectBoundingBox']), z.string()]), RefSchema])
+    .optional(),
+  patternTransform: z.union([z.string(), RefSchema]).optional(),
+  patternUnits: z.union([z.union([z.enum(['userSpaceOnUse', 'objectBoundingBox']), z.string()]), RefSchema]).optional(),
+  'pointer-events': z
+    .union([
+      z.union([
+        z.enum([
+          'bounding-box',
+          'visiblePainted',
+          'visibleFill',
+          'visibleStroke',
+          'visible',
+          'painted',
+          'fill',
+          'stroke',
+          'all',
+          'none',
+        ]),
+        z.string(),
+      ]),
+      RefSchema,
+    ])
+    .optional(),
+  points: z.union([z.string(), RefSchema]).optional(),
+  pointsAtX: z.union([z.union([z.number(), z.string()]), RefSchema]).optional(),
+  pointsAtY: z.union([z.union([z.number(), z.string()]), RefSchema]).optional(),
+  pointsAtZ: z.union([z.union([z.number(), z.string()]), RefSchema]).optional(),
+  preserveAlpha: z.union([z.enum(['true', 'false']), RefSchema]).optional(),
+  preserveAspectRatio: z.union([z.string(), RefSchema]).optional(),
+  primitiveUnits: z
+    .union([z.union([z.enum(['userSpaceOnUse', 'objectBoundingBox']), z.string()]), RefSchema])
+    .optional(),
+  r: z.union([z.union([z.number(), z.string()]), RefSchema]).optional(),
+  radius: z.union([z.union([z.number(), z.string()]), RefSchema]).optional(),
+  refX: z.union([z.union([z.number(), z.string()]), RefSchema]).optional(),
+  refY: z.union([z.union([z.number(), z.string()]), RefSchema]).optional(),
+  repeatCount: z.union([z.union([z.enum(['indefinite']), z.number(), z.string()]), RefSchema]).optional(),
+  repeatDur: z.union([z.union([z.enum(['indefinite']), z.string()]), RefSchema]).optional(),
+  restart: z.union([z.union([z.enum(['always', 'whenNotActive', 'never']), z.string()]), RefSchema]).optional(),
+  result: z.union([z.string(), RefSchema]).optional(),
+  rotate: z.union([z.union([z.enum(['auto', 'auto-reverse']), z.number(), z.string()]), RefSchema]).optional(),
+  rx: z.union([z.union([z.number(), z.string()]), RefSchema]).optional(),
+  ry: z.union([z.union([z.number(), z.string()]), RefSchema]).optional(),
+  scale: z.union([z.union([z.number(), z.string()]), RefSchema]).optional(),
+  seed: z.union([z.union([z.number(), z.string()]), RefSchema]).optional(),
+  'shape-rendering': z
+    .union([z.union([z.enum(['auto', 'optimizeSpeed', 'crispEdges', 'geometricPrecision']), z.string()]), RefSchema])
+    .optional(),
+  spacing: z.union([z.enum(['auto', 'exact']), RefSchema]).optional(),
+  specularConstant: z.union([z.union([z.number(), z.string()]), RefSchema]).optional(),
+  specularExponent: z.union([z.union([z.number(), z.string()]), RefSchema]).optional(),
+  spreadMethod: z.union([z.union([z.enum(['pad', 'reflect', 'repeat']), z.string()]), RefSchema]).optional(),
+  startOffset: z.union([z.union([z.number(), z.string()]), RefSchema]).optional(),
+  stdDeviation: z.union([z.union([z.number(), z.string()]), RefSchema]).optional(),
+  stitchTiles: z.union([z.union([z.enum(['noStitch', 'stitch']), z.string()]), RefSchema]).optional(),
+  'stop-color': z.union([z.string(), RefSchema]).optional(),
+  'stop-opacity': z.union([z.union([z.number(), z.string()]), RefSchema]).optional(),
+  'strikethrough-position': z.union([z.union([z.number(), z.string()]), RefSchema]).optional(),
+  'strikethrough-thickness': z.union([z.union([z.number(), z.string()]), RefSchema]).optional(),
+  stroke: z.union([z.string(), RefSchema]).optional(),
+  'stroke-dasharray': z.union([z.string(), RefSchema]).optional(),
+  'stroke-dashoffset': z.union([z.union([z.number(), z.string()]), RefSchema]).optional(),
+  'stroke-linecap': z
+    .union([z.union([z.enum(['butt', 'round', 'square', 'inherit']), z.string()]), RefSchema])
+    .optional(),
+  'stroke-linejoin': z
+    .union([z.union([z.enum(['arcs', 'bevel', 'miter', 'miter-clip', 'round', 'inherit']), z.string()]), RefSchema])
+    .optional(),
+  'stroke-miterlimit': z.union([z.union([z.number(), z.string()]), RefSchema]).optional(),
+  'stroke-opacity': z.union([z.union([z.number(), z.string()]), RefSchema]).optional(),
+  'stroke-width': z.union([z.union([z.number(), z.string()]), RefSchema]).optional(),
+  surfaceScale: z.union([z.union([z.number(), z.string()]), RefSchema]).optional(),
+  systemLanguage: z.union([z.string(), RefSchema]).optional(),
+  tableValues: z.union([z.string(), RefSchema]).optional(),
+  targetX: z.union([z.union([z.number(), z.string()]), RefSchema]).optional(),
+  targetY: z.union([z.union([z.number(), z.string()]), RefSchema]).optional(),
+  'text-anchor': z.union([z.union([z.enum(['start', 'middle', 'end']), z.string()]), RefSchema]).optional(),
+  'text-decoration': z.union([z.string(), RefSchema]).optional(),
+  'text-rendering': z
+    .union([
+      z.union([z.enum(['auto', 'optimizeSpeed', 'optimizeLegibility', 'geometricPrecision']), z.string()]),
+      RefSchema,
+    ])
+    .optional(),
+  textLength: z.union([z.union([z.number(), z.string()]), RefSchema]).optional(),
+  to: z.union([z.union([z.number(), z.string()]), RefSchema]).optional(),
+  transform: z.union([z.string(), RefSchema]).optional(),
+  'transform-origin': z.union([z.string(), RefSchema]).optional(),
+  'underline-position': z.union([z.union([z.number(), z.string()]), RefSchema]).optional(),
+  'underline-thickness': z.union([z.union([z.number(), z.string()]), RefSchema]).optional(),
+  values: z.union([z.string(), RefSchema]).optional(),
+  'vector-effect': z
+    .union([
+      z.union([
+        z.enum(['none', 'non-scaling-stroke', 'non-scaling-size', 'non-rotation', 'fixed-position']),
+        z.string(),
+      ]),
+      RefSchema,
+    ])
+    .optional(),
+  viewBox: z.union([z.string(), RefSchema]).optional(),
+  visibility: z.union([z.union([z.enum(['visible', 'hidden', 'collapse']), z.string()]), RefSchema]).optional(),
+  'word-spacing': z.union([z.union([z.number(), z.string()]), RefSchema]).optional(),
+  'writing-mode': z
+    .union([z.union([z.enum(['horizontal-tb', 'vertical-rl', 'vertical-lr']), z.string()]), RefSchema])
+    .optional(),
+  x: z.union([z.union([z.number(), z.string()]), RefSchema]).optional(),
+  x1: z.union([z.union([z.number(), z.string()]), RefSchema]).optional(),
+  x2: z.union([z.union([z.number(), z.string()]), RefSchema]).optional(),
+  xChannelSelector: z.union([z.union([z.enum(['R', 'G', 'B', 'A']), z.string()]), RefSchema]).optional(),
+  y: z.union([z.union([z.number(), z.string()]), RefSchema]).optional(),
+  y1: z.union([z.union([z.number(), z.string()]), RefSchema]).optional(),
+  y2: z.union([z.union([z.number(), z.string()]), RefSchema]).optional(),
+  yChannelSelector: z.union([z.union([z.enum(['R', 'G', 'B', 'A']), z.string()]), RefSchema]).optional(),
+  z: z.union([z.union([z.number(), z.string()]), RefSchema]).optional(),
+})
+
+export const ElementAttributeListSchema = z.object({
+  a: DetailedAnchorHTMLAttributesSchema,
+  abbr: DetailedHTMLAttributesSchema,
+  address: DetailedHTMLAttributesSchema,
+  area: DetailedAreaHTMLAttributesSchema,
+  article: DetailedHTMLAttributesSchema,
+  aside: DetailedHTMLAttributesSchema,
+  audio: DetailedAudioHTMLAttributesSchema,
+  b: DetailedHTMLAttributesSchema,
+  base: DetailedBaseHTMLAttributesSchema,
+  bdi: DetailedHTMLAttributesSchema,
+  bdo: DetailedHTMLAttributesSchema,
+  big: DetailedHTMLAttributesSchema,
+  blockquote: DetailedBlockquoteHTMLAttributesSchema,
+  body: DetailedHTMLAttributesSchema,
+  br: DetailedHTMLAttributesSchema,
+  button: DetailedButtonHTMLAttributesSchema,
+  canvas: DetailedCanvasHTMLAttributesSchema,
+  caption: DetailedHTMLAttributesSchema,
+  cite: DetailedHTMLAttributesSchema,
+  code: DetailedHTMLAttributesSchema,
+  col: DetailedColHTMLAttributesSchema,
+  colgroup: DetailedColgroupHTMLAttributesSchema,
+  data: DetailedDataHTMLAttributesSchema,
+  datalist: DetailedHTMLAttributesSchema,
+  dd: DetailedHTMLAttributesSchema,
+  del: DetailedDelHTMLAttributesSchema,
+  details: DetailedDetailsHTMLAttributesSchema,
+  dfn: DetailedHTMLAttributesSchema,
+  dialog: DetailedDialogHTMLAttributesSchema,
+  div: DetailedHTMLAttributesSchema,
+  dl: DetailedHTMLAttributesSchema,
+  dt: DetailedHTMLAttributesSchema,
+  em: DetailedHTMLAttributesSchema,
+  embed: DetailedEmbedHTMLAttributesSchema,
+  fieldset: DetailedFieldsetHTMLAttributesSchema,
+  figcaption: DetailedHTMLAttributesSchema,
+  figure: DetailedHTMLAttributesSchema,
+  footer: DetailedHTMLAttributesSchema,
+  form: DetailedFormHTMLAttributesSchema,
+  h1: DetailedHTMLAttributesSchema,
+  h2: DetailedHTMLAttributesSchema,
+  h3: DetailedHTMLAttributesSchema,
+  h4: DetailedHTMLAttributesSchema,
+  h5: DetailedHTMLAttributesSchema,
+  h6: DetailedHTMLAttributesSchema,
+  head: DetailedHTMLAttributesSchema,
+  header: DetailedHTMLAttributesSchema,
+  hgroup: DetailedHTMLAttributesSchema,
+  hr: DetailedHTMLAttributesSchema,
+  html: DetailedHtmlHTMLAttributesSchema,
+  i: DetailedHTMLAttributesSchema,
+  iframe: DetailedIframeHTMLAttributesSchema,
+  img: DetailedImgHTMLAttributesSchema,
+  input: DetailedInputHTMLAttributesSchema,
+  ins: DetailedInsHTMLAttributesSchema,
+  kbd: DetailedHTMLAttributesSchema,
+  label: DetailedLabelHTMLAttributesSchema,
+  legend: DetailedHTMLAttributesSchema,
+  li: DetailedLiHTMLAttributesSchema,
+  link: DetailedLinkHTMLAttributesSchema,
+  main: DetailedHTMLAttributesSchema,
+  map: DetailedMapHTMLAttributesSchema,
+  mark: DetailedHTMLAttributesSchema,
+  menu: DetailedMenuHTMLAttributesSchema,
+  menuitem: DetailedHTMLAttributesSchema,
+  meta: DetailedMetaHTMLAttributesSchema,
+  meter: DetailedMeterHTMLAttributesSchema,
+  nav: DetailedHTMLAttributesSchema,
+  noscript: DetailedHTMLAttributesSchema,
+  object: DetailedObjectHTMLAttributesSchema,
+  ol: DetailedOlHTMLAttributesSchema,
+  optgroup: DetailedOptgroupHTMLAttributesSchema,
+  option: DetailedOptionHTMLAttributesSchema,
+  output: DetailedOutputHTMLAttributesSchema,
+  p: DetailedHTMLAttributesSchema,
+  picture: DetailedHTMLAttributesSchema,
+  pre: DetailedHTMLAttributesSchema,
+  progress: DetailedProgressHTMLAttributesSchema,
+  q: DetailedQuoteHTMLAttributesSchema,
+  rp: DetailedHTMLAttributesSchema,
+  rt: DetailedHTMLAttributesSchema,
+  ruby: DetailedHTMLAttributesSchema,
+  s: DetailedHTMLAttributesSchema,
+  samp: DetailedHTMLAttributesSchema,
+  script: DetailedScriptHTMLAttributesSchema,
+  search: DetailedHTMLAttributesSchema,
+  section: DetailedHTMLAttributesSchema,
+  select: DetailedSelectHTMLAttributesSchema,
+  slot: DetailedSlotHTMLAttributesSchema,
+  small: DetailedHTMLAttributesSchema,
+  source: DetailedSourceHTMLAttributesSchema,
+  span: DetailedHTMLAttributesSchema,
+  strong: DetailedHTMLAttributesSchema,
+  style: DetailedStyleHTMLAttributesSchema,
+  sub: DetailedHTMLAttributesSchema,
+  summary: DetailedHTMLAttributesSchema,
+  sup: DetailedHTMLAttributesSchema,
+  table: DetailedTableHTMLAttributesSchema,
+  template: DetailedTemplateHTMLAttributesSchema,
+  tbody: DetailedHTMLAttributesSchema,
+  td: DetailedTdHTMLAttributesSchema,
+  textarea: DetailedTextareaHTMLAttributesSchema,
+  tfoot: DetailedHTMLAttributesSchema,
+  th: DetailedThHTMLAttributesSchema,
+  thead: DetailedHTMLAttributesSchema,
+  time: DetailedTimeHTMLAttributesSchema,
+  title: DetailedHTMLAttributesSchema,
+  tr: DetailedHTMLAttributesSchema,
+  track: DetailedTrackHTMLAttributesSchema,
+  u: DetailedHTMLAttributesSchema,
+  ul: DetailedHTMLAttributesSchema,
+  var: DetailedHTMLAttributesSchema,
+  video: DetailedVideoHTMLAttributesSchema,
+  wbr: DetailedHTMLAttributesSchema,
+  //SVG
+  svg: DetailedSVGAttributesSchema,
+  animate: DetailedSVGAttributesSchema,
+  circle: DetailedSVGAttributesSchema,
+  animateMotion: DetailedSVGAttributesSchema,
+  animateTransform: DetailedSVGAttributesSchema,
+  clipPath: DetailedSVGAttributesSchema,
+  defs: DetailedSVGAttributesSchema,
+  desc: DetailedSVGAttributesSchema,
+  ellipse: DetailedSVGAttributesSchema,
+  feBlend: DetailedSVGAttributesSchema,
+  feColorMatrix: DetailedSVGAttributesSchema,
+  feComponentTransfer: DetailedSVGAttributesSchema,
+  feComposite: DetailedSVGAttributesSchema,
+  feConvolveMatrix: DetailedSVGAttributesSchema,
+  feDiffuseLighting: DetailedSVGAttributesSchema,
+  feDisplacementMap: DetailedSVGAttributesSchema,
+  feDistantLight: DetailedSVGAttributesSchema,
+  feDropShadow: DetailedSVGAttributesSchema,
+  feFlood: DetailedSVGAttributesSchema,
+  feFuncA: DetailedSVGAttributesSchema,
+  feFuncB: DetailedSVGAttributesSchema,
+  feFuncG: DetailedSVGAttributesSchema,
+  feFuncR: DetailedSVGAttributesSchema,
+  feGaussianBlur: DetailedSVGAttributesSchema,
+  feImage: DetailedSVGAttributesSchema,
+  feMerge: DetailedSVGAttributesSchema,
+  feMergeNode: DetailedSVGAttributesSchema,
+  feMorphology: DetailedSVGAttributesSchema,
+  feOffset: DetailedSVGAttributesSchema,
+  fePointLight: DetailedSVGAttributesSchema,
+  feSpecularLighting: DetailedSVGAttributesSchema,
+  feSpotLight: DetailedSVGAttributesSchema,
+  feTile: DetailedSVGAttributesSchema,
+  feTurbulence: DetailedSVGAttributesSchema,
+  filter: DetailedSVGAttributesSchema,
+  foreignObject: DetailedSVGAttributesSchema,
+  g: DetailedSVGAttributesSchema,
+  image: DetailedSVGAttributesSchema,
+  line: DetailedSVGAttributesSchema,
+  linearGradient: DetailedSVGAttributesSchema,
+  marker: DetailedSVGAttributesSchema,
+  mask: DetailedSVGAttributesSchema,
+  metadata: DetailedSVGAttributesSchema,
+  mpath: DetailedSVGAttributesSchema,
+  path: DetailedSVGAttributesSchema,
+  pattern: DetailedSVGAttributesSchema,
+  polygon: DetailedSVGAttributesSchema,
+  polyline: DetailedSVGAttributesSchema,
+  radialGradient: DetailedSVGAttributesSchema,
+  rect: DetailedSVGAttributesSchema,
+  set: DetailedSVGAttributesSchema,
+  stop: DetailedSVGAttributesSchema,
+  switch: DetailedSVGAttributesSchema,
+  symbol: DetailedSVGAttributesSchema,
+  text: DetailedSVGAttributesSchema,
+  textPath: DetailedSVGAttributesSchema,
+  tspan: DetailedSVGAttributesSchema,
+  use: DetailedSVGAttributesSchema,
+  view: DetailedSVGAttributesSchema,
+})
+
+const ElementKeysSchema = ElementAttributeListSchema.keyof()
 
 /**
  * Schema for custom element tag names (must match `${string}-${string}` pattern).
@@ -370,9 +1326,16 @@ export const CustomElementTagSchema = z.string().regex(CUSTOM_ELEMENT_TAG_PATTER
 /** @public */
 export type CustomElementTag = `${string}-${string}`
 
+/**
+ * Schema for custom element tag names (must match `${string}-${string}` pattern).
+ *
+ * @public
+ */
+const UnknownElementTagSchema = z.string().regex(UNKNOWN_TAG_PATTERN)
+
 export const ElementNodeSchema = z.object({
   kind: z.literal(FLAT_NODE_KINDS.element),
-  tag: z.string(),
+  tag: z.union([CustomElementTagSchema, UnknownElementTagSchema]),
   children: ChildrenSchema.optional(),
   attributes: DetailedHTMLAttributesSchema.optional(),
   meta: JsonObjectSchema.optional(),
@@ -380,1129 +1343,17 @@ export const ElementNodeSchema = z.object({
 
 export type ElementNode = z.output<typeof ElementNodeSchema>
 
-const makeElementNode = (tag: string, attrs?: z.ZodObject) =>
-  z.object({
-    ...ElementNodeSchema.shape,
-    tag: z.literal(tag),
-    ...(VOID_TAGS.has(tag) ? { children: z.never().optional() } : {}),
-    attributes: z
-      .object({
-        ...ElementNodeSchema.shape.attributes.unwrap().shape,
-        ...attrs?.shape,
-      })
-      .optional(),
-  })
-
-// ── Shared attribute fragments ────────────────────────────────────────────
-
-const mediaAttrs = z.object({
-  autoplay: z.boolean().optional(),
-  controls: z.boolean().optional(),
-  controlslist: z.string().optional(),
-  crossorigin: crossOriginSchema.optional(),
-  loop: z.boolean().optional(),
-  mediagroup: z.string().optional(),
-  muted: z.boolean().optional(),
-  playsinline: z.boolean().optional(),
-  preload: z.string().optional(),
-  src: z.string().optional(),
-})
-
-const svgAttrs = z.object({
-  'accent-height': z.number().optional(),
-  accumulate: z.union([z.enum(['none', 'sum']), z.string()]).optional(),
-  additive: z.union([z.enum(['replace', 'sum']), z.string()]).optional(),
-  'alignment-baseline': z
-    .union([
-      z.enum([
-        'auto',
-        'baseline',
-        'before-edge',
-        'text-before-edge',
-        'middle',
-        'central',
-        'after-edge',
-        'text-after-edge',
-        'ideographic',
-        'alphabetic',
-        'hanging',
-        'mathematical',
-        'inherit',
-      ]),
-      z.string(),
-    ])
-    .optional(),
-  allowReorder: z.union([z.enum(['no', 'yes']), z.string()]).optional(),
-  amplitude: z.union([z.number(), z.string()]).optional(),
-  attributeName: z.string().optional(),
-  attributeType: z.string().optional(),
-  autoReverse: booleanishSchema.optional(),
-  azimuth: z.number().optional(),
-  baseFrequency: z.union([z.number(), z.string()]).optional(),
-  'baseline-shift': z.union([z.enum(['sub', 'super']), z.number(), z.string()]).optional(),
-  baseProfile: z.string().optional(),
-  begin: z.union([z.number(), z.string()]).optional(),
-  bias: z.union([z.number(), z.string()]).optional(),
-  by: z.union([z.number(), z.string()]).optional(),
-  calcMode: z.union([z.enum(['discrete', 'linear', 'paced', 'spline']), z.string()]).optional(),
-  'clip-path': z.string().optional(),
-  'clip-rule': z.union([z.enum(['nonzero', 'evenodd', 'inherit']), z.string()]).optional(),
-  clipPathUnits: z.union([z.enum(['userSpaceOnUse', 'objectBoundingBox']), z.string()]).optional(),
-  color: z.string().optional(),
-  'color-interpolation': z.union([z.enum(['auto', 'sRGB', 'linearRGB', 'inherit']), z.string()]).optional(),
-  'color-interpolation-filters': z.string().optional(),
-  'color-rendering': z.union([z.number(), z.string()]).optional(),
-  contentScriptType: z.string().optional(),
-  contentStyleType: z.string().optional(),
-  cursor: z.string().optional(),
-  cx: z.string().optional(),
-  cy: z.string().optional(),
-  d: z.string().optional(),
-  decoding: z.union([z.enum(['sync', 'async', 'auto']), z.string()]).optional(),
-  diffuseConstant: z.union([z.number(), z.string()]).optional(),
-  direction: z.union([z.enum(['ltr', 'rtl']), z.string()]).optional(),
-  display: z.string().optional(),
-  divisor: z.union([z.number(), z.string()]).optional(),
-  'dominant-baseline': z
-    .union([
-      z.enum([
-        'auto',
-        'text-bottom',
-        'alphabetic',
-        'ideographic',
-        'middle',
-        'central',
-        'mathematical',
-        'hanging',
-        'text-top',
-      ]),
-      z.string(),
-    ])
-    .optional(),
-  dur: z.union([z.enum(['media', 'indefinite']), z.number(), z.string()]).optional(),
-  dx: z.union([z.number(), z.string()]).optional(),
-  dy: z.union([z.number(), z.number(), z.string()]).optional(),
-  edgeMode: z.string().optional(),
-  elevation: z.union([z.number(), z.string()]).optional(),
-  end: z.string().optional(),
-  exponent: z.union([z.number(), z.string()]).optional(),
-  fill: z.string().optional(),
-  'fill-opacity': z.union([z.number(), z.string()]).optional(),
-  'fill-rule': z.union([z.enum(['nonzero', 'evenodd', 'inherit']), z.string()]).optional(),
-  filter: z.string().optional(),
-  filterRes: z.union([z.number(), z.string()]).optional(),
-  filterUnits: z.union([z.enum(['userSpaceOnUse', 'objectBoundingBox']), z.string()]).optional(),
-  'flood-color': z.string().optional(),
-  'flood-opacity': z.union([z.number(), z.string()]).optional(),
-  focusable: z.union([booleanishSchema, z.literal('auto')]).optional(),
-  'font-family': z.string().optional(),
-  'font-size': z.string().optional(),
-  'font-size-adjust': z.string().optional(),
-  'font-stretch': z.string().optional(),
-  'font-style': z.string().optional(),
-  'font-variant': z.string().optional(),
-  'font-weight': z.string().optional(),
-  fr: z.string().optional(),
-  from: z.string().optional(),
-  fx: z.string().optional(),
-  fy: z.string().optional(),
-  gradientTransform: z.string().optional(),
-  gradientUnits: z.union([z.enum(['userSpaceOnUse', 'objectBoundingBox']), z.string()]).optional(),
-  href: z.string().optional(),
-  'image-rendering': z.union([z.enum(['auto', 'optimizeSpeed', 'optimizeQuality']), z.string()]).optional(),
-  in: z
-    .union([
-      z.enum(['SourceGraphic', 'SourceAlpha', 'BackgroundImage', 'BackgroundAlpha', 'FillPaint', 'StrokePaint']),
-      z.string(),
-    ])
-    .optional(),
-  in2: z
-    .union([
-      z.enum(['SourceGraphic', 'SourceAlpha', 'BackgroundImage', 'BackgroundAlpha', 'FillPaint', 'StrokePaint']),
-      z.string(),
-    ])
-    .optional(),
-  intercept: z.union([z.number(), z.string()]).optional(),
-  k1: z.union([z.number(), z.string()]).optional(),
-  k2: z.union([z.number(), z.string()]).optional(),
-  k3: z.union([z.number(), z.string()]).optional(),
-  k4: z.union([z.number(), z.string()]).optional(),
-  kernelMatrix: z.string().optional(),
-  kernelUnitLength: z.string().optional(),
-  keyPoints: z.string().optional(),
-  keySplines: z.string().optional(),
-  keyTimes: z.string().optional(),
-  lengthAdjust: z.union([z.enum(['spacing', 'spacingAndGlyphs']), z.string()]).optional(),
-  'letter-spacing': z.union([z.number(), z.string()]).optional(),
-  'lighting-color': z.string().optional(),
-  limitingConeAngle: z.union([z.number(), z.string()]).optional(),
-  'marker-end': z.string().optional(),
-  'marker-mid': z.string().optional(),
-  'marker-start': z.string().optional(),
-  markerHeight: z.union([z.string(), z.number()]).optional(),
-  markerUnits: z.union([z.enum(['userSpaceOnUse', 'strokeWidth']), z.string()]).optional(),
-  markerWidth: z.union([z.string(), z.number()]).optional(),
-  mask: z.string().optional(),
-  maskContentUnits: z.union([z.enum(['userSpaceOnUse', 'objectBoundingBox']), z.string()]).optional(),
-  maskUnits: z.union([z.enum(['userSpaceOnUse', 'objectBoundingBox']), z.string()]).optional(),
-  method: z.enum(['align', 'stretch']).optional(),
-  mode: z.string().optional(),
-  numOctaves: z.union([z.number(), z.string()]).optional(),
-  offset: z.string().optional(),
-  opacity: z.union([z.number(), z.string()]).optional(),
-  operator: z.string().optional(),
-  order: z.union([z.number(), z.string()]).optional(),
-  orient: z.union([z.number(), z.string()]).optional(),
-  origin: z.string().optional(),
-  overflow: z.union([z.enum(['visible', 'hidden', 'scroll', 'auto']), z.string()]).optional(),
-  'overline-position': z.union([z.number(), z.string()]).optional(),
-  'overline-thickness': z.union([z.number(), z.string()]).optional(),
-  'paint-order': z.string().optional(),
-  path: z.string().optional(),
-  pathLength: z.union([z.number(), z.string()]).optional(),
-  patternContentUnits: z.union([z.enum(['userSpaceOnUse', 'objectBoundingBox']), z.string()]).optional(),
-  patternTransform: z.string().optional(),
-  patternUnits: z.union([z.enum(['userSpaceOnUse', 'objectBoundingBox']), z.string()]).optional(),
-  'pointer-events': z
-    .union([
-      z.enum([
-        'bounding-box',
-        'visiblePainted',
-        'visibleFill',
-        'visibleStroke',
-        'visible',
-        'painted',
-        'fill',
-        'stroke',
-        'all',
-        'none',
-      ]),
-      z.string(),
-    ])
-    .optional(),
-  points: z.string().optional(),
-  pointsAtX: z.union([z.number(), z.string()]).optional(),
-  pointsAtY: z.union([z.number(), z.string()]).optional(),
-  pointsAtZ: z.union([z.number(), z.string()]).optional(),
-  preserveAlpha: z.enum(['true', 'false']).optional(),
-  preserveAspectRatio: z.string().optional(),
-  primitiveUnits: z.union([z.enum(['userSpaceOnUse', 'objectBoundingBox']), z.string()]).optional(),
-  r: z.union([z.number(), z.string()]).optional(),
-  radius: z.union([z.number(), z.string()]).optional(),
-  refX: z.union([z.number(), z.string()]).optional(),
-  refY: z.union([z.number(), z.string()]).optional(),
-  repeatCount: z.union([z.enum(['indefinite']), z.number(), z.string()]).optional(),
-  repeatDur: z.union([z.enum(['indefinite']), z.string()]).optional(),
-  restart: z.union([z.enum(['always', 'whenNotActive', 'never']), z.string()]).optional(),
-  result: z.string().optional(),
-  rotate: z.union([z.enum(['auto', 'auto-reverse']), z.number(), z.string()]).optional(),
-  rx: z.union([z.number(), z.string()]).optional(),
-  ry: z.union([z.number(), z.string()]).optional(),
-  scale: z.union([z.number(), z.string()]).optional(),
-  seed: z.union([z.number(), z.string()]).optional(),
-  'shape-rendering': z
-    .union([z.enum(['auto', 'optimizeSpeed', 'crispEdges', 'geometricPrecision']), z.string()])
-    .optional(),
-  spacing: z.enum(['auto', 'exact']).optional(),
-  specularConstant: z.union([z.number(), z.string()]).optional(),
-  specularExponent: z.union([z.number(), z.string()]).optional(),
-  spreadMethod: z.union([z.enum(['pad', 'reflect', 'repeat']), z.string()]).optional(),
-  startOffset: z.union([z.number(), z.string()]).optional(),
-  stdDeviation: z.union([z.number(), z.string()]).optional(),
-  stitchTiles: z.union([z.enum(['noStitch', 'stitch']), z.string()]).optional(),
-  'stop-color': z.string().optional(),
-  'stop-opacity': z.union([z.number(), z.string()]).optional(),
-  'strikethrough-position': z.union([z.number(), z.string()]).optional(),
-  'strikethrough-thickness': z.union([z.number(), z.string()]).optional(),
-  stroke: z.string().optional(),
-  'stroke-dasharray': z.string().optional(),
-  'stroke-dashoffset': z.union([z.number(), z.string()]).optional(),
-  'stroke-linecap': z.union([z.enum(['butt', 'round', 'square', 'inherit']), z.string()]).optional(),
-  'stroke-linejoin': z
-    .union([z.enum(['arcs', 'bevel', 'miter', 'miter-clip', 'round', 'inherit']), z.string()])
-    .optional(),
-  'stroke-miterlimit': z.union([z.number(), z.string()]).optional(),
-  'stroke-opacity': z.union([z.number(), z.string()]).optional(),
-  'stroke-width': z.union([z.number(), z.string()]).optional(),
-  surfaceScale: z.union([z.number(), z.string()]).optional(),
-  systemLanguage: z.string().optional(),
-  tableValues: z.string().optional(),
-  targetX: z.union([z.number(), z.string()]).optional(),
-  targetY: z.union([z.number(), z.string()]).optional(),
-  'text-anchor': z.union([z.enum(['start', 'middle', 'end']), z.string()]).optional(),
-  'text-decoration': z.string().optional(),
-  'text-rendering': z
-    .union([z.enum(['auto', 'optimizeSpeed', 'optimizeLegibility', 'geometricPrecision']), z.string()])
-    .optional(),
-  textLength: z.union([z.number(), z.string()]).optional(),
-  to: z.union([z.number(), z.string()]).optional(),
-  transform: z.string().optional(),
-  'transform-origin': z.string().optional(),
-  'underline-position': z.union([z.number(), z.string()]).optional(),
-  'underline-thickness': z.union([z.number(), z.string()]).optional(),
-  values: z.string().optional(),
-  'vector-effect': z
-    .union([z.enum(['none', 'non-scaling-stroke', 'non-scaling-size', 'non-rotation', 'fixed-position']), z.string()])
-    .optional(),
-  viewBox: z.string().optional(),
-  visibility: z.union([z.enum(['visible', 'hidden', 'collapse']), z.string()]).optional(),
-  'word-spacing': z.union([z.number(), z.string()]).optional(),
-  'writing-mode': z.union([z.enum(['horizontal-tb', 'vertical-rl', 'vertical-lr']), z.string()]).optional(),
-  x: z.union([z.number(), z.string()]).optional(),
-  x1: z.union([z.number(), z.string()]).optional(),
-  x2: z.union([z.number(), z.string()]).optional(),
-  xChannelSelector: z.union([z.enum(['R', 'G', 'B', 'A']), z.string()]).optional(),
-  y: z.union([z.number(), z.string()]).optional(),
-  y1: z.union([z.number(), z.string()]).optional(),
-  y2: z.union([z.number(), z.string()]).optional(),
-  yChannelSelector: z.union([z.enum(['R', 'G', 'B', 'A']), z.string()]).optional(),
-  z: z.union([z.number(), z.string()]).optional(),
-})
-
-// ── Element nodes ─────────────────────────────────────────────────────────
-
-// HTML elements with tag-specific attributes
-
-const AnchorNodeSchema = makeElementNode(
-  'a',
-  z.object({
-    download: z.boolean().optional(),
-    href: z.string().optional(),
-    hreflang: z.string().optional(),
-    media: z.string().optional(),
-    ping: z.string().optional(),
-    target: anchorTargetSchema.optional(),
-    type: z.string().optional(),
-    referrerpolicy: referrerPolicySchema.optional(),
-  }),
-)
-
-const AreaNodeSchema = makeElementNode(
-  'area',
-  z.object({
-    alt: z.string().optional(),
-    coords: z.string().optional(),
-    download: z.boolean().optional(),
-    href: z.string().optional(),
-    hreflang: z.string().optional(),
-    media: z.string().optional(),
-    referrerpolicy: referrerPolicySchema.optional(),
-    shape: z.string().optional(),
-    target: z.string().optional(),
-  }),
-)
-
-const BaseNodeSchema = makeElementNode(
-  'base',
-  z.object({
-    href: z.string().optional(),
-    target: z.string().optional(),
-  }),
-)
-
-const BlockquoteNodeSchema = makeElementNode(
-  'blockquote',
-  z.object({
-    cite: z.string().optional(),
-  }),
-)
-
-const ButtonNodeSchema = makeElementNode(
-  'button',
-  z.object({
-    disabled: z.boolean().optional(),
-    form: z.string().optional(),
-    formaction: z.string().optional(),
-    formenctype: z.string().optional(),
-    formmethod: z.string().optional(),
-    formnovalidate: z.boolean().optional(),
-    formtarget: z.string().optional(),
-    name: z.string().optional(),
-    type: z.enum(['submit', 'reset', 'button']).optional(),
-    value: z.union([z.string(), z.number()]).optional(),
-  }),
-)
-
-const CanvasNodeSchema = makeElementNode(
-  'canvas',
-  z.object({
-    height: z.union([z.number(), z.string()]).optional(),
-    width: z.union([z.number(), z.string()]).optional(),
-  }),
-)
-
-const ColNodeSchema = makeElementNode(
-  'col',
-  z.object({
-    span: z.number().optional(),
-    width: z.union([z.number(), z.string()]).optional(),
-  }),
-)
-
-const ColgroupNodeSchema = makeElementNode(
-  'colgroup',
-  z.object({
-    span: z.number().optional(),
-  }),
-)
-
-const DataNodeSchema = makeElementNode(
-  'data',
-  z.object({
-    value: z.union([z.string(), z.number()]).optional(),
-  }),
-)
-
-const DetailsNodeSchema = makeElementNode(
-  'details',
-  z.object({
-    open: z.boolean().optional(),
-  }),
-)
-
-const DelNodeSchema = makeElementNode(
-  'del',
-  z.object({
-    cite: z.string().optional(),
-    datetime: z.string().optional(),
-  }),
-)
-
-const DialogNodeSchema = makeElementNode(
-  'dialog',
-  z.object({
-    open: z.boolean().optional(),
-  }),
-)
-
-const EmbedNodeSchema = makeElementNode(
-  'embed',
-  z.object({
-    height: z.union([z.number(), z.string()]).optional(),
-    src: z.string().optional(),
-    type: z.string().optional(),
-    width: z.union([z.number(), z.string()]).optional(),
-  }),
-)
-
-const FieldsetNodeSchema = makeElementNode(
-  'fieldset',
-  z.object({
-    disabled: z.boolean().optional(),
-    form: z.string().optional(),
-    name: z.string().optional(),
-  }),
-)
-
-const FormNodeSchema = makeElementNode(
-  'form',
-  z.object({
-    'accept-charset': z.string().optional(),
-    action: z.never().optional(),
-    autocomplete: z.string().optional(),
-    enctype: z.string().optional(),
-    method: z.string().optional(),
-    name: z.string().optional(),
-    novalidate: z.boolean().optional(),
-    target: z.string().optional(),
-    [P_TRIGGER]: z.never().optional(),
-    [P_FORM]: z.string(),
-  }),
-)
-
-const HtmlNodeSchema = makeElementNode(
-  'html',
-  z.object({
-    manifest: z.string().optional(),
-  }),
-)
-
-const IframeNodeSchema = makeElementNode(
-  'iframe',
-  z.object({
-    allow: z.string().optional(),
-    height: z.union([z.number(), z.string()]).optional(),
-    loading: z.enum(['eager', 'lazy']).optional(),
-    name: z.string().optional(),
-    referrerpolicy: referrerPolicySchema.optional(),
-    sandbox: z.string().optional(),
-    seamless: z.boolean().optional(),
-    src: z.string().optional(),
-    srcdoc: z.string().optional(),
-    width: z.union([z.number(), z.string()]).optional(),
-  }),
-)
-
-const ImgNodeSchema = makeElementNode(
-  'img',
-  z.object({
-    alt: z.string().optional(),
-    crossorigin: crossOriginSchema.optional(),
-    decoding: z.enum(['async', 'auto', 'sync']).optional(),
-    height: z.union([z.number(), z.string()]).optional(),
-    loading: z.enum(['eager', 'lazy']).optional(),
-    referrerpolicy: referrerPolicySchema.optional(),
-    sizes: z.string().optional(),
-    src: z.string().optional(),
-    srcset: z.string().optional(),
-    usemap: z.string().optional(),
-    width: z.union([z.number(), z.string()]).optional(),
-  }),
-)
-
-const InputNodeSchema = makeElementNode(
-  'input',
-  z.object({
-    accept: z.string().optional(),
-    alt: z.string().optional(),
-    autocomplete: z.string().optional(),
-    capture: z.union([z.boolean(), z.enum(['user', 'environment'])]).optional(),
-    checked: z.boolean().optional(),
-    disabled: z.boolean().optional(),
-    enterkeyhint: z.enum(['enter', 'done', 'go', 'next', 'previous', 'search', 'send']).optional(),
-    form: z.string().optional(),
-    formaction: z.string().optional(),
-    formenctype: z.string().optional(),
-    formmethod: z.string().optional(),
-    formnovalidate: z.boolean().optional(),
-    formtarget: z.string().optional(),
-    height: z.union([z.number(), z.string()]).optional(),
-    list: z.string().optional(),
-    max: z.union([z.number(), z.string()]).optional(),
-    maxlength: z.number().optional(),
-    min: z.union([z.number(), z.string()]).optional(),
-    minlength: z.number().optional(),
-    multiple: z.boolean().optional(),
-    name: z.string().optional(),
-    pattern: z.string().optional(),
-    placeholder: z.string().optional(),
-    readonly: z.boolean().optional(),
-    required: z.boolean().optional(),
-    size: z.number().optional(),
-    src: z.string().optional(),
-    step: z.union([z.number(), z.string()]).optional(),
-    type: inputTypeSchema.optional(),
-    value: z.union([z.string(), z.number()]).optional(),
-    width: z.union([z.number(), z.string()]).optional(),
-  }),
-)
-
-const InsNodeSchema = makeElementNode(
-  'ins',
-  z.object({
-    cite: z.string().optional(),
-    datetime: z.string().optional(),
-  }),
-)
-
-const LabelNodeSchema = makeElementNode(
-  'label',
-  z.object({
-    form: z.string().optional(),
-    for: z.string().optional(),
-  }),
-)
-
-const LiNodeSchema = makeElementNode(
-  'li',
-  z.object({
-    value: z.union([z.string(), z.number()]).optional(),
-  }),
-)
-
-const LinkNodeSchema = makeElementNode(
-  'link',
-  z.object({
-    as: z.string().optional(),
-    crossorigin: crossOriginSchema.optional(),
-    fetchPriority: z.enum(['high', 'low', 'auto']).optional(),
-    href: z.string().optional(),
-    hreflang: z.string().optional(),
-    integrity: z.string().optional(),
-    media: z.string().optional(),
-    imagesrcset: z.string().optional(),
-    imagesizes: z.string().optional(),
-    referrerpolicy: referrerPolicySchema.optional(),
-    sizes: z.string().optional(),
-    type: z.string().optional(),
-    charSet: z.string().optional(),
-  }),
-)
-
-const MapNodeSchema = makeElementNode(
-  'map',
-  z.object({
-    name: z.string().optional(),
-  }),
-)
-
-const MenuNodeSchema = makeElementNode(
-  'menu',
-  z.object({
-    type: z.string().optional(),
-  }),
-)
-
-const MetaNodeSchema = makeElementNode(
-  'meta',
-  z.object({
-    charset: z.string().optional(),
-    'http-equiv': z.string().optional(),
-    name: z.string().optional(),
-    media: z.string().optional(),
-    content: z.string().optional(),
-  }),
-)
-
-const MeterNodeSchema = makeElementNode(
-  'meter',
-  z.object({
-    form: z.string().optional(),
-    high: z.number().optional(),
-    low: z.number().optional(),
-    max: z.union([z.number(), z.string()]).optional(),
-    min: z.union([z.number(), z.string()]).optional(),
-    optimum: z.number().optional(),
-    value: z.union([z.string(), z.number()]).optional(),
-  }),
-)
-
-const ObjectNodeSchema = makeElementNode(
-  'object',
-  z.object({
-    classid: z.string().optional(),
-    data: z.string().optional(),
-    form: z.string().optional(),
-    height: z.union([z.number(), z.string()]).optional(),
-    name: z.string().optional(),
-    type: z.string().optional(),
-    usemap: z.string().optional(),
-    width: z.union([z.number(), z.string()]).optional(),
-  }),
-)
-
-const OlNodeSchema = makeElementNode(
-  'ol',
-  z.object({
-    reversed: z.boolean().optional(),
-    start: z.number().optional(),
-    type: z.enum(['1', 'a', 'A', 'i', 'I']).optional(),
-  }),
-)
-
-const OptgroupNodeSchema = makeElementNode(
-  'optgroup',
-  z.object({
-    disabled: z.boolean().optional(),
-    label: z.string().optional(),
-  }),
-)
-
-const OptionNodeSchema = makeElementNode(
-  'option',
-  z.object({
-    disabled: z.boolean().optional(),
-    label: z.string().optional(),
-    selected: z.boolean().optional(),
-    value: z.union([z.string(), z.number()]).optional(),
-  }),
-)
-
-const OutputNodeSchema = makeElementNode(
-  'output',
-  z.object({
-    form: z.string().optional(),
-    for: z.string().optional(),
-    name: z.string().optional(),
-  }),
-)
-
-const ProgressNodeSchema = makeElementNode(
-  'progress',
-  z.object({
-    max: z.union([z.number(), z.string()]).optional(),
-    value: z.union([z.string(), z.number()]).optional(),
-  }),
-)
-
-const QuoteNodeSchema = makeElementNode(
-  'q',
-  z.object({
-    cite: z.string().optional(),
-  }),
-)
-
-const SlotNodeSchema = makeElementNode(
-  'slot',
-  z.object({
-    name: z.string().optional(),
-  }),
-)
-
-const ScriptNodeSchema = makeElementNode(
-  'script',
-  z.object({
-    async: z.boolean().optional(),
-    crossorigin: crossOriginSchema.optional(),
-    defer: z.boolean().optional(),
-    integrity: z.string().optional(),
-    nomodule: z.boolean().optional(),
-    referrerpolicy: referrerPolicySchema.optional(),
-    src: z.string().optional(),
-    type: z.string().optional(),
-  }),
-)
-
-const SelectNodeSchema = makeElementNode(
-  'select',
-  z.object({
-    autocomplete: z.string().optional(),
-    disabled: z.boolean().optional(),
-    form: z.string().optional(),
-    multiple: z.boolean().optional(),
-    name: z.string().optional(),
-    required: z.boolean().optional(),
-    size: z.number().optional(),
-    value: z.union([z.string(), z.number()]).optional(),
-  }),
-)
-
-const SourceNodeSchema = makeElementNode(
-  'source',
-  z.object({
-    height: z.union([z.number(), z.string()]).optional(),
-    media: z.string().optional(),
-    sizes: z.string().optional(),
-    src: z.string().optional(),
-    srcset: z.string().optional(),
-    type: z.string().optional(),
-    width: z.union([z.number(), z.string()]).optional(),
-  }),
-)
-
-const StyleNodeSchema = makeElementNode(
-  'style',
-  z.object({
-    media: z.string().optional(),
-  }),
-)
-
-const TableNodeSchema = makeElementNode(
-  'table',
-  z.object({
-    align: z.enum(['left', 'center', 'right']).optional(),
-    bgcolor: z.string().optional(),
-    border: z.number().optional(),
-    cellpadding: z.union([z.number(), z.string()]).optional(),
-    cellspacing: z.union([z.number(), z.string()]).optional(),
-    frame: z.boolean().optional(),
-    rules: z.enum(['none', 'groups', 'rows', 'columns', 'all']).optional(),
-    summary: z.string().optional(),
-    width: z.union([z.number(), z.string()]).optional(),
-  }),
-)
-
-const TemplateNodeSchema = makeElementNode(
-  'template',
-  z.object({
-    shadowrootmode: z.enum(['open', 'closed']).optional(),
-    shadowrootdelegatesfocus: z.boolean().optional(),
-    shadowrootclonable: z.boolean().optional(),
-  }),
-)
-
-const TextareaNodeSchema = makeElementNode(
-  'textarea',
-  z.object({
-    autocomplete: z.string().optional(),
-    cols: z.number().optional(),
-    dirname: z.string().optional(),
-    disabled: z.boolean().optional(),
-    form: z.string().optional(),
-    maxlength: z.number().optional(),
-    minlength: z.number().optional(),
-    name: z.string().optional(),
-    placeholder: z.string().optional(),
-    readonly: z.boolean().optional(),
-    required: z.boolean().optional(),
-    rows: z.number().optional(),
-    value: z.union([z.string(), z.number()]).optional(),
-    wrap: z.string().optional(),
-  }),
-)
-
-const TdNodeSchema = makeElementNode(
-  'td',
-  z.object({
-    align: z.enum(['left', 'center', 'right', 'justify', 'char']).optional(),
-    colspan: z.number().optional(),
-    headers: z.string().optional(),
-    rowspan: z.number().optional(),
-    scope: z.string().optional(),
-    abbr: z.string().optional(),
-    height: z.string().optional(),
-    width: z.string().optional(),
-    valign: z.enum(['top', 'middle', 'bottom', 'baseline']).optional(),
-  }),
-)
-
-const ThNodeSchema = makeElementNode(
-  'th',
-  z.object({
-    align: z.enum(['left', 'center', 'right', 'justify', 'char']).optional(),
-    colspan: z.number().optional(),
-    headers: z.string().optional(),
-    rowspan: z.number().optional(),
-    scope: z.string().optional(),
-    abbr: z.string().optional(),
-  }),
-)
-
-const TimeNodeSchema = makeElementNode(
-  'time',
-  z.object({
-    datetime: z.string().optional(),
-  }),
-)
-
-const TrackNodeSchema = makeElementNode(
-  'track',
-  z.object({
-    default: z.boolean().optional(),
-    kind: z.enum(['subtitles', 'captions', 'descriptions', 'chapters', 'metadata']).optional(),
-    label: z.string().optional(),
-    src: z.string().optional(),
-    srclang: z.string().optional(),
-  }),
-)
-
-// Media-based elements
-
-const AudioNodeSchema = makeElementNode('audio', mediaAttrs)
-
-const VideoNodeSchema = makeElementNode(
-  'video',
-  z.object({
-    ...mediaAttrs.shape,
-    height: z.string().optional(),
-    playsinline: z.boolean().optional(),
-    poster: z.string().optional(),
-    width: z.string().optional(),
-    disablepictureinpicture: z.boolean().optional(),
-    disableremoteplayback: z.boolean().optional(),
-  }),
-)
-
-// HTML elements with no tag-specific attributes
-
-const AbbrNodeSchema = makeElementNode('abbr')
-const AddressNodeSchema = makeElementNode('address')
-const ArticleNodeSchema = makeElementNode('article')
-const AsideNodeSchema = makeElementNode('aside')
-const BdiNodeSchema = makeElementNode('bdi')
-const BdoNodeSchema = makeElementNode('bdo')
-const BigNodeSchema = makeElementNode('big')
-const BodyNodeSchema = makeElementNode('body')
-const BrNodeSchema = makeElementNode('br')
-const BNodeSchema = makeElementNode('b')
-const CaptionNodeSchema = makeElementNode('caption')
-const CiteNodeSchema = makeElementNode('cite')
-const CodeNodeSchema = makeElementNode('code')
-const DatalistNodeSchema = makeElementNode('datalist')
-const DdNodeSchema = makeElementNode('dd')
-const DfnNodeSchema = makeElementNode('dfn')
-const DivNodeSchema = makeElementNode('div')
-const DlNodeSchema = makeElementNode('dl')
-const DtNodeSchema = makeElementNode('dt')
-const EmNodeSchema = makeElementNode('em')
-const FigcaptionNodeSchema = makeElementNode('figcaption')
-const FigureNodeSchema = makeElementNode('figure')
-const FooterNodeSchema = makeElementNode('footer')
-const H1NodeSchema = makeElementNode('h1')
-const H2NodeSchema = makeElementNode('h2')
-const H3NodeSchema = makeElementNode('h3')
-const H4NodeSchema = makeElementNode('h4')
-const H5NodeSchema = makeElementNode('h5')
-const H6NodeSchema = makeElementNode('h6')
-const HeadNodeSchema = makeElementNode('head')
-const HeaderNodeSchema = makeElementNode('header')
-const HgroupNodeSchema = makeElementNode('hgroup')
-const HrNodeSchema = makeElementNode('hr')
-const INodeSchema = makeElementNode('i')
-const KbdNodeSchema = makeElementNode('kbd')
-const LegendNodeSchema = makeElementNode('legend')
-const MainNodeSchema = makeElementNode('main')
-const MarkNodeSchema = makeElementNode('mark')
-const MenuitemNodeSchema = makeElementNode('menuitem')
-const NavNodeSchema = makeElementNode('nav')
-const NoscriptNodeSchema = makeElementNode('noscript')
-const PNodeSchema = makeElementNode('p')
-const PictureNodeSchema = makeElementNode('picture')
-const PreNodeSchema = makeElementNode('pre')
-const RpNodeSchema = makeElementNode('rp')
-const RtNodeSchema = makeElementNode('rt')
-const RubyNodeSchema = makeElementNode('ruby')
-const SampNodeSchema = makeElementNode('samp')
-const SearchNodeSchema = makeElementNode('search')
-const SectionNodeSchema = makeElementNode('section')
-const SmallNodeSchema = makeElementNode('small')
-const SpanNodeSchema = makeElementNode('span')
-const StrongNodeSchema = makeElementNode('strong')
-const SNodeSchema = makeElementNode('s')
-const SubNodeSchema = makeElementNode('sub')
-const SummaryNodeSchema = makeElementNode('summary')
-const SupNodeSchema = makeElementNode('sup')
-const TbodyNodeSchema = makeElementNode('tbody')
-const TfootNodeSchema = makeElementNode('tfoot')
-const TheadNodeSchema = makeElementNode('thead')
-const TitleNodeSchema = makeElementNode('title')
-const TrNodeSchema = makeElementNode('tr')
-const UNodeSchema = makeElementNode('u')
-const UlNodeSchema = makeElementNode('ul')
-const VarNodeSchema = makeElementNode('var')
-const WbrNodeSchema = makeElementNode('wbr')
-
-// SVG elements
-
-const SvgNodeSchema = makeElementNode('svg', svgAttrs)
-const AnimateNodeSchema = makeElementNode('animate', svgAttrs)
-const CircleNodeSchema = makeElementNode('circle', svgAttrs)
-const AnimateMotionNodeSchema = makeElementNode('animateMotion', svgAttrs)
-const AnimateTransformNodeSchema = makeElementNode('animateTransform', svgAttrs)
-const ClipPathNodeSchema = makeElementNode('clipPath', svgAttrs)
-const DefsNodeSchema = makeElementNode('defs', svgAttrs)
-const DescNodeSchema = makeElementNode('desc', svgAttrs)
-const EllipseNodeSchema = makeElementNode('ellipse', svgAttrs)
-const FeBlendNodeSchema = makeElementNode('feBlend', svgAttrs)
-const FeColorMatrixNodeSchema = makeElementNode('feColorMatrix', svgAttrs)
-const FeComponentTransferNodeSchema = makeElementNode('feComponentTransfer', svgAttrs)
-const FeCompositeNodeSchema = makeElementNode('feComposite', svgAttrs)
-const FeConvolveMatrixNodeSchema = makeElementNode('feConvolveMatrix', svgAttrs)
-const FeDiffuseLightingNodeSchema = makeElementNode('feDiffuseLighting', svgAttrs)
-const FeDisplacementMapNodeSchema = makeElementNode('feDisplacementMap', svgAttrs)
-const FeDistantLightNodeSchema = makeElementNode('feDistantLight', svgAttrs)
-const FeDropShadowNodeSchema = makeElementNode('feDropShadow', svgAttrs)
-const FeFloodNodeSchema = makeElementNode('feFlood', svgAttrs)
-const FeFuncANodeSchema = makeElementNode('feFuncA', svgAttrs)
-const FeFuncBNodeSchema = makeElementNode('feFuncB', svgAttrs)
-const FeFuncGNodeSchema = makeElementNode('feFuncG', svgAttrs)
-const FeFuncRNodeSchema = makeElementNode('feFuncR', svgAttrs)
-const FeGaussianBlurNodeSchema = makeElementNode('feGaussianBlur', svgAttrs)
-const FeImageNodeSchema = makeElementNode('feImage', svgAttrs)
-const FeMergeNodeSchema = makeElementNode('feMerge', svgAttrs)
-const FeMergeNodeNodeSchema = makeElementNode('feMergeNode', svgAttrs)
-const FeMorphologyNodeSchema = makeElementNode('feMorphology', svgAttrs)
-const FeOffsetNodeSchema = makeElementNode('feOffset', svgAttrs)
-const FePointLightNodeSchema = makeElementNode('fePointLight', svgAttrs)
-const FeSpecularLightingNodeSchema = makeElementNode('feSpecularLighting', svgAttrs)
-const FeSpotLightNodeSchema = makeElementNode('feSpotLight', svgAttrs)
-const FeTileNodeSchema = makeElementNode('feTile', svgAttrs)
-const FeTurbulenceNodeSchema = makeElementNode('feTurbulence', svgAttrs)
-const FilterNodeSchema = makeElementNode('filter', svgAttrs)
-const ForeignObjectNodeSchema = makeElementNode('foreignObject', svgAttrs)
-const GNodeSchema = makeElementNode('g', svgAttrs)
-const ImageNodeSchema = makeElementNode('image', svgAttrs)
-const LineNodeSchema = makeElementNode('line', svgAttrs)
-const LinearGradientNodeSchema = makeElementNode('linearGradient', svgAttrs)
-const MarkerNodeSchema = makeElementNode('marker', svgAttrs)
-const MaskNodeSchema = makeElementNode('mask', svgAttrs)
-const MetadataNodeSchema = makeElementNode('metadata', svgAttrs)
-const MpathNodeSchema = makeElementNode('mpath', svgAttrs)
-const PathNodeSchema = makeElementNode('path', svgAttrs)
-const PatternNodeSchema = makeElementNode('pattern', svgAttrs)
-const PolygonNodeSchema = makeElementNode('polygon', svgAttrs)
-const PolylineNodeSchema = makeElementNode('polyline', svgAttrs)
-const RadialGradientNodeSchema = makeElementNode('radialGradient', svgAttrs)
-const RectNodeSchema = makeElementNode('rect', svgAttrs)
-const SetNodeSchema = makeElementNode('set', svgAttrs)
-const StopNodeSchema = makeElementNode('stop', svgAttrs)
-const SwitchNodeSchema = makeElementNode('switch', svgAttrs)
-const SymbolNodeSchema = makeElementNode('symbol', svgAttrs)
-const TextNodeSchema = makeElementNode('text', svgAttrs)
-const TextPathNodeSchema = makeElementNode('textPath', svgAttrs)
-const TspanNodeSchema = makeElementNode('tspan', svgAttrs)
-const UseNodeSchema = makeElementNode('use', svgAttrs)
-const ViewNodeSchema = makeElementNode('view', svgAttrs)
-
-// ── Element schema registry ───────────────────────────────────────────────
-
-export const getElemmentSchema = (tag: string) => {
-  const schemas = new Map<string, z.ZodObject>([
-    [AnchorNodeSchema.shape.tag.value, AnchorNodeSchema],
-    [AreaNodeSchema.shape.tag.value, AreaNodeSchema],
-    [BaseNodeSchema.shape.tag.value, BaseNodeSchema],
-    [BlockquoteNodeSchema.shape.tag.value, BlockquoteNodeSchema],
-    [ButtonNodeSchema.shape.tag.value, ButtonNodeSchema],
-    [CanvasNodeSchema.shape.tag.value, CanvasNodeSchema],
-    [ColNodeSchema.shape.tag.value, ColNodeSchema],
-    [ColgroupNodeSchema.shape.tag.value, ColgroupNodeSchema],
-    [DataNodeSchema.shape.tag.value, DataNodeSchema],
-    [DetailsNodeSchema.shape.tag.value, DetailsNodeSchema],
-    [DelNodeSchema.shape.tag.value, DelNodeSchema],
-    [DialogNodeSchema.shape.tag.value, DialogNodeSchema],
-    [EmbedNodeSchema.shape.tag.value, EmbedNodeSchema],
-    [FieldsetNodeSchema.shape.tag.value, FieldsetNodeSchema],
-    [FormNodeSchema.shape.tag.value, FormNodeSchema],
-    [HtmlNodeSchema.shape.tag.value, HtmlNodeSchema],
-    [IframeNodeSchema.shape.tag.value, IframeNodeSchema],
-    [ImgNodeSchema.shape.tag.value, ImgNodeSchema],
-    [InputNodeSchema.shape.tag.value, InputNodeSchema],
-    [InsNodeSchema.shape.tag.value, InsNodeSchema],
-    [LabelNodeSchema.shape.tag.value, LabelNodeSchema],
-    [LiNodeSchema.shape.tag.value, LiNodeSchema],
-    [LinkNodeSchema.shape.tag.value, LinkNodeSchema],
-    [MapNodeSchema.shape.tag.value, MapNodeSchema],
-    [MenuNodeSchema.shape.tag.value, MenuNodeSchema],
-    [MetaNodeSchema.shape.tag.value, MetaNodeSchema],
-    [MeterNodeSchema.shape.tag.value, MeterNodeSchema],
-    [ObjectNodeSchema.shape.tag.value, ObjectNodeSchema],
-    [OlNodeSchema.shape.tag.value, OlNodeSchema],
-    [OptgroupNodeSchema.shape.tag.value, OptgroupNodeSchema],
-    [OptionNodeSchema.shape.tag.value, OptionNodeSchema],
-    [OutputNodeSchema.shape.tag.value, OutputNodeSchema],
-    [ProgressNodeSchema.shape.tag.value, ProgressNodeSchema],
-    [QuoteNodeSchema.shape.tag.value, QuoteNodeSchema],
-    [SlotNodeSchema.shape.tag.value, SlotNodeSchema],
-    [ScriptNodeSchema.shape.tag.value, ScriptNodeSchema],
-    [SelectNodeSchema.shape.tag.value, SelectNodeSchema],
-    [SourceNodeSchema.shape.tag.value, SourceNodeSchema],
-    [StyleNodeSchema.shape.tag.value, StyleNodeSchema],
-    [TableNodeSchema.shape.tag.value, TableNodeSchema],
-    [TemplateNodeSchema.shape.tag.value, TemplateNodeSchema],
-    [TextareaNodeSchema.shape.tag.value, TextareaNodeSchema],
-    [TdNodeSchema.shape.tag.value, TdNodeSchema],
-    [ThNodeSchema.shape.tag.value, ThNodeSchema],
-    [TimeNodeSchema.shape.tag.value, TimeNodeSchema],
-    [TrackNodeSchema.shape.tag.value, TrackNodeSchema],
-    [AudioNodeSchema.shape.tag.value, AudioNodeSchema],
-    [VideoNodeSchema.shape.tag.value, VideoNodeSchema],
-    // HTML elements with no tag-specific attributes
-    [AbbrNodeSchema.shape.tag.value, AbbrNodeSchema],
-    [AddressNodeSchema.shape.tag.value, AddressNodeSchema],
-    [ArticleNodeSchema.shape.tag.value, ArticleNodeSchema],
-    [AsideNodeSchema.shape.tag.value, AsideNodeSchema],
-    [BdiNodeSchema.shape.tag.value, BdiNodeSchema],
-    [BdoNodeSchema.shape.tag.value, BdoNodeSchema],
-    [BigNodeSchema.shape.tag.value, BigNodeSchema],
-    [BodyNodeSchema.shape.tag.value, BodyNodeSchema],
-    [BrNodeSchema.shape.tag.value, BrNodeSchema],
-    [BNodeSchema.shape.tag.value, BNodeSchema],
-    [CaptionNodeSchema.shape.tag.value, CaptionNodeSchema],
-    [CiteNodeSchema.shape.tag.value, CiteNodeSchema],
-    [CodeNodeSchema.shape.tag.value, CodeNodeSchema],
-    [DatalistNodeSchema.shape.tag.value, DatalistNodeSchema],
-    [DdNodeSchema.shape.tag.value, DdNodeSchema],
-    [DfnNodeSchema.shape.tag.value, DfnNodeSchema],
-    [DivNodeSchema.shape.tag.value, DivNodeSchema],
-    [DlNodeSchema.shape.tag.value, DlNodeSchema],
-    [DtNodeSchema.shape.tag.value, DtNodeSchema],
-    [EmNodeSchema.shape.tag.value, EmNodeSchema],
-    [FigcaptionNodeSchema.shape.tag.value, FigcaptionNodeSchema],
-    [FigureNodeSchema.shape.tag.value, FigureNodeSchema],
-    [FooterNodeSchema.shape.tag.value, FooterNodeSchema],
-    [H1NodeSchema.shape.tag.value, H1NodeSchema],
-    [H2NodeSchema.shape.tag.value, H2NodeSchema],
-    [H3NodeSchema.shape.tag.value, H3NodeSchema],
-    [H4NodeSchema.shape.tag.value, H4NodeSchema],
-    [H5NodeSchema.shape.tag.value, H5NodeSchema],
-    [H6NodeSchema.shape.tag.value, H6NodeSchema],
-    [HeadNodeSchema.shape.tag.value, HeadNodeSchema],
-    [HeaderNodeSchema.shape.tag.value, HeaderNodeSchema],
-    [HgroupNodeSchema.shape.tag.value, HgroupNodeSchema],
-    [HrNodeSchema.shape.tag.value, HrNodeSchema],
-    [INodeSchema.shape.tag.value, INodeSchema],
-    [KbdNodeSchema.shape.tag.value, KbdNodeSchema],
-    [LegendNodeSchema.shape.tag.value, LegendNodeSchema],
-    [MainNodeSchema.shape.tag.value, MainNodeSchema],
-    [MarkNodeSchema.shape.tag.value, MarkNodeSchema],
-    [MenuitemNodeSchema.shape.tag.value, MenuitemNodeSchema],
-    [NavNodeSchema.shape.tag.value, NavNodeSchema],
-    [NoscriptNodeSchema.shape.tag.value, NoscriptNodeSchema],
-    [PNodeSchema.shape.tag.value, PNodeSchema],
-    [PictureNodeSchema.shape.tag.value, PictureNodeSchema],
-    [PreNodeSchema.shape.tag.value, PreNodeSchema],
-    [RpNodeSchema.shape.tag.value, RpNodeSchema],
-    [RtNodeSchema.shape.tag.value, RtNodeSchema],
-    [RubyNodeSchema.shape.tag.value, RubyNodeSchema],
-    [SampNodeSchema.shape.tag.value, SampNodeSchema],
-    [SearchNodeSchema.shape.tag.value, SearchNodeSchema],
-    [SectionNodeSchema.shape.tag.value, SectionNodeSchema],
-    [SmallNodeSchema.shape.tag.value, SmallNodeSchema],
-    [SpanNodeSchema.shape.tag.value, SpanNodeSchema],
-    [StrongNodeSchema.shape.tag.value, StrongNodeSchema],
-    [SNodeSchema.shape.tag.value, SNodeSchema],
-    [SubNodeSchema.shape.tag.value, SubNodeSchema],
-    [SummaryNodeSchema.shape.tag.value, SummaryNodeSchema],
-    [SupNodeSchema.shape.tag.value, SupNodeSchema],
-    [TbodyNodeSchema.shape.tag.value, TbodyNodeSchema],
-    [TfootNodeSchema.shape.tag.value, TfootNodeSchema],
-    [TheadNodeSchema.shape.tag.value, TheadNodeSchema],
-    [TitleNodeSchema.shape.tag.value, TitleNodeSchema],
-    [TrNodeSchema.shape.tag.value, TrNodeSchema],
-    [UNodeSchema.shape.tag.value, UNodeSchema],
-    [UlNodeSchema.shape.tag.value, UlNodeSchema],
-    [VarNodeSchema.shape.tag.value, VarNodeSchema],
-    [WbrNodeSchema.shape.tag.value, WbrNodeSchema],
-    // SVG elements
-    [SvgNodeSchema.shape.tag.value, SvgNodeSchema],
-    [AnimateNodeSchema.shape.tag.value, AnimateNodeSchema],
-    [CircleNodeSchema.shape.tag.value, CircleNodeSchema],
-    [AnimateMotionNodeSchema.shape.tag.value, AnimateMotionNodeSchema],
-    [AnimateTransformNodeSchema.shape.tag.value, AnimateTransformNodeSchema],
-    [ClipPathNodeSchema.shape.tag.value, ClipPathNodeSchema],
-    [DefsNodeSchema.shape.tag.value, DefsNodeSchema],
-    [DescNodeSchema.shape.tag.value, DescNodeSchema],
-    [EllipseNodeSchema.shape.tag.value, EllipseNodeSchema],
-    [FeBlendNodeSchema.shape.tag.value, FeBlendNodeSchema],
-    [FeColorMatrixNodeSchema.shape.tag.value, FeColorMatrixNodeSchema],
-    [FeComponentTransferNodeSchema.shape.tag.value, FeComponentTransferNodeSchema],
-    [FeCompositeNodeSchema.shape.tag.value, FeCompositeNodeSchema],
-    [FeConvolveMatrixNodeSchema.shape.tag.value, FeConvolveMatrixNodeSchema],
-    [FeDiffuseLightingNodeSchema.shape.tag.value, FeDiffuseLightingNodeSchema],
-    [FeDisplacementMapNodeSchema.shape.tag.value, FeDisplacementMapNodeSchema],
-    [FeDistantLightNodeSchema.shape.tag.value, FeDistantLightNodeSchema],
-    [FeDropShadowNodeSchema.shape.tag.value, FeDropShadowNodeSchema],
-    [FeFloodNodeSchema.shape.tag.value, FeFloodNodeSchema],
-    [FeFuncANodeSchema.shape.tag.value, FeFuncANodeSchema],
-    [FeFuncBNodeSchema.shape.tag.value, FeFuncBNodeSchema],
-    [FeFuncGNodeSchema.shape.tag.value, FeFuncGNodeSchema],
-    [FeFuncRNodeSchema.shape.tag.value, FeFuncRNodeSchema],
-    [FeGaussianBlurNodeSchema.shape.tag.value, FeGaussianBlurNodeSchema],
-    [FeImageNodeSchema.shape.tag.value, FeImageNodeSchema],
-    [FeMergeNodeSchema.shape.tag.value, FeMergeNodeSchema],
-    [FeMergeNodeNodeSchema.shape.tag.value, FeMergeNodeNodeSchema],
-    [FeMorphologyNodeSchema.shape.tag.value, FeMorphologyNodeSchema],
-    [FeOffsetNodeSchema.shape.tag.value, FeOffsetNodeSchema],
-    [FePointLightNodeSchema.shape.tag.value, FePointLightNodeSchema],
-    [FeSpecularLightingNodeSchema.shape.tag.value, FeSpecularLightingNodeSchema],
-    [FeSpotLightNodeSchema.shape.tag.value, FeSpotLightNodeSchema],
-    [FeTileNodeSchema.shape.tag.value, FeTileNodeSchema],
-    [FeTurbulenceNodeSchema.shape.tag.value, FeTurbulenceNodeSchema],
-    [FilterNodeSchema.shape.tag.value, FilterNodeSchema],
-    [ForeignObjectNodeSchema.shape.tag.value, ForeignObjectNodeSchema],
-    [GNodeSchema.shape.tag.value, GNodeSchema],
-    [ImageNodeSchema.shape.tag.value, ImageNodeSchema],
-    [LineNodeSchema.shape.tag.value, LineNodeSchema],
-    [LinearGradientNodeSchema.shape.tag.value, LinearGradientNodeSchema],
-    [MarkerNodeSchema.shape.tag.value, MarkerNodeSchema],
-    [MaskNodeSchema.shape.tag.value, MaskNodeSchema],
-    [MetadataNodeSchema.shape.tag.value, MetadataNodeSchema],
-    [MpathNodeSchema.shape.tag.value, MpathNodeSchema],
-    [PathNodeSchema.shape.tag.value, PathNodeSchema],
-    [PatternNodeSchema.shape.tag.value, PatternNodeSchema],
-    [PolygonNodeSchema.shape.tag.value, PolygonNodeSchema],
-    [PolylineNodeSchema.shape.tag.value, PolylineNodeSchema],
-    [RadialGradientNodeSchema.shape.tag.value, RadialGradientNodeSchema],
-    [RectNodeSchema.shape.tag.value, RectNodeSchema],
-    [SetNodeSchema.shape.tag.value, SetNodeSchema],
-    [StopNodeSchema.shape.tag.value, StopNodeSchema],
-    [SwitchNodeSchema.shape.tag.value, SwitchNodeSchema],
-    [SymbolNodeSchema.shape.tag.value, SymbolNodeSchema],
-    [TextNodeSchema.shape.tag.value, TextNodeSchema],
-    [TextPathNodeSchema.shape.tag.value, TextPathNodeSchema],
-    [TspanNodeSchema.shape.tag.value, TspanNodeSchema],
-    [UseNodeSchema.shape.tag.value, UseNodeSchema],
-    [ViewNodeSchema.shape.tag.value, ViewNodeSchema],
-  ])
-  return schemas.get(tag) ?? ElementNodeSchema
+export const getNodeSchema = (tag: string) => {
+  const result = ElementKeysSchema.safeParse(tag)
+  if (result.success) {
+    const knownTag = result.data
+    return z.object({
+      ...ElementNodeSchema.shape,
+      tag: z.literal(knownTag),
+      ...(VOID_TAGS.has(knownTag) ? { children: z.never().optional() } : {}),
+      attributes: ElementAttributeListSchema.shape[knownTag].optional(),
+    })
+  } else {
+    return ElementNodeSchema
+  }
 }

@@ -3,6 +3,7 @@ import * as z from 'zod'
 import {
   CONTROLLER_TO_SERVER_EVENTS,
   PAGE_EVENTS,
+  REF_KEYS,
   SERVER_TO_CONTROLLER_EVENTS,
   SWAP_MODES,
 } from './shared.constants.ts'
@@ -219,3 +220,8 @@ export const ClientMessageSchema = z.discriminatedUnion('type', [
 
 /** @public */
 export type ClientMessage = z.output<typeof ClientMessageSchema>
+
+export const RefSchema = z.object({ [REF_KEYS.$id]: z.string(), [REF_KEYS.$path]: z.string() })
+
+/** @public */
+export type Ref = z.output<typeof RefSchema>
