@@ -8,7 +8,7 @@
  *
  * @remarks
  * This is a dev/operator-only command. It reads `node_modules/@webref/css/css.json`
- * and writes `src/client/css.schemas.ts`. Must NOT be wired into publish CI.
+ * and writes `src/shared/css.schemas.ts`. Must NOT be wired into publish CI.
  *
  * @packageDocumentation
  */
@@ -54,12 +54,12 @@ export type GeneratedCssSchemas = {
 }
 
 const HARDCODED_VENDOR_ENTRIES: Record<string, string> = {
-  '-webkit-appearance': 'z.union([z.string(), z.number(), tokenRefSchema])',
-  '-webkit-backdrop-filter': 'z.union([z.string(), z.number(), tokenRefSchema])',
-  '-webkit-box-orient': 'z.union([z.string(), z.number(), tokenRefSchema])',
-  '-webkit-hyphens': 'z.union([z.string(), z.number(), tokenRefSchema])',
-  '-webkit-line-clamp': "z.enum(['none']).or(z.number()).or(tokenRefSchema)",
-  '-webkit-user-select': "z.enum(['auto', 'text', 'none', 'contain', 'all']).or(tokenRefSchema)",
+  '-webkit-appearance': 'z.union([z.string(), z.number()])',
+  '-webkit-backdrop-filter': 'z.union([z.string(), z.number()])',
+  '-webkit-box-orient': 'z.union([z.string(), z.number()])',
+  '-webkit-hyphens': 'z.union([z.string(), z.number()])',
+  '-webkit-line-clamp': "z.enum(['none']).or(z.number())",
+  '-webkit-user-select': "z.enum(['auto', 'text', 'none', 'contain', 'all']).or(z.number())",
 }
 
 const classifyProperty = (syntax: string): PropertySyntax => {
@@ -135,12 +135,8 @@ const generateLiteralSchema = (property: PropertyEntry): string => {
   }
 }
 
-const KEYFRAME_ELIGIBLE_NAMES = new Set(['animation', 'animation-name'])
-
 const generateValueSchema = (name: string, property: PropertyEntry): string => {
-  const literalSchema = generateLiteralSchema(property)
-  const refs = KEYFRAME_ELIGIBLE_NAMES.has(name) ? 'tokenRefSchema, keyframeRefSchema' : 'tokenRefSchema'
-  return `z.union([${literalSchema}, ${refs}])`
+  return generateLiteralSchema(property)
 }
 
 const generatePropertyNames = (properties: PropertyEntry[]): string[] => {
@@ -211,16 +207,12 @@ export const generateCssSchemas = (cssJson: { properties: PropertyEntry[] }): Ge
     ' * Do not edit manually.',
     ' */',
     "import { z } from 'zod'",
-    "import { KEYFRAME_REF_PATTERN, TOKEN_REF_PATTERN } from '../shared/shared.constants.ts'",
-    '',
-    'const tokenRefSchema = z.string().regex(TOKEN_REF_PATTERN)',
-    'const keyframeRefSchema = z.string().regex(KEYFRAME_REF_PATTERN)',
     '/**',
     ' * Schema mapping kebab-case CSS property names to their value schemas.',
     ' * Unknown properties (e.g. `--*` custom properties) fall through to',
     ' * the catchall: `z.union([z.string(), z.number()])`.',
     ' */',
-    `export const cssPropertySchema = z.object({\n${objectCode},\n}).catchall(z.union([z.string(), z.number(), tokenRefSchema]))`,
+    `export const cssPropertySchema = z.object({\n${objectCode},\n}).catchall(z.union([z.string(), z.number()]))`,
     '',
     '/**',
     ' * Schema for valid CSS property names — keyof derived from cssPropertySchema.',
@@ -255,7 +247,7 @@ const cssSchemasInputSchema = z
     mode: z
       .enum(['generate', 'diff'])
       .describe('generate = emit/write the file; diff = report drift vs committed file'),
-    outputPath: z.string().optional().describe('Where to write on generate; defaults to src/client/css.schemas.ts'),
+    outputPath: z.string().optional().describe('Where to write on generate; defaults to src/shared/css.schemas.ts'),
   })
   .describe('Refresh or drift-check the generated CSS property schemas from @webref/css')
 
@@ -284,7 +276,7 @@ export type CssSchemasOutput = z.infer<typeof cssSchemasOutputSchema>
 // Defaults
 // ============================================================================
 
-const DEFAULT_OUTPUT_PATH = 'src/client/css.schemas.ts'
+const DEFAULT_OUTPUT_PATH = 'src/shared/css.schemas.ts'
 
 // ============================================================================
 // Minimal line diff — upgrade to `diff` npm pkg if richer output needed
@@ -385,13 +377,13 @@ const HELP_TEXT = [
   'Refresh or drift-check the generated CSS property schemas from @webref/css.',
   '',
   'Modes:',
-  '  generate   Regenerate and write src/client/css.schemas.ts',
+  '  generate   Regenerate and write src/shared/css.schemas.ts',
   '  diff       Compare generated output against the committed file without writing',
   '',
   'Usage:',
   '  plaited css-schemas \'{"mode":"diff"}\'',
   '  plaited css-schemas \'{"mode":"generate"}\'',
-  '  plaited css-schemas \'{"mode":"generate","outputPath":"src/client/css.schemas.ts"}\'',
+  '  plaited css-schemas \'{"mode":"generate","outputPath":"src/shared/css.schemas.ts"}\'',
   '',
   'Requirements:',
   '  - Must run from a repo checkout with @webref/css and css-tree installed (devDeps)',
