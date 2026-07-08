@@ -13,8 +13,4 @@
  * @public
  */
 
-export * from './client/controller.ts'
-export type * from './client/controller.types.ts'
-export * from './client/css.ts'
-export type * from './client/css.types.ts'
-export * from './client/template.ts'
+export * from './controller/controller.ts'
