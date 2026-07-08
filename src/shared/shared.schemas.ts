@@ -3,7 +3,6 @@ import * as z from 'zod'
 import {
   CONTROLLER_TO_SERVER_EVENTS,
   PAGE_EVENTS,
-  REF_KEYS,
   SERVER_TO_CONTROLLER_EVENTS,
   SWAP_MODES,
 } from './shared.constants.ts'
@@ -220,21 +219,3 @@ export const ClientMessageSchema = z.discriminatedUnion('type', [
 
 /** @public */
 export type ClientMessage = z.output<typeof ClientMessageSchema>
-
-export const RefSchema = z.object({ [REF_KEYS.$id]: z.string(), [REF_KEYS.$path]: z.string() })
-
-/** @public */
-export type Ref = z.output<typeof RefSchema>
-
-export const mergeRefSchema = <T extends z.ZodRawShape>(
-  zodObject: z.ZodObject<T>,
-): z.ZodObject<{ [K in keyof T]: z.ZodUnion<[T[K], typeof RefSchema]> }> => {
-  const shape = zodObject.shape
-  const newShape: Record<string, z.ZodTypeAny> = {}
-  const keys: string[] = Object.keys(shape)
-  for (let i = 0; i < keys.length; i++) {
-    const key = keys[i]!
-    newShape[key] = z.union([shape[key]!, RefSchema.optional()])
-  }
-  return z.object(newShape) as z.ZodObject<{ [K in keyof T]: z.ZodUnion<[T[K], typeof RefSchema]> }>
-}

@@ -1,8 +1,18 @@
-import { keyMirror } from '../utils.ts'
+import { z } from 'zod'
 
 /**
- * Reserved style object keys handled specially by the CSS builder.
+ * Pattern matching CSS custom property references like `var(--my-prop)`.
+ * Inline style strings use these to reference custom properties at runtime.
  *
  * @public
  */
-export const CSS_RESERVED_KEYS = keyMirror('$default', '$compoundSelectors', '$host', '$root', '$top')
+export const CUSTOM_PROPERTY_REF_PATTERN = /var\(\s*--/
+
+/**
+ * Zod schema for CSS custom property reference values matching `var(--name)`.
+ * These are always valid as CSS property values, even for properties
+ * with fixed enum value schemas.
+ *
+ * @public
+ */
+export const customPropertyRefSchema = z.string().regex(CUSTOM_PROPERTY_REF_PATTERN)

@@ -4,6 +4,7 @@
  * Do not edit manually.
  */
 import { z } from 'zod'
+import { customPropertyRefSchema } from './css.constants.ts'
 /**
  * Schema mapping kebab-case CSS property names to their value schemas.
  * Unknown properties (e.g. `--*` custom properties) fall through to
@@ -16,7 +17,12 @@ export const cssPropertySchema = z
     'align-items': z.union([z.string(), z.number()]).optional(),
     'align-self': z.union([z.string(), z.number()]).optional(),
     'alignment-baseline': z.union([z.string(), z.number()]).optional(),
-    all: z.enum(['initial', 'inherit', 'unset', 'revert', 'revert-layer', 'revert-rule']).optional(),
+    all: z
+      .union([
+        z.enum(['initial', 'inherit', 'unset', 'revert', 'revert-layer', 'revert-rule']),
+        customPropertyRefSchema,
+      ])
+      .optional(),
     'anchor-name': z.union([z.string(), z.number()]).optional(),
     'anchor-scope': z.union([z.string(), z.number()]).optional(),
     animation: z.union([z.string(), z.number()]).optional(),
@@ -38,7 +44,7 @@ export const cssPropertySchema = z
     appearance: z.union([z.string(), z.number()]).optional(),
     'aspect-ratio': z.union([z.string(), z.number()]).optional(),
     'backdrop-filter': z.union([z.string(), z.number()]).optional(),
-    'backface-visibility': z.enum(['visible', 'hidden']).optional(),
+    'backface-visibility': z.union([z.enum(['visible', 'hidden']), customPropertyRefSchema]).optional(),
     background: z.union([z.string(), z.number()]).optional(),
     'background-attachment': z.union([z.string(), z.number()]).optional(),
     'background-blend-mode': z.union([z.string(), z.number()]).optional(),
@@ -59,17 +65,19 @@ export const cssPropertySchema = z
     'background-size': z.union([z.string(), z.number()]).optional(),
     'background-tbd': z.union([z.string(), z.number()]).optional(),
     'baseline-shift': z.union([z.string(), z.number()]).optional(),
-    'baseline-source': z.enum(['auto', 'first', 'last']).optional(),
+    'baseline-source': z.union([z.enum(['auto', 'first', 'last']), customPropertyRefSchema]).optional(),
     'block-ellipsis': z.union([z.string(), z.number()]).optional(),
     'block-size': z.union([z.string(), z.number()]).optional(),
     'block-step': z.union([z.string(), z.number()]).optional(),
-    'block-step-align': z.enum(['auto', 'center', 'start', 'end']).optional(),
-    'block-step-insert': z.enum(['margin-box', 'padding-box', 'content-box']).optional(),
-    'block-step-round': z.enum(['up', 'down', 'nearest']).optional(),
+    'block-step-align': z.union([z.enum(['auto', 'center', 'start', 'end']), customPropertyRefSchema]).optional(),
+    'block-step-insert': z
+      .union([z.enum(['margin-box', 'padding-box', 'content-box']), customPropertyRefSchema])
+      .optional(),
+    'block-step-round': z.union([z.enum(['up', 'down', 'nearest']), customPropertyRefSchema]).optional(),
     'block-step-size': z.union([z.string(), z.number()]).optional(),
     'bookmark-label': z.union([z.string(), z.number()]).optional(),
-    'bookmark-level': z.enum(['none']).or(z.number()).optional(),
-    'bookmark-state': z.enum(['open', 'closed']).optional(),
+    'bookmark-level': z.enum(['none']).or(z.number()).or(customPropertyRefSchema).optional(),
+    'bookmark-state': z.union([z.enum(['open', 'closed']), customPropertyRefSchema]).optional(),
     border: z.union([z.string(), z.number()]).optional(),
     'border-block': z.union([z.string(), z.number()]).optional(),
     'border-block-clip': z.union([z.string(), z.number()]).optional(),
@@ -96,9 +104,9 @@ export const cssPropertySchema = z
     'border-bottom-right-radius': z.union([z.string(), z.number()]).optional(),
     'border-bottom-style': z.union([z.string(), z.number()]).optional(),
     'border-bottom-width': z.union([z.string(), z.number()]).optional(),
-    'border-boundary': z.enum(['none', 'parent', 'display']).optional(),
+    'border-boundary': z.union([z.enum(['none', 'parent', 'display']), customPropertyRefSchema]).optional(),
     'border-clip': z.union([z.string(), z.number()]).optional(),
-    'border-collapse': z.enum(['separate', 'collapse']).optional(),
+    'border-collapse': z.union([z.enum(['separate', 'collapse']), customPropertyRefSchema]).optional(),
     'border-color': z.union([z.string(), z.number()]).optional(),
     'border-end-end-radius': z.union([z.string(), z.number()]).optional(),
     'border-end-start-radius': z.union([z.string(), z.number()]).optional(),
@@ -154,15 +162,20 @@ export const cssPropertySchema = z
     'border-top-width': z.union([z.string(), z.number()]).optional(),
     'border-width': z.union([z.string(), z.number()]).optional(),
     bottom: z.union([z.string(), z.number()]).optional(),
-    'box-decoration-break': z.enum(['slice', 'clone']).optional(),
+    'box-decoration-break': z.union([z.enum(['slice', 'clone']), customPropertyRefSchema]).optional(),
     'box-shadow': z.union([z.string(), z.number()]).optional(),
     'box-shadow-blur': z.union([z.string(), z.number()]).optional(),
     'box-shadow-color': z.union([z.string(), z.number()]).optional(),
     'box-shadow-offset': z.union([z.string(), z.number()]).optional(),
     'box-shadow-position': z.union([z.string(), z.number()]).optional(),
     'box-shadow-spread': z.union([z.string(), z.number()]).optional(),
-    'box-sizing': z.enum(['content-box', 'border-box']).optional(),
-    'box-snap': z.enum(['none', 'block-start', 'block-end', 'center', 'baseline', 'last-baseline']).optional(),
+    'box-sizing': z.union([z.enum(['content-box', 'border-box']), customPropertyRefSchema]).optional(),
+    'box-snap': z
+      .union([
+        z.enum(['none', 'block-start', 'block-end', 'center', 'baseline', 'last-baseline']),
+        customPropertyRefSchema,
+      ])
+      .optional(),
     'break-after': z
       .enum([
         'auto',
@@ -180,6 +193,7 @@ export const cssPropertySchema = z
         'avoid-region',
         'region',
       ])
+      .or(customPropertyRefSchema)
       .optional(),
     'break-before': z
       .enum([
@@ -198,13 +212,16 @@ export const cssPropertySchema = z
         'avoid-region',
         'region',
       ])
+      .or(customPropertyRefSchema)
       .optional(),
-    'break-inside': z.enum(['auto', 'avoid', 'avoid-page', 'avoid-column', 'avoid-region']).optional(),
-    'caption-side': z.enum(['top', 'bottom']).optional(),
+    'break-inside': z
+      .union([z.enum(['auto', 'avoid', 'avoid-page', 'avoid-column', 'avoid-region']), customPropertyRefSchema])
+      .optional(),
+    'caption-side': z.union([z.enum(['top', 'bottom']), customPropertyRefSchema]).optional(),
     caret: z.union([z.string(), z.number()]).optional(),
-    'caret-animation': z.enum(['auto', 'manual']).optional(),
+    'caret-animation': z.union([z.enum(['auto', 'manual']), customPropertyRefSchema]).optional(),
     'caret-color': z.union([z.string(), z.number()]).optional(),
-    'caret-shape': z.enum(['auto', 'bar', 'block', 'underscore']).optional(),
+    'caret-shape': z.union([z.enum(['auto', 'bar', 'block', 'underscore']), customPropertyRefSchema]).optional(),
     clear: z
       .enum([
         'inline-start',
@@ -220,21 +237,22 @@ export const cssPropertySchema = z
         'both',
         'none',
       ])
+      .or(customPropertyRefSchema)
       .optional(),
     clip: z.union([z.string(), z.number()]).optional(),
     'clip-path': z.union([z.string(), z.number()]).optional(),
-    'clip-rule': z.enum(['nonzero', 'evenodd']).optional(),
+    'clip-rule': z.union([z.enum(['nonzero', 'evenodd']), customPropertyRefSchema]).optional(),
     color: z.union([z.string(), z.number()]).optional(),
     'color-adjust': z.union([z.string(), z.number()]).optional(),
-    'color-interpolation': z.enum(['auto', 'sRGB', 'linearRGB']).optional(),
-    'color-interpolation-filters': z.enum(['auto', 'sRGB', 'linearRGB']).optional(),
+    'color-interpolation': z.union([z.enum(['auto', 'sRGB', 'linearRGB']), customPropertyRefSchema]).optional(),
+    'color-interpolation-filters': z.union([z.enum(['auto', 'sRGB', 'linearRGB']), customPropertyRefSchema]).optional(),
     'color-scheme': z.union([z.string(), z.number()]).optional(),
-    'column-count': z.enum(['auto']).or(z.number()).optional(),
-    'column-fill': z.enum(['auto', 'balance', 'balance-all']).optional(),
+    'column-count': z.enum(['auto']).or(z.number()).or(customPropertyRefSchema).optional(),
+    'column-fill': z.union([z.enum(['auto', 'balance', 'balance-all']), customPropertyRefSchema]).optional(),
     'column-gap': z.union([z.string(), z.number()]).optional(),
     'column-height': z.union([z.string(), z.number()]).optional(),
     'column-rule': z.union([z.string(), z.number()]).optional(),
-    'column-rule-break': z.enum(['none', 'normal', 'intersection']).optional(),
+    'column-rule-break': z.union([z.enum(['none', 'normal', 'intersection']), customPropertyRefSchema]).optional(),
     'column-rule-color': z.union([z.string(), z.number()]).optional(),
     'column-rule-inset': z.union([z.string(), z.number()]).optional(),
     'column-rule-inset-cap': z.union([z.string(), z.number()]).optional(),
@@ -246,11 +264,13 @@ export const cssPropertySchema = z
     'column-rule-inset-junction-start': z.union([z.string(), z.number()]).optional(),
     'column-rule-inset-start': z.union([z.string(), z.number()]).optional(),
     'column-rule-style': z.union([z.string(), z.number()]).optional(),
-    'column-rule-visibility-items': z.enum(['all', 'around', 'between', 'normal']).optional(),
+    'column-rule-visibility-items': z
+      .union([z.enum(['all', 'around', 'between', 'normal']), customPropertyRefSchema])
+      .optional(),
     'column-rule-width': z.union([z.string(), z.number()]).optional(),
-    'column-span': z.enum(['none', 'all', 'auto']).or(z.number()).optional(),
+    'column-span': z.enum(['none', 'all', 'auto']).or(z.number()).or(customPropertyRefSchema).optional(),
     'column-width': z.union([z.string(), z.number()]).optional(),
-    'column-wrap': z.enum(['auto', 'nowrap', 'wrap']).optional(),
+    'column-wrap': z.union([z.enum(['auto', 'nowrap', 'wrap']), customPropertyRefSchema]).optional(),
     columns: z.union([z.string(), z.number()]).optional(),
     contain: z.union([z.string(), z.number()]).optional(),
     'contain-intrinsic-block-size': z.union([z.string(), z.number()]).optional(),
@@ -262,8 +282,13 @@ export const cssPropertySchema = z
     'container-name': z.union([z.string(), z.number()]).optional(),
     'container-type': z.union([z.string(), z.number()]).optional(),
     content: z.union([z.string(), z.number()]).optional(),
-    'content-visibility': z.enum(['visible', 'auto', 'hidden']).optional(),
-    continue: z.enum(['auto', 'discard', 'collapse', '-webkit-legacy', 'overflow', 'paginate', 'fragments']).optional(),
+    'content-visibility': z.union([z.enum(['visible', 'auto', 'hidden']), customPropertyRefSchema]).optional(),
+    continue: z
+      .union([
+        z.enum(['auto', 'discard', 'collapse', '-webkit-legacy', 'overflow', 'paginate', 'fragments']),
+        customPropertyRefSchema,
+      ])
+      .optional(),
     'copy-into': z.union([z.string(), z.number()]).optional(),
     corner: z.union([z.string(), z.number()]).optional(),
     'corner-block-end': z.union([z.string(), z.number()]).optional(),
@@ -309,40 +334,43 @@ export const cssPropertySchema = z
     cx: z.union([z.string(), z.number()]).optional(),
     cy: z.union([z.string(), z.number()]).optional(),
     d: z.union([z.string(), z.number()]).optional(),
-    direction: z.enum(['ltr', 'rtl']).optional(),
+    direction: z.union([z.enum(['ltr', 'rtl']), customPropertyRefSchema]).optional(),
     display: z.union([z.string(), z.number()]).optional(),
     'dominant-baseline': z.union([z.string(), z.number()]).optional(),
     'dynamic-range-limit': z.union([z.string(), z.number()]).optional(),
-    'empty-cells': z.enum(['show', 'hide']).optional(),
+    'empty-cells': z.union([z.enum(['show', 'hide']), customPropertyRefSchema]).optional(),
     'event-trigger': z.union([z.string(), z.number()]).optional(),
     'event-trigger-name': z.union([z.string(), z.number()]).optional(),
     'event-trigger-source': z.union([z.string(), z.number()]).optional(),
-    'field-sizing': z.enum(['fixed', 'content']).optional(),
+    'field-sizing': z.union([z.enum(['fixed', 'content']), customPropertyRefSchema]).optional(),
     fill: z.union([z.string(), z.number()]).optional(),
-    'fill-break': z.enum(['bounding-box', 'slice', 'clone']).optional(),
+    'fill-break': z.union([z.enum(['bounding-box', 'slice', 'clone']), customPropertyRefSchema]).optional(),
     'fill-color': z.union([z.string(), z.number()]).optional(),
     'fill-image': z.union([z.string(), z.number()]).optional(),
     'fill-opacity': z.union([z.string(), z.number()]).optional(),
     'fill-origin': z
       .enum(['match-parent', 'fill-box', 'stroke-box', 'content-box', 'padding-box', 'border-box'])
+      .or(customPropertyRefSchema)
       .optional(),
     'fill-position': z.union([z.string(), z.number()]).optional(),
     'fill-repeat': z.union([z.string(), z.number()]).optional(),
-    'fill-rule': z.enum(['nonzero', 'evenodd']).optional(),
+    'fill-rule': z.union([z.enum(['nonzero', 'evenodd']), customPropertyRefSchema]).optional(),
     'fill-size': z.union([z.string(), z.number()]).optional(),
     filter: z.union([z.string(), z.number()]).optional(),
     flex: z.union([z.string(), z.number()]).optional(),
     'flex-basis': z.union([z.string(), z.number()]).optional(),
-    'flex-direction': z.enum(['row', 'row-reverse', 'column', 'column-reverse']).optional(),
+    'flex-direction': z
+      .union([z.enum(['row', 'row-reverse', 'column', 'column-reverse']), customPropertyRefSchema])
+      .optional(),
     'flex-flow': z.union([z.string(), z.number()]).optional(),
-    'flex-grow': z.enum([]).or(z.number()).optional(),
-    'flex-line-count': z.enum([]).or(z.number()).optional(),
-    'flex-shrink': z.enum([]).or(z.number()).optional(),
+    'flex-grow': z.enum([]).or(z.number()).or(customPropertyRefSchema).optional(),
+    'flex-line-count': z.enum([]).or(z.number()).or(customPropertyRefSchema).optional(),
+    'flex-shrink': z.enum([]).or(z.number()).or(customPropertyRefSchema).optional(),
     'flex-wrap': z.union([z.string(), z.number()]).optional(),
     float: z.union([z.string(), z.number()]).optional(),
-    'float-defer': z.enum(['last', 'none']).or(z.number()).optional(),
+    'float-defer': z.enum(['last', 'none']).or(z.number()).or(customPropertyRefSchema).optional(),
     'float-offset': z.union([z.string(), z.number()]).optional(),
-    'float-reference': z.enum(['inline', 'column', 'region', 'page']).optional(),
+    'float-reference': z.union([z.enum(['inline', 'column', 'region', 'page']), customPropertyRefSchema]).optional(),
     'flood-color': z.union([z.string(), z.number()]).optional(),
     'flood-opacity': z.union([z.string(), z.number()]).optional(),
     'flow-from': z.union([z.string(), z.number()]).optional(),
@@ -351,40 +379,46 @@ export const cssPropertySchema = z
     font: z.union([z.string(), z.number()]).optional(),
     'font-family': z.union([z.string(), z.number()]).optional(),
     'font-feature-settings': z.union([z.string(), z.number()]).optional(),
-    'font-kerning': z.enum(['auto', 'normal', 'none']).optional(),
+    'font-kerning': z.union([z.enum(['auto', 'normal', 'none']), customPropertyRefSchema]).optional(),
     'font-language-override': z.union([z.string(), z.number()]).optional(),
-    'font-optical-sizing': z.enum(['auto', 'none']).optional(),
+    'font-optical-sizing': z.union([z.enum(['auto', 'none']), customPropertyRefSchema]).optional(),
     'font-palette': z.union([z.string(), z.number()]).optional(),
     'font-size': z.union([z.string(), z.number()]).optional(),
     'font-size-adjust': z.union([z.string(), z.number()]).optional(),
     'font-stretch': z.union([z.string(), z.number()]).optional(),
     'font-style': z.union([z.string(), z.number()]).optional(),
     'font-synthesis': z.union([z.string(), z.number()]).optional(),
-    'font-synthesis-position': z.enum(['auto', 'none']).optional(),
-    'font-synthesis-small-caps': z.enum(['auto', 'none']).optional(),
-    'font-synthesis-style': z.enum(['auto', 'none', 'oblique-only']).optional(),
-    'font-synthesis-weight': z.enum(['auto', 'none']).optional(),
+    'font-synthesis-position': z.union([z.enum(['auto', 'none']), customPropertyRefSchema]).optional(),
+    'font-synthesis-small-caps': z.union([z.enum(['auto', 'none']), customPropertyRefSchema]).optional(),
+    'font-synthesis-style': z.union([z.enum(['auto', 'none', 'oblique-only']), customPropertyRefSchema]).optional(),
+    'font-synthesis-weight': z.union([z.enum(['auto', 'none']), customPropertyRefSchema]).optional(),
     'font-variant': z.union([z.string(), z.number()]).optional(),
     'font-variant-alternates': z.union([z.string(), z.number()]).optional(),
     'font-variant-caps': z
       .enum(['normal', 'small-caps', 'all-small-caps', 'petite-caps', 'all-petite-caps', 'unicase', 'titling-caps'])
+      .or(customPropertyRefSchema)
       .optional(),
     'font-variant-east-asian': z.union([z.string(), z.number()]).optional(),
-    'font-variant-emoji': z.enum(['normal', 'text', 'emoji', 'unicode']).optional(),
+    'font-variant-emoji': z.union([z.enum(['normal', 'text', 'emoji', 'unicode']), customPropertyRefSchema]).optional(),
     'font-variant-ligatures': z.union([z.string(), z.number()]).optional(),
     'font-variant-numeric': z.union([z.string(), z.number()]).optional(),
-    'font-variant-position': z.enum(['normal', 'sub', 'super']).optional(),
+    'font-variant-position': z.union([z.enum(['normal', 'sub', 'super']), customPropertyRefSchema]).optional(),
     'font-variation-settings': z.union([z.string(), z.number()]).optional(),
     'font-weight': z.union([z.string(), z.number()]).optional(),
     'font-width': z.union([z.string(), z.number()]).optional(),
-    'footnote-display': z.enum(['block', 'inline', 'compact']).optional(),
-    'footnote-policy': z.enum(['auto', 'line', 'block']).optional(),
-    'forced-color-adjust': z.enum(['auto', 'none', 'preserve-parent-color']).optional(),
+    'footnote-display': z.union([z.enum(['block', 'inline', 'compact']), customPropertyRefSchema]).optional(),
+    'footnote-policy': z.union([z.enum(['auto', 'line', 'block']), customPropertyRefSchema]).optional(),
+    'forced-color-adjust': z
+      .union([z.enum(['auto', 'none', 'preserve-parent-color']), customPropertyRefSchema])
+      .optional(),
     'frame-sizing': z
       .enum(['auto', 'content-width', 'content-height', 'content-block-size', 'content-inline-size'])
+      .or(customPropertyRefSchema)
       .optional(),
     gap: z.union([z.string(), z.number()]).optional(),
-    'glyph-orientation-vertical': z.enum(['auto', '0deg', '90deg', '0', '90']).optional(),
+    'glyph-orientation-vertical': z
+      .union([z.enum(['auto', '0deg', '90deg', '0', '90']), customPropertyRefSchema])
+      .optional(),
     grid: z.union([z.string(), z.number()]).optional(),
     'grid-area': z.union([z.string(), z.number()]).optional(),
     'grid-auto-columns': z.union([z.string(), z.number()]).optional(),
@@ -407,20 +441,26 @@ export const cssPropertySchema = z
     height: z.union([z.string(), z.number()]).optional(),
     'hyphenate-character': z.union([z.string(), z.number()]).optional(),
     'hyphenate-limit-chars': z.union([z.string(), z.number()]).optional(),
-    'hyphenate-limit-last': z.enum(['none', 'always', 'column', 'page', 'spread']).optional(),
-    'hyphenate-limit-lines': z.enum(['no-limit']).or(z.number()).optional(),
+    'hyphenate-limit-last': z
+      .union([z.enum(['none', 'always', 'column', 'page', 'spread']), customPropertyRefSchema])
+      .optional(),
+    'hyphenate-limit-lines': z.enum(['no-limit']).or(z.number()).or(customPropertyRefSchema).optional(),
     'hyphenate-limit-zone': z.union([z.string(), z.number()]).optional(),
-    hyphens: z.enum(['none', 'manual', 'auto']).optional(),
-    'image-animation': z.enum(['normal', 'paused', 'stopped', 'running']).optional(),
+    hyphens: z.union([z.enum(['none', 'manual', 'auto']), customPropertyRefSchema]).optional(),
+    'image-animation': z
+      .union([z.enum(['normal', 'paused', 'stopped', 'running']), customPropertyRefSchema])
+      .optional(),
     'image-orientation': z.union([z.string(), z.number()]).optional(),
-    'image-rendering': z.enum(['auto', 'smooth', 'high-quality', 'pixelated', 'crisp-edges']).optional(),
+    'image-rendering': z
+      .union([z.enum(['auto', 'smooth', 'high-quality', 'pixelated', 'crisp-edges']), customPropertyRefSchema])
+      .optional(),
     'image-resolution': z.union([z.string(), z.number()]).optional(),
     'initial-letter': z.union([z.string(), z.number()]).optional(),
     'initial-letter-align': z.union([z.string(), z.number()]).optional(),
     'initial-letter-wrap': z.union([z.string(), z.number()]).optional(),
     'inline-size': z.union([z.string(), z.number()]).optional(),
-    'inline-sizing': z.enum(['normal', 'stretch']).optional(),
-    'input-security': z.enum(['auto', 'none']).optional(),
+    'inline-sizing': z.union([z.enum(['normal', 'stretch']), customPropertyRefSchema]).optional(),
+    'input-security': z.union([z.enum(['auto', 'none']), customPropertyRefSchema]).optional(),
     inset: z.union([z.string(), z.number()]).optional(),
     'inset-block': z.union([z.string(), z.number()]).optional(),
     'inset-block-end': z.union([z.string(), z.number()]).optional(),
@@ -428,11 +468,11 @@ export const cssPropertySchema = z
     'inset-inline': z.union([z.string(), z.number()]).optional(),
     'inset-inline-end': z.union([z.string(), z.number()]).optional(),
     'inset-inline-start': z.union([z.string(), z.number()]).optional(),
-    interactivity: z.enum(['auto', 'inert']).optional(),
+    interactivity: z.union([z.enum(['auto', 'inert']), customPropertyRefSchema]).optional(),
     'interest-delay': z.union([z.string(), z.number()]).optional(),
     'interest-delay-end': z.union([z.string(), z.number()]).optional(),
     'interest-delay-start': z.union([z.string(), z.number()]).optional(),
-    'interpolate-size': z.enum(['numeric-only', 'allow-keywords']).optional(),
+    'interpolate-size': z.union([z.enum(['numeric-only', 'allow-keywords']), customPropertyRefSchema]).optional(),
     isolation: z.union([z.string(), z.number()]).optional(),
     'justify-content': z.union([z.string(), z.number()]).optional(),
     'justify-items': z.union([z.string(), z.number()]).optional(),
@@ -440,25 +480,27 @@ export const cssPropertySchema = z
     left: z.union([z.string(), z.number()]).optional(),
     'letter-spacing': z.union([z.string(), z.number()]).optional(),
     'lighting-color': z.union([z.string(), z.number()]).optional(),
-    'line-break': z.enum(['auto', 'loose', 'normal', 'strict', 'anywhere']).optional(),
+    'line-break': z
+      .union([z.enum(['auto', 'loose', 'normal', 'strict', 'anywhere']), customPropertyRefSchema])
+      .optional(),
     'line-clamp': z.union([z.string(), z.number()]).optional(),
     'line-fit-edge': z.union([z.string(), z.number()]).optional(),
-    'line-grid': z.enum(['match-parent', 'create']).optional(),
+    'line-grid': z.union([z.enum(['match-parent', 'create']), customPropertyRefSchema]).optional(),
     'line-height': z.union([z.string(), z.number()]).optional(),
     'line-height-step': z.union([z.string(), z.number()]).optional(),
     'line-padding': z.union([z.string(), z.number()]).optional(),
-    'line-snap': z.enum(['none', 'baseline', 'contain']).optional(),
+    'line-snap': z.union([z.enum(['none', 'baseline', 'contain']), customPropertyRefSchema]).optional(),
     'link-parameters': z.union([z.string(), z.number()]).optional(),
     'list-style': z.union([z.string(), z.number()]).optional(),
     'list-style-image': z.union([z.string(), z.number()]).optional(),
-    'list-style-position': z.enum(['inside', 'outside']).optional(),
+    'list-style-position': z.union([z.enum(['inside', 'outside']), customPropertyRefSchema]).optional(),
     'list-style-type': z.union([z.string(), z.number()]).optional(),
     margin: z.union([z.string(), z.number()]).optional(),
     'margin-block': z.union([z.string(), z.number()]).optional(),
     'margin-block-end': z.union([z.string(), z.number()]).optional(),
     'margin-block-start': z.union([z.string(), z.number()]).optional(),
     'margin-bottom': z.union([z.string(), z.number()]).optional(),
-    'margin-break': z.enum(['auto', 'keep', 'discard']).optional(),
+    'margin-break': z.union([z.enum(['auto', 'keep', 'discard']), customPropertyRefSchema]).optional(),
     'margin-inline': z.union([z.string(), z.number()]).optional(),
     'margin-inline-end': z.union([z.string(), z.number()]).optional(),
     'margin-inline-start': z.union([z.string(), z.number()]).optional(),
@@ -469,11 +511,11 @@ export const cssPropertySchema = z
     marker: z.union([z.string(), z.number()]).optional(),
     'marker-end': z.union([z.string(), z.number()]).optional(),
     'marker-mid': z.union([z.string(), z.number()]).optional(),
-    'marker-side': z.enum(['match-self', 'match-parent']).optional(),
+    'marker-side': z.union([z.enum(['match-self', 'match-parent']), customPropertyRefSchema]).optional(),
     'marker-start': z.union([z.string(), z.number()]).optional(),
     mask: z.union([z.string(), z.number()]).optional(),
     'mask-border': z.union([z.string(), z.number()]).optional(),
-    'mask-border-mode': z.enum(['luminance', 'alpha']).optional(),
+    'mask-border-mode': z.union([z.enum(['luminance', 'alpha']), customPropertyRefSchema]).optional(),
     'mask-border-outset': z.union([z.string(), z.number()]).optional(),
     'mask-border-repeat': z.union([z.string(), z.number()]).optional(),
     'mask-border-slice': z.union([z.string(), z.number()]).optional(),
@@ -487,14 +529,14 @@ export const cssPropertySchema = z
     'mask-position': z.union([z.string(), z.number()]).optional(),
     'mask-repeat': z.union([z.string(), z.number()]).optional(),
     'mask-size': z.union([z.string(), z.number()]).optional(),
-    'mask-type': z.enum(['luminance', 'alpha']).optional(),
+    'mask-type': z.union([z.enum(['luminance', 'alpha']), customPropertyRefSchema]).optional(),
     'math-depth': z.union([z.string(), z.number()]).optional(),
-    'math-shift': z.enum(['normal', 'compact']).optional(),
-    'math-style': z.enum(['normal', 'compact']).optional(),
+    'math-shift': z.union([z.enum(['normal', 'compact']), customPropertyRefSchema]).optional(),
+    'math-style': z.union([z.enum(['normal', 'compact']), customPropertyRefSchema]).optional(),
     'max-block-size': z.union([z.string(), z.number()]).optional(),
     'max-height': z.union([z.string(), z.number()]).optional(),
     'max-inline-size': z.union([z.string(), z.number()]).optional(),
-    'max-lines': z.enum(['none']).or(z.number()).optional(),
+    'max-lines': z.enum(['none']).or(z.number()).or(customPropertyRefSchema).optional(),
     'max-width': z.union([z.string(), z.number()]).optional(),
     'min-block-size': z.union([z.string(), z.number()]).optional(),
     'min-height': z.union([z.string(), z.number()]).optional(),
@@ -516,16 +558,18 @@ export const cssPropertySchema = z
     'offset-position': z.union([z.string(), z.number()]).optional(),
     'offset-rotate': z.union([z.string(), z.number()]).optional(),
     opacity: z.union([z.string(), z.number()]).optional(),
-    order: z.enum([]).or(z.number()).optional(),
-    orphans: z.enum([]).or(z.number()).optional(),
+    order: z.enum([]).or(z.number()).or(customPropertyRefSchema).optional(),
+    orphans: z.enum([]).or(z.number()).or(customPropertyRefSchema).optional(),
     outline: z.union([z.string(), z.number()]).optional(),
     'outline-color': z.union([z.string(), z.number()]).optional(),
     'outline-offset': z.union([z.string(), z.number()]).optional(),
     'outline-style': z.union([z.string(), z.number()]).optional(),
     'outline-width': z.union([z.string(), z.number()]).optional(),
     overflow: z.union([z.string(), z.number()]).optional(),
-    'overflow-anchor': z.enum(['auto', 'none']).optional(),
-    'overflow-block': z.enum(['visible', 'hidden', 'clip', 'scroll', 'auto']).optional(),
+    'overflow-anchor': z.union([z.enum(['auto', 'none']), customPropertyRefSchema]).optional(),
+    'overflow-block': z
+      .union([z.enum(['visible', 'hidden', 'clip', 'scroll', 'auto']), customPropertyRefSchema])
+      .optional(),
     'overflow-clip-margin': z.union([z.string(), z.number()]).optional(),
     'overflow-clip-margin-block': z.union([z.string(), z.number()]).optional(),
     'overflow-clip-margin-block-end': z.union([z.string(), z.number()]).optional(),
@@ -537,16 +581,30 @@ export const cssPropertySchema = z
     'overflow-clip-margin-left': z.union([z.string(), z.number()]).optional(),
     'overflow-clip-margin-right': z.union([z.string(), z.number()]).optional(),
     'overflow-clip-margin-top': z.union([z.string(), z.number()]).optional(),
-    'overflow-inline': z.enum(['visible', 'hidden', 'clip', 'scroll', 'auto']).optional(),
-    'overflow-wrap': z.enum(['normal', 'break-word', 'anywhere']).optional(),
-    'overflow-x': z.enum(['visible', 'hidden', 'clip', 'scroll', 'auto']).optional(),
-    'overflow-y': z.enum(['visible', 'hidden', 'clip', 'scroll', 'auto']).optional(),
-    overlay: z.enum(['none', 'auto']).optional(),
+    'overflow-inline': z
+      .union([z.enum(['visible', 'hidden', 'clip', 'scroll', 'auto']), customPropertyRefSchema])
+      .optional(),
+    'overflow-wrap': z.union([z.enum(['normal', 'break-word', 'anywhere']), customPropertyRefSchema]).optional(),
+    'overflow-x': z
+      .union([z.enum(['visible', 'hidden', 'clip', 'scroll', 'auto']), customPropertyRefSchema])
+      .optional(),
+    'overflow-y': z
+      .union([z.enum(['visible', 'hidden', 'clip', 'scroll', 'auto']), customPropertyRefSchema])
+      .optional(),
+    overlay: z.union([z.enum(['none', 'auto']), customPropertyRefSchema]).optional(),
     'overscroll-behavior': z.union([z.string(), z.number()]).optional(),
-    'overscroll-behavior-block': z.enum(['contain', 'none', 'auto', 'chain']).optional(),
-    'overscroll-behavior-inline': z.enum(['contain', 'none', 'auto', 'chain']).optional(),
-    'overscroll-behavior-x': z.enum(['contain', 'none', 'auto', 'chain']).optional(),
-    'overscroll-behavior-y': z.enum(['contain', 'none', 'auto', 'chain']).optional(),
+    'overscroll-behavior-block': z
+      .union([z.enum(['contain', 'none', 'auto', 'chain']), customPropertyRefSchema])
+      .optional(),
+    'overscroll-behavior-inline': z
+      .union([z.enum(['contain', 'none', 'auto', 'chain']), customPropertyRefSchema])
+      .optional(),
+    'overscroll-behavior-x': z
+      .union([z.enum(['contain', 'none', 'auto', 'chain']), customPropertyRefSchema])
+      .optional(),
+    'overscroll-behavior-y': z
+      .union([z.enum(['contain', 'none', 'auto', 'chain']), customPropertyRefSchema])
+      .optional(),
     padding: z.union([z.string(), z.number()]).optional(),
     'padding-block': z.union([z.string(), z.number()]).optional(),
     'padding-block-end': z.union([z.string(), z.number()]).optional(),
@@ -559,9 +617,13 @@ export const cssPropertySchema = z
     'padding-right': z.union([z.string(), z.number()]).optional(),
     'padding-top': z.union([z.string(), z.number()]).optional(),
     page: z.union([z.string(), z.number()]).optional(),
-    'page-break-after': z.enum(['auto', 'always', 'avoid', 'left', 'right', 'inherit']).optional(),
-    'page-break-before': z.enum(['auto', 'always', 'avoid', 'left', 'right', 'inherit']).optional(),
-    'page-break-inside': z.enum(['avoid', 'auto', 'inherit']).optional(),
+    'page-break-after': z
+      .union([z.enum(['auto', 'always', 'avoid', 'left', 'right', 'inherit']), customPropertyRefSchema])
+      .optional(),
+    'page-break-before': z
+      .union([z.enum(['auto', 'always', 'avoid', 'left', 'right', 'inherit']), customPropertyRefSchema])
+      .optional(),
+    'page-break-inside': z.union([z.enum(['avoid', 'auto', 'inherit']), customPropertyRefSchema]).optional(),
     'paint-order': z.union([z.string(), z.number()]).optional(),
     'path-length': z.union([z.string(), z.number()]).optional(),
     pause: z.union([z.string(), z.number()]).optional(),
@@ -586,6 +648,7 @@ export const cssPropertySchema = z
         'all',
         'none',
       ])
+      .or(customPropertyRefSchema)
       .optional(),
     'pointer-timeline': z.union([z.string(), z.number()]).optional(),
     'pointer-timeline-axis': z.union([z.string(), z.number()]).optional(),
@@ -597,15 +660,18 @@ export const cssPropertySchema = z
     'position-try-fallbacks': z.union([z.string(), z.number()]).optional(),
     'position-try-order': z.union([z.string(), z.number()]).optional(),
     'position-visibility': z.union([z.string(), z.number()]).optional(),
-    'print-color-adjust': z.enum(['economy', 'exact']).optional(),
+    'print-color-adjust': z.union([z.enum(['economy', 'exact']), customPropertyRefSchema]).optional(),
     quotes: z.union([z.string(), z.number()]).optional(),
     r: z.union([z.string(), z.number()]).optional(),
     'reading-flow': z
       .enum(['normal', 'source-order', 'flex-visual', 'flex-flow', 'grid-rows', 'grid-columns', 'grid-order'])
+      .or(customPropertyRefSchema)
       .optional(),
-    'reading-order': z.enum([]).or(z.number()).optional(),
-    'region-fragment': z.enum(['auto', 'break']).optional(),
-    resize: z.enum(['none', 'both', 'horizontal', 'vertical', 'block', 'inline']).optional(),
+    'reading-order': z.enum([]).or(z.number()).or(customPropertyRefSchema).optional(),
+    'region-fragment': z.union([z.enum(['auto', 'break']), customPropertyRefSchema]).optional(),
+    resize: z
+      .union([z.enum(['none', 'both', 'horizontal', 'vertical', 'block', 'inline']), customPropertyRefSchema])
+      .optional(),
     rest: z.union([z.string(), z.number()]).optional(),
     'rest-after': z.union([z.string(), z.number()]).optional(),
     'rest-before': z.union([z.string(), z.number()]).optional(),
@@ -613,7 +679,7 @@ export const cssPropertySchema = z
     rotate: z.union([z.string(), z.number()]).optional(),
     'row-gap': z.union([z.string(), z.number()]).optional(),
     'row-rule': z.union([z.string(), z.number()]).optional(),
-    'row-rule-break': z.enum(['none', 'normal', 'intersection']).optional(),
+    'row-rule-break': z.union([z.enum(['none', 'normal', 'intersection']), customPropertyRefSchema]).optional(),
     'row-rule-color': z.union([z.string(), z.number()]).optional(),
     'row-rule-inset': z.union([z.string(), z.number()]).optional(),
     'row-rule-inset-cap': z.union([z.string(), z.number()]).optional(),
@@ -625,11 +691,15 @@ export const cssPropertySchema = z
     'row-rule-inset-junction-start': z.union([z.string(), z.number()]).optional(),
     'row-rule-inset-start': z.union([z.string(), z.number()]).optional(),
     'row-rule-style': z.union([z.string(), z.number()]).optional(),
-    'row-rule-visibility-items': z.enum(['all', 'around', 'between', 'normal']).optional(),
+    'row-rule-visibility-items': z
+      .union([z.enum(['all', 'around', 'between', 'normal']), customPropertyRefSchema])
+      .optional(),
     'row-rule-width': z.union([z.string(), z.number()]).optional(),
-    'ruby-align': z.enum(['start', 'center', 'space-between', 'space-around']).optional(),
-    'ruby-merge': z.enum(['separate', 'merge', 'auto']).optional(),
-    'ruby-overhang': z.enum(['auto', 'spaces']).optional(),
+    'ruby-align': z
+      .union([z.enum(['start', 'center', 'space-between', 'space-around']), customPropertyRefSchema])
+      .optional(),
+    'ruby-merge': z.union([z.enum(['separate', 'merge', 'auto']), customPropertyRefSchema]).optional(),
+    'ruby-overhang': z.union([z.enum(['auto', 'spaces']), customPropertyRefSchema]).optional(),
     'ruby-position': z.union([z.string(), z.number()]).optional(),
     rule: z.union([z.string(), z.number()]).optional(),
     'rule-break': z.union([z.string(), z.number()]).optional(),
@@ -639,15 +709,15 @@ export const cssPropertySchema = z
     'rule-inset-end': z.union([z.string(), z.number()]).optional(),
     'rule-inset-junction': z.union([z.string(), z.number()]).optional(),
     'rule-inset-start': z.union([z.string(), z.number()]).optional(),
-    'rule-overlap': z.enum(['row-over-column', 'column-over-row']).optional(),
+    'rule-overlap': z.union([z.enum(['row-over-column', 'column-over-row']), customPropertyRefSchema]).optional(),
     'rule-style': z.union([z.string(), z.number()]).optional(),
     'rule-visibility-items': z.union([z.string(), z.number()]).optional(),
     'rule-width': z.union([z.string(), z.number()]).optional(),
     rx: z.union([z.string(), z.number()]).optional(),
     ry: z.union([z.string(), z.number()]).optional(),
     scale: z.union([z.string(), z.number()]).optional(),
-    'scroll-behavior': z.enum(['auto', 'smooth']).optional(),
-    'scroll-initial-target': z.enum(['none', 'nearest']).optional(),
+    'scroll-behavior': z.union([z.enum(['auto', 'smooth']), customPropertyRefSchema]).optional(),
+    'scroll-initial-target': z.union([z.enum(['none', 'nearest']), customPropertyRefSchema]).optional(),
     'scroll-margin': z.union([z.string(), z.number()]).optional(),
     'scroll-margin-block': z.union([z.string(), z.number()]).optional(),
     'scroll-margin-block-end': z.union([z.string(), z.number()]).optional(),
@@ -672,36 +742,39 @@ export const cssPropertySchema = z
     'scroll-padding-right': z.union([z.string(), z.number()]).optional(),
     'scroll-padding-top': z.union([z.string(), z.number()]).optional(),
     'scroll-snap-align': z.union([z.string(), z.number()]).optional(),
-    'scroll-snap-stop': z.enum(['normal', 'always']).optional(),
+    'scroll-snap-stop': z.union([z.enum(['normal', 'always']), customPropertyRefSchema]).optional(),
     'scroll-snap-type': z.union([z.string(), z.number()]).optional(),
-    'scroll-target-group': z.enum(['none', 'auto']).optional(),
+    'scroll-target-group': z.union([z.enum(['none', 'auto']), customPropertyRefSchema]).optional(),
     'scroll-timeline': z.union([z.string(), z.number()]).optional(),
     'scroll-timeline-axis': z.union([z.string(), z.number()]).optional(),
     'scroll-timeline-name': z.union([z.string(), z.number()]).optional(),
     'scrollbar-color': z.union([z.string(), z.number()]).optional(),
     'scrollbar-gutter': z.union([z.string(), z.number()]).optional(),
-    'scrollbar-width': z.enum(['auto', 'thin', 'none']).optional(),
+    'scrollbar-width': z.union([z.enum(['auto', 'thin', 'none']), customPropertyRefSchema]).optional(),
     'shape-image-threshold': z.union([z.string(), z.number()]).optional(),
     'shape-inside': z.union([z.string(), z.number()]).optional(),
     'shape-margin': z.union([z.string(), z.number()]).optional(),
     'shape-outside': z.union([z.string(), z.number()]).optional(),
     'shape-padding': z.union([z.string(), z.number()]).optional(),
-    'shape-rendering': z.enum(['auto', 'optimizeSpeed', 'crispEdges', 'geometricPrecision']).optional(),
+    'shape-rendering': z
+      .union([z.enum(['auto', 'optimizeSpeed', 'crispEdges', 'geometricPrecision']), customPropertyRefSchema])
+      .optional(),
     'slider-orientation': z
       .enum(['auto', 'left-to-right', 'right-to-left', 'top-to-bottom', 'bottom-to-top'])
+      .or(customPropertyRefSchema)
       .optional(),
-    'spatial-navigation-action': z.enum(['auto', 'focus', 'scroll']).optional(),
-    'spatial-navigation-contain': z.enum(['auto', 'contain']).optional(),
-    'spatial-navigation-function': z.enum(['normal', 'grid']).optional(),
-    speak: z.enum(['auto', 'never', 'always']).optional(),
+    'spatial-navigation-action': z.union([z.enum(['auto', 'focus', 'scroll']), customPropertyRefSchema]).optional(),
+    'spatial-navigation-contain': z.union([z.enum(['auto', 'contain']), customPropertyRefSchema]).optional(),
+    'spatial-navigation-function': z.union([z.enum(['normal', 'grid']), customPropertyRefSchema]).optional(),
+    speak: z.union([z.enum(['auto', 'never', 'always']), customPropertyRefSchema]).optional(),
     'speak-as': z.union([z.string(), z.number()]).optional(),
     'stop-color': z.union([z.string(), z.number()]).optional(),
     'stop-opacity': z.union([z.string(), z.number()]).optional(),
     'string-set': z.union([z.string(), z.number()]).optional(),
     stroke: z.union([z.string(), z.number()]).optional(),
-    'stroke-align': z.enum(['center', 'inset', 'outset']).optional(),
-    'stroke-alignment': z.enum(['center', 'inner', 'outer']).optional(),
-    'stroke-break': z.enum(['bounding-box', 'slice', 'clone']).optional(),
+    'stroke-align': z.union([z.enum(['center', 'inset', 'outset']), customPropertyRefSchema]).optional(),
+    'stroke-alignment': z.union([z.enum(['center', 'inner', 'outer']), customPropertyRefSchema]).optional(),
+    'stroke-break': z.union([z.enum(['bounding-box', 'slice', 'clone']), customPropertyRefSchema]).optional(),
     'stroke-color': z.union([z.string(), z.number()]).optional(),
     'stroke-dash-corner': z.union([z.string(), z.number()]).optional(),
     'stroke-dash-justify': z.union([z.string(), z.number()]).optional(),
@@ -710,40 +783,46 @@ export const cssPropertySchema = z
     'stroke-dashcorner': z.union([z.string(), z.number()]).optional(),
     'stroke-dashoffset': z.union([z.string(), z.number()]).optional(),
     'stroke-image': z.union([z.string(), z.number()]).optional(),
-    'stroke-linecap': z.enum(['butt', 'round', 'square']).optional(),
+    'stroke-linecap': z.union([z.enum(['butt', 'round', 'square']), customPropertyRefSchema]).optional(),
     'stroke-linejoin': z.union([z.string(), z.number()]).optional(),
-    'stroke-miterlimit': z.enum([]).or(z.number()).optional(),
+    'stroke-miterlimit': z.enum([]).or(z.number()).or(customPropertyRefSchema).optional(),
     'stroke-opacity': z.union([z.string(), z.number()]).optional(),
     'stroke-origin': z
       .enum(['match-parent', 'fill-box', 'stroke-box', 'content-box', 'padding-box', 'border-box'])
+      .or(customPropertyRefSchema)
       .optional(),
     'stroke-position': z.union([z.string(), z.number()]).optional(),
     'stroke-repeat': z.union([z.string(), z.number()]).optional(),
     'stroke-size': z.union([z.string(), z.number()]).optional(),
     'stroke-width': z.union([z.string(), z.number()]).optional(),
     'tab-size': z.union([z.string(), z.number()]).optional(),
-    'table-layout': z.enum(['auto', 'fixed']).optional(),
+    'table-layout': z.union([z.enum(['auto', 'fixed']), customPropertyRefSchema]).optional(),
     'text-align': z.union([z.string(), z.number()]).optional(),
     'text-align-all': z.union([z.string(), z.number()]).optional(),
     'text-align-last': z
       .enum(['auto', 'start', 'end', 'left', 'right', 'center', 'justify', 'match-parent'])
+      .or(customPropertyRefSchema)
       .optional(),
-    'text-anchor': z.enum(['start', 'middle', 'end']).optional(),
+    'text-anchor': z.union([z.enum(['start', 'middle', 'end']), customPropertyRefSchema]).optional(),
     'text-autospace': z.union([z.string(), z.number()]).optional(),
     'text-box': z.union([z.string(), z.number()]).optional(),
     'text-box-edge': z.union([z.string(), z.number()]).optional(),
-    'text-box-trim': z.enum(['none', 'trim-start', 'trim-end', 'trim-both']).optional(),
+    'text-box-trim': z
+      .union([z.enum(['none', 'trim-start', 'trim-end', 'trim-both']), customPropertyRefSchema])
+      .optional(),
     'text-combine-upright': z.union([z.string(), z.number()]).optional(),
     'text-decoration': z.union([z.string(), z.number()]).optional(),
     'text-decoration-color': z.union([z.string(), z.number()]).optional(),
     'text-decoration-inset': z.union([z.string(), z.number()]).optional(),
     'text-decoration-line': z.union([z.string(), z.number()]).optional(),
-    'text-decoration-skip': z.enum(['none', 'auto']).optional(),
-    'text-decoration-skip-box': z.enum(['none', 'all']).optional(),
-    'text-decoration-skip-ink': z.enum(['auto', 'none', 'all']).optional(),
+    'text-decoration-skip': z.union([z.enum(['none', 'auto']), customPropertyRefSchema]).optional(),
+    'text-decoration-skip-box': z.union([z.enum(['none', 'all']), customPropertyRefSchema]).optional(),
+    'text-decoration-skip-ink': z.union([z.enum(['auto', 'none', 'all']), customPropertyRefSchema]).optional(),
     'text-decoration-skip-self': z.union([z.string(), z.number()]).optional(),
     'text-decoration-skip-spaces': z.union([z.string(), z.number()]).optional(),
-    'text-decoration-style': z.enum(['solid', 'double', 'dotted', 'dashed', 'wavy']).optional(),
+    'text-decoration-style': z
+      .union([z.enum(['solid', 'double', 'dotted', 'dashed', 'wavy']), customPropertyRefSchema])
+      .optional(),
     'text-decoration-thickness': z.union([z.string(), z.number()]).optional(),
     'text-emphasis': z.union([z.string(), z.number()]).optional(),
     'text-emphasis-color': z.union([z.string(), z.number()]).optional(),
@@ -751,12 +830,16 @@ export const cssPropertySchema = z
     'text-emphasis-skip': z.union([z.string(), z.number()]).optional(),
     'text-emphasis-style': z.union([z.string(), z.number()]).optional(),
     'text-fit': z.union([z.string(), z.number()]).optional(),
-    'text-group-align': z.enum(['none', 'start', 'end', 'left', 'right', 'center']).optional(),
+    'text-group-align': z
+      .union([z.enum(['none', 'start', 'end', 'left', 'right', 'center']), customPropertyRefSchema])
+      .optional(),
     'text-indent': z.union([z.string(), z.number()]).optional(),
     'text-justify': z.union([z.string(), z.number()]).optional(),
-    'text-orientation': z.enum(['mixed', 'upright', 'sideways']).optional(),
+    'text-orientation': z.union([z.enum(['mixed', 'upright', 'sideways']), customPropertyRefSchema]).optional(),
     'text-overflow': z.union([z.string(), z.number()]).optional(),
-    'text-rendering': z.enum(['auto', 'optimizeSpeed', 'optimizeLegibility', 'geometricPrecision']).optional(),
+    'text-rendering': z
+      .union([z.enum(['auto', 'optimizeSpeed', 'optimizeLegibility', 'geometricPrecision']), customPropertyRefSchema])
+      .optional(),
     'text-shadow': z.union([z.string(), z.number()]).optional(),
     'text-size-adjust': z.union([z.string(), z.number()]).optional(),
     'text-spacing': z.union([z.string(), z.number()]).optional(),
@@ -765,8 +848,10 @@ export const cssPropertySchema = z
     'text-underline-offset': z.union([z.string(), z.number()]).optional(),
     'text-underline-position': z.union([z.string(), z.number()]).optional(),
     'text-wrap': z.union([z.string(), z.number()]).optional(),
-    'text-wrap-mode': z.enum(['wrap', 'nowrap']).optional(),
-    'text-wrap-style': z.enum(['auto', 'balance', 'stable', 'pretty', 'avoid-orphans']).optional(),
+    'text-wrap-mode': z.union([z.enum(['wrap', 'nowrap']), customPropertyRefSchema]).optional(),
+    'text-wrap-style': z
+      .union([z.enum(['auto', 'balance', 'stable', 'pretty', 'avoid-orphans']), customPropertyRefSchema])
+      .optional(),
     'timeline-scope': z.union([z.string(), z.number()]).optional(),
     'timeline-trigger': z.union([z.string(), z.number()]).optional(),
     'timeline-trigger-activation-range': z.union([z.string(), z.number()]).optional(),
@@ -780,9 +865,11 @@ export const cssPropertySchema = z
     top: z.union([z.string(), z.number()]).optional(),
     'touch-action': z.union([z.string(), z.number()]).optional(),
     transform: z.union([z.string(), z.number()]).optional(),
-    'transform-box': z.enum(['content-box', 'border-box', 'fill-box', 'stroke-box', 'view-box']).optional(),
+    'transform-box': z
+      .union([z.enum(['content-box', 'border-box', 'fill-box', 'stroke-box', 'view-box']), customPropertyRefSchema])
+      .optional(),
     'transform-origin': z.union([z.string(), z.number()]).optional(),
-    'transform-style': z.enum(['flat', 'preserve-3d']).optional(),
+    'transform-style': z.union([z.enum(['flat', 'preserve-3d']), customPropertyRefSchema]).optional(),
     transition: z.union([z.string(), z.number()]).optional(),
     'transition-behavior': z.union([z.string(), z.number()]).optional(),
     'transition-delay': z.union([z.string(), z.number()]).optional(),
@@ -791,10 +878,16 @@ export const cssPropertySchema = z
     'transition-timing-function': z.union([z.string(), z.number()]).optional(),
     translate: z.union([z.string(), z.number()]).optional(),
     'trigger-scope': z.union([z.string(), z.number()]).optional(),
-    'unicode-bidi': z.enum(['normal', 'embed', 'isolate', 'bidi-override', 'isolate-override', 'plaintext']).optional(),
-    'user-select': z.enum(['auto', 'text', 'none', 'contain', 'all']).optional(),
+    'unicode-bidi': z
+      .union([
+        z.enum(['normal', 'embed', 'isolate', 'bidi-override', 'isolate-override', 'plaintext']),
+        customPropertyRefSchema,
+      ])
+      .optional(),
+    'user-select': z.union([z.enum(['auto', 'text', 'none', 'contain', 'all']), customPropertyRefSchema]).optional(),
     'vector-effect': z
       .enum(['none', 'non-scaling-stroke', 'non-scaling-size', 'non-rotation', 'fixed-position'])
+      .or(customPropertyRefSchema)
       .optional(),
     'vertical-align': z.union([z.string(), z.number()]).optional(),
     'view-timeline': z.union([z.string(), z.number()]).optional(),
@@ -804,45 +897,74 @@ export const cssPropertySchema = z
     'view-transition-class': z.union([z.string(), z.number()]).optional(),
     'view-transition-group': z.union([z.string(), z.number()]).optional(),
     'view-transition-name': z.union([z.string(), z.number()]).optional(),
-    'view-transition-scope': z.enum(['none', 'all']).optional(),
-    visibility: z.enum(['visible', 'hidden', 'force-hidden', 'collapse']).optional(),
-    'voice-balance': z.enum(['left', 'center', 'right', 'leftwards', 'rightwards']).or(z.number()).optional(),
+    'view-transition-scope': z.union([z.enum(['none', 'all']), customPropertyRefSchema]).optional(),
+    visibility: z
+      .union([z.enum(['visible', 'hidden', 'force-hidden', 'collapse']), customPropertyRefSchema])
+      .optional(),
+    'voice-balance': z
+      .enum(['left', 'center', 'right', 'leftwards', 'rightwards'])
+      .or(z.number())
+      .or(customPropertyRefSchema)
+      .optional(),
     'voice-duration': z.union([z.string(), z.number()]).optional(),
     'voice-family': z.union([z.string(), z.number()]).optional(),
     'voice-pitch': z.union([z.string(), z.number()]).optional(),
     'voice-range': z.union([z.string(), z.number()]).optional(),
     'voice-rate': z.union([z.string(), z.number()]).optional(),
-    'voice-stress': z.enum(['normal', 'strong', 'moderate', 'none', 'reduced']).optional(),
+    'voice-stress': z
+      .union([z.enum(['normal', 'strong', 'moderate', 'none', 'reduced']), customPropertyRefSchema])
+      .optional(),
     'voice-volume': z.union([z.string(), z.number()]).optional(),
     'white-space': z.union([z.string(), z.number()]).optional(),
     'white-space-collapse': z
       .enum(['collapse', 'discard', 'preserve', 'preserve-breaks', 'preserve-spaces', 'break-spaces'])
+      .or(customPropertyRefSchema)
       .optional(),
     'white-space-trim': z.union([z.string(), z.number()]).optional(),
-    widows: z.enum([]).or(z.number()).optional(),
+    widows: z.enum([]).or(z.number()).or(customPropertyRefSchema).optional(),
     width: z.union([z.string(), z.number()]).optional(),
     'will-change': z.union([z.string(), z.number()]).optional(),
-    'window-drag': z.enum(['none', 'move']).optional(),
-    'word-break': z.enum(['normal', 'break-all', 'keep-all', 'manual', 'auto-phrase', 'break-word']).optional(),
+    'window-drag': z.union([z.enum(['none', 'move']), customPropertyRefSchema]).optional(),
+    'word-break': z
+      .union([
+        z.enum(['normal', 'break-all', 'keep-all', 'manual', 'auto-phrase', 'break-word']),
+        customPropertyRefSchema,
+      ])
+      .optional(),
     'word-space-transform': z.union([z.string(), z.number()]).optional(),
     'word-spacing': z.union([z.string(), z.number()]).optional(),
-    'word-wrap': z.enum(['normal', 'break-word', 'anywhere']).optional(),
-    'wrap-after': z.enum(['auto', 'avoid', 'avoid-line', 'avoid-flex', 'line', 'flex']).optional(),
-    'wrap-before': z.enum(['auto', 'avoid', 'avoid-line', 'avoid-flex', 'line', 'flex']).optional(),
-    'wrap-flow': z.enum(['auto', 'both', 'start', 'end', 'minimum', 'maximum', 'clear']).optional(),
-    'wrap-inside': z.enum(['auto', 'avoid']).optional(),
-    'wrap-through': z.enum(['wrap', 'none']).optional(),
-    'writing-mode': z.enum(['horizontal-tb', 'vertical-rl', 'vertical-lr', 'sideways-rl', 'sideways-lr']).optional(),
+    'word-wrap': z.union([z.enum(['normal', 'break-word', 'anywhere']), customPropertyRefSchema]).optional(),
+    'wrap-after': z
+      .union([z.enum(['auto', 'avoid', 'avoid-line', 'avoid-flex', 'line', 'flex']), customPropertyRefSchema])
+      .optional(),
+    'wrap-before': z
+      .union([z.enum(['auto', 'avoid', 'avoid-line', 'avoid-flex', 'line', 'flex']), customPropertyRefSchema])
+      .optional(),
+    'wrap-flow': z
+      .union([z.enum(['auto', 'both', 'start', 'end', 'minimum', 'maximum', 'clear']), customPropertyRefSchema])
+      .optional(),
+    'wrap-inside': z.union([z.enum(['auto', 'avoid']), customPropertyRefSchema]).optional(),
+    'wrap-through': z.union([z.enum(['wrap', 'none']), customPropertyRefSchema]).optional(),
+    'writing-mode': z
+      .union([
+        z.enum(['horizontal-tb', 'vertical-rl', 'vertical-lr', 'sideways-rl', 'sideways-lr']),
+        customPropertyRefSchema,
+      ])
+      .optional(),
     x: z.union([z.string(), z.number()]).optional(),
     y: z.union([z.string(), z.number()]).optional(),
-    'z-index': z.enum(['auto', 'inherit']).or(z.number()).optional(),
+    'z-index': z.enum(['auto', 'inherit']).or(z.number()).or(customPropertyRefSchema).optional(),
     zoom: z.union([z.string(), z.number()]).optional(),
     '-webkit-appearance': z.union([z.string(), z.number()]).optional(),
     '-webkit-backdrop-filter': z.union([z.string(), z.number()]).optional(),
     '-webkit-box-orient': z.union([z.string(), z.number()]).optional(),
     '-webkit-hyphens': z.union([z.string(), z.number()]).optional(),
-    '-webkit-line-clamp': z.enum(['none']).or(z.number()).optional(),
-    '-webkit-user-select': z.enum(['auto', 'text', 'none', 'contain', 'all']).or(z.number()).optional(),
+    '-webkit-line-clamp': z.enum(['none']).or(z.number()).or(customPropertyRefSchema).optional(),
+    '-webkit-user-select': z
+      .enum(['auto', 'text', 'none', 'contain', 'all'])
+      .or(z.number())
+      .or(customPropertyRefSchema)
+      .optional(),
   })
   .catchall(z.union([z.string(), z.number()]))
 
