@@ -1,16 +1,12 @@
 /**
- * @module generate-css-schemas.spec
+ * @module generate.spec
  *
  * Tests for the CSS schema generator: classification logic, generated output
  * snapshot, and per-property schema in the object format.
- *
- * @remarks
- * Retargeted from scripts/generate-css-schemas.ts to
- * src/cli/css-schemas.ts after the pure-function extraction and inlining.
  */
 
 import { expect, test } from 'bun:test'
-import { generateCssSchemas, type PropertyEntry } from '../src/cli/css-schemas.ts'
+import { generateCssSchemas, type PropertyEntry } from '../generate.ts'
 
 const entryFor = (name: string, syntax: string): PropertyEntry => ({
   name,
@@ -94,35 +90,16 @@ test('hardcoded vendor entries appear in output', () => {
   expect(result.propertyCount).toBe(HARDCODED_ENTRY_COUNT)
 })
 
-test('generated output uses z.object with catchall and token/keyframe ref schemas', async () => {
-  const cssDataPath = new URL('../node_modules/@webref/css/css.json', import.meta.url)
+test('generated output uses z.object with catchall and property name/type exports', async () => {
+  const cssDataPath = new URL('../../../node_modules/@webref/css/css.json', import.meta.url)
   const cssFile = Bun.file(cssDataPath)
   const cssJson = await cssFile.json()
 
   const result = generateCssSchemas(cssJson)
 
-  // Imports ref patterns from constants
-  expect(result.code).toContain("import { KEYFRAME_REF_PATTERN, TOKEN_REF_PATTERN } from './css.constants.ts'")
-
-  // Defines ref schemas
-  expect(result.code).toContain('const tokenRefSchema = z.string().regex(TOKEN_REF_PATTERN)')
-  expect(result.code).toContain('const keyframeRefSchema = z.string().regex(KEYFRAME_REF_PATTERN)')
-
   // Uses z.object with catchall
   expect(result.code).toContain('export const cssPropertySchema = z.object({')
-  expect(result.code).toContain('.catchall(z.union([z.string(), z.number(), tokenRefSchema]))')
-
-  // Every property includes tokenRefSchema in union
-  expect(result.code).toContain('"color": z.union([z.union([z.string(), z.number()]), tokenRefSchema])')
-  expect(result.code).toContain('"position": z.union([z.union([z.string(), z.number()]), tokenRefSchema])')
-
-  // Animation properties include keyframeRefSchema too
-  expect(result.code).toContain(
-    '"animation": z.union([z.union([z.string(), z.number()]), tokenRefSchema, keyframeRefSchema])',
-  )
-
-  // Hardcoded vendor entries include tokenRefSchema
-  expect(result.code).toContain('"-webkit-line-clamp": z.enum([\'none\']).or(z.number()).or(tokenRefSchema)')
+  expect(result.code).toContain('.catchall(z.union([z.string(), z.number()]))')
 
   // No switch function
   expect(result.code).not.toContain('switch (prop)')
@@ -138,18 +115,16 @@ test('generated output uses z.object with catchall and token/keyframe ref schema
 })
 
 test('all properties are optional in the generated schema', async () => {
-  const cssDataPath = new URL('../node_modules/@webref/css/css.json', import.meta.url)
+  const cssDataPath = new URL('../../../node_modules/@webref/css/css.json', import.meta.url)
   const cssFile = Bun.file(cssDataPath)
   const cssJson = await cssFile.json()
 
   const result = generateCssSchemas(cssJson)
 
   // Every property should have .optional() appended
-  expect(result.code).toContain('"color": z.union([z.union([z.string(), z.number()]), tokenRefSchema]).optional()')
-  expect(result.code).toContain(
-    '"accent-color": z.union([z.union([z.string(), z.number()]), tokenRefSchema]).optional()',
-  )
+  expect(result.code).toContain('"color": z.union([z.string(), z.number()]).optional()')
+  expect(result.code).toContain('"accent-color": z.union([z.string(), z.number()]).optional()')
 
   // Hardcoded vendor entries also optional
-  expect(result.code).toContain('"-webkit-line-clamp": z.enum([\'none\']).or(z.number()).or(tokenRefSchema).optional()')
+  expect(result.code).toContain('"-webkit-line-clamp": z.enum([\'none\']).or(z.number()).optional()')
 })

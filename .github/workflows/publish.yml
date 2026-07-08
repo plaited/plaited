@@ -98,6 +98,10 @@ jobs:
         run: |
           bun install
 
+      - name: Check CSS schemas are up to date
+        run: |
+          bun run scripts/css-schemas/run.ts diff
+
       - name: Configure Git
         env:
           GIT_AUTHOR_NAME: ${{ github.actor }}

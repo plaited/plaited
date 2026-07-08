@@ -1,6 +1,5 @@
 export * from './cli/cli.ts'
 export * from './cli/code-documentation.ts'
-export * from './cli/css-schemas.ts'
 export * from './cli/eval.ts'
 export * from './cli/frontier-analysis.ts'
 export * from './cli/git-context.ts'
