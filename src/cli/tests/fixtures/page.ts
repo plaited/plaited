@@ -1,5 +1,5 @@
-import { definePage } from '../../../behavioral/define-page.ts'
 import { sync, thread } from '../../../behavioral.ts'
+import { definePage } from '../../../server/define-page.ts'
 
 /**
  * A page program fixture for frontier-analysis CLI tests.

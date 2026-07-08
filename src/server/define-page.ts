@@ -1,3 +1,4 @@
+import { B_PROGRAM_IDENTIFIER } from '../behavioral/behavioral.constants.ts'
 import {
   type Behavioral,
   type BPEvent,
@@ -9,7 +10,6 @@ import {
   type Thread,
   thread,
 } from '../behavioral.ts'
-import { B_PROGRAM_IDENTIFIER } from './behavioral.constants.ts'
 
 /**
  * Arguments supplied by the operator when initializing a page program.

@@ -1,11 +1,36 @@
 import * as z from 'zod'
-import type { BPEvent, JsonObject } from '../shared.ts'
-import { BPEventSchema, JsonObjectSchema } from '../shared.ts'
-
-export type { BPEvent, JsonObject }
-export { BPEventSchema }
-
 import { DETAIL_MATCH, SNAPSHOT_MESSAGE_KINDS } from './behavioral.constants.ts'
+
+/** @public */
+export const JsonObjectSchema = z.object({}).catchall(z.json())
+
+/** @public */
+export type JsonObject = z.output<typeof JsonObjectSchema>
+
+/**
+ * Schema for validating BPEvent objects.
+ * Uses a JSON-Schema-exportable object shape for runtime validation.
+ *
+ * @public
+ */
+export const BPEventSchema = z.object({
+  type: z.string(),
+  detail: JsonObjectSchema.optional(),
+  page: z.string().optional(),
+  /**
+   * Opaque, non-serializable side-channel for carrying non-JSON values (File,
+   * Blob, FormData, ArrayBuffer, structured-clone values) straight to handlers.
+   *
+   * @remarks
+   * `detail` stays JSON for frontier analysis; `payload` never participates
+   * in event matching and never appears in any {@link SnapshotMessage} variant.
+   * Frontier analysis snapshots field-pick `type`/`detail` only.
+   */
+  payload: z.unknown().optional(),
+})
+
+/** @public */
+export type BPEvent = z.output<typeof BPEventSchema>
 
 export const BPListenerSchema = z.object({
   type: z.string(),

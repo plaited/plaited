@@ -1,8 +1,13 @@
 import { describe, expect, test } from 'bun:test'
 import * as z from 'zod'
+import { B_PROGRAM_IDENTIFIER, SNAPSHOT_MESSAGE_KINDS } from '../../behavioral/behavioral.constants.ts'
+import type {
+  DeadlockSnapshot,
+  FrontierSnapshot,
+  SelectionSnapshot,
+  SnapshotMessage,
+} from '../../behavioral/behavioral.schemas.ts'
 import { behavioral } from '../../behavioral.ts'
-import { B_PROGRAM_IDENTIFIER, SNAPSHOT_MESSAGE_KINDS } from '../behavioral.constants.ts'
-import type { DeadlockSnapshot, FrontierSnapshot, SelectionSnapshot, SnapshotMessage } from '../behavioral.schemas.ts'
 import { definePage } from '../define-page.ts'
 
 const INIT = { workflow: 'test', cwd: '/tmp' } as const

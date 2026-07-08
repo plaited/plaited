@@ -1,13 +1,8 @@
 import { behavioral, sync, thread } from '../behavioral.ts'
-import { CONTROLLER_TO_SERVER_EVENTS, SERVER_TO_CONTROLLER_EVENTS } from '../shared/shared.constants.ts'
-import {
-  AttrsMessageSchema,
-  DispatchCustomEventMessageSchema,
-  ErrorMessageSchema,
-  FormSubmitMessageSchema,
-  RenderMessageSchema,
-  UiEventMessageSchema,
-} from '../shared/shared.schemas.ts'
+import { CONTROLLER_TO_SERVER_EVENTS } from '../controller/message.constants.ts'
+import { ErrorMessageSchema, FormSubmitMessageSchema, UiEventMessageSchema } from '../controller/message.schemas.ts'
+import { SERVER_TO_CONTROLLER_EVENTS } from '../server/message.constants.ts'
+import { AttrsMessageSchema, DispatchCustomEventMessageSchema, RenderMessageSchema } from '../server/message.schemas.ts'
 
 const { addThread } = behavioral()
 

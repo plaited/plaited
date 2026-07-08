@@ -1,20 +1,13 @@
 import type { BPEvent, Disconnect } from '../behavioral.ts'
-import { BOOLEAN_ATTRS, P_FORM, P_TARGET, P_TRIGGER } from '../shared/html.constants.ts'
-import {
-  CONTROLLER_TO_SERVER_EVENTS,
-  P_FORM_TRIGGER,
-  PAGE_EVENTS,
-  SERVER_TO_CONTROLLER_EVENTS,
-  SWAP_MODES,
-} from '../shared/shared.constants.ts'
+import { BOOLEAN_ATTRS, P_FORM, P_TARGET, P_TRIGGER } from '../html-rewriter/html.constants.ts'
+import { SERVER_TO_CONTROLLER_EVENTS, SWAP_MODES } from '../server/message.constants.ts'
 import {
   type AttrsMessage,
-  type ClientMessage,
   type DispatchCustomEventMessage,
   type NavigateMessage,
   type RenderMessage,
   ServerMessageSchema,
-} from '../shared/shared.schemas.ts'
+} from '../server/message.schemas.ts'
 import { UI_CORE_MAX_RETRIES, UI_CORE_RETRY_STATUS_CODES } from './controller.constants.ts'
 import {
   ElementNotFoundError,
@@ -26,6 +19,8 @@ import {
 } from './controller.errors.ts'
 import type { ControllerConstructorArgs, ControllerExtension } from './controller.types.ts'
 import { DelegatedListener } from './delegated-listener.ts'
+import { CONTROLLER_TO_SERVER_EVENTS, P_FORM_TRIGGER, PAGE_EVENTS } from './message.constants.ts'
+import type { ClientMessage } from './message.schemas.ts'
 
 const delegates = new WeakMap<EventTarget, DelegatedListener>()
 

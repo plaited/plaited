@@ -1,6 +1,0 @@
-export * from './shared/css.constants.ts'
-export * from './shared/css.schemas.ts'
-export * from './shared/html.constants.ts'
-export * from './shared/html.schemas.ts'
-export * from './shared/shared.constants.ts'
-export * from './shared/shared.schemas.ts'
