@@ -274,16 +274,18 @@ export const PlaitedAttributesSchema = z.object({
           // Custom properties (--*) are always valid
           if (propertyName.startsWith('--')) continue
 
-          // Look up the property schema — unknown properties are browser-handled
           if (propertyName in cssPropertySchema.shape) {
+            // Known CSS property — validate against its schema; allow var() refs
             const result =
               cssPropertySchema.shape[propertyName as keyof typeof cssPropertySchema.shape].safeParse(value)
             if (!result.success) {
-              // Allow CSS custom property references as values (e.g., var(--color))
               if (CUSTOM_PROPERTY_REF_PATTERN.test(value)) continue
               return false
             }
           }
+          // Unknown properties (browser-prefixed, future specs, etc.) are
+          // browser-handled — no schema validation, but empty values like
+          // `color: ;` are already caught by the !value check above.
         }
         return true
       },
