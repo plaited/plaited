@@ -14,6 +14,7 @@
  */
 
 import * as z from 'zod'
+import { CUSTOM_PROPERTY_REF_PATTERN } from './css.constants.ts'
 import { cssPropertySchema } from './css.schemas.ts'
 import {
   CLASS,
@@ -25,13 +26,10 @@ import {
   P_TRIGGER,
   SCALE,
   STYLE,
-  STYLES,
   TEMPLATE_OBJECT_IDENTIFIER,
   UNKNOWN_TAG_PATTERN,
   VOID_TAGS,
 } from './html.constants.ts'
-import { FLAT_NODE_KINDS } from './shared.constants.ts'
-import { JsonObjectSchema, RefSchema } from './shared.schemas.ts'
 
 // ── Internal helper schemas (not exported) ────────────────────────────────
 
@@ -97,17 +95,6 @@ const InputTypeSchema = z.enum([
   'url',
   'week',
 ])
-
-/**
- * Minimal schema for a resolved StylesObject — classNames + stylesheets.
- * @internal
- */
-const StylesObjectSchema = z.object({
-  classNames: z.array(z.string()).optional(),
-  stylesheets: z.array(z.string()),
-})
-
-export const ChildSchema = z.union([RefSchema, z.number(), z.string()])
 
 // ── ARIA ───────────────────────────────────────────────────────────────────
 
@@ -263,39 +250,47 @@ export const TemplateObjectSchema = z.object({
   $: z.literal(TEMPLATE_OBJECT_IDENTIFIER),
 })
 
-/**
- * Represents the internal structure produced by Plaited's hyperscript factory (`h`).
- * This object contains the processed HTML strings and associated metadata needed for rendering.
- *
- * @property html - An array of string fragments representing the HTML structure.
- * @property stylesheets - CSS stylesheets collected from this template and its children.
- * @property $ - A unique symbol (`TEMPLATE_OBJECT_IDENTIFIER`) used as a type guard to identify Plaited template objects.
- */
-export type TemplateObject = z.output<typeof TemplateObjectSchema>
-
-export const ChildrenSchema = z.array(ChildSchema)
-
-/**
- * Represents the children prop in hyperscript. It can be a single valid child (`Child`) or an array of children.
- */
-export type Children = z.output<typeof ChildrenSchema>
-
 export const PlaitedAttributesSchema = z.object({
   [CLASS]: z.string().optional(),
   [P_SCALE]: z.enum(Object.values(SCALE)).optional(),
   [P_TARGET]: z.union([z.string(), z.number()]).optional(),
   [P_TRIGGER]: z.record(z.string(), z.string()).optional(),
-  [STYLE]: cssPropertySchema.optional(),
-  [STYLES]: z.array(StylesObjectSchema).optional(),
-})
+  [STYLE]: z
+    .string()
+    .refine(
+      (val) => {
+        // Empty string is valid (no styles)
+        if (val.trim() === '') return true
 
-export const ASchema = z.object({
-  [CLASS]: z.string().optional(),
-  [P_SCALE]: z.enum(Object.values(SCALE)).optional(),
-  [P_TARGET]: z.union([z.string(), z.number()]).optional(),
-  [P_TRIGGER]: z.record(z.string(), z.string()).optional(),
-  [STYLE]: cssPropertySchema.optional(),
-  [STYLES]: StylesObjectSchema.optional(),
+        const declarations = val.split(';').filter(Boolean)
+        for (const decl of declarations) {
+          const colonIndex = decl.indexOf(':')
+          if (colonIndex === -1) return false
+          const propertyName = decl.slice(0, colonIndex).trim()
+          const value = decl.slice(colonIndex + 1).trim()
+
+          if (!propertyName || !value) return false
+
+          // Custom properties (--*) are always valid
+          if (propertyName.startsWith('--')) continue
+
+          // Look up the property schema (catchall handles unknown props at runtime)
+          const propSchema = (cssPropertySchema.shape as Record<string, z.ZodTypeAny>)[propertyName]
+          if (!propSchema) return false
+
+          // Validate the value against the property schema
+          const result = propSchema.safeParse(value)
+          if (!result.success) {
+            // Allow CSS custom property references as values
+            if (CUSTOM_PROPERTY_REF_PATTERN.test(value)) continue
+            return false
+          }
+        }
+        return true
+      },
+      { message: 'Invalid CSS style string' },
+    )
+    .optional(),
 })
 
 /**
@@ -1278,29 +1273,20 @@ export type CustomElementTag = `${string}-${string}`
  *
  * @public
  */
-const UnknownElementTagSchema = z.string().regex(UNKNOWN_TAG_PATTERN)
-
-export const ElementNodeSchema = z.object({
-  kind: z.literal(FLAT_NODE_KINDS.element),
-  tag: z.union([CustomElementTagSchema, UnknownElementTagSchema]),
-  children: ChildrenSchema.optional(),
-  attributes: DetailedHTMLAttributesSchema.optional(),
-  meta: JsonObjectSchema.optional(),
-})
-
-export type ElementNode = z.output<typeof ElementNodeSchema>
+export const UnknownElementTagSchema = z.string().regex(UNKNOWN_TAG_PATTERN)
 
 export const getNodeSchema = (tag: string) => {
   const result = ElementKeysSchema.safeParse(tag)
   if (result.success) {
     const knownTag = result.data
     return z.object({
-      ...ElementNodeSchema.shape,
-      tag: z.literal(knownTag),
-      ...(VOID_TAGS.has(knownTag) ? { children: z.never().optional() } : {}),
-      attributes: ElementAttributeListSchema.shape[knownTag].optional(),
+      void: VOID_TAGS.has(tag),
+      attributes: ElementAttributeListSchema.shape[knownTag],
     })
   } else {
-    return ElementNodeSchema
+    return z.object({
+      void: false,
+      attributes: DetailedHTMLAttributesSchema,
+    })
   }
 }
