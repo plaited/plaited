@@ -44,24 +44,29 @@ const parseResult = (output: string) => {
 
 const evalJs = async (expr: string) => parseResult(await cli('eval', expr))
 
-const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
 /** Poll a browser read until it returns a value (or throws on timeout). */
 const waitFor = async <T>(read: () => Promise<T | undefined>, timeoutMs = 8000): Promise<T> => {
   const deadline = Date.now() + timeoutMs
   let value = await read()
   while (value === undefined && Date.now() < deadline) {
-    await wait(50)
+    await sleep(50)
     value = await read()
   }
   if (value === undefined) throw new Error('Timed out waiting for browser state.')
   return value
 }
 
-const goto = async (path: string, waitMs = 500) => {
+const goto = async (path: string) => {
   if (!fixture) throw new Error('Fixture server not started.')
   await cli('goto', `http://localhost:${fixture.port}${path}`)
-  await wait(waitMs)
+  // Wait for the controller connect script to appear in the DOM, confirming
+  // the full page HTML has been parsed (body content + script tags).
+  await waitFor(async () => {
+    const has = await evalJs('() => !!document.querySelector("script[src*=\'.plaited/connect\']")')
+    return has?.includes('true') ? true : undefined
+  }, 8_000)
 }
 
 const getFixture = (): FixtureServer => {
@@ -116,7 +121,9 @@ describe('controller: connect & render', () => {
     // view-transition-fixture.html includes the rule in a <style>; the controller
     // must detect it and skip re-injecting.
     await goto('/view-transition-fixture.html')
-    await wait(1000)
+    // The controller appends @view-transition via adoptedStyleSheets; poll for the
+    // connect script as a DOM-ready signal, then read the style rule count.
+    await sleep(100)
     const count = await evalJs(
       "() => Array.from(document.styleSheets).concat(document.adoptedStyleSheets).reduce((n, s) => { try { return n + Array.from(s.cssRules).filter(r => r.cssText.includes('@view-transition')).length } catch { return n } }, 0)",
     )
@@ -128,7 +135,7 @@ describe('controller: connect & render', () => {
 
 describe('controller: render swap modes', () => {
   test('all six swap modes produce the correct DOM structure', async () => {
-    await goto('/test/swap-test', 1500)
+    await goto('/test/swap-test')
     expect(await evalJs("() => document.getElementById('inner-result')?.textContent")).toContain('inner replaced')
     expect(await evalJs('() => document.querySelector(\'[p-target="main"]\')?.firstElementChild?.id')).toContain(
       'afterbegin-result',
@@ -144,7 +151,7 @@ describe('controller: render swap modes', () => {
   test('binds triggers on swapped-in fragments', async () => {
     // The action-test fixture renders a button with a p-trigger; clicking it
     // must emit a ui_event the server receives and acknowledge with a render.
-    await goto('/test/action-test', 1500)
+    await goto('/test/action-test')
     await waitFor(async () => {
       const has = await evalJs("() => !!document.getElementById('test-btn')")
       return has ? true : undefined
@@ -160,7 +167,7 @@ describe('controller: render swap modes', () => {
 
 describe('controller: attrs handler', () => {
   test('sets string, removes null, toggles boolean, coerces number', async () => {
-    await goto('/test/attrs-test', 500)
+    await goto('/test/attrs-test')
     const sel = "() => document.querySelector('[p-target=main]')"
     await waitFor(async () => {
       const cls = await evalJs(`${sel}?.getAttribute('class')`)
@@ -177,7 +184,7 @@ describe('controller: attrs handler', () => {
 
 describe('controller: dispatch_custom_event handler', () => {
   test('dispatches a CustomEvent on the target with detail', async () => {
-    await goto('/test/dispatch-test', 500)
+    await goto('/test/dispatch-test')
     const detail = await waitFor(async () => {
       const d = await evalJs('() => window.__pingDetail')
       return d && d !== 'null' && d !== 'undefined' ? d : undefined
@@ -191,7 +198,7 @@ describe('controller: dispatch_custom_event handler', () => {
 
 describe('controller: document stylesheets', () => {
   test('adopts render stylesheets and applies computed styles', async () => {
-    await goto('/test/styles-test', 1500)
+    await goto('/test/styles-test')
     await waitFor(async () => {
       const has = await evalJs("() => !!document.getElementById('dynamic-style-target')")
       return has ? true : undefined
@@ -205,7 +212,7 @@ describe('controller: document stylesheets', () => {
 
 describe('controller: navigate handler', () => {
   test('navigates the browser to the given url via assign', async () => {
-    await goto('/test/navigate-test', 500)
+    await goto('/test/navigate-test')
     // The server sends a navigate to /test/swap-test; the browser must follow it.
     const url = await waitFor(async () => {
       const u = await evalJs('() => window.location.pathname')
@@ -219,7 +226,7 @@ describe('controller: navigate handler', () => {
 
 describe('controller: p-trigger routing', () => {
   test('click emits a ui_event with the action type and element attributes', async () => {
-    await goto('/test/action-test', 500)
+    await goto('/test/action-test')
     await waitFor(async () => {
       const has = await evalJs("() => !!document.getElementById('test-btn')")
       return has ? true : undefined
@@ -248,7 +255,7 @@ describe('controller: p-trigger routing', () => {
 
 describe('controller: extensions', () => {
   test('extension module is invoked for its matching p-trigger and triggers a BP event', async () => {
-    await goto('/module-fixture.html', 1500)
+    await goto('/module-fixture.html')
     await waitFor(async () => {
       const has = await evalJs("() => !!document.getElementById('module-ext-btn')")
       return has ? true : undefined
@@ -262,7 +269,7 @@ describe('controller: extensions', () => {
   }, 20000)
 
   test('standard p-trigger still emits a BP event alongside extensions', async () => {
-    await goto('/module-fixture.html', 1500)
+    await goto('/module-fixture.html')
     await waitFor(async () => {
       const has = await evalJs("() => !!document.getElementById('module-p-trigger-btn')")
       return has ? true : undefined
@@ -287,7 +294,7 @@ describe('controller: extensions', () => {
 
 describe('controller: form submit', () => {
   test('POSTs the form data to the server with the p-form-trigger header', async () => {
-    await goto('/test/form-test', 500)
+    await goto('/test/form-test')
     await waitFor(async () => {
       const has = await evalJs("() => !!document.getElementById('controller-form')")
       return has ? true : undefined
@@ -304,7 +311,7 @@ describe('controller: form submit', () => {
 
 describe('controller: WebSocket retry', () => {
   test('reconnects after a retryable close code and renders on the retried connection', async () => {
-    await goto('/test/retry-test', 500)
+    await goto('/test/retry-test')
     const text = await waitFor(async () => {
       const t = await evalJs("() => document.getElementById('retry-success')?.textContent")
       return t && t !== 'undefined' ? t : undefined
@@ -318,14 +325,14 @@ describe('controller: WebSocket retry', () => {
 describe('controller: error reporting & success acks', () => {
   test('acks a successful server message with a success envelope', async () => {
     // attrs-test sends 4 attrs messages, each acked.
-    await goto('/test/attrs-test', 500)
+    await goto('/test/attrs-test')
     await waitFor(() => Promise.resolve(getFixture().successes.find((s) => s.source === 'attrs-test')), 8000)
     const acks = getFixture().successes.filter((s) => s.source === 'attrs-test')
     expect(acks.length).toBeGreaterThanOrEqual(1)
   }, 15000)
 
   test('server receives a snapshot on pageshow', async () => {
-    await goto('/test/lifecycle-test', 500)
+    await goto('/test/lifecycle-test')
     const snap = await waitFor(
       () => Promise.resolve(getFixture().snapshots.find((s) => s.source === 'lifecycle-test')),
       5000,

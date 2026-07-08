@@ -1,6 +1,18 @@
-import { CONNECT_PLAITED_ROUTE } from '../../../shared/html.constants.ts'
+/**
+ * Bundles the controller runtime into a gzipped module served at the connect
+ * route. The bundled module reads `modules` query params, loads any extension
+ * modules, constructs a {@link Controller}, and connects.
+ */
 
-export { CONNECT_PLAITED_ROUTE }
+/** HTTP route where the bundled controller JS is served. */
+export const CONNECT_PLAITED_ROUTE = '/.plaited/connect.js'
+
+/**
+ * Virtual entrypoint path for Bun.build. Must match a key in the `files` map.
+ * Bun transpiles the `.ts` extension natively, and virtual files from the `files`
+ * option take priority over disk — no actual file needs to exist at this path.
+ */
+const VIRTUAL_ENTRY = '/.plaited/connect.ts'
 
 /**
  * Bundles the controller runtime into a gzipped module served at the connect
@@ -8,7 +20,6 @@ export { CONNECT_PLAITED_ROUTE }
  * modules, constructs a {@link Controller}, and connects.
  */
 export const bundleController = async () => {
-  const entry = CONNECT_PLAITED_ROUTE.replace('.js', '.ts')
   const controllerEntry = Bun.resolveSync('../../controller.ts', import.meta.dir)
   const entrySource = `
 import { Controller } from ${JSON.stringify(controllerEntry)}
@@ -43,9 +54,9 @@ const controller = new Controller({ extensions })
 controller.connect()
 `
   const { outputs, logs, success } = await Bun.build({
-    entrypoints: [entry],
+    entrypoints: [VIRTUAL_ENTRY],
     files: {
-      [entry]: entrySource,
+      [VIRTUAL_ENTRY]: entrySource,
     },
     minify: true,
     target: 'browser',

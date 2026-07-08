@@ -163,8 +163,6 @@ export const VALID_PRIMITIVE_CHILDREN = new Set([
  */
 export const TEMPLATE_OBJECT_IDENTIFIER = '🦄'
 
-export const CONNECT_PLAITED_ROUTE = '/.plaited/connect.js'
-
 export const SCALE = keyMirror('s1', 's2', 's3', 's4', 's5', 's6', 'rel')
 
 export const SCALE_RANK = {
