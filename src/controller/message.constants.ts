@@ -15,12 +15,3 @@ export const CONTROLLER_TO_SERVER_EVENTS = keyMirror('ui_event', 'error', 'form_
  * @public
  */
 export const PAGE_EVENTS = keyMirror('pagereveal', 'pageswap', 'pagehide', 'pageshow')
-
-/**
- * Attribute and request-header key marking a form submission triggered by the
- * controller, so the server can distinguish controller-initiated submits from
- * native ones.
- *
- * @public
- */
-export const P_FORM_TRIGGER = 'p-form-trigger'

@@ -8,7 +8,7 @@
  */
 import { join } from 'node:path'
 import type { ServerWebSocket } from 'bun'
-import { P_FORM_TRIGGER } from '../../message.constants.ts'
+import { P_TRIGGER } from '../../../html-rewriter/html.constants.ts'
 import { bundleController, CONNECT_PLAITED_ROUTE } from './bundle-controller.ts'
 
 const FIXTURES_DIR = import.meta.dir
@@ -217,6 +217,11 @@ const sendFormInitialRender = (ws: ServerWebSocket<{ source: string }>) => {
 
 // ─── Server ──────────────────────────────────────────────────────────────────
 
+/**
+ * Handle to a running fixture server, exposing the underlying Bun server, the
+ * bound port, a stop function, and captured client traffic arrays
+ * (`uiEvents`, `errors`, `successes`, `snapshots`, `formPosts`) for assertions.
+ */
 export type FixtureServer = {
   server: ReturnType<typeof Bun.serve>
   port: number
@@ -228,6 +233,11 @@ export type FixtureServer = {
   formPosts: { source: string; trigger: string; body: Record<string, unknown> }[]
 }
 
+/**
+ * Starts the fixture HTTP + WebSocket server on the given port (0 picks a free
+ * port) and returns a {@link FixtureServer} handle for driving tests and
+ * asserting on captured client messages.
+ */
 export const startServer = (port = 0): FixtureServer => {
   const state = {
     uiEvents: [] as { source: string; message: Record<string, unknown> }[],
@@ -347,7 +357,7 @@ export const startServer = (port = 0): FixtureServer => {
       // Form POST — the controller POSTs to window.location.href with a
       // p-form-trigger header carrying the form's p-form value.
       if (req.method === 'POST') {
-        const trigger = req.headers.get(P_FORM_TRIGGER)
+        const trigger = req.headers.get(P_TRIGGER)
         if (trigger) {
           const form = await req.formData()
           const body: Record<string, unknown> = {}

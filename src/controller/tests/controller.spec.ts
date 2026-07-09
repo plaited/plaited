@@ -268,6 +268,20 @@ describe('controller: extensions', () => {
     expect((ev.message.detail as { event?: { type?: string } }).event?.type).toBe('extension_action')
   }, 20000)
 
+  test('extension params do not include addDisconnect', async () => {
+    await goto('/module-fixture.html')
+    await waitFor(async () => {
+      const has = await evalJs("() => !!document.getElementById('module-ext-btn')")
+      return has ? true : undefined
+    }, 5000)
+    await evalJs("() => document.getElementById('module-ext-btn').click()")
+    const has = await waitFor(async () => {
+      const v = await evalJs('() => String(window.__extensionHasAddDisconnect)')
+      return v && v !== 'undefined' ? v : undefined
+    }, 5000)
+    expect(has).toContain('false')
+  }, 20000)
+
   test('standard p-trigger still emits a BP event alongside extensions', async () => {
     await goto('/module-fixture.html')
     await waitFor(async () => {

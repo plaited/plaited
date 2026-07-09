@@ -10,6 +10,7 @@ import {
 } from '../server/message.schemas.ts'
 import { UI_CORE_MAX_RETRIES, UI_CORE_RETRY_STATUS_CODES } from './controller.constants.ts'
 import {
+  AdoptedStyleSheetsError,
   ElementNotFoundError,
   FormSubmitError,
   PageExtensionError,
@@ -19,7 +20,7 @@ import {
 } from './controller.errors.ts'
 import type { ControllerConstructorArgs, ControllerExtension } from './controller.types.ts'
 import { DelegatedListener } from './delegated-listener.ts'
-import { CONTROLLER_TO_SERVER_EVENTS, P_FORM_TRIGGER, PAGE_EVENTS } from './message.constants.ts'
+import { CONTROLLER_TO_SERVER_EVENTS, PAGE_EVENTS } from './message.constants.ts'
 import type { ClientMessage } from './message.schemas.ts'
 
 const delegates = new WeakMap<EventTarget, DelegatedListener>()
@@ -54,6 +55,24 @@ const isPageReveal = (event: Event): event is PageRevealEvent => event instanceo
 const isPageSwap = (event: Event): event is PageSwapEvent => event instanceof PageSwapEvent
 const isSubmit = (event: Event): event is SubmitEvent => event instanceof SubmitEvent
 
+/**
+ * Browser-side controller for an agent-rendered page in a multi-page app.
+ *
+ * @remarks
+ * One instance per page, loaded via an async module script in `<head>`. The
+ * controller opens a WebSocket to its serving agent, binds `p-trigger` and
+ * `p-form` declarations in the DOM, and applies server-pushed `render`,
+ * `attrs`, `dispatch_custom_event`, and `navigate` messages. User
+ * interactions emit `ui_event` messages back to the agent, which decides what
+ * to render in response — a push-based model distinct from pull-based
+ * hypermedia clients.
+ *
+ * The browser owns document-bound teardown (listeners, sockets, timers) on
+ * unload and bfcache freeze; the controller does not force-close the socket on
+ * `pagehide` so a queued snapshot can flush during teardown.
+ *
+ * @public
+ */
 export class Controller {
   constructor({ extensions, onPageReveal, onPageSwap, onPageHide, onPageShow }: ControllerConstructorArgs) {
     this.#extensions = extensions
@@ -86,6 +105,9 @@ export class Controller {
       if (target !== this.#socket) return
       if (event.type === 'open') {
         this.#retryCount = 0
+        for (const msg of this.#messageQueue) this.#socket?.send(msg)
+        this.#messageQueue = []
+        this.#socket.removeEventListener('open', this.#socketListener)
         return
       }
       if (event instanceof MessageEvent) {
@@ -132,7 +154,8 @@ export class Controller {
     this.#closeWebSocket(this.#socket)
     if (this.#retryCount >= UI_CORE_MAX_RETRIES) return
     const maxDelay = Math.min(9_999, 1_000 * 2 ** this.#retryCount)
-    setTimeout(() => this.#connectWebSocket(), Math.floor(Math.random() * maxDelay))
+    const id = setTimeout(() => this.#connectWebSocket(), Math.floor(Math.random() * maxDelay))
+    this.#addDisconnect(() => clearTimeout(id))
     this.#retryCount++
   }
   #send(message: ClientMessage) {
@@ -194,13 +217,12 @@ export class Controller {
         const domEvent = pair.slice(0, separator)
         const type = pair.slice(separator + 1)
         if (!domEvent || !type) continue
-        const handleEvent = (event: Event) => {
+        const handleEvent = async (event: Event) => {
           try {
             if (this.#extensions?.has(pair)) {
               const extension = this.#extensions.get(pair)!
-              void extension({
+              await extension({
                 event,
-                addDisconnect: this.#addDisconnect.bind(this),
                 trigger: this.#trigger.bind(this),
               })
             } else {
@@ -244,7 +266,7 @@ export class Controller {
               method: 'POST',
               body: formData,
               headers: {
-                [P_FORM_TRIGGER]: element.getAttribute(P_FORM)!,
+                [P_TRIGGER]: element.getAttribute(P_FORM)!,
               },
             })
             if (!response.ok) {
@@ -283,8 +305,21 @@ export class Controller {
       if (instanceStyles.has(styles)) continue
       instanceStyles.add(styles)
       const sheet = new CSSStyleSheet()
-      const nextSheet = await sheet.replace(styles)
-      document.adoptedStyleSheets = [...document.adoptedStyleSheets, nextSheet]
+      try {
+        const nextSheet = await sheet.replace(styles)
+        document.adoptedStyleSheets = [...document.adoptedStyleSheets, nextSheet]
+      } catch (err) {
+        const error =
+          err instanceof Error
+            ? err
+            : new AdoptedStyleSheetsError('Invalid CSS', {
+                cause: {
+                  styles,
+                  err,
+                },
+              })
+        this.#reportError(error)
+      }
     }
   }
   // Server Message Handlers
@@ -414,16 +449,15 @@ export class Controller {
   async #pageHideListener(event: PageTransitionEvent) {
     await this.#onPageHide?.({
       event,
-      addDisconnect: this.#addDisconnect.bind(this),
       trigger: this.#trigger.bind(this),
     })
     this.#sendSnapshot(PAGE_EVENTS.pagehide)
-    this.#disconnect()
+    for (const cb of this.#disconnectSet) void cb()
+    this.#disconnectSet.clear()
   }
   async #pageRevealListener(event: PageRevealEvent) {
     await this.#onPageReveal?.({
       event,
-      addDisconnect: this.#addDisconnect.bind(this),
       trigger: this.#trigger.bind(this),
     })
     this.#sendSnapshot(PAGE_EVENTS.pagereveal)
@@ -432,7 +466,6 @@ export class Controller {
     await this.connect()
     await this.#onPageShow?.({
       event,
-      addDisconnect: this.#addDisconnect.bind(this),
       trigger: this.#trigger.bind(this),
     })
     this.#sendSnapshot(PAGE_EVENTS.pageshow)
@@ -440,7 +473,6 @@ export class Controller {
   async #pageSwapListener(event: PageSwapEvent) {
     await this.#onPageSwap?.({
       event,
-      addDisconnect: this.#addDisconnect.bind(this),
       trigger: this.#trigger.bind(this),
     })
     this.#sendSnapshot(PAGE_EVENTS.pageswap)
@@ -486,10 +518,5 @@ export class Controller {
     this.#connectPage()
     this.#connectWebSocket()
     this.#bind()
-  }
-  #disconnect() {
-    for (const cb of this.#disconnectSet) void cb()
-    this.#disconnectSet.clear()
-    this.#closeWebSocket(this.#socket)
   }
 }

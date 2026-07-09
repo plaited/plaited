@@ -8,7 +8,7 @@
  * @packageDocumentation
  */
 
-import type { Disconnect, Trigger } from '../behavioral.ts'
+import type { Trigger } from '../behavioral.ts'
 
 /**
  * Resolves the specific event map for a given concrete event target type.
@@ -29,14 +29,7 @@ import type { Disconnect, Trigger } from '../behavioral.ts'
  * All other elements (`HTMLSpanElement`, `HTMLDivElement`, `HTMLInputElement`,
  * `HTMLButtonElement`, etc.) resolve to the shared `HTMLElementEventMap`.
  *
- * @example
- * ```ts
- * type A = ElementEventMap<HTMLSpanElement>    // HTMLElementEventMap
- * type B = ElementEventMap<HTMLInputElement>   // HTMLElementEventMap
- * type C = ElementEventMap<HTMLMediaElement>   // HTMLMediaElementEventMap
- * type D = ElementEventMap<HTMLVideoElement>   // HTMLVideoElementEventMap
- * type E = ElementEventMap<Window>             // WindowEventMap
- * ```
+ * @see {@link ElementEvent} for resolving a single event payload from a target + key
  */
 export type ElementEventMap<T extends HTMLElement | Window> = T extends Window
   ? WindowEventMap
@@ -65,30 +58,6 @@ export type ElementEventMap<T extends HTMLElement | Window> = T extends Window
  * resolves to the single corresponding event payload (e.g. `MouseEvent` for
  * `'mouseenter'` on `HTMLSpanElement`, or `PageTransitionEvent` for
  * `'pageshow'` on `Window`).
- *
- * @example
- * ```ts
- * // All events for a span (default): union of all HTMLElementEventMap values
- * type AllSpanEvents = ElementEvent<HTMLSpanElement>;
- *
- * // Single event key: resolves to MouseEvent
- * type EnterEvent = ElementEvent<HTMLSpanElement, 'mouseenter'>;
- *
- * // Input element's input event: resolves to InputEvent
- * type InputEvent = ElementEvent<HTMLInputElement, 'input'>;
- *
- * // Media element's play event: resolves to Event
- * type PlayEvent = ElementEvent<HTMLVideoElement, 'play'>;
- *
- * // Window page lifecycle events
- * type RevealEvent = ElementEvent<Window, 'pagereveal'>;
- * type SwapEvent   = ElementEvent<Window, 'pageswap'>;
- * type ShowEvent   = ElementEvent<Window, 'pageshow'>;
- * type HideEvent   = ElementEvent<Window, 'pagehide'>;
- *
- * // All window events
- * type AllWindowEvents = ElementEvent<Window>;
- * ```
  */
 export type ElementEvent<
   T extends HTMLElement | Window,
@@ -99,9 +68,11 @@ export type ElementEvent<
  * Context object passed to imported controller extensions.
  *
  * @remarks
- * Provides the primitives a controller extension needs to wire DOM event
- * listeners, trigger behavioral events, register cleanup callbacks, and
- * report runtime errors back to the agent.
+ * Provides the primitives a controller extension needs to read the DOM event
+ * and trigger behavioral events back to the agent. Extensions are invoked
+ * per matching DOM event (not once at setup), so any listener wiring that
+ * needs to outlive a single event must be done against `event.currentTarget`
+ * within the handler.
  *
  * @public
  */
@@ -110,8 +81,6 @@ export type ControllerExtensionParams<
   TEvent extends keyof ElementEventMap<T> = keyof ElementEventMap<T>,
 > = {
   event: ElementEvent<T, TEvent>
-  /** Registers a cleanup callback invoked when the controller disconnects. */
-  addDisconnect: (disconnect: Disconnect) => void
   /** Triggers a behavioral event on the controller's page. */
   trigger: Trigger
 }
@@ -122,26 +91,12 @@ export type ControllerExtensionParams<
  * @remarks
  * Each extension is registered in the Controller constructor via the
  * `extensions` map keyed by trigger pair strings (e.g. `"click:my_action"`).
- * When a `p-trigger` attribute value matches an extension key, the setup
- * function receives controller context primitives and returns nothing
- * (synchronous or promise-based).
+ * When a `p-trigger` attribute value matches an extension key, the function
+ * is invoked on each matching DOM event and receives the event plus a
+ * `trigger` for emitting behavioral events. It returns nothing (synchronous
+ * or promise-based); rejected promises are reported to the agent as errors.
  *
- * @example
- * ```ts
- * // my-controller-module.ts
- * import type { ControllerExtension } from 'plaited/ui'
- *
- * const setup: ControllerExtension = ({ element, trigger, addDisconnect }) => {
- *   const handler = () => {
- *     trigger({ type: 'my_event', detail: { key: 'value' } })
- *   }
- *   element.addEventListener('click', handler)
- *   addDisconnect(() => element.removeEventListener('click', handler))
- * }
- *
- * export default setup
- * ```
- *
+ * @see {@link ControllerExtensionParams} for the received context
  * @public
  */
 export type ControllerExtension<
