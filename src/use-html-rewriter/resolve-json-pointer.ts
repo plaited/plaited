@@ -62,7 +62,7 @@ export const resolveJsonPointer = (data: unknown, pointer: string): unknown => {
     if (typeof current === 'object' && current !== null) {
       if (Array.isArray(current)) {
         const index = parseInt(token, 10)
-        if (isNaN(index)) {
+        if (Number.isNaN(index)) {
           throw new InvalidDescriptorError(
             `Cannot resolve pointer "${pointer}": expected numeric index at token "${token}" for array`,
             { pointer, token },

@@ -41,8 +41,6 @@ import {
 type RewriterElement = HTMLRewriterTypes.Element
 /** Bun's HTMLRewriter Text type. */
 type RewriterText = HTMLRewriterTypes.Text
-/** Bun's HTMLRewriter Comment type. */
-type RewriterComment = HTMLRewriterTypes.Comment
 
 /**
  * Options for the rewrite process.
@@ -88,9 +86,6 @@ const captureContext = async (html: string): Promise<Pass1Result> => {
           contextBuffer += text.text
           text.remove()
         }
-      },
-      comments(_comment: RewriterComment) {
-        // No-op
       },
     })
     .transform(new Response(html))
@@ -203,7 +198,7 @@ const applySimpleValue = (el: RewriterElement, key: string, value: unknown): voi
 const renderTemplate = async (
   templatePath: string,
   scopedData: unknown,
-  dataResolver: (context: unknown) => unknown | Promise<unknown>,
+  _dataResolver: (context: unknown) => unknown | Promise<unknown>,
   options: RewriteOptions,
 ): Promise<string> => {
   const absolutePath = resolve(options.cwd, templatePath)
@@ -396,8 +391,6 @@ const applyData = async (
           handleError(err)
         }
       },
-      text(_text: RewriterText) {},
-      comments(_comment: RewriterComment) {},
     })
     .on('ssr-include[src]', {
       async element(el: RewriterElement) {
@@ -435,8 +428,6 @@ const applyData = async (
           handleError(err)
         }
       },
-      text(_text: RewriterText) {},
-      comments(_comment: RewriterComment) {},
     })
     .transform(new Response(html))
 

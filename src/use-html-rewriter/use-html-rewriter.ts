@@ -42,7 +42,6 @@ import { StylesheetNotAllowedError } from './use-html-rewriter.errors.ts'
 /** Bun's HTMLRewriter Element type. */
 type RewriterElement = HTMLRewriterTypes.Element
 type RewriterText = HTMLRewriterTypes.Text
-type RewriterComment = HTMLRewriterTypes.Comment
 
 /**
  * Options for creating a rewriter instance.
@@ -139,7 +138,6 @@ export const useHtmlRewriter = (options: UseHtmlRewriterOptions) => {
           element(el: RewriterElement) {
             el.remove()
           },
-          comments(_comment: RewriterComment) {},
         })
         .on('link[rel="stylesheet"]', {
           element(_el: RewriterElement) {
@@ -147,8 +145,6 @@ export const useHtmlRewriter = (options: UseHtmlRewriterOptions) => {
               `<link rel="stylesheet"> is not allowed in dynamic mode (file: "${filePath}"). Use <style> tags instead.`,
             )
           },
-          text(_text: RewriterText) {},
-          comments(_comment: RewriterComment) {},
         })
         .transform(new Response(rewritten))
 
