@@ -10,6 +10,7 @@ import {
   IncludeNotFoundError,
   InvalidAttributeError,
   InvalidContextJsonError,
+  InvalidDescriptorError,
   InvalidResolverResultError,
 } from '../use-html-rewriter.errors.ts'
 import { useHtmlRewriter } from '../use-html-rewriter.ts'
@@ -149,6 +150,26 @@ describe('simple binding — top-level boolean rejection', () => {
     const html = `<html><body><div p-target="x">X</div><script type="application/json" p-context>{"x":{"path":"/x"}}</script></body></html>`
     const resolver = (_ctx: unknown) => ({ x: true })
     await expect(rewriteFile(html, resolver)).rejects.toThrow(InvalidResolverResultError)
+  })
+})
+
+describe('descriptor validation — R2', () => {
+  test('list missing required template throws InvalidDescriptorError', async () => {
+    const html = `<html><body><div p-target="items">Old</div><script type="application/json" p-context>{"items":{"kind":"list","data":"/products"}}</script></body></html>`
+    const resolver = (_ctx: unknown) => ({ items: [] })
+    await expect(rewriteFile(html, resolver)).rejects.toThrow(InvalidDescriptorError)
+  })
+
+  test('switch missing discriminator throws InvalidDescriptorError', async () => {
+    const html = `<html><body><div p-target="main">Old</div><script type="application/json" p-context>{"main":{"kind":"switch","data":"/view","cases":{}}}</script></body></html>`
+    const resolver = (_ctx: unknown) => ({ main: {} })
+    await expect(rewriteFile(html, resolver)).rejects.toThrow(InvalidDescriptorError)
+  })
+
+  test('unknown kind throws InvalidDescriptorError', async () => {
+    const html = `<html><body><div p-target="x">Old</div><script type="application/json" p-context>{"x":{"kind":"bogus","data":"/x"}}</script></body></html>`
+    const resolver = (_ctx: unknown) => ({ x: 'val' })
+    await expect(rewriteFile(html, resolver)).rejects.toThrow(InvalidDescriptorError)
   })
 })
 

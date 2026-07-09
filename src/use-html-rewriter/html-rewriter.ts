@@ -34,8 +34,10 @@ import {
   IncludeNotFoundError,
   InvalidAttributeError,
   InvalidContextJsonError,
+  InvalidDescriptorError,
   InvalidResolverResultError,
 } from './use-html-rewriter.errors.ts'
+import { ContextDescriptorSchema } from './use-html-rewriter.schemas.ts'
 
 /** Bun's HTMLRewriter Element type. */
 type RewriterElement = HTMLRewriterTypes.Element
@@ -472,10 +474,17 @@ export const rewriteFile = async (
 
   const resolvedData = rawResolved as Record<string, unknown>
 
-  // Try to parse context as a descriptor (may fail for simple flat data)
+  // R2: validate the p-context descriptor against ContextDescriptorSchema.
+  // Only non-null objects are validated; non-object contexts (primitives,
+  // arrays) skip the schema and flow through to dataResolver as-is.
   let descriptor: Record<string, unknown> | undefined
   if (typeof context === 'object' && context !== null) {
-    descriptor = context as Record<string, unknown>
+    const descriptorResult = ContextDescriptorSchema.safeParse(context)
+    if (!descriptorResult.success) {
+      const issues = descriptorResult.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`).join('; ')
+      throw new InvalidDescriptorError(`Invalid p-context descriptor: ${issues}`)
+    }
+    descriptor = descriptorResult.data as Record<string, unknown>
   }
 
   return applyData(pass1Html, resolvedData, descriptor, dataResolver, options)
