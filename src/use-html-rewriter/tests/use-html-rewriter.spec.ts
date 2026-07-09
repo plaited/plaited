@@ -359,6 +359,53 @@ describe('child-insertion — switch', () => {
   })
 })
 
+describe('schema validation — inline style binding (R3)', () => {
+  test('invalid CSS property value throws InvalidAttributeError', async () => {
+    // box-sizing is enum-locked to content-box|border-box (+ var() refs);
+    // 'mah-box' must fail via PlaitedAttributesSchema style refinement →
+    // cssPropertySchema, surfaced as InvalidAttributeError.
+    const html = `<html><body><div p-target="x">X</div><script type="application/json" p-context>{"x":{"path":"/x"}}</script></body></html>`
+    const resolver = (_ctx: unknown) => ({ x: { style: 'box-sizing: mah-box' } })
+    await expect(rewriteFile(html, resolver)).rejects.toThrow(InvalidAttributeError)
+  })
+
+  test('var(--x) reference in inline style is accepted', async () => {
+    const html = `<html><body><div p-target="x">X</div><script type="application/json" p-context>{"x":{"path":"/x"}}</script></body></html>`
+    const resolver = (_ctx: unknown) => ({ x: { style: 'box-sizing: var(--my-sizing)' } })
+    const result = await rewriteFile(html, resolver)
+    expect(result).toContain('var(--my-sizing)')
+  })
+})
+
+describe('deep nested template-chain (R3)', () => {
+  const fixturesDir = `${import.meta.dir}/fixtures`
+  const options: RewriteOptions = {
+    cwd: fixturesDir,
+    includeStack: new Set(),
+  }
+
+  test('switch → list → data: 3-deep chain across distinct files', async () => {
+    const html = `<html><body><div p-target="main">Old</div><script type="application/json" p-context>{"main":{"kind":"switch","data":"/view","discriminator":"type","cases":{"show":{"kind":"data","data":"/","template":"./chain-switch.html"}}}}</script></body></html>`
+    const resolver = (_ctx: unknown) => ({
+      main: {
+        type: 'show',
+        products: [
+          { name: 'Alpha', price: 5 },
+          { name: 'Beta', price: 10 },
+        ],
+      },
+    })
+    const result = await rewriteFile(html, resolver, options)
+    // Level 3 (chain-data.html) simple bindings resolved through scoped
+    // paths at every level.
+    expect(result).toContain('Alpha')
+    expect(result).toContain('5')
+    expect(result).toContain('Beta')
+    expect(result).toContain('10')
+    expect(result).not.toContain('Old')
+  })
+})
+
 describe('mode — useHtmlRewriter page', () => {
   const fixturesDir = `${import.meta.dir}/fixtures`
 

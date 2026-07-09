@@ -221,24 +221,24 @@ const renderTemplate = async (
   const fileContent = await file.text()
 
   // The scoped resolver receives the template's own p-context descriptor
-  // and resolves each entry's path against scopedData. This enables
-  // scoped-path resolution: e.g., a template with p-context
-  // `{"item":{"path":"/name"}}` when rendered with scopedData = { name, price }
-  // resolves `/name` from the item.
+  // and resolves each entry's data path against scopedData. This enables
+  // scoped-path resolution: a template with p-context
+  // `{"item":{"path":"/name"}}` rendered with scopedData = { name, price }
+  // resolves `/name` from the item. Kind-based descriptors (data/list/switch)
+  // use the `data` field instead of `path`; resolve that too so child-
+  // insertion chains resolve at every depth. A missing token fails fast
+  // (resolveJsonPointer throws InvalidDescriptorError) — per open-decision #5.
   const scopedResolver = (templateDescriptor: unknown) => {
     if (typeof templateDescriptor !== 'object' || templateDescriptor === null) {
       return scopedData
     }
     const result: Record<string, unknown> = {}
     for (const [key, binding] of Object.entries(templateDescriptor as Record<string, unknown>)) {
-      if (typeof binding === 'object' && binding !== null && 'path' in binding) {
-        const descriptor = binding as { path: string }
-        try {
-          result[key] = resolveJsonPointer(scopedData, descriptor.path)
-        } catch {
-          result[key] = undefined
-        }
-      }
+      if (typeof binding !== 'object' || binding === null) continue
+      const b = binding as Record<string, unknown>
+      const ptr = typeof b.path === 'string' ? b.path : typeof b.data === 'string' ? b.data : null
+      if (ptr === null) continue
+      result[key] = resolveJsonPointer(scopedData, ptr)
     }
     return result
   }
