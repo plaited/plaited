@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { CUSTOM_PROPERTY_REF_PATTERN, customPropertyRefSchema } from '..//css.constants.ts'
+import { CUSTOM_PROPERTY_REF_PATTERN, customPropertyRefSchema } from '../css.constants.ts'
 import { P_TRIGGER, STYLE } from '../html.constants.ts'
 import { PlaitedAttributesSchema } from '../html.schemas.ts'
 

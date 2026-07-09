@@ -1,5 +1,4 @@
 import type { BPEvent, Disconnect } from '../behavioral.ts'
-import { BOOLEAN_ATTRS, P_FORM, P_TARGET, P_TRIGGER } from '../html-rewriter/html.constants.ts'
 import { SERVER_TO_CONTROLLER_EVENTS, SWAP_MODES } from '../server/message.constants.ts'
 import {
   type AttrsMessage,
@@ -8,6 +7,7 @@ import {
   type RenderMessage,
   ServerMessageSchema,
 } from '../server/message.schemas.ts'
+import { BOOLEAN_ATTRS, P_FORM, P_TARGET, P_TRIGGER } from '../use-html-rewriter/html.constants.ts'
 import { UI_CORE_MAX_RETRIES, UI_CORE_RETRY_STATUS_CODES } from './controller.constants.ts'
 import {
   AdoptedStyleSheetsError,
