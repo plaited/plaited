@@ -417,6 +417,20 @@ describe('mode — useHtmlRewriter dynamic', () => {
     expect(result.html[0]).not.toContain('<style>')
   })
 
+  test('R1: single multi-line <style> yields exactly one stylesheet entry', async () => {
+    const rewriter = useHtmlRewriter({
+      dataResolver: (_ctx: unknown) => ({}),
+      cwd: fixturesDir,
+    })
+    const result = await rewriter.dynamic('dynamic-multiline-style.html')
+    // Strong assertion: one <style> must produce exactly one stylesheet,
+    // not N+1 chunk-fragmented partials.
+    expect(result.stylesheets).toHaveLength(1)
+    expect(result.stylesheets[0]).toContain('color: red;')
+    expect(result.stylesheets[0]).toContain('max-width: 1200px;')
+    expect(result.html[0]).not.toContain('<style>')
+  })
+
   test('dynamic rejects <link rel=stylesheet>', async () => {
     const rewriter = useHtmlRewriter({
       dataResolver: (_ctx: unknown) => ({}),

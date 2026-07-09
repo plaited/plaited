@@ -125,18 +125,23 @@ export const useHtmlRewriter = (options: UseHtmlRewriterOptions) => {
       // Run the rewriter pass first (strips p-context, binds data, resolves includes)
       const rewritten = await rewriteFile(html, dataResolver, { cwd, includeStack: new Set() })
 
-      // Second HTMLRewriter pass for dynamic mode:
-      // - Extract <style> text → stylesheets, remove <style> element
-      // - Reject <link rel="stylesheet">
+      // R1: buffer <style> text per-element and push once on close.
+      // HTMLRewriter streams <style> content in chunks; pushing per chunk
+      // fragments one stylesheet into N+1 broken partials.
       const stylesheets: string[] = []
+      let styleBuf = ''
       const extractResult = await new HTMLRewriter()
         .on('style', {
-          text(text: RewriterText) {
-            stylesheets.push(text.text)
-            text.remove()
-          },
           element(el: RewriterElement) {
+            el.onEndTag(() => {
+              stylesheets.push(styleBuf)
+              styleBuf = ''
+            })
             el.remove()
+          },
+          text(text: RewriterText) {
+            styleBuf += text.text
+            text.remove()
           },
         })
         .on('link[rel="stylesheet"]', {
