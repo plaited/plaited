@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 import { CUSTOM_PROPERTY_REF_PATTERN, customPropertyRefSchema } from '..//css.constants.ts'
-import { STYLE } from '../html.constants.ts'
+import { P_TRIGGER, STYLE } from '../html.constants.ts'
 import { PlaitedAttributesSchema } from '../html.schemas.ts'
 
 describe('CUSTOM_PROPERTY_REF_PATTERN', () => {
@@ -144,5 +144,68 @@ describe('PlaitedAttributesSchema [style] refinement', () => {
   test('accepts number values for properties that support them', () => {
     expect(validateStyle('opacity: 0.5')).toBe(true)
     expect(validateStyle('line-height: 1.5')).toBe(true)
+  })
+})
+
+describe('PlaitedAttributesSchema [p-trigger] refinement', () => {
+  // Helper to build a p-trigger-only attributes object and validate p-trigger
+  const validateTrigger = (triggerValue: unknown) => {
+    const result = PlaitedAttributesSchema.shape[P_TRIGGER].safeParse(triggerValue)
+    return result.success
+  }
+
+  test('accepts empty string', () => {
+    expect(validateTrigger('')).toBe(true)
+  })
+
+  test('accepts a single pair', () => {
+    expect(validateTrigger('click:save')).toBe(true)
+  })
+
+  test('accepts multiple pairs with unique keys', () => {
+    expect(validateTrigger('click:save; focus:notify')).toBe(true)
+  })
+
+  test('accepts pairs with trailing semicolon', () => {
+    expect(validateTrigger('click:save;')).toBe(true)
+    expect(validateTrigger('click:save; focus:notify;')).toBe(true)
+  })
+
+  test('accepts whitespace around keys and values', () => {
+    expect(validateTrigger('click : save')).toBe(true)
+    expect(validateTrigger('click:save;  focus : notify')).toBe(true)
+  })
+
+  test('rejects a declaration without a colon', () => {
+    expect(validateTrigger('clicksave')).toBe(false)
+    expect(validateTrigger('click save')).toBe(false)
+  })
+
+  test('rejects a declaration with empty key', () => {
+    expect(validateTrigger(':save')).toBe(false)
+  })
+
+  test('rejects a declaration with empty value', () => {
+    expect(validateTrigger('click:')).toBe(false)
+  })
+
+  test('rejects duplicate keys', () => {
+    expect(validateTrigger('click:save; click:delete')).toBe(false)
+    expect(validateTrigger('click:save; focus:notify; click:override')).toBe(false)
+  })
+
+  test('rejects duplicate keys after trimming whitespace', () => {
+    expect(validateTrigger('click:save;  click : delete')).toBe(false)
+  })
+
+  test('accepts undefined (p-trigger not set)', () => {
+    expect(validateTrigger(undefined)).toBe(true)
+  })
+
+  test('rejects non-string values', () => {
+    expect(validateTrigger(42)).toBe(false)
+    expect(validateTrigger(null)).toBe(false)
+    expect(validateTrigger({})).toBe(false)
+    expect(validateTrigger([])).toBe(false)
   })
 })

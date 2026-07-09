@@ -254,7 +254,30 @@ export const PlaitedAttributesSchema = z.object({
   [CLASS]: z.string().optional(),
   [P_SCALE]: z.enum(Object.values(SCALE)).optional(),
   [P_TARGET]: z.union([z.string(), z.number()]).optional(),
-  [P_TRIGGER]: z.record(z.string(), z.string()).optional(),
+  [P_TRIGGER]: z
+    .string()
+    .refine(
+      (val) => {
+        // Empty string is valid (no triggers)
+        if (val.trim() === '') return true
+
+        const seen = new Set<string>()
+        const declarations = val.split(';').filter(Boolean)
+        for (const decl of declarations) {
+          const colonIndex = decl.indexOf(':')
+          if (colonIndex === -1) return false
+          const key = decl.slice(0, colonIndex).trim()
+          const value = decl.slice(colonIndex + 1).trim()
+
+          if (!key || !value) return false
+          if (seen.has(key)) return false
+          seen.add(key)
+        }
+        return true
+      },
+      { message: 'Invalid p-trigger string: duplicate or malformed pairs' },
+    )
+    .optional(),
   [STYLE]: z
     .string()
     .refine(
