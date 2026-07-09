@@ -2,51 +2,56 @@
  * Core two-pass HTMLRewriter binding engine.
  *
  * @remarks
- * This module uses Bun's HTMLRewriter API, which is only available in the Bun runtime.
- * The Element and Text types used in handlers are Bun's HTMLRewriterTypes, not DOM types.
+ * This module implements the server-side counterpart of the client controller's
  * {@link import('../../controller/controller.ts').Controller#render} and
  * {@link import('../../controller/controller.ts').Controller#attrs} methods.
  *
  * **Pass 1** — Capture context:
  * Streams HTML through HTMLRewriter, accumulating text from the last
  * `<script type="application/json" p-context>` element. At element close,
- * JSON.parses the buffer. Throws {@link DuplicateContextError} if a second
+ * JSON.parses the buffer. Throws DuplicateContextError if a second
  * p-context script appears. Strips the script element.
  *
- * **Pass 2** — Apply data:
+ * **Pass 2** — Apply data + resolve includes:
  * If a context was captured, calls `dataResolver(context)`, then streams
  * pass-1 output through a second HTMLRewriter. For each `[p-target="<key>"]`
- * element, looks up the resolved data and applies it by type:
- * - **primitive** (string | number): sets inner text (escaped by default)
- * - **object**: applies each entry as attributes per updateAttributes rules
- * - **boolean** (top-level): throws InvalidResolverResultError
- * - **missing key** or **undefined**: no-op
+ * element, looks up the resolved data and applies it by type.
+ * For each `<ssr-include src="...">`, resolves the file, recursively
+ * rewrites it, and replaces the element.
  *
  * @see {@link https://developer.mozilla.org/en-US/docs/Web/API/HTMLRewriter}
  */
 
-// Type reference for Bun's HTMLRewriter API (available globally in Bun runtime)
-/// <reference path="../../node_modules/bun-types/html-rewriter.d.ts" />
-
+import { resolve } from 'node:path'
 import { htmlEscape } from '../utils.ts'
 import { BOOLEAN_ATTRS, P_CONTEXT, P_TARGET, P_TRUSTED } from './html.constants.ts'
 import { getNodeSchema, TemplateObjectSchema } from './html.schemas.ts'
 import {
   DuplicateContextError,
   EventHandlerAttributeError,
+  IncludeCycleError,
+  IncludeNotFoundError,
   InvalidAttributeError,
   InvalidContextJsonError,
   InvalidResolverResultError,
 } from './use-html-rewriter.errors.ts'
 
-/**
- * Bun's HTMLRewriter Element type - used for type safety within this module.
- * HTMLRewriter Element has methods like setInnerContent, getAttribute, etc.
- * that differ from the DOM Element type.
- */
+/** Bun's HTMLRewriter Element type. */
 type RewriterElement = HTMLRewriterTypes.Element
+/** Bun's HTMLRewriter Text type. */
 type RewriterText = HTMLRewriterTypes.Text
+/** Bun's HTMLRewriter Comment type. */
 type RewriterComment = HTMLRewriterTypes.Comment
+
+/**
+ * Options for the rewrite process.
+ */
+export interface RewriteOptions {
+  /** Base directory for resolving relative file paths. */
+  cwd: string
+  /** Set of already-resolved absolute paths for cycle detection. */
+  includeStack: Set<string>
+}
 
 /**
  * Result of pass 1: the captured context (if any) and the pass-1 output HTML.
@@ -73,14 +78,11 @@ const captureContext = async (html: string): Promise<Pass1Result> => {
             'Multiple <script type="application/json" p-context> elements found — exactly one allowed per file',
           )
         }
-        // Remove the entire element from output
         el.remove()
       },
       text(text: RewriterText) {
         if (foundCount > 0) {
           contextBuffer += text.text
-          // text.remove() not strictly needed since element.remove() removes
-          // the whole element, but being explicit doesn't hurt
           text.remove()
         }
       },
@@ -129,21 +131,17 @@ const applyObjectAttributes = (el: RewriterElement, attrs: Record<string, unknow
   // Validate the attribute set against the element's schema.
   // Null values represent attribute removal (valid runtime op), so filter
   // them out before validation since they are not valid attribute values.
-  // HTMLRewriter gives tagName in uppercase; getNodeSchema expects lowercase
   const nonNullAttrs = Object.fromEntries(Object.entries(attrs).filter(([, v]) => v !== null))
-  const tagSchema = getNodeSchema(el.tagName.toLowerCase())
+  const tagSchema = getNodeSchema(el.tagName)
   const validationResult = tagSchema.shape.attributes.safeParse(nonNullAttrs)
   if (!validationResult.success) {
     const issues = validationResult.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`).join('; ')
-    throw new InvalidAttributeError(`Invalid attributes for <${el.tagName.toLowerCase()}>: ${issues}`)
+    throw new InvalidAttributeError(`Invalid attributes for <${el.tagName}>: ${issues}`)
   }
 
   for (const key in attrs) {
-    // Reject on* event handler attributes
     if (key.startsWith('on')) {
-      throw new EventHandlerAttributeError(
-        `Event handler attributes are not allowed: [${key}] on <${el.tagName.toLowerCase()}>`,
-      )
+      throw new EventHandlerAttributeError(`Event handler attributes are not allowed: [${key}] on <${el.tagName}>`)
     }
 
     const val = attrs[key]
@@ -181,7 +179,7 @@ const applyResolvedValue = (el: RewriterElement, key: string, value: unknown): v
 
   if (typeof value === 'boolean') {
     throw new InvalidResolverResultError(
-      `Boolean value for p-target="${key}" on <${el.tagName.toLowerCase()}> is ambiguous. ` +
+      `Boolean value for p-target="${key}" on <${el.tagName}> is ambiguous. ` +
         'Use an object map with boolean attribute values, or a string/number primitive.',
     )
   }
@@ -199,15 +197,21 @@ const applyResolvedValue = (el: RewriterElement, key: string, value: unknown): v
   // MINIMAL: arrays in simple binding are an error. Child-insertion via
   // list kind descriptor handles array iteration.
   throw new InvalidResolverResultError(
-    `Array value for p-target="${key}" on <${el.tagName.toLowerCase()}> is not supported in simple binding. ` +
+    `Array value for p-target="${key}" on <${el.tagName}> is not supported in simple binding. ` +
       'Use a "list" kind binding descriptor for array iteration.',
   )
 }
 
 /**
- * Perform pass 2: apply resolved data to p-target elements.
+ * Perform pass 2: apply resolved data to p-target elements and resolve
+ * `<ssr-include>` includes.
  */
-const applyData = async (html: string, resolvedData: Record<string, unknown>): Promise<string> => {
+const applyData = async (
+  html: string,
+  resolvedData: Record<string, unknown>,
+  dataResolver: (context: unknown) => unknown | Promise<unknown>,
+  options: RewriteOptions,
+): Promise<string> => {
   const result = await new HTMLRewriter()
     .on(`[${P_TARGET}]`, {
       element(el: RewriterElement) {
@@ -218,7 +222,45 @@ const applyData = async (html: string, resolvedData: Record<string, unknown>): P
         if (value !== undefined) {
           applyResolvedValue(el, target, value)
         }
-        // Keep p-target on the element — client controller needs it
+      },
+      text(_text: RewriterText) {},
+      comments(_comment: RewriterComment) {},
+    })
+    .on('ssr-include[src]', {
+      async element(el: RewriterElement) {
+        const src = el.getAttribute('src')
+        if (!src) return
+
+        // Resolve against cwd, not including file's location
+        const absolutePath = resolve(options.cwd, src)
+
+        // Cycle guard
+        if (options.includeStack.has(absolutePath)) {
+          const cycle = [...options.includeStack, absolutePath].join(' → ')
+          throw new IncludeCycleError(`Circular <ssr-include> detected: ${cycle}`)
+        }
+
+        // Check file exists
+        const file = Bun.file(absolutePath)
+        const exists = await file.exists()
+        if (!exists) {
+          throw new IncludeNotFoundError(
+            `<ssr-include src="${src}">: file not found at "${absolutePath}" (resolved against cwd "${options.cwd}")`,
+          )
+        }
+
+        const fileContent = await file.text()
+
+        // Recursively rewrite with this path in the stack
+        const includeStack = new Set(options.includeStack)
+        includeStack.add(absolutePath)
+        const boundHtml = await rewriteFile(fileContent, dataResolver, {
+          cwd: options.cwd,
+          includeStack,
+        })
+
+        // Replace the <ssr-include> element with the bound HTML
+        el.replace(boundHtml, { html: true })
       },
       text(_text: RewriterText) {},
       comments(_comment: RewriterComment) {},
@@ -234,6 +276,7 @@ const applyData = async (html: string, resolvedData: Record<string, unknown>): P
  * @param html - The raw HTML content
  * @param dataResolver - Async/sync callback invoked with the parsed p-context descriptor;
  *   returns a Record<string, unknown> keyed by p-target value
+ * @param options - Rewrite options including cwd and includeStack for ssr-include recursion
  * @returns The rewritten HTML string
  *
  * @throws Various errors from the errors module on validation/integrity failures
@@ -241,19 +284,17 @@ const applyData = async (html: string, resolvedData: Record<string, unknown>): P
 export const rewriteFile = async (
   html: string,
   dataResolver: (context: unknown) => unknown | Promise<unknown>,
+  options: RewriteOptions = { cwd: '.', includeStack: new Set() },
 ): Promise<string> => {
-  // Pass 1 — capture context
   const { context, html: pass1Html } = await captureContext(html)
 
-  // No context found — passthrough
+  // No context found — passthrough (still resolve ssr-include)
   if (context === undefined) {
-    return pass1Html
+    return applyData(pass1Html, {}, dataResolver, options)
   }
 
-  // Call dataResolver with the parsed context
   const rawResolved = await dataResolver(context)
 
-  // Validate the resolver result
   if (typeof rawResolved !== 'object' || rawResolved === null || Array.isArray(rawResolved)) {
     throw new InvalidResolverResultError(
       `dataResolver returned ${typeof rawResolved === 'object' ? (Array.isArray(rawResolved) ? 'array' : 'null') : typeof rawResolved}, expected a Record<string, unknown>`,
@@ -262,8 +303,7 @@ export const rewriteFile = async (
 
   const resolvedData = rawResolved as Record<string, unknown>
 
-  // Pass 2 — apply data
-  return applyData(pass1Html, resolvedData)
+  return applyData(pass1Html, resolvedData, dataResolver, options)
 }
 
 /**

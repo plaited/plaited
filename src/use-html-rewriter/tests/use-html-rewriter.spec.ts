@@ -1,9 +1,12 @@
 import { describe, expect, test } from 'bun:test'
 import { SCALE, TEMPLATE_OBJECT_IDENTIFIER } from '../html.constants.ts'
+import type { RewriteOptions } from '../html-rewriter.ts'
 import { rewriteFile, validateTemplateObject } from '../html-rewriter.ts'
 import {
   DuplicateContextError,
   EventHandlerAttributeError,
+  IncludeCycleError,
+  IncludeNotFoundError,
   InvalidAttributeError,
   InvalidContextJsonError,
   InvalidResolverResultError,
@@ -200,5 +203,50 @@ describe('validateTemplateObject', () => {
       $: TEMPLATE_OBJECT_IDENTIFIER,
     }
     expect(() => validateTemplateObject(obj)).toThrow(TypeError)
+  })
+})
+
+describe('ssr-include', () => {
+  const fixturesDir = `${import.meta.dir}/fixtures`
+  const options: RewriteOptions = {
+    cwd: fixturesDir,
+    includeStack: new Set(),
+  }
+
+  test('static include spliced in', async () => {
+    const html = `<html><body><ssr-include src="include-static.html"></ssr-include></body></html>`
+    const resolver = (_ctx: unknown) => ({})
+    const result = await rewriteFile(html, resolver, options)
+    expect(result).toContain('Footer content')
+    expect(result).not.toContain('ssr-include')
+  })
+
+  test('recursive include with own p-context', async () => {
+    const html = `<html><body><ssr-include src="include-recursive.html"></ssr-include></body></html>`
+    const resolver = (_ctx: unknown) => ({ title: 'Resolved Title' })
+    const result = await rewriteFile(html, resolver, options)
+    expect(result).toContain('Resolved Title')
+    expect(result).not.toContain('ssr-include')
+  })
+
+  test('include cycle throws IncludeCycleError', async () => {
+    const html = `<html><body><ssr-include src="include-cycle-a.html"></ssr-include></body></html>`
+    const resolver = (_ctx: unknown) => ({})
+    await expect(rewriteFile(html, resolver, options)).rejects.toThrow(IncludeCycleError)
+  })
+
+  test('missing include file throws IncludeNotFoundError', async () => {
+    const html = `<html><body><ssr-include src="include-missing.html"></ssr-include></body></html>`
+    const resolver = (_ctx: unknown) => ({})
+    await expect(rewriteFile(html, resolver, options)).rejects.toThrow(IncludeNotFoundError)
+  })
+
+  test('paths resolved against cwd, not including file', async () => {
+    // The including file is passed as a string, not a file path. The cwd
+    // is the fixture directory, so the include resolves relative to that.
+    const html = `<html><body><ssr-include src="include-static.html"></ssr-include></body></html>`
+    const resolver = (_ctx: unknown) => ({})
+    const result = await rewriteFile(html, resolver, options)
+    expect(result).toContain('Footer content')
   })
 })
