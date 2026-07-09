@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'bun:test'
+
 import { SCALE, TEMPLATE_OBJECT_IDENTIFIER } from '../html.constants.ts'
 import type { RewriteOptions } from '../html-rewriter.ts'
 import { rewriteFile, validateTemplateObject } from '../html-rewriter.ts'
@@ -11,6 +12,7 @@ import {
   InvalidContextJsonError,
   InvalidResolverResultError,
 } from '../use-html-rewriter.errors.ts'
+import { useHtmlRewriter } from '../use-html-rewriter.ts'
 
 describe('simple binding — pass 1 (context capture)', () => {
   test('zero p-context → passthrough, resolver not called', async () => {
@@ -333,5 +335,82 @@ describe('child-insertion — switch', () => {
     const resolver = (_ctx: unknown) => ({ main: { type: 'unknown' } })
     const result = await rewriteFile(html, resolver, options)
     expect(result).not.toContain('Old')
+  })
+})
+
+describe('mode — useHtmlRewriter page', () => {
+  const fixturesDir = `${import.meta.dir}/fixtures`
+
+  test('page returns full HTML as string', async () => {
+    const rewriter = useHtmlRewriter({
+      dataResolver: (_ctx: unknown) => ({}),
+      cwd: fixturesDir,
+    })
+    const result = await rewriter.page('page-simple.html')
+    expect(result).toContain('Simple page with no binding')
+  })
+
+  test('page with binding applies data', async () => {
+    const rewriter = useHtmlRewriter({
+      dataResolver: (_ctx: unknown) => ({ title: 'Resolved via page' }),
+      cwd: fixturesDir,
+    })
+    const result = await rewriter.page('include-target.html')
+    expect(result).toContain('Resolved via page')
+    expect(result).not.toContain('p-context')
+  })
+
+  test('page keeps <style> and <link> unchanged', async () => {
+    const rewriter = useHtmlRewriter({
+      dataResolver: (_ctx: unknown) => ({ title: 'Styled' }),
+      cwd: fixturesDir,
+    })
+    const result = await rewriter.page('dynamic-target.html')
+    expect(result).toContain('<style>')
+    expect(result).toContain('color: red')
+  })
+})
+
+describe('mode — useHtmlRewriter dynamic', () => {
+  const fixturesDir = `${import.meta.dir}/fixtures`
+
+  test('dynamic returns TemplateObject', async () => {
+    const rewriter = useHtmlRewriter({
+      dataResolver: (_ctx: unknown) => ({}),
+      cwd: fixturesDir,
+    })
+    const result = await rewriter.dynamic('page-simple.html')
+    expect(result).toHaveProperty('html')
+    expect(result).toHaveProperty('stylesheets')
+    expect(result).toHaveProperty('scale', SCALE.rel)
+    expect(result).toHaveProperty('$', TEMPLATE_OBJECT_IDENTIFIER)
+  })
+
+  test('dynamic extracts <style> text into stylesheets and removes from html', async () => {
+    const rewriter = useHtmlRewriter({
+      dataResolver: (_ctx: unknown) => ({ title: 'Styled' }),
+      cwd: fixturesDir,
+    })
+    const result = await rewriter.dynamic('dynamic-target.html')
+    expect(result.stylesheets).toContain('body { color: red; }')
+    expect(result.html[0]).not.toContain('<style>')
+  })
+
+  test('dynamic rejects <link rel=stylesheet>', async () => {
+    const rewriter = useHtmlRewriter({
+      dataResolver: (_ctx: unknown) => ({}),
+      cwd: fixturesDir,
+    })
+    await expect(rewriter.dynamic('dynamic-with-link.html')).rejects.toThrow(/stylesheet/i)
+  })
+
+  test('dynamic merges multiple files: html concat, stylesheets deduped', async () => {
+    const rewriter = useHtmlRewriter({
+      dataResolver: (_ctx: unknown) => ({ title: 'Styled' }),
+      cwd: fixturesDir,
+    })
+    const result = await rewriter.dynamic(['dynamic-target.html', 'page-simple.html'])
+    expect(result.html).toHaveLength(2)
+    expect(result.stylesheets).toContain('body { color: red; }')
   })
 })
