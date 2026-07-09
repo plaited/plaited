@@ -37,7 +37,7 @@ import { resolve } from 'node:path'
 import { SCALE, TEMPLATE_OBJECT_IDENTIFIER } from './html.constants.ts'
 import type { TemplateObject } from './html-rewriter.ts'
 import { rewriteFile, validateTemplateObject } from './html-rewriter.ts'
-import { StylesheetNotAllowedError } from './use-html-rewriter.errors.ts'
+import { FileNotFoundError, StylesheetNotAllowedError } from './use-html-rewriter.errors.ts'
 
 /** Bun's HTMLRewriter Element type. */
 type RewriterElement = HTMLRewriterTypes.Element
@@ -75,7 +75,7 @@ export const useHtmlRewriter = (options: UseHtmlRewriterOptions) => {
     const file = Bun.file(absolutePath)
     const exists = await file.exists()
     if (!exists) {
-      throw new Error(`File not found: "${filePath}" (resolved to "${absolutePath}")`)
+      throw new FileNotFoundError(`File not found: "${filePath}" (resolved to "${absolutePath}")`)
     }
     const html = await file.text()
     return rewriteFile(html, dataResolver, { cwd, includeStack: new Set() })
@@ -118,10 +118,16 @@ export const useHtmlRewriter = (options: UseHtmlRewriterOptions) => {
       const file = Bun.file(absolutePath)
       const exists = await file.exists()
       if (!exists) {
-        throw new Error(`File not found: "${filePath}" (resolved to "${absolutePath}")`)
+        throw new FileNotFoundError(`File not found: "${filePath}" (resolved to "${absolutePath}")`)
       }
       const html = await file.text()
 
+      // MINIMAL: dynamic runs 3 HTMLRewriter passes per file (capture → apply →
+      // extract). Ceiling: fold <style> extraction into pass 2 so a single
+      // transform does capture+apply+extract. Also note: this extraction
+      // pass strips <style> from DSD <template shadowrootmode> too, breaking
+      // shadow-root styles. Upgrade path: skip <style> whose ancestor chain
+      // enters a [shadowrootmode] template, or handle DSD in a dedicated slice.
       // Run the rewriter pass first (strips p-context, binds data, resolves includes)
       const rewritten = await rewriteFile(html, dataResolver, { cwd, includeStack: new Set() })
 

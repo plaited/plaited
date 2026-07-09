@@ -24,7 +24,14 @@
 
 import { resolve } from 'node:path'
 import { htmlEscape } from '../utils.ts'
-import { BOOLEAN_ATTRS, P_CONTEXT, P_TARGET, P_TRUSTED } from './html.constants.ts'
+import {
+  BOOLEAN_ATTRS,
+  P_CONTEXT,
+  P_TARGET,
+  P_TRUSTED,
+  type SCALE,
+  type TEMPLATE_OBJECT_IDENTIFIER,
+} from './html.constants.ts'
 import { getNodeSchema, TemplateObjectSchema } from './html.schemas.ts'
 import { resolveJsonPointer } from './resolve-json-pointer.ts'
 import {
@@ -124,6 +131,13 @@ const applyPrimitive = (el: RewriterElement, val: string | number, isTrusted: bo
  * Apply an object value (attribute map) to a p-target element.
  */
 const applyObjectAttributes = (el: RewriterElement, attrs: Record<string, unknown>, isTrusted: boolean): void => {
+  // R6: validate the null-filtered map, then apply the original (nulls
+  // included). Nulls represent attribute removal (a valid runtime op per
+  // updateAttributes) but are not valid attribute values, so the schema
+  // would reject them. MINIMAL: ceiling — make the per-tag schemas
+  // `.nullable()` on the relevant fields so the full map validates as
+  // applied; upgrade path is a schema-generation pass. For now nulls are
+  // filtered for validation only and handled as removeAttribute at apply.
   const nonNullAttrs = Object.fromEntries(Object.entries(attrs).filter(([, v]) => v !== null))
   const tagSchema = getNodeSchema(el.tagName)
   const validationResult = tagSchema.shape.attributes.safeParse(nonNullAttrs)
@@ -140,7 +154,11 @@ const applyObjectAttributes = (el: RewriterElement, attrs: Record<string, unknow
     const val = attrs[key]
     if (val === undefined) continue
 
-    const escapedKey = isTrusted ? key : htmlEscape(key)
+    // R7: do NOT escape attribute keys — setAttribute takes a raw attribute
+    // name, not an HTML-escaped string. (The old h() string-concat builder
+    // needed key escaping; HTMLRewriter's setAttribute does not.) Values ARE
+    // escaped below — verified necessary: HTMLRewriter does not escape &/<
+    // in attribute values.
 
     if (val === null) {
       if (el.hasAttribute(key)) el.removeAttribute(key)
@@ -155,7 +173,7 @@ const applyObjectAttributes = (el: RewriterElement, attrs: Record<string, unknow
     const stringVal = String(val)
     const escapedVal = isTrusted ? stringVal : htmlEscape(stringVal)
     if (el.getAttribute(key) !== stringVal) {
-      el.setAttribute(escapedKey, escapedVal)
+      el.setAttribute(key, escapedVal)
     }
   }
 }
@@ -492,12 +510,14 @@ export const rewriteFile = async (
 
 /**
  * Type for the result of dynamic() mode.
+ * scale/$ reference the constants so the interface stays in sync with
+ * TemplateObjectSchema and html.constants.ts (no magic literals).
  */
 export interface TemplateObject {
   html: string[]
   stylesheets: string[]
-  scale: 'rel'
-  $: '🦄'
+  scale: typeof SCALE.rel
+  $: typeof TEMPLATE_OBJECT_IDENTIFIER
 }
 
 /**

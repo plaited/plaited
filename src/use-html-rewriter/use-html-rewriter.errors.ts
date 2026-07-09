@@ -1,6 +1,15 @@
 import { ERROR_TYPES } from './use-html-rewriter.constants.ts'
 
 /**
+ * Thrown when a page/dynamic input file path does not exist.
+ *
+ * @public
+ */
+export class FileNotFoundError extends Error {
+  override name = ERROR_TYPES.file_not_found
+}
+
+/**
  * Thrown when more than one `<script type="application/json" p-context>` is found in a file.
  *
  * @public

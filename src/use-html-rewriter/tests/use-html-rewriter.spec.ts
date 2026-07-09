@@ -6,6 +6,7 @@ import { rewriteFile, validateTemplateObject } from '../html-rewriter.ts'
 import {
   DuplicateContextError,
   EventHandlerAttributeError,
+  FileNotFoundError,
   IncludeCycleError,
   IncludeNotFoundError,
   InvalidAttributeError,
@@ -436,6 +437,14 @@ describe('mode — useHtmlRewriter page', () => {
     const result = await rewriter.page('dynamic-target.html')
     expect(result).toContain('<style>')
     expect(result).toContain('color: red')
+  })
+
+  test('R5: missing page file throws typed FileNotFoundError (not bare Error)', async () => {
+    const rewriter = useHtmlRewriter({
+      dataResolver: (_ctx: unknown) => ({}),
+      cwd: fixturesDir,
+    })
+    await expect(rewriter.page('does-not-exist.html')).rejects.toThrow(FileNotFoundError)
   })
 })
 

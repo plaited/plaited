@@ -15,4 +15,5 @@ export const ERROR_TYPES = keyMirror(
   'include_not_found',
   'include_cycle',
   'invalid_descriptor',
+  'file_not_found',
 )

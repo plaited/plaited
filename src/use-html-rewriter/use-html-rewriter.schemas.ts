@@ -28,7 +28,14 @@ import { z } from 'zod'
  */
 const BindingDescriptorSchema: z.ZodType<unknown> = z.lazy(() =>
   z.union([
-    // Simple binding — just a path, no kind
+    // Simple binding — just a path, no kind.
+    // MINIMAL: this branch is permissive on `kind` — z.object allows unknown
+    // keys by default, so `{ path: "/x", kind: "bogus" }` matches here and
+    // the bogus kind is silently ignored. Engine-time validation (R2: R
+    // ContextDescriptorSchema.safeParse in rewriteFile) still rejects
+    // malformed kind when no `path` is present, via the discriminated branches.
+    // Upgrade path: .strict() on this branch or a top-level refine to reject a
+    // `kind` that isn't one of data/list/switch.
     z.object({
       path: z.string().describe('JSON Pointer path to the data value'),
     }),
