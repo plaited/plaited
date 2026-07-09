@@ -1,0 +1,13 @@
+<html>
+<body>
+  <div p-target="title">Static Title</div>
+  <a p-target="link" href="#old">Old Link</a>
+  <img p-target="image" src="old.jpg" alt="Old Alt">
+  <input p-target="checked-input" type="checkbox" checked>
+  <div p-target="null-target">Will have attr removed</div>
+  <div p-target="missing">Will not change</div>
+  <div p-target="undefined-val">Will not change</div>
+  <div p-target="trusted-html" p-trusted>Static content</div>
+  <script type="application/json" p-context>{"title":{"path":"/page/title"},"link":{"path":"/page/link"},"image":{"path":"/page/image"},"checked-input":{"path":"/page/checked"},"null-target":{"path":"/page/null-attr"},"trusted-html":{"path":"/page/trusted"}}</script>
+</body>
+</html>
