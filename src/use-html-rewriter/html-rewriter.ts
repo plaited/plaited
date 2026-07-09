@@ -2,22 +2,22 @@
  * Core two-pass HTMLRewriter binding engine.
  *
  * @remarks
- * This module implements the server-side counterpart of the client controller's
- * {@link import('../../controller/controller.ts').Controller#render} and
- * {@link import('../../controller/controller.ts').Controller#attrs} methods.
+ * Implements the SSR data-binding rewriter with support for simple binding,
+ * child-insertion (data/list/switch kinds), and static file inclusion.
  *
  * **Pass 1** — Capture context:
  * Streams HTML through HTMLRewriter, accumulating text from the last
- * `<script type="application/json" p-context>` element. At element close,
- * JSON.parses the buffer. Throws DuplicateContextError if a second
- * p-context script appears. Strips the script element.
+ * `<script type="application/json" p-context>` element. JSON.parses the
+ * buffer. Throws DuplicateContextError if a second p-context appears.
+ * Strips the script element.
  *
  * **Pass 2** — Apply data + resolve includes:
- * If a context was captured, calls `dataResolver(context)`, then streams
- * pass-1 output through a second HTMLRewriter. For each `[p-target="<key>"]`
- * element, looks up the resolved data and applies it by type.
- * For each `<ssr-include src="...">`, resolves the file, recursively
- * rewrites it, and replaces the element.
+ * Calls dataResolver(context) → resolvedData, then applies by descriptor:
+ * - Simple (path only, no kind): apply value directly (primitive→text, object→attrs)
+ * - data kind: apply value, optionally render a template with it as context
+ * - list kind: loop template per array item, scope paths per iteration
+ * - switch kind: pick case by discriminator, render that case's template
+ * Resolves `<ssr-include>` elements recursively.
  *
  * @see {@link https://developer.mozilla.org/en-US/docs/Web/API/HTMLRewriter}
  */
@@ -26,6 +26,7 @@ import { resolve } from 'node:path'
 import { htmlEscape } from '../utils.ts'
 import { BOOLEAN_ATTRS, P_CONTEXT, P_TARGET, P_TRUSTED } from './html.constants.ts'
 import { getNodeSchema, TemplateObjectSchema } from './html.schemas.ts'
+import { resolveJsonPointer } from './resolve-json-pointer.ts'
 import {
   DuplicateContextError,
   EventHandlerAttributeError,
@@ -57,7 +58,9 @@ export interface RewriteOptions {
  * Result of pass 1: the captured context (if any) and the pass-1 output HTML.
  */
 interface Pass1Result {
+  /** The raw parsed p-context JSON (descriptor or simple data). */
   context: unknown
+  /** HTML with p-context scripts stripped. */
   html: string
 }
 
@@ -111,9 +114,6 @@ const captureContext = async (html: string): Promise<Pass1Result> => {
 
 /**
  * Apply a primitive value to a p-target element.
- *
- * Bun's HTMLRewriter setInnerContent escapes HTML by default, so we only
- * need to pass `{ html: true }` for trusted content to bypass escaping.
  */
 const applyPrimitive = (el: RewriterElement, val: string | number, isTrusted: boolean): void => {
   if (isTrusted) {
@@ -125,12 +125,8 @@ const applyPrimitive = (el: RewriterElement, val: string | number, isTrusted: bo
 
 /**
  * Apply an object value (attribute map) to a p-target element.
- * Mirrors the controller's updateAttributes logic.
  */
 const applyObjectAttributes = (el: RewriterElement, attrs: Record<string, unknown>, isTrusted: boolean): void => {
-  // Validate the attribute set against the element's schema.
-  // Null values represent attribute removal (valid runtime op), so filter
-  // them out before validation since they are not valid attribute values.
   const nonNullAttrs = Object.fromEntries(Object.entries(attrs).filter(([, v]) => v !== null))
   const tagSchema = getNodeSchema(el.tagName)
   const validationResult = tagSchema.shape.attributes.safeParse(nonNullAttrs)
@@ -168,9 +164,9 @@ const applyObjectAttributes = (el: RewriterElement, attrs: Record<string, unknow
 }
 
 /**
- * Apply resolved data to a single p-target element.
+ * Apply a simple resolved value (without descriptor-based child-insertion).
  */
-const applyResolvedValue = (el: RewriterElement, key: string, value: unknown): void => {
+const applySimpleValue = (el: RewriterElement, key: string, value: unknown): void => {
   const isTrusted = el.hasAttribute(P_TRUSTED)
 
   if (value === undefined || value === null) {
@@ -194,8 +190,6 @@ const applyResolvedValue = (el: RewriterElement, key: string, value: unknown): v
     return
   }
 
-  // MINIMAL: arrays in simple binding are an error. Child-insertion via
-  // list kind descriptor handles array iteration.
   throw new InvalidResolverResultError(
     `Array value for p-target="${key}" on <${el.tagName}> is not supported in simple binding. ` +
       'Use a "list" kind binding descriptor for array iteration.',
@@ -203,24 +197,203 @@ const applyResolvedValue = (el: RewriterElement, key: string, value: unknown): v
 }
 
 /**
- * Perform pass 2: apply resolved data to p-target elements and resolve
- * `<ssr-include>` includes.
+ * Render a template file by reading it, creating a scoped resolver, and
+ * recursively rewriting it.
+ */
+const renderTemplate = async (
+  templatePath: string,
+  scopedData: unknown,
+  dataResolver: (context: unknown) => unknown | Promise<unknown>,
+  options: RewriteOptions,
+): Promise<string> => {
+  const absolutePath = resolve(options.cwd, templatePath)
+
+  if (options.includeStack.has(absolutePath)) {
+    const cycle = [...options.includeStack, absolutePath].join(' \u2192 ')
+    throw new IncludeCycleError(`Circular template include detected: ${cycle}`)
+  }
+
+  const file = Bun.file(absolutePath)
+  const exists = await file.exists()
+  if (!exists) {
+    throw new IncludeNotFoundError(
+      `Template file "${templatePath}" not found at "${absolutePath}" (resolved against cwd "${options.cwd}")`,
+    )
+  }
+
+  const fileContent = await file.text()
+
+  // The scoped resolver receives the template's own p-context descriptor
+  // and resolves each entry's path against scopedData. This enables
+  // scoped-path resolution: e.g., a template with p-context
+  // `{"item":{"path":"/name"}}` when rendered with scopedData = { name, price }
+  // resolves `/name` from the item.
+  const scopedResolver = (templateDescriptor: unknown) => {
+    if (typeof templateDescriptor !== 'object' || templateDescriptor === null) {
+      return scopedData
+    }
+    const result: Record<string, unknown> = {}
+    for (const [key, binding] of Object.entries(templateDescriptor as Record<string, unknown>)) {
+      if (typeof binding === 'object' && binding !== null && 'path' in binding) {
+        const descriptor = binding as { path: string }
+        try {
+          result[key] = resolveJsonPointer(scopedData, descriptor.path)
+        } catch {
+          result[key] = undefined
+        }
+      }
+    }
+    return result
+  }
+
+  const stack = new Set(options.includeStack)
+  stack.add(absolutePath)
+
+  return rewriteFile(fileContent, scopedResolver, { cwd: options.cwd, includeStack: stack })
+}
+
+/**
+ * Apply child-insertion binding for a p-target element based on its descriptor.
+ * Handles data, list, and switch kinds.
+ */
+const applyChildInsertion = async (
+  el: RewriterElement,
+  key: string,
+  descriptor: Record<string, unknown>,
+  resolvedData: Record<string, unknown>,
+  dataResolver: (context: unknown) => unknown | Promise<unknown>,
+  options: RewriteOptions,
+): Promise<void> => {
+  const value = resolvedData[key]
+  if (value === undefined || value === null) {
+    return
+  }
+
+  if (!('kind' in descriptor) || !descriptor.kind) {
+    return
+  }
+
+  const kind = descriptor.kind as string
+
+  switch (kind) {
+    case 'data': {
+      const d = descriptor as Record<string, unknown>
+      if (d.template) {
+        const boundHtml = await renderTemplate(d.template as string, value, dataResolver, options)
+        el.setInnerContent(boundHtml, { html: true })
+      } else {
+        applySimpleValue(el, key, value)
+      }
+      break
+    }
+    case 'list': {
+      if (!Array.isArray(value)) {
+        throw new InvalidResolverResultError(
+          `Expected array for p-target="${key}" <${el.tagName}> with kind="list", got ${typeof value}`,
+        )
+      }
+      const d = descriptor as Record<string, unknown>
+      const items: string[] = []
+      for (const item of value) {
+        const boundHtml = await renderTemplate(d.template as string, item, dataResolver, options)
+        items.push(boundHtml)
+      }
+      el.setInnerContent(items.join(''), { html: true })
+      break
+    }
+    case 'switch': {
+      if (typeof value !== 'object' || value === null) {
+        throw new InvalidResolverResultError(
+          `Expected object for p-target="${key}" <${el.tagName}> with kind="switch", got ${typeof value}`,
+        )
+      }
+      const d = descriptor as Record<string, unknown>
+      const obj = value as Record<string, unknown>
+      const discriminatorValue = String(obj[d.discriminator as string] ?? '')
+      const cases = d.cases as Record<string, unknown> | undefined
+      const caseDescriptor: unknown = cases?.[discriminatorValue]
+
+      if (caseDescriptor) {
+        await applyDescriptorToElement(el, key, caseDescriptor, resolvedData, dataResolver, options)
+      } else if (d.default) {
+        await applyDescriptorToElement(el, key, d.default, resolvedData, dataResolver, options)
+      } else {
+        // No matching case and no default — clear the target content
+        el.setInnerContent('')
+      }
+      break
+    }
+  }
+}
+
+/**
+ * Apply a single descriptor entry to an element.
+ */
+const applyDescriptorToElement = async (
+  el: RewriterElement,
+  key: string,
+  descriptor: unknown,
+  resolvedData: Record<string, unknown>,
+  dataResolver: (context: unknown) => unknown | Promise<unknown>,
+  options: RewriteOptions,
+): Promise<void> => {
+  if (
+    typeof descriptor === 'object' &&
+    descriptor !== null &&
+    'kind' in descriptor &&
+    (descriptor as Record<string, unknown>).kind
+  ) {
+    await applyChildInsertion(el, key, descriptor as Record<string, unknown>, resolvedData, dataResolver, options)
+  } else {
+    applySimpleValue(el, key, resolvedData[key])
+  }
+}
+
+/**
+ * Perform pass 2: apply resolved data to p-target elements, resolve
+ * `<ssr-include>` includes, and handle child-insertion descriptors.
+ *
+ * Uses a deferred error pattern to work around Bun's HTMLRewriter async
+ * handler error propagation limitation.
  */
 const applyData = async (
   html: string,
   resolvedData: Record<string, unknown>,
+  descriptor: Record<string, unknown> | undefined,
   dataResolver: (context: unknown) => unknown | Promise<unknown>,
   options: RewriteOptions,
 ): Promise<string> => {
+  let deferredError: Error | undefined
+
+  const handleError = (err: unknown) => {
+    if (!deferredError) {
+      deferredError = err instanceof Error ? err : new Error(String(err))
+    }
+  }
+
   const result = await new HTMLRewriter()
     .on(`[${P_TARGET}]`, {
-      element(el: RewriterElement) {
-        const target = el.getAttribute(P_TARGET)
-        if (target === null) return
+      async element(el: RewriterElement) {
+        try {
+          const target = el.getAttribute(P_TARGET)
+          if (target === null) return
 
-        const value = resolvedData[target]
-        if (value !== undefined) {
-          applyResolvedValue(el, target, value)
+          const value = resolvedData[target]
+          if (value === undefined) return
+
+          const bindingDescriptor = descriptor?.[target]
+          if (
+            bindingDescriptor &&
+            typeof bindingDescriptor === 'object' &&
+            'kind' in bindingDescriptor &&
+            (bindingDescriptor as Record<string, unknown>).kind
+          ) {
+            await applyChildInsertion(el, target, bindingDescriptor, resolvedData, dataResolver, options)
+          } else {
+            applySimpleValue(el, target, value)
+          }
+        } catch (err) {
+          handleError(err)
         }
       },
       text(_text: RewriterText) {},
@@ -228,46 +401,53 @@ const applyData = async (
     })
     .on('ssr-include[src]', {
       async element(el: RewriterElement) {
-        const src = el.getAttribute('src')
-        if (!src) return
+        try {
+          const src = el.getAttribute('src')
+          if (!src) return
 
-        // Resolve against cwd, not including file's location
-        const absolutePath = resolve(options.cwd, src)
+          const absolutePath = resolve(options.cwd, src)
 
-        // Cycle guard
-        if (options.includeStack.has(absolutePath)) {
-          const cycle = [...options.includeStack, absolutePath].join(' → ')
-          throw new IncludeCycleError(`Circular <ssr-include> detected: ${cycle}`)
+          if (options.includeStack.has(absolutePath)) {
+            throw new IncludeCycleError(
+              `Circular <ssr-include> detected: ${[...options.includeStack, absolutePath].join(' \u2192 ')}`,
+            )
+          }
+
+          const file = Bun.file(absolutePath)
+          const exists = await file.exists()
+          if (!exists) {
+            throw new IncludeNotFoundError(
+              `<ssr-include src="${src}">: file not found at "${absolutePath}" (resolved against cwd "${options.cwd}")`,
+            )
+          }
+
+          const fileContent = await file.text()
+
+          const includeStack = new Set(options.includeStack)
+          includeStack.add(absolutePath)
+          const boundHtml = await rewriteFile(fileContent, dataResolver, {
+            cwd: options.cwd,
+            includeStack,
+          })
+
+          el.replace(boundHtml, { html: true })
+        } catch (err) {
+          handleError(err)
         }
-
-        // Check file exists
-        const file = Bun.file(absolutePath)
-        const exists = await file.exists()
-        if (!exists) {
-          throw new IncludeNotFoundError(
-            `<ssr-include src="${src}">: file not found at "${absolutePath}" (resolved against cwd "${options.cwd}")`,
-          )
-        }
-
-        const fileContent = await file.text()
-
-        // Recursively rewrite with this path in the stack
-        const includeStack = new Set(options.includeStack)
-        includeStack.add(absolutePath)
-        const boundHtml = await rewriteFile(fileContent, dataResolver, {
-          cwd: options.cwd,
-          includeStack,
-        })
-
-        // Replace the <ssr-include> element with the bound HTML
-        el.replace(boundHtml, { html: true })
       },
       text(_text: RewriterText) {},
       comments(_comment: RewriterComment) {},
     })
     .transform(new Response(html))
 
-  return await result.text()
+  const outputHtml = await result.text()
+
+  // Re-throw any deferred error from async handlers
+  if (deferredError) {
+    throw deferredError
+  }
+
+  return outputHtml
 }
 
 /**
@@ -276,10 +456,8 @@ const applyData = async (
  * @param html - The raw HTML content
  * @param dataResolver - Async/sync callback invoked with the parsed p-context descriptor;
  *   returns a Record<string, unknown> keyed by p-target value
- * @param options - Rewrite options including cwd and includeStack for ssr-include recursion
+ * @param options - Rewrite options including cwd and includeStack
  * @returns The rewritten HTML string
- *
- * @throws Various errors from the errors module on validation/integrity failures
  */
 export const rewriteFile = async (
   html: string,
@@ -288,9 +466,9 @@ export const rewriteFile = async (
 ): Promise<string> => {
   const { context, html: pass1Html } = await captureContext(html)
 
-  // No context found — passthrough (still resolve ssr-include)
   if (context === undefined) {
-    return applyData(pass1Html, {}, dataResolver, options)
+    // No context — passthrough (still resolve ssr-include)
+    return applyData(pass1Html, {}, undefined, dataResolver, options)
   }
 
   const rawResolved = await dataResolver(context)
@@ -303,7 +481,13 @@ export const rewriteFile = async (
 
   const resolvedData = rawResolved as Record<string, unknown>
 
-  return applyData(pass1Html, resolvedData, dataResolver, options)
+  // Try to parse context as a descriptor (may fail for simple flat data)
+  let descriptor: Record<string, unknown> | undefined
+  if (typeof context === 'object' && context !== null) {
+    descriptor = context as Record<string, unknown>
+  }
+
+  return applyData(pass1Html, resolvedData, descriptor, dataResolver, options)
 }
 
 /**

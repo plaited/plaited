@@ -250,3 +250,88 @@ describe('ssr-include', () => {
     expect(result).toContain('Footer content')
   })
 })
+
+describe('child-insertion — list', () => {
+  const fixturesDir = `${import.meta.dir}/fixtures`
+  const options: RewriteOptions = {
+    cwd: fixturesDir,
+    includeStack: new Set(),
+  }
+
+  test('list loops template per item', async () => {
+    const html = `<html><body><div p-target="items">Old</div><script type="application/json" p-context>{"items":{"kind":"list","data":"/products","template":"./list-item.html"}}</script></body></html>`
+    const resolver = (_ctx: unknown) => ({
+      items: [
+        { name: 'Widget', price: 10 },
+        { name: 'Gadget', price: 20 },
+      ],
+    })
+    const result = await rewriteFile(html, resolver, options)
+    expect(result).toContain('Widget')
+    expect(result).toContain('Gadget')
+  })
+
+  test('list with empty array leaves target empty', async () => {
+    const html = `<html><body><div p-target="items">Old</div><script type="application/json" p-context>{"items":{"kind":"list","data":"/products","template":"./list-item.html"}}</script></body></html>`
+    const resolver = (_ctx: unknown) => ({ items: [] })
+    const result = await rewriteFile(html, resolver, options)
+    expect(result).not.toContain('Old')
+  })
+
+  test('list with non-array throws InvalidResolverResultError', async () => {
+    const html = `<html><body><div p-target="items">Old</div><script type="application/json" p-context>{"items":{"kind":"list","data":"/products","template":"./list-item.html"}}</script></body></html>`
+    const resolver = (_ctx: unknown) => ({ items: 'not-an-array' })
+    await expect(rewriteFile(html, resolver, options)).rejects.toThrow(InvalidResolverResultError)
+  })
+})
+
+describe('child-insertion — data', () => {
+  const fixturesDir = `${import.meta.dir}/fixtures`
+  const options: RewriteOptions = {
+    cwd: fixturesDir,
+    includeStack: new Set(),
+  }
+
+  test('data+template renders template with data as context', async () => {
+    const html = `<html><body><div p-target="main">Old</div><script type="application/json" p-context>{"main":{"kind":"data","data":"/page","template":"./simple-template.html"}}</script></body></html>`
+    const resolver = (_ctx: unknown) => ({ main: { title: 'Hello World' } })
+    const result = await rewriteFile(html, resolver, options)
+    expect(result).toContain('Hello World')
+  })
+
+  test('data without template applies simple binding', async () => {
+    const html = `<html><body><div p-target="x">Old</div><script type="application/json" p-context>{"x":{"kind":"data","data":"/value"}}</script></body></html>`
+    const resolver = (_ctx: unknown) => ({ x: 'Direct Value' })
+    const result = await rewriteFile(html, resolver, options)
+    expect(result).toContain('Direct Value')
+  })
+})
+
+describe('child-insertion — switch', () => {
+  const fixturesDir = `${import.meta.dir}/fixtures`
+  const options: RewriteOptions = {
+    cwd: fixturesDir,
+    includeStack: new Set(),
+  }
+
+  test('switch picks the right case by discriminator', async () => {
+    const html = `<html><body><div p-target="main">Old</div><script type="application/json" p-context>{"main":{"kind":"switch","data":"/view","discriminator":"type","cases":{"dashboard":{"kind":"data","data":"/dash","template":"./simple-template.html"},"items":{"kind":"list","data":"/items","template":"./list-item.html"}},"default":{"kind":"data","data":"/404","template":"./simple-template.html"}}}</script></body></html>`
+    const resolver = (_ctx: unknown) => ({ main: { type: 'dashboard', title: 'Dash Page' } })
+    const result = await rewriteFile(html, resolver, options)
+    expect(result).toContain('Dash Page')
+  })
+
+  test('switch uses default when no case matches', async () => {
+    const html = `<html><body><div p-target="main">Old</div><script type="application/json" p-context>{"main":{"kind":"switch","data":"/view","discriminator":"type","cases":{"dashboard":{"kind":"data","data":"/dash","template":"./simple-template.html"}},"default":{"kind":"data","data":"/404","template":"./simple-template.html"}}}</script></body></html>`
+    const resolver = (_ctx: unknown) => ({ main: { type: 'unknown', title: 'Default Page' } })
+    const result = await rewriteFile(html, resolver, options)
+    expect(result).toContain('Default Page')
+  })
+
+  test('switch without default and no match leaves target empty', async () => {
+    const html = `<html><body><div p-target="main">Old</div><script type="application/json" p-context>{"main":{"kind":"switch","data":"/view","discriminator":"type","cases":{"dashboard":{"kind":"data","data":"/dash","template":"./simple-template.html"}}}}</script></body></html>`
+    const resolver = (_ctx: unknown) => ({ main: { type: 'unknown' } })
+    const result = await rewriteFile(html, resolver, options)
+    expect(result).not.toContain('Old')
+  })
+})
