@@ -234,3 +234,40 @@ describe('Renderer.attrs — on* and schema validation', () => {
     expect(r.html).toBe(`<a ${P_TARGET}="t" href="#" target="_blank"></a>`)
   })
 })
+
+describe('Renderer.render — payload validation', () => {
+  test('render throws ValidationError when payload html contains an on* attribute', () => {
+    const r = new Renderer({ html: `<div ${P_TARGET}="t">old</div>` })
+    expect(() =>
+      r.render({ id: '1', target: 't', html: `<div onclick="alert(1)">x</div>`, swap: SWAP_MODES.innerHTML }),
+    ).toThrow(ValidationError)
+    // buffer unchanged after throw
+    expect(r.html).toBe(`<div ${P_TARGET}="t">old</div>`)
+  })
+
+  test('render validates payload even when no p-target matches (security: no silent XSS acceptance)', () => {
+    const r = new Renderer({ html: `<div ${P_TARGET}="t">old</div>` })
+    expect(() =>
+      r.render({ id: '1', target: 'nope', html: `<div onclick="alert(1)">x</div>`, swap: SWAP_MODES.innerHTML }),
+    ).toThrow(ValidationError)
+  })
+
+  test('render neutralizes quote-breakout in payload attributes', () => {
+    const r = new Renderer({ html: `<div ${P_TARGET}="t">old</div>` })
+    r.render({ id: '1', target: 't', html: `<b class='"breakout'>new</b>`, swap: SWAP_MODES.innerHTML })
+    expect(r.html).toContain('&quot;')
+    expect(r.html).not.toMatch(/onclick|onerror/i)
+  })
+
+  test('render validates CSS in payload <style> blocks', () => {
+    const r = new Renderer({ html: `<div ${P_TARGET}="t">old</div>` })
+    expect(() =>
+      r.render({
+        id: '1',
+        target: 't',
+        html: `<style>.a { box-sizing: mah-box; }</style>new`,
+        swap: SWAP_MODES.innerHTML,
+      }),
+    ).toThrow(ValidationError)
+  })
+})

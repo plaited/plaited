@@ -121,13 +121,16 @@ const updateAttributes = ({
  * only when a node is `null` mid-iteration — an empty `NodeList` is a no-op.
  * The Renderer mirrors that exactly: `HTMLRewriter.on()` simply does not fire
  * on zero matches, and there is no genuine lookup-failure mode for a string
- * transform. The Renderer therefore never throws {@link ElementNotFoundError};
- * a command that matches nothing is a no-op that returns a success
- * {@link BPEvent} and leaves the buffer unchanged. However, the constructor and
- * {@link Renderer.attrs} DO throw {@link ValidationError} when an `on*`
- * handler attribute is requested or an attribute value fails per-tag schema
- * validation — XSS/structural protection at the trust boundary. The behavioral
- * engine's `feedback_error` snapshot mechanism captures those throws.
+ * transform. The Renderer therefore never throws {@link ElementNotFoundError}.
+ * A command that matches nothing leaves the buffer unchanged — except that
+ * {@link Renderer.render} validates its payload HTML via
+ * {@link validateAndEscapeHtml} before the selector match, so an XSS-laden or
+ * schema-invalid payload throws {@link ValidationError} even when no
+ * `[p-target]` element matches (security: never silently accept a dangerous
+ * payload). The constructor and {@link Renderer.attrs} also throw
+ * {@link ValidationError} when an `on*` handler attribute is requested or an
+ * attribute value fails per-tag schema validation. The behavioral engine's
+ * `feedback_error` snapshot mechanism captures those throws.
  *
  * ## Returned BPEvent shape
  *
@@ -164,7 +167,9 @@ export class Renderer {
    * Targets all matches (mirroring `querySelectorAll`): the `match` operator
    * interpolates directly into the attribute selector
    * `[p-target${match}"${target}"]`, and `HTMLRewriter.on` fires the handler
-   * for every match. Zero matches is a no-op (see class doc).
+   * for every match. Zero matches leaves the buffer unchanged, but the payload
+   * HTML is validated via {@link validateAndEscapeHtml} before matching — an
+   * invalid payload throws {@link ValidationError} even with zero matches.
    *
    * @param detail - A {@link RenderMessage} detail: `target`, `html`, `swap`,
    *   `id`, and optional `match` (defaults to `=`).
@@ -172,10 +177,11 @@ export class Renderer {
    *   with `detail = { id, target, html }` where `html` is the new buffer.
    */
   render({ target, html, swap, id, match = '=' }: RenderMessage['detail']): BPEvent {
+    const validatedHtml = validateAndEscapeHtml(html)
     this.#html = new HTMLRewriter()
       .on(`[${P_TARGET}${match}"${target}"]`, {
         element: (element) => {
-          applySwap({ element, html, swap })
+          applySwap({ element, html: validatedHtml, swap })
         },
       })
       .transform(this.#html)
