@@ -4,21 +4,25 @@ import { getNodeSchema } from '../html.schemas.ts'
  * Validate and sanitize an HTML string for SSR rendering.
  *
  * @remarks
- * Transformer: HTML string in → validated + sanitized HTML string out, via Bun
+ * Transformer: HTML string in → validated + escaped HTML string out, via Bun
  * {@link HTMLRewriter}. For every element: (1) block `on*` inline event handler
  * attributes — a security violation (events must use the `p-trigger`
  * declarative system); (2) validate attributes against the per-tag schema via
- * {@link getNodeSchema}. All violations across all elements are collected and
- * thrown as a single aggregate {@link HtmlValidationError}.
+ * {@link getNodeSchema}; (3) re-serialize every attribute via `setAttribute`,
+ * which normalizes to double-quoted form and escapes `"` (the only character
+ * that can break out of a double-quoted attribute). This is idempotent on
+ * already-escaped input — `setAttribute` only escapes `"`, preserving existing
+ * `&amp;`/`&lt;`/`&gt;` entities (no double-escape). All violations across all
+ * elements are collected and thrown as a single aggregate
+ * {@link HtmlValidationError}.
  *
  * MINIMAL: text content is not escaped here. HTMLRewriter's text handler yields
  * already-serialized content with entities preserved (verified), so re-escaping
  * would double-escape legitimate entities (`&amp;` → `&amp;amp;`). Text safety
  * belongs at build time (the hyperscript `h()` builder), not in a string
- * transformer. Attributes are the safe escape surface: HTMLRewriter's
- * `setAttribute` serializes attribute values (escaping `"`), and `on*` blocking
- * is the security floor. Use `Bun.escapeHTML` (native, faster than the JS
- * `htmlEscape`) if a future builder path needs value escaping.
+ * transformer. Attributes are the safe escape surface: `setAttribute` escapes
+ * `"` (neutralizing quote-breakout XSS), and `on*` blocking is the security
+ * floor.
  *
  * @public
  */
@@ -66,7 +70,7 @@ export class HtmlValidationError extends Error {
  */
 export const validateAndEscapeHtml = (html: string): string => {
   const errors: HtmlError[] = []
-  new HTMLRewriter()
+  const out = new HTMLRewriter()
     .on('*', {
       element(el) {
         const names = [...el.attributes].map(([name]) => name)
@@ -81,7 +85,15 @@ export const validateAndEscapeHtml = (html: string): string => {
         }
         const schema = getNodeSchema(el.tagName)
         const attrs: Record<string, unknown> = {}
-        for (const [name, value] of el.attributes) attrs[name] = value
+        for (const name of names) {
+          const value = el.getAttribute(name) ?? ''
+          attrs[name] = value
+          // Re-serialize every attribute via setAttribute: normalizes to
+          // double-quoted form and escapes " (the only char that can break out
+          // of a double-quoted attribute). Idempotent on already-escaped input
+          // (setAttribute only escapes ", preserving existing &amp;/&lt;/&gt;).
+          el.setAttribute(name, value)
+        }
         const result = schema.shape.attributes.safeParse(attrs)
         if (!result.success) {
           for (const issue of result.error.issues) {
@@ -92,5 +104,5 @@ export const validateAndEscapeHtml = (html: string): string => {
     })
     .transform(html)
   if (errors.length) throw new HtmlValidationError(errors)
-  return html
+  return out
 }

@@ -102,3 +102,20 @@ describe('validateAndEscapeHtml — element coverage', () => {
     expect(caught!.errors[0]).toMatchObject({ tag: 'img', attribute: 'onerror' })
   })
 })
+
+describe('validateAndEscapeHtml — attribute escape', () => {
+  test('quote-breakout in a single-quoted attribute is neutralized (" escaped)', () => {
+    const html = `<div class='" onmouseover="alert(1)'>x</div>`
+    // must not throw (onmouseover is INSIDE the value, not an attribute here)
+    const out = validateAndEscapeHtml(html)
+    // The breakout attempt must be defused: the inner " must be escaped to &quot;
+    expect(out).toContain('class="')
+    expect(out).not.toMatch(/onmouseover=alert/i) // no live handler leaks out
+    expect(out).toContain('&quot; onmouseover=&quot;alert(1)')
+  })
+
+  test('already-escaped attribute entities are preserved (no double-escape)', () => {
+    const html = `<div class="a &amp; b" data-x="&lt;raw&gt;">hi</div>`
+    expect(validateAndEscapeHtml(html)).toBe(html)
+  })
+})
