@@ -47,8 +47,8 @@ describe('definePage', () => {
       .filter((s): s is SelectionSnapshot => s.kind === SNAPSHOT_MESSAGE_KINDS.selection)
       .map((s) => s.selected)
 
-    expect(selected.some((e) => e.type === 'done_a' && e.page === 'page-a')).toBe(true)
-    expect(selected.some((e) => e.type === 'done_b' && e.page === 'page-b')).toBe(true)
+    expect(selected.some((e) => e.type === 'done_a' && e.topic === 'page-a')).toBe(true)
+    expect(selected.some((e) => e.type === 'done_b' && e.topic === 'page-b')).toBe(true)
   })
 
   test('page-scoped events are blocked when same-page block exists but cross-page events pass', () => {
@@ -113,7 +113,7 @@ describe('definePage', () => {
     const nested = selected.find((s) => s.type === 'nested')
     expect(nested).toBeDefined()
     expect(nested!.detail).toEqual({ key: 'val', _correlationId: expect.any(String) })
-    expect(nested!.page).toBe('my-page')
+    expect(nested!.topic).toBe('my-page')
   })
 
   test('wrapped sync scopes waitFor listeners to the page', async () => {
@@ -140,7 +140,7 @@ describe('definePage', () => {
 
     await program({ trigger, addThread, addHandler, reportSnapshot, page: 'my-page', ...INIT })
 
-    trigger({ type: 'greeting', page: 'my-page', detail: { name: 'Alice' } })
+    trigger({ type: 'greeting', topic: 'my-page', detail: { name: 'Alice' } })
 
     const selected = snapshots
       .filter((s): s is SelectionSnapshot => s.kind === SNAPSHOT_MESSAGE_KINDS.selection)
@@ -164,7 +164,7 @@ describe('definePage', () => {
 
     await program({ trigger, addThread, addHandler, reportSnapshot, page: 'my-page', ...INIT })
 
-    trigger({ type: 'greeting', page: 'other-page' })
+    trigger({ type: 'greeting', topic: 'other-page' })
 
     const selected = snapshots
       .filter((s): s is SelectionSnapshot => s.kind === SNAPSHOT_MESSAGE_KINDS.selection)

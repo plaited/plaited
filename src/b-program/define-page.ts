@@ -118,7 +118,7 @@ export const definePage = (bProgram: BProgram) => {
 
       baseTrigger({
         type: event.type,
-        page,
+        topic: page,
         detail: {
           ...(event.detail && event.detail),
           _correlationId: correlationId,
@@ -137,7 +137,7 @@ export const definePage = (bProgram: BProgram) => {
           const { type, detail } = idioms[idiom] as BPEvent
           built[idiom] = {
             type,
-            page,
+            topic: page,
             detail: {
               ...(detail && detail),
             },
@@ -147,7 +147,7 @@ export const definePage = (bProgram: BProgram) => {
         const value = idioms[idiom]
         built[idiom] = ensureArray(value).map((listener) => ({
           ...listener,
-          page,
+          topic: page,
         }))
       }
       return baseSync(built)

@@ -14,3 +14,4 @@
  */
 
 export * from './ui/controller/controller.ts'
+export * from './ui/controller/controller.types.ts'

@@ -16,7 +16,7 @@ export type JsonObject = z.output<typeof JsonObjectSchema>
 export const BPEventSchema = z.object({
   type: z.string(),
   detail: JsonObjectSchema.optional(),
-  page: z.string().optional(),
+  topic: z.string().optional(),
   /**
    * Opaque, non-serializable side-channel for carrying non-JSON values (File,
    * Blob, FormData, ArrayBuffer, structured-clone values) straight to handlers.
@@ -36,14 +36,14 @@ export const BPListenerSchema = z.object({
   type: z.string(),
   detailSchema: JsonObjectSchema.optional(),
   detailMatch: z.enum(Object.values(DETAIL_MATCH)).optional(),
-  page: z.string().optional(),
+  topic: z.string().optional(),
 })
 
 export type BPListener = {
   type: string
   detailSchema?: z.ZodType<unknown>
   detailMatch?: keyof typeof DETAIL_MATCH
-  page?: string
+  topic?: string
 }
 
 export const SpecIdiomsSchema = z.object({
@@ -102,7 +102,7 @@ export const SnapshotCandidateSchema = z.object({
   type: z.string(),
   detail: JsonObjectSchema.optional(),
   ingress: z.literal(true).optional(),
-  page: z.string().optional(),
+  topic: z.string().optional(),
   priority: z.number(),
 })
 
@@ -174,7 +174,7 @@ export type DeadlockSnapshot = z.output<typeof DeadlockSnapshotSchema>
 export const FeedbackErrorSchema = z.object({
   kind: z.literal(SNAPSHOT_MESSAGE_KINDS.feedback_error),
   type: z.string(),
-  page: z.string().optional(),
+  topic: z.string().optional(),
   detail: JsonObjectSchema.optional(),
   error: z.string(),
 })
@@ -230,13 +230,13 @@ export const PendingBidsSnapshotSchema = z.object({
       label: z.string(),
       priority: z.number().int(),
       ingress: z.literal(true).optional(),
-      page: z.string().optional(),
+      topic: z.string().optional(),
       request: BPEventSchema.pick({ type: true, detail: true }).optional(),
       waitFor: z
         .array(
           z.object({
             type: z.string(),
-            page: z.string().optional(),
+            topic: z.string().optional(),
             detailMatch: z.enum(Object.values(DETAIL_MATCH)).optional(),
             detailSchema: JsonObjectSchema.optional(),
           }),
@@ -246,7 +246,7 @@ export const PendingBidsSnapshotSchema = z.object({
         .array(
           z.object({
             type: z.string(),
-            page: z.string().optional(),
+            topic: z.string().optional(),
             detailMatch: z.enum(Object.values(DETAIL_MATCH)).optional(),
             detailSchema: JsonObjectSchema.optional(),
           }),
@@ -256,7 +256,7 @@ export const PendingBidsSnapshotSchema = z.object({
         .array(
           z.object({
             type: z.string(),
-            page: z.string().optional(),
+            topic: z.string().optional(),
             detailMatch: z.enum(Object.values(DETAIL_MATCH)).optional(),
             detailSchema: JsonObjectSchema.optional(),
           }),

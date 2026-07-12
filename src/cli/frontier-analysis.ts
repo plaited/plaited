@@ -154,14 +154,14 @@ const createFrontierSnapshot = ({ frontier, step }: { frontier: Frontier; step: 
       type: candidate.type,
       ...(candidate.detail === undefined ? {} : { detail: candidate.detail }),
       ...(candidate.ingress === undefined ? {} : { ingress: candidate.ingress }),
-      ...(candidate.page === undefined ? {} : { page: candidate.page }),
+      ...(candidate.topic === undefined ? {} : { topic: candidate.topic }),
     })),
     enabled: frontier.enabled.map((candidate) => ({
       priority: candidate.priority,
       type: candidate.type,
       ...(candidate.detail === undefined ? {} : { detail: candidate.detail }),
       ...(candidate.ingress === undefined ? {} : { ingress: candidate.ingress }),
-      ...(candidate.page === undefined ? {} : { page: candidate.page }),
+      ...(candidate.topic === undefined ? {} : { topic: candidate.topic }),
     })),
   })
 
@@ -178,7 +178,7 @@ const createSelectionSnapshot = ({
     type: event.type,
     ...(event.detail === undefined ? {} : { detail: event.detail }),
     ...(event.ingress === undefined ? {} : { ingress: event.ingress }),
-    ...(event.page === undefined ? {} : { page: event.page }),
+    ...(event.topic === undefined ? {} : { topic: event.topic }),
   },
 })
 
@@ -188,7 +188,7 @@ const createDeadlockSnapshot = ({ step }: { step: number }): SnapshotMessage => 
 })
 
 const matchesSelectedEvent = ({ candidate, selected }: { candidate: CandidateBid; selected: SnapshotEvent }) =>
-  candidate.type === selected.type && candidate.page === selected.page && deepEqual(candidate.detail, selected.detail)
+  candidate.type === selected.type && candidate.topic === selected.topic && deepEqual(candidate.detail, selected.detail)
 
 const addIngressTriggerToPending = ({ pending, selected }: { pending: Set<PendingBid>; selected: SnapshotEvent }) => {
   const triggerThread = function* () {
@@ -196,7 +196,7 @@ const addIngressTriggerToPending = ({ pending, selected }: { pending: Set<Pendin
       request: {
         type: selected.type,
         ...(selected.detail === undefined ? {} : { detail: selected.detail }),
-        ...(selected.page === undefined ? {} : { page: selected.page }),
+        ...(selected.topic === undefined ? {} : { topic: selected.topic }),
       },
     }
   }
@@ -318,14 +318,14 @@ const triggerAffectsPendingBid = ({ pendingBid, trigger }: { pendingBid: Pending
     priority: 0,
     type: trigger.type,
     ...(trigger.detail === undefined ? {} : { detail: trigger.detail }),
-    ...(trigger.page === undefined ? {} : { page: trigger.page }),
+    ...(trigger.topic === undefined ? {} : { topic: trigger.topic }),
     ingress: true as const,
   }
 
   return (
     (pendingBid.request !== undefined &&
       pendingBid.request.type === trigger.type &&
-      pendingBid.request.page === trigger.page &&
+      pendingBid.request.topic === trigger.topic &&
       deepEqual(pendingBid.request.detail, trigger.detail)) ||
     ensureArray(pendingBid.waitFor).some(isListeningFor(candidate)) ||
     ensureArray(pendingBid.interrupt).some(isListeningFor(candidate))
@@ -357,7 +357,7 @@ const getRequestSuccessors = ({
         type: candidate.type,
         ...(candidate.detail === undefined ? {} : { detail: candidate.detail }),
         ...(candidate.ingress === undefined ? {} : { ingress: candidate.ingress }),
-        ...(candidate.page === undefined ? {} : { page: candidate.page }),
+        ...(candidate.topic === undefined ? {} : { topic: candidate.topic }),
       },
     }),
   )
@@ -388,7 +388,7 @@ const getTriggerSuccessors = ({
       event: {
         type: trigger.type,
         ...(trigger.detail === undefined ? {} : { detail: trigger.detail }),
-        ...(trigger.page === undefined ? {} : { page: trigger.page }),
+        ...(trigger.topic === undefined ? {} : { topic: trigger.topic }),
         ingress: true,
       },
     })
