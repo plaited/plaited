@@ -9,7 +9,6 @@
  * - VOID_TAGS and BOOLEAN_ATTRS align with HTML5 and SVG specs
  * - P_TARGET & P_TRIGGER declare controller update and event wiring
  * - Sets provide O(1) lookup performance for validation
- * - TEMPLATE_OBJECT_IDENTIFIER uses emoji for uniqueness
  *
  * Known limitations:
  * - Static lists may become outdated with HTML spec changes
@@ -153,15 +152,6 @@ export const VALID_PRIMITIVE_CHILDREN = new Set([
   'number',
   'string',
 ])
-/**
- * A unique string constant used as an identifier (`$`) property on Plaited's internal `TemplateObject`.
- * This allows reliably distinguishing Plaited template objects from plain JavaScript objects during
- * the processing of children in `h` and `fragment`.
- *
- * @remarks
- * The emoji value is chosen for console readability and low collision risk.
- */
-export const TEMPLATE_OBJECT_IDENTIFIER = '🦄'
 
 export const SCALE = keyMirror('s1', 's2', 's3', 's4', 's5', 's6', 'rel')
 

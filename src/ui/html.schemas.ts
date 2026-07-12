@@ -19,14 +19,12 @@ import { CSSPropertiesSchema } from './css.schemas.ts'
 import {
   CLASS,
   CUSTOM_ELEMENT_TAG_PATTERN,
-  // FLOW_CONTROL_HELPERS,
   P_FORM,
   P_SCALE,
   P_TARGET,
   P_TRIGGER,
   SCALE,
   STYLE,
-  TEMPLATE_OBJECT_IDENTIFIER,
   UNKNOWN_TAG_PATTERN,
   VOID_TAGS,
 } from './html.constants.ts'
@@ -242,13 +240,6 @@ const AriaRoleSchema = z.enum([
   'treegrid',
   'treeitem',
 ])
-
-export const TemplateObjectSchema = z.object({
-  html: z.array(z.string()),
-  stylesheets: z.array(z.string()),
-  scale: z.literal(Object.values(SCALE)),
-  $: z.literal(TEMPLATE_OBJECT_IDENTIFIER),
-})
 
 export const PlaitedAttributesSchema = z.object({
   [CLASS]: z.string().optional(),
