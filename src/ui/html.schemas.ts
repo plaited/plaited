@@ -19,13 +19,11 @@ import { CSSPropertiesSchema } from './css.schemas.ts'
 import {
   CLASS,
   CUSTOM_ELEMENT_TAG_PATTERN,
-  P_CONTEXT,
   // FLOW_CONTROL_HELPERS,
   P_FORM,
   P_SCALE,
   P_TARGET,
   P_TRIGGER,
-  P_TRUSTED,
   SCALE,
   STYLE,
   TEMPLATE_OBJECT_IDENTIFIER,
@@ -280,7 +278,6 @@ export const PlaitedAttributesSchema = z.object({
       { message: 'Invalid p-trigger string: duplicate or malformed pairs' },
     )
     .optional(),
-  [P_TRUSTED]: z.boolean().optional(),
   [STYLE]: z
     .string()
     .refine(
@@ -704,7 +701,6 @@ const DetailedScriptHTMLAttributesSchema = z.object({
   referrerpolicy: ReferrerPolicySchema.optional(),
   src: z.string().optional(),
   type: z.string().optional(),
-  [P_CONTEXT]: z.boolean().optional(),
 })
 
 const DetailedSelectHTMLAttributesSchema = z.object({

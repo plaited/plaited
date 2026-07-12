@@ -35,10 +35,6 @@ export const P_SCALE = 'p-scale'
 
 export const P_FORM = 'p-form'
 
-export const P_CONTEXT = 'p-context'
-
-export const P_TRUSTED = 'p-trusted'
-
 export const CHILDREN = 'children'
 
 export const STYLE = 'style'
@@ -133,8 +129,6 @@ export const BOOLEAN_ATTRS = new Set([
   'open',
   'popover',
   'shadowrootdelegatesfocus',
-  P_TRUSTED,
-  P_CONTEXT,
 ])
 /**
  * A Set containing strings representing JavaScript primitive type names, obtained via `typeof` or `trueTypeOf`.
