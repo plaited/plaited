@@ -34,7 +34,7 @@ import {
   SNAPSHOT_MESSAGE_KINDS,
   SnapshotMessageSchema,
 } from '../behavioral.ts'
-import { deepEqual, keyMirror } from '../utils.ts'
+import { keyMirror } from '../utils.ts'
 import { makeCli } from './cli.ts'
 
 const BEHAVIORAL_FRONTIER_MODES = keyMirror('replay', 'explore', 'verify')
@@ -188,7 +188,9 @@ const createDeadlockSnapshot = ({ step }: { step: number }): SnapshotMessage => 
 })
 
 const matchesSelectedEvent = ({ candidate, selected }: { candidate: CandidateBid; selected: SnapshotEvent }) =>
-  candidate.type === selected.type && candidate.topic === selected.topic && deepEqual(candidate.detail, selected.detail)
+  candidate.type === selected.type &&
+  candidate.topic === selected.topic &&
+  Bun.deepEquals(candidate.detail, selected.detail)
 
 const addIngressTriggerToPending = ({ pending, selected }: { pending: Set<PendingBid>; selected: SnapshotEvent }) => {
   const triggerThread = function* () {
@@ -326,7 +328,7 @@ const triggerAffectsPendingBid = ({ pendingBid, trigger }: { pendingBid: Pending
     (pendingBid.request !== undefined &&
       pendingBid.request.type === trigger.type &&
       pendingBid.request.topic === trigger.topic &&
-      deepEqual(pendingBid.request.detail, trigger.detail)) ||
+      Bun.deepEquals(pendingBid.request.detail, trigger.detail)) ||
     ensureArray(pendingBid.waitFor).some(isListeningFor(candidate)) ||
     ensureArray(pendingBid.interrupt).some(isListeningFor(candidate))
   )
