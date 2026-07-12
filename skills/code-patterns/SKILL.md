@@ -7,9 +7,8 @@ description: >
   equality, async helpers, or similar standalone patterns.
 
   Before writing any custom utility, check if `plaited/utils` already provides
-  it. The module exports: keyMirror (constants/enums), isTypeOf/trueTypeOf
-  (runtime type checks), ueid (unique IDs), camelCase/kebabCase/pascalCase
-  (string case), htmlEscape/htmlUnescape (escaping), and deepEqual (comparison).
+  it. The module exports: keyMirror (constants/enums),
+  isTypeOf/trueTypeOf (runtime type checks), and deepEqual (comparison).
   Import from `plaited/utils` instead of reimplementing.
 license: ISC
 ---
@@ -41,12 +40,9 @@ Import from `'plaited/utils'` instead of reimplementing:
 | `keyMirror` | Self-referential constant objects (event names, enums) | `keyMirror('evt_a', 'evt_b')` → `{ evt_a: 'evt_a', evt_b: 'evt_b' }` |
 | `isTypeOf` | TypeScript type guard | `isTypeOf<MyType>(val, 'object')` |
 | `trueTypeOf` | Precise runtime type string | `trueTypeOf([])` → `'array'` |
-| `ueid` | Unique-enough IDs (not crypto-safe) | `ueid('msg-')` → `'msg-lxz3f8a'` |
-| `camelCase` / `kebabCase` / `pascalCase` | String case conversion | `camelCase('hello-world')` → `'helloWorld'` |
-| `htmlEscape` / `htmlUnescape` | XSS-safe HTML escaping | `htmlEscape('<script>')` → `'&lt;script&gt;'` |
 | `deepEqual` | Deep equality comparison | `deepEqual({ a: 1 }, { a: 1 })` → `true` |
 
-These are pure, tested, and framework-agnostic. Reimplementing them wastes tokens and risks subtle bugs (edge cases in deep comparison, escaped character handling, ID collision probability).
+These are pure, tested, and framework-agnostic. Reimplementing them wastes tokens and risks subtle bugs (edge cases in deep comparison, ID collision probability).
 
 ## Type Boundaries — Parse, Don't Cast
 
@@ -73,21 +69,43 @@ where `unknown` enters. Parse at the boundary, trust the parsed value everywhere
 
 ## Patterns
 
-### Deep Equal
+### Case Conversion
 
-**[deep-equal.ts](references/deep-equal.ts)** — Deep equality comparison for any JavaScript values
+**[case.ts](references/case.ts)** — `camelCase`, `kebabCase`, `pascalCase` string conversion
 
-A recursive comparator that handles all built-in types including circular references. Demonstrates:
+Regex-based string case conversion handling kebab-case, snake_case, spaces, slashes,
+and mixed separators. Demonstrates:
 
-- `Object.is()` for primitive comparison (correct NaN and +0/-0 handling)
-- `instanceof` checks for Date, RegExp, Map, Set, TypedArrays
-- `WeakMap` for circular reference detection (no memory leaks)
-- `Reflect.ownKeys()` for thorough object comparison (includes symbols)
-- Early exit optimizations (length/size checks before iteration)
+- Multi-pass regex replacement with captured groups
+- Separator normalization across different delimiters
+- Compositional design (`pascalCase` builds on `camelCase`)
 
-**[deep-equal.spec.ts](references/deep-equal.spec.ts)** — Test coverage
+**[case.spec.ts](references/case.spec.ts)** — Test coverage
 
-Shows testing conventions: flat `test()` blocks (not `it()`), comment-separated sections for each type category, no conditional assertions.
+### HTML Escaping
+
+**[escape.ts](references/escape.ts)** — `htmlEscape` / `htmlUnescape` for XSS prevention
+
+Precompiled regex + lookup table approach to HTML entity escaping. Demonstrates:
+
+- Precompiled regex for performance (global flag, single pass)
+- Lookup table pattern for character replacement
+- Cached `String.prototype.replace` reference to avoid prototype chain lookup
+- Numeric entities for quotes (`&#39;`, `&quot;`) for maximum compatibility
+
+**[escape.spec.ts](references/escape.spec.ts)** — Test coverage
+
+### Unique IDs
+
+**[ueid.ts](references/ueid.ts)** — `ueid` unique-enough ID generator
+
+Combines timestamp and random suffix with base36 encoding. Demonstrates:
+
+- When NOT to use crypto (protocol message IDs, cache keys, event correlation)
+- Compositional string building with prefix support
+- Base36 encoding for compactness
+
+**[ueid.spec.ts](references/ueid.spec.ts)** — Test coverage
 
 ### Wait
 

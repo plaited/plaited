@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test'
-import { htmlEscape, htmlUnescape } from '../../utils.ts'
+import { htmlEscape, htmlUnescape } from './escape.ts'
 
 test('htmlEscape(): correct escape', () => {
   expect(htmlEscape('&<>\'"')).toBe('&amp;&lt;&gt;&#39;&quot;')
