@@ -2,6 +2,9 @@ import { B_PROGRAM_MESSAGE_TYPES, SWAP_MODES } from '../../b-program/message.con
 import type { AttrsMessage, RenderMessage } from '../../b-program/message.schemas.ts'
 import type { BPEvent } from '../../behavioral.ts'
 import { BOOLEAN_ATTRS, P_TARGET } from '../html.constants.ts'
+import { getNodeSchema } from '../html.schemas.ts'
+import { HtmlValidationError } from './render.errors.ts'
+import { validateAndEscapeHtml } from './validate-and-escape-html.ts'
 
 /**
  * Apply one swap-mode insertion to a matching HTMLRewriter element. Each mode
@@ -10,7 +13,15 @@ import { BOOLEAN_ATTRS, P_TARGET } from '../html.constants.ts'
  *
  * @internal
  */
-const applySwap = (element: HTMLRewriterTypes.Element, html: string, swap: RenderMessage['detail']['swap']) => {
+const applySwap = ({
+  element,
+  html,
+  swap,
+}: {
+  element: HTMLRewriterTypes.Element
+  html: string
+  swap: RenderMessage['detail']['swap']
+}) => {
   switch (swap) {
     case SWAP_MODES.innerHTML:
       return element.setInnerContent(html, { html: true })
@@ -46,13 +57,33 @@ const updateAttributes = ({
   attr: string
   val: string | null | number | boolean
 }) => {
+  // on* inline event handlers are always blocked (security: use p-trigger).
+  if (attr.startsWith('on')) {
+    throw new HtmlValidationError([
+      { tag: element.tagName, attribute: attr, message: `Event handler attributes are not allowed: [${attr}]` },
+    ])
+  }
   if (val === null && element.hasAttribute(attr)) return element.removeAttribute(attr)
   if (val === null) return
   if (BOOLEAN_ATTRS.has(attr)) {
     if (!element.hasAttribute(attr)) element.setAttribute(attr, '')
     return
   }
-  if (element.getAttribute(attr) !== `${val}`) element.setAttribute(attr, `${val}`)
+  if (element.getAttribute(attr) !== `${val}`) {
+    // Validate the new value against the per-tag attribute schema.
+    const schema = getNodeSchema(element.tagName)
+    const result = schema.shape.attributes.safeParse({ [attr]: val })
+    if (!result.success) {
+      throw new HtmlValidationError(
+        result.error.issues.map((issue) => ({
+          tag: element.tagName,
+          attribute: issue.path.join('.') || attr,
+          message: issue.message,
+        })),
+      )
+    }
+    element.setAttribute(attr, `${val}`)
+  }
 }
 
 /**
@@ -88,11 +119,13 @@ const updateAttributes = ({
  * only when a node is `null` mid-iteration — an empty `NodeList` is a no-op.
  * The Renderer mirrors that exactly: `HTMLRewriter.on()` simply does not fire
  * on zero matches, and there is no genuine lookup-failure mode for a string
- * transform. The Renderer therefore never throws {@link ElementNotFoundError}
- * (or any other error class); a command that matches nothing is a no-op that
- * returns a success {@link BPEvent} and leaves the buffer unchanged. There is
- * no throw path; the behavioral engine's `feedback_error` snapshot mechanism is
- * not exercised by this module.
+ * transform. The Renderer therefore never throws {@link ElementNotFoundError};
+ * a command that matches nothing is a no-op that returns a success
+ * {@link BPEvent} and leaves the buffer unchanged. However, the constructor and
+ * {@link Renderer.attrs} DO throw {@link HtmlValidationError} when an `on*`
+ * handler attribute is requested or an attribute value fails per-tag schema
+ * validation — XSS/structural protection at the trust boundary. The behavioral
+ * engine's `feedback_error` snapshot mechanism captures those throws.
  *
  * ## Returned BPEvent shape
  *
@@ -113,7 +146,7 @@ export class Renderer {
    * @param args.html - The HTML document fragment string to own and mutate.
    */
   constructor({ html }: { html: string }) {
-    this.#html = html
+    this.#html = validateAndEscapeHtml(html)
   }
 
   /** The current buffer state. Each `render`/`attrs` mutates and re-stores it. */
@@ -129,7 +162,7 @@ export class Renderer {
    * Targets all matches (mirroring `querySelectorAll`): the `match` operator
    * interpolates directly into the attribute selector
    * `[p-target${match}"${target}"]`, and `HTMLRewriter.on` fires the handler
-   * for every match. Zero matches is a no-op (see class doc). Never throws.
+   * for every match. Zero matches is a no-op (see class doc).
    *
    * @param detail - A {@link RenderMessage} detail: `target`, `html`, `swap`,
    *   `id`, and optional `match` (defaults to `=`).
@@ -139,8 +172,8 @@ export class Renderer {
   render({ target, html, swap, id, match = '=' }: RenderMessage['detail']): BPEvent {
     this.#html = new HTMLRewriter()
       .on(`[${P_TARGET}${match}"${target}"]`, {
-        element: (el) => {
-          applySwap(el, html, swap)
+        element: (element) => {
+          applySwap({ element, html, swap })
         },
       })
       .transform(this.#html)
@@ -153,7 +186,9 @@ export class Renderer {
    *
    * @remarks
    * Targets all matches and applies {@link updateAttributes} for each key in
-   * `attr`. Zero matches is a no-op (see class doc). Never throws.
+   * `attr`. Zero matches is a no-op (see class doc). Throws
+   * {@link HtmlValidationError} when an `on*` attribute is requested or an
+   * attribute value fails per-tag schema validation.
    *
    * @param detail - An {@link AttrsMessage} detail: `target`, `attr`, `id`, and
    *   optional `match` (defaults to `=`).

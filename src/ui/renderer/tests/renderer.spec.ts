@@ -2,6 +2,7 @@ import { describe, expect, test } from 'bun:test'
 import { B_PROGRAM_MESSAGE_TYPES, SWAP_MODES } from '../../../b-program/message.constants.ts'
 import type { BPEvent } from '../../../behavioral.ts'
 import { P_TARGET } from '../../html.constants.ts'
+import { HtmlValidationError } from '../render.errors.ts'
 import { Renderer } from '../renderer.ts'
 
 describe('Renderer — construction', () => {
@@ -185,5 +186,51 @@ describe('Renderer — no stylesheet handling', () => {
     const r = new Renderer({ html })
     r.render({ id: '1', target: 't', html: 'new', swap: SWAP_MODES.innerHTML })
     expect(r.html).toBe(`<style>.x{color:red}</style><div ${P_TARGET}="t">new</div>`)
+  })
+})
+
+describe('Renderer — constructor validation', () => {
+  test('constructor throws HtmlValidationError on on* attribute in initial HTML', () => {
+    expect(() => new Renderer({ html: `<div onclick="alert(1)">x</div>` })).toThrow(HtmlValidationError)
+  })
+
+  test('constructor escapes attributes in initial HTML', () => {
+    const r = new Renderer({ html: `<div class='"breakout'>x</div>` })
+    expect(r.html).toContain('&quot;')
+    expect(r.html).not.toMatch(/onclick|onerror/i)
+  })
+})
+
+describe('Renderer.attrs — on* and schema validation', () => {
+  test('attrs throws HtmlValidationError when an on* attribute is requested', () => {
+    const r = new Renderer({ html: `<div ${P_TARGET}="t"></div>` })
+    let caught: InstanceType<typeof HtmlValidationError> | undefined
+    try {
+      r.attrs({ id: '1', target: 't', attr: { onclick: 'alert(1)' } })
+    } catch (err) {
+      if (err instanceof HtmlValidationError) caught = err
+    }
+    expect(caught).toBeInstanceOf(HtmlValidationError)
+    expect(caught!.errors[0]).toMatchObject({ tag: 'div', attribute: 'onclick' })
+    // buffer unchanged after throw
+    expect(r.html).toBe(`<div ${P_TARGET}="t"></div>`)
+  })
+
+  test('attrs throws HtmlValidationError when a schema-invalid value is set', () => {
+    const r = new Renderer({ html: `<a ${P_TARGET}="t" href="#"></a>` })
+    let caught: InstanceType<typeof HtmlValidationError> | undefined
+    try {
+      r.attrs({ id: '1', target: 't', attr: { target: '_bad' } })
+    } catch (err) {
+      if (err instanceof HtmlValidationError) caught = err
+    }
+    expect(caught).toBeInstanceOf(HtmlValidationError)
+    expect(caught!.errors[0]).toMatchObject({ tag: 'a', attribute: 'target' })
+  })
+
+  test('attrs accepts a schema-valid enum value', () => {
+    const r = new Renderer({ html: `<a ${P_TARGET}="t" href="#"></a>` })
+    r.attrs({ id: '1', target: 't', attr: { target: '_blank' } })
+    expect(r.html).toBe(`<a ${P_TARGET}="t" href="#" target="_blank"></a>`)
   })
 })
