@@ -180,7 +180,7 @@ export const generateCssSchemas = (cssJson: { properties: PropertyEntry[] }): Ge
   const objectEntries: string[] = []
   for (const prop of properties) {
     for (const name of prop.styleDeclaration) {
-      const valueSchema = generateLiteralSchema(name, prop)
+      const valueSchema = generateLiteralSchema(prop)
       objectEntries.push(`  ${JSON.stringify(name)}: ${valueSchema}.optional()`)
     }
   }
@@ -207,12 +207,11 @@ export const generateCssSchemas = (cssJson: { properties: PropertyEntry[] }): Ge
     ' * Unknown properties (e.g. `--*` custom properties) fall through to',
     ' * the catchall: `z.union([z.string(), z.number()])`.',
     ' */',
-    `export const cssPropertySchema = z.object({\n${objectCode},\n}).catchall(z.union([z.string(), z.number()]))`,
+    `export const CSSPropertiesSchema = z.object({\n${objectCode},\n}).catchall(z.union([z.string(), z.number()]))`,
     '',
     '/**',
     ' * Schema for valid CSS property names — keyof derived from cssPropertySchema.',
     ' */',
-    `export const cssPropertyNameSchema = cssPropertySchema.keyof()`,
     '',
     '/**',
     ' * CSS properties type — every known property key plus custom property passthrough.',
@@ -220,7 +219,11 @@ export const generateCssSchemas = (cssJson: { properties: PropertyEntry[] }): Ge
     ' *',
     ' * @public',
     ' */',
-    'export type CSSProperties = z.output<typeof cssPropertySchema>',
+    'export type CSSProperties = z.output<typeof CSSPropertiesSchema>',
+    '',
+    `export const CSSPropertyNameSchema = CSSPropertiesSchema.keyof()`,
+    '',
+    `export type CSSPropertyName = z.output<typeof CSSPropertyNameSchema>`,
     '',
   ].join('\n')
 

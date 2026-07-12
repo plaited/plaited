@@ -28,5 +28,5 @@
     "noUnusedParameters": false,
     "noPropertyAccessFromIndexSignature": false,
   },
-  "exclude": ["src/**/*.d.ts", "scripts/"]
+  "exclude": ["src/**/*.d.ts"]
 }

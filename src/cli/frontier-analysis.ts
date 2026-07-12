@@ -7,6 +7,7 @@
 
 import { isAbsolute, resolve } from 'node:path'
 import * as z from 'zod'
+import { isPage } from '../b-program/define-page.ts'
 import type {
   BPEvent,
   CandidateBid,
@@ -33,7 +34,6 @@ import {
   SNAPSHOT_MESSAGE_KINDS,
   SnapshotMessageSchema,
 } from '../behavioral.ts'
-import { isPage } from '../server/define-page.ts'
 import { deepEqual, keyMirror } from '../utils.ts'
 import { makeCli } from './cli.ts'
 

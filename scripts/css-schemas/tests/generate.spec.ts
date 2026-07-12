@@ -98,15 +98,16 @@ test('generated output uses z.object with catchall and property name/type export
   const result = generateCssSchemas(cssJson)
 
   // Uses z.object with catchall
-  expect(result.code).toContain('export const cssPropertySchema = z.object({')
+  expect(result.code).toContain('export const CSSPropertiesSchema = z.object({')
   expect(result.code).toContain('.catchall(z.union([z.string(), z.number()]))')
 
   // No switch function
   expect(result.code).not.toContain('switch (prop)')
 
   // Types exported
-  expect(result.code).toContain('export const cssPropertyNameSchema = cssPropertySchema.keyof()')
-  expect(result.code).toContain('export type CSSProperties = z.output<typeof cssPropertySchema>')
+  expect(result.code).toContain('export const CSSPropertyNameSchema = CSSPropertiesSchema.keyof()')
+  expect(result.code).toContain('export type CSSProperties = z.output<typeof CSSPropertiesSchema>')
+  expect(result.code).toContain('export type CSSPropertyName = z.output<typeof CSSPropertyNameSchema>')
 
   const lines = result.code.split('\n')
   const header = lines.slice(0, 12).join('\n')

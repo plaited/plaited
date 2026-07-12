@@ -47,7 +47,7 @@ describe('css-schemas run script', () => {
     expect(typeof output.propertyCount).toBe('number')
     expect(output.propertyCount).toBeGreaterThan(0)
     expect(typeof output.keywordEnumCount).toBe('number')
-    expect(output.path).toBe('src/shared/css.schemas.ts')
+    expect(output.path).toBe('src/ui/css.schemas.ts')
   })
 
   test('diff exits with changed (schemas have been edited)', async () => {

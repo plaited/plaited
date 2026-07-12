@@ -13,4 +13,4 @@
  * @public
  */
 
-export * from './controller/controller.ts'
+export * from './ui/controller/controller.ts'
