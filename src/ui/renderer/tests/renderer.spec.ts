@@ -4,12 +4,12 @@ import type { BPEvent } from '../../../behavioral.ts'
 import { P_TARGET } from '../../html.constants.ts'
 import { Renderer } from '../renderer.ts'
 
-const BASE = `<main>
-  <div ${P_TARGET}="greeting">old</div>
-  <span ${P_TARGET}="user-name">name</span>
-  <span ${P_TARGET}="user-email">email</span>
-  <span ${P_TARGET}="other">keep</span>
-</main>`
+describe('Renderer — construction', () => {
+  test('constructor owns the html string and html() returns it unchanged', () => {
+    const r = new Renderer({ html: '<div>x</div>' })
+    expect(r.html).toBe('<div>x</div>')
+  })
+})
 
 describe('Renderer.render — swap modes', () => {
   test('innerHTML replaces inner content', () => {
@@ -58,8 +58,16 @@ describe('Renderer.render — all-matches targeting', () => {
 })
 
 describe('Renderer.render — match param', () => {
+  test("default match ('=') requires exact value", () => {
+    const r = new Renderer({ html: `<div ${P_TARGET}="user">x</div><div ${P_TARGET}="user-name">y</div>` })
+    r.render({ id: '1', target: 'user', html: 'z', swap: SWAP_MODES.innerHTML })
+    expect(r.html).toBe(`<div ${P_TARGET}="user">z</div><div ${P_TARGET}="user-name">y</div>`)
+  })
+
   test("match='^=' fills user-name and user-email but not other", () => {
-    const r = new Renderer({ html: BASE })
+    const r = new Renderer({
+      html: `<div ${P_TARGET}="greeting">old</div><span ${P_TARGET}="user-name">name</span><span ${P_TARGET}="user-email">email</span><span ${P_TARGET}="other">keep</span>`,
+    })
     r.render({ id: '1', target: 'user', html: 'filled', match: '^=', swap: SWAP_MODES.innerHTML })
     expect(r.html).toContain(`<span ${P_TARGET}="user-name">filled</span>`)
     expect(r.html).toContain(`<span ${P_TARGET}="user-email">filled</span>`)
@@ -78,14 +86,8 @@ describe('Renderer.render — match param', () => {
     expect(r.html).toBe(`<div ${P_TARGET}="a b c">z</div><div ${P_TARGET}="bc">y</div>`)
   })
 
-  test("default match ('=') requires exact value", () => {
-    const r = new Renderer({ html: `<div ${P_TARGET}="user">x</div><div ${P_TARGET}="user-name">y</div>` })
-    r.render({ id: '1', target: 'user', html: 'z', swap: SWAP_MODES.innerHTML })
-    expect(r.html).toBe(`<div ${P_TARGET}="user">z</div><div ${P_TARGET}="user-name">y</div>`)
-  })
-
-  test('zero matches is a no-op — html unchanged, no throw', () => {
-    const r = new Renderer({ html: BASE })
+  test('zero matches is a no-op — html unchanged, no throw, returns render BPEvent', () => {
+    const r = new Renderer({ html: `<div ${P_TARGET}="t">keep</div>` })
     const before = r.html
     const evt = r.render({ id: '1', target: 'nope', html: 'x', swap: SWAP_MODES.innerHTML })
     expect(r.html).toBe(before)
@@ -133,15 +135,17 @@ describe('Renderer.attrs — updateAttributes rules', () => {
   })
 
   test('match param on attrs (^=)', () => {
-    const r = new Renderer({ html: BASE })
+    const r = new Renderer({
+      html: `<span ${P_TARGET}="user-name">name</span><span ${P_TARGET}="user-email">email</span><span ${P_TARGET}="other">keep</span>`,
+    })
     r.attrs({ id: '1', target: 'user', match: '^=', attr: { 'data-set': '1' } })
     expect(r.html).toContain(`<span ${P_TARGET}="user-name" data-set="1">name</span>`)
     expect(r.html).toContain(`<span ${P_TARGET}="user-email" data-set="1">email</span>`)
     expect(r.html).toContain(`<span ${P_TARGET}="other">keep</span>`)
   })
 
-  test('zero matches is a no-op — html unchanged, no throw', () => {
-    const r = new Renderer({ html: BASE })
+  test('zero matches is a no-op — html unchanged, no throw, returns attrs BPEvent', () => {
+    const r = new Renderer({ html: `<div ${P_TARGET}="t">keep</div>` })
     const before = r.html
     const evt = r.attrs({ id: '1', target: 'nope', attr: { 'data-x': '1' } })
     expect(r.html).toBe(before)
