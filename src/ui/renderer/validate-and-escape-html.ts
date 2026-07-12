@@ -74,6 +74,8 @@ export const validateAndEscapeHtml = (html: string): string => {
     .on('*', {
       element(el) {
         const names = [...el.attributes].map(([name]) => name)
+        const schema = getNodeSchema(el.tagName)
+        const attrs: Record<string, unknown> = {}
         for (const name of names) {
           if (name.startsWith('on')) {
             errors.push({
@@ -81,17 +83,16 @@ export const validateAndEscapeHtml = (html: string): string => {
               attribute: name,
               message: `Event handler attributes are not allowed: [${name}]`,
             })
+            continue
           }
-        }
-        const schema = getNodeSchema(el.tagName)
-        const attrs: Record<string, unknown> = {}
-        for (const name of names) {
           const value = el.getAttribute(name) ?? ''
           attrs[name] = value
-          // Re-serialize every attribute via setAttribute: normalizes to
-          // double-quoted form and escapes " (the only char that can break out
-          // of a double-quoted attribute). Idempotent on already-escaped input
-          // (setAttribute only escapes ", preserving existing &amp;/&lt;/&gt;).
+          // Re-serialize every non-on* attribute via setAttribute: normalizes
+          // to double-quoted form and escapes " (the only char that can break
+          // out of a double-quoted attribute). Idempotent on already-escaped
+          // input (setAttribute only escapes ", preserving existing
+          // &amp;/&lt;/&gt;). on* attributes are skipped — they are violations
+          // and the throw discards the output anyway.
           el.setAttribute(name, value)
         }
         const result = schema.shape.attributes.safeParse(attrs)
