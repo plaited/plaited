@@ -363,9 +363,9 @@ export class Controller {
     id,
     target,
     event: { type, detail },
-    bubbles = false,
-    cancelable = true,
-    composed = true,
+    bubbles,
+    cancelable,
+    composed,
   }: DispatchCustomEventMessage['detail']) {
     const element = document.querySelector(`[${P_TARGET}="${target}"]`)
     if (!element)
@@ -384,7 +384,8 @@ export class Controller {
     element.dispatchEvent(event)
   }
   #navigate({ url, replace }: NavigateMessage['detail']) {
-    replace ? window.location.replace(url) : window.location.assign(url)
+    if (replace) window.location.replace(url)
+    else window.location.assign(url)
   }
   #webSocketListener(message: MessageEvent) {
     let id: string | undefined

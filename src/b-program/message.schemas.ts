@@ -75,9 +75,9 @@ export const DispatchCustomEventMessageSchema = z.object({
     id: z.string(),
     target: z.string(),
     event: BPEventSchema,
-    bubbles: z.boolean().optional(),
-    cancelable: z.boolean().optional(),
-    composed: z.boolean().optional(),
+    bubbles: z.boolean().default(false),
+    cancelable: z.boolean().default(true),
+    composed: z.boolean().default(true),
   }),
 })
 
@@ -99,7 +99,7 @@ export const NavigateMessageSchema = z.object({
   detail: z.object({
     id: z.string(),
     url: z.string(),
-    replace: z.literal(true).optional(),
+    replace: z.boolean().default(false),
   }),
 })
 
