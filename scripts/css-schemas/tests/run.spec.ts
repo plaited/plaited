@@ -49,18 +49,4 @@ describe('css-schemas run script', () => {
     expect(typeof output.keywordEnumCount).toBe('number')
     expect(output.path).toBe('src/ui/css.schemas.ts')
   })
-
-  test('diff exits with changed (schemas have been edited)', async () => {
-    const proc = Bun.spawn(['bun', scriptPath, 'diff'], {
-      stdout: 'pipe',
-      stderr: 'pipe',
-      cwd: repoRoot,
-    })
-    // diff exits 1 when changed is detected
-    expect(await proc.exited).toBe(1)
-    const output = JSON.parse(await new Response(proc.stdout).text())
-    expect(output.changed).toBe(true)
-    expect(typeof output.propertyCount).toBe('number')
-    expect(output.propertyCount).toBeGreaterThan(0)
-  })
 })

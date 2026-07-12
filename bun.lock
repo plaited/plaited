@@ -17,7 +17,7 @@
         "@mermaid-js/mermaid-cli": "11.15.0",
         "@playwright/cli": "^0.1.14",
         "@types/beautify": "0.0.3",
-        "@types/bun": "1.3.14",
+        "@types/bun": "^1.3.14",
         "@types/node": "25.9.1",
         "@types/sinon": "21.0.1",
         "@varlock/1password-plugin": "^1.1.0",

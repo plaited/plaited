@@ -6,6 +6,7 @@
     "module": "Preserve",
     "moduleDetection": "force",
     "allowJs": true,
+    "types": ["bun"],
 
     // IDE may need this to properly show type errors
     "rootDir": ".",

@@ -14,13 +14,13 @@ import { z } from 'zod'
  * Unknown properties (e.g. \`--*\` custom properties) fall through to
  * the catchall: \`z.union([z.string(), z.number()])\`.
  */
-export const cssPropertySchema = z.object({"
+export const CSSPropertiesSchema = z.object({"
 ,
   "typeTail": 
-" *
- * @public
- */
-export type CSSProperties = z.output<typeof cssPropertySchema>
+"
+export const CSSPropertyNameSchema = CSSPropertiesSchema.keyof()
+
+export type CSSPropertyName = z.output<typeof CSSPropertyNameSchema>
 "
 ,
 }
