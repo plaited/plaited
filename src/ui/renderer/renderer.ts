@@ -3,7 +3,7 @@ import type { AttrsMessage, RenderMessage } from '../../b-program/message.schema
 import type { BPEvent } from '../../behavioral.ts'
 import { BOOLEAN_ATTRS, P_TARGET } from '../html.constants.ts'
 import { getNodeSchema } from '../html.schemas.ts'
-import { HtmlValidationError } from './render.errors.ts'
+import { ValidationError } from './render.errors.ts'
 import { validateAndEscapeHtml } from './validate-and-escape-html.ts'
 
 /**
@@ -59,9 +59,11 @@ const updateAttributes = ({
 }) => {
   // on* inline event handlers are always blocked (security: use p-trigger).
   if (attr.startsWith('on')) {
-    throw new HtmlValidationError([
-      { tag: element.tagName, attribute: attr, message: `Event handler attributes are not allowed: [${attr}]` },
-    ])
+    throw new ValidationError({
+      htmlErrors: [
+        { tag: element.tagName, attribute: attr, message: `Event handler attributes are not allowed: [${attr}]` },
+      ],
+    })
   }
   if (val === null && element.hasAttribute(attr)) return element.removeAttribute(attr)
   if (val === null) return
@@ -74,13 +76,13 @@ const updateAttributes = ({
     const schema = getNodeSchema(element.tagName)
     const result = schema.shape.attributes.safeParse({ [attr]: val })
     if (!result.success) {
-      throw new HtmlValidationError(
-        result.error.issues.map((issue) => ({
+      throw new ValidationError({
+        htmlErrors: result.error.issues.map((issue) => ({
           tag: element.tagName,
           attribute: issue.path.join('.') || attr,
           message: issue.message,
         })),
-      )
+      })
     }
     element.setAttribute(attr, `${val}`)
   }
@@ -122,7 +124,7 @@ const updateAttributes = ({
  * transform. The Renderer therefore never throws {@link ElementNotFoundError};
  * a command that matches nothing is a no-op that returns a success
  * {@link BPEvent} and leaves the buffer unchanged. However, the constructor and
- * {@link Renderer.attrs} DO throw {@link HtmlValidationError} when an `on*`
+ * {@link Renderer.attrs} DO throw {@link ValidationError} when an `on*`
  * handler attribute is requested or an attribute value fails per-tag schema
  * validation — XSS/structural protection at the trust boundary. The behavioral
  * engine's `feedback_error` snapshot mechanism captures those throws.
@@ -187,7 +189,7 @@ export class Renderer {
    * @remarks
    * Targets all matches and applies {@link updateAttributes} for each key in
    * `attr`. Zero matches is a no-op (see class doc). Throws
-   * {@link HtmlValidationError} when an `on*` attribute is requested or an
+   * {@link ValidationError} when an `on*` attribute is requested or an
    * attribute value fails per-tag schema validation.
    *
    * @param detail - An {@link AttrsMessage} detail: `target`, `attr`, `id`, and
