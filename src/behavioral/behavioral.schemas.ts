@@ -17,6 +17,7 @@ export const BPEventSchema = z.object({
   type: z.string(),
   detail: JsonObjectSchema.optional(),
   topic: z.string().optional(),
+  id: z.string().optional(),
   /**
    * Opaque, non-serializable side-channel for carrying non-JSON values (File,
    * Blob, FormData, ArrayBuffer, structured-clone values) straight to handlers.

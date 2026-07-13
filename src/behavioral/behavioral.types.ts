@@ -86,6 +86,7 @@ export type CandidateBid = {
 
   ingress?: true
   topic?: string
+  id?: string
 }
 
 /**
@@ -167,7 +168,7 @@ export type EventDetails = Record<string, any>
  * @param payload - Opaque non-JSON side-channel value, if one was supplied on the event.
  * @returns `void` or `Promise<void>`. Thrown errors surface as `feedback_error` snapshots.
  */
-export type Handler<T, P = unknown> = (detail: T, disconnect: Disconnect, payload?: P) => void | Promise<void>
+export type Handler<T, P = unknown> = (params: {detail: T, disconnect: Disconnect, payload?: P, id?: string}) => void | Promise<void>
 
 export type AddHandler = <T extends JsonObject | undefined = undefined, P = unknown>(
   type: string,
@@ -212,7 +213,14 @@ export type UseAddThread = (topic?: string) => AddThread
  */
 export type Trigger = <T extends BPEvent>(args: T) => void
 
-export type UseTrigger = (topic?: string) => Trigger
+
+export type PendingRequest = {
+  resolve: (value: unknown) => void
+  reject: (reason: unknown) => void
+  promise: Promise<unknown>
+}
+
+export type UseTrigger = (params: {topic?: string, promises:Map<string, PendingRequest> }) => Trigger
 
 /**
  * Factory function that creates and initializes a new behavioral program instance.
