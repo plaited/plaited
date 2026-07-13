@@ -1,4 +1,4 @@
-import type { FRONTIER_STATUS, THREAD_IDENTIFIER } from './behavioral.constants.ts'
+import type { FRONTIER_STATUS } from './behavioral.constants.ts'
 import type { BPEvent, JsonObject, RegisteredIdioms, SnapshotMessage, Thread } from './behavioral.schemas.ts'
 
 export type RulesFunction = () => Generator<RegisteredIdioms, void, unknown>
@@ -6,36 +6,31 @@ export type RulesFunction = () => Generator<RegisteredIdioms, void, unknown>
 export type UseThread = (rules: RulesFunction[], once?: true) => RulesFunction
 
 /**
- * A factory function that creates a single synchronization step (a `ReturnType<BSync>`) for a b-thread.
- * This is a helper type that corresponds to the `bSync` function implementation, which creates
- * one branded behavioral rule step.
+ * A factory type for a single synchronization step that yields one `RegisteredIdioms`
+ * object (the engine's internal, topic-stamped idiom shape) and completes.
  *
- * @param arg - `Idioms` object defining the synchronization behavior for the step.
- * @returns Branded behavioral rule that yields the provided `Idioms` object once and completes.
+ * @param arg - The registered idioms to yield at this synchronization point.
+ * @returns A rule generator yielding the provided idioms once.
  *
- * @see bSync The implementation of this type that creates reusable synchronization steps.
+ * @see {@link generateRulesFunctions} in `behavioral.utils.ts`, which builds
+ * `RegisteredIdioms` (with topic stamping) from author-facing `Idioms`.
  */
 export type Sync = (arg: RegisteredIdioms) => RulesFunction
 
 /**
- * A factory function that constructs a complete b-thread (`ReturnType<BSync>`) by composing multiple synchronization steps.
- * This is a helper type that corresponds to the `bThread` function implementation, which allows
- * for modular composition of b-thread behavior.
+ * Composes an ordered array of rule generators into a single behavioral thread generator.
  *
- * @param rules - Synchronization steps, typically created with `bSync`, that define the thread sequence.
- * @param repeat - Optional repetition policy controlling whether the sequence repeats.
- * @returns Branded behavioral rule representing the composed thread. The returned function carries a
- * `{ $: THREAD_IDENTIFIER }` brand property for runtime discrimination via {@link isThread}.
+ * @param rules - Rule generators (each yielding one `RegisteredIdioms`) to compose.
+ * @param once - When `true`, the thread runs through the rules once and completes.
+ *               When omitted, the thread loops the rules indefinitely.
+ * @returns A generator function yielding the idioms from each rule in sequence.
  *
  * @remarks
- * - The `$` brand property is attached via `Object.assign` in the implementation.
- * - Branded threads can be distinguished from plain rule generators at runtime using {@link isThread}.
+ * - The `once` flag controls repetition semantics for the behavioral scheduler.
+ * - Empty rule arrays complete immediately (the generator is `done` on first call).
  *
- * @see bThread The implementation of this type that composes multiple synchronization steps into a single b-thread.
- * @see {@link isThread} for the runtime type guard
- * @see {@link THREAD_IDENTIFIER} for the brand constant
+ * @see {@link generateRulesFunctions} for building the rule array from author-facing `Idioms`.
  */
-// export type Thread = (rules: ReturnType<Sync>[], once?: true) => ReturnType<Sync>
 
 /**
  * @internal
@@ -86,7 +81,6 @@ export type CandidateBid = {
 
   ingress?: true
   topic?: string
-  id?: string
 }
 
 /**
@@ -163,12 +157,16 @@ export type EventDetails = Record<string, any>
  * @typeParam P - Opaque `payload` type carried alongside `detail` for non-JSON
  * side-channel data (File, Blob, FormData, etc.). Defaults to `unknown`.
  *
- * @param detail - The JSON-serializable event detail.
- * @param disconnect - Cleanup function to unsubscribe this handler.
- * @param payload - Opaque non-JSON side-channel value, if one was supplied on the event.
+ * @param params.detail - The JSON-serializable event detail.
+ * @param params.disconnect - Cleanup function to unsubscribe this handler.
+ * @param params.payload - Opaque non-JSON side-channel value, if one was supplied on the event.
  * @returns `void` or `Promise<void>`. Thrown errors surface as `feedback_error` snapshots.
  */
-export type Handler<T, P = unknown> = (params: {detail: T, disconnect: Disconnect, payload?: P, id?: string}) => void | Promise<void>
+export type Handler<T, P = unknown> = (params: {
+  detail: T
+  disconnect: Disconnect
+  payload?: P
+}) => void | Promise<void>
 
 export type AddHandler = <T extends JsonObject | undefined = undefined, P = unknown>(
   type: string,
@@ -213,14 +211,7 @@ export type UseAddThread = (topic?: string) => AddThread
  */
 export type Trigger = <T extends BPEvent>(args: T) => void
 
-
-export type PendingRequest = {
-  resolve: (value: unknown) => void
-  reject: (reason: unknown) => void
-  promise: Promise<unknown>
-}
-
-export type UseTrigger = (params: {topic?: string, promises:Map<string, PendingRequest> }) => Trigger
+export type UseTrigger = (topic?: string) => Trigger
 
 /**
  * Factory function that creates and initializes a new behavioral program instance.

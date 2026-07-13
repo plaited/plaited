@@ -1,5 +1,5 @@
 import { deepEqual, isTypeOf } from '../utils.ts'
-import { FRONTIER_STATUS, IDIOMS, THREAD_IDENTIFIER } from './behavioral.constants.ts'
+import { FRONTIER_STATUS, IDIOMS } from './behavioral.constants.ts'
 import type { BPEvent, Idioms, RegisteredBPListener, RegisteredIdioms } from './behavioral.schemas.ts'
 import type { CandidateBid, Frontier, PendingBid, RulesFunction, RunningBid, UseThread } from './behavioral.types.ts'
 
@@ -156,25 +156,18 @@ export const generateRulesFunctions = (rules: Idioms[], topic?: string): RulesFu
 }
 
 /**
- * Composes multiple synchronization rules into a single behavioral thread generator.
+ * Composes an ordered array of rule generators into a single behavioral thread generator.
  *
- * The returned generator function is branded with `{ $: THREAD_IDENTIFIER }` via
- * `Object.assign`, enabling runtime discrimination between plain rule generators
- * and composed thread generators using {@link isThread}.
- *
- * @param rules - Array of rule generators (typically created with {@link sync}) to compose.
+ * @param rules - Rule generators (each yielding one `RegisteredIdioms`) to compose.
  * @param once - When `true`, the thread runs through the rules once and completes.
  *               When omitted, the thread loops the rules indefinitely.
- * @returns A branded generator function that yields the idioms from each rule in sequence.
+ * @returns A generator function yielding the idioms from each rule in sequence.
  *
  * @remarks
  * - The `once` flag controls repetition semantics for the behavioral scheduler.
  * - Empty rule arrays complete immediately (the generator is `done` on first call).
- * - The brand property `$` is non-enumerable and does not affect iteration behavior.
  *
- * @see {@link sync} for creating individual synchronization rules
- * @see {@link isThread} for the runtime type guard
- * @see {@link THREAD_IDENTIFIER} for the brand constant
+ * @see {@link generateRulesFunctions} for building the rule array from author-facing `Idioms`.
  */
 export const useThread: UseThread = (rules: RulesFunction[], once?: true) =>
   once

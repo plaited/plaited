@@ -17,7 +17,6 @@ export const BPEventSchema = z.object({
   type: z.string(),
   detail: JsonObjectSchema.optional(),
   topic: z.string().optional(),
-  id: z.string().optional(),
   /**
    * Opaque, non-serializable side-channel for carrying non-JSON values (File,
    * Blob, FormData, ArrayBuffer, structured-clone values) straight to handlers.
@@ -35,10 +34,12 @@ export type BPEvent = z.output<typeof BPEventSchema>
 
 export const BPListenerSchema = z.object({
   type: z.string(),
-  detailSchema: z.custom<z.ZodType<z.infer<typeof JsonObjectSchema>>>(
+  detailSchema: z
+    .custom<z.ZodType<z.infer<typeof JsonObjectSchema>>>(
       (val) => val instanceof z.ZodType, // Zod exposes its base class internally here
-      { message: "Must be a valid Zod Schema" }
-    ).optional(),
+      { message: 'Must be a valid Zod Schema' },
+    )
+    .optional(),
   detailMatch: z.enum(Object.values(DETAIL_MATCH)).optional(),
 })
 
@@ -68,8 +69,8 @@ export type RegisteredBPListener = BPListener & {
  * - Blocked events have precedence over requested events
  * - Interrupts cause thread termination
  *
- * @see {@link ReturnType<BSync>} for usage in behavioral rule steps
- * @see {@link bSync} for creating single synchronization points
+ * @see {@link ThreadScehama} for the tuple that embeds `IdiomSchema` rules
+ * @see {@link UseAddThread} for registering a thread from `Idiom[]` rules
  */
 export const IdiomSchema = z.object({
   [IDIOMS.waitFor]: z.array(BPListenerSchema).min(1).optional(),
@@ -195,16 +196,16 @@ export const FeedbackErrorSchema = z.object({
 export type FeedbackError = z.output<typeof FeedbackErrorSchema>
 
 /**
- * Schema for errors emitted when a non-thread value is passed to `addThread`.
+ * Schema for errors emitted when `useAddThread` receives arguments that fail
+ * `ThreadScehama` validation.
  *
  * @remarks
- * Published via the snapshot publisher when `addThread` receives a value that
- * does not pass the `isThread` runtime guard. The error message guides consumers
- * to use `thread()` to compose synchronization rules before registration.
+ * Published via the snapshot publisher when `useAddThread`'s `safeParse` rejects
+ * the supplied `(label, { rules, once })` tuple. `error` carries the resulting
+ * `ZodIssue[]` so consumers can report which fields were invalid.
  *
- * @see {@link isThread} for the runtime type guard
- * @see {@link thread} for composing behavioral threads
- * @see {@link AddThread} for the consumer-facing API
+ * @see {@link UseAddThread} for the consumer-facing API
+ * @see {@link ThreadScehama} for the validating schema
  *
  * @public
  */

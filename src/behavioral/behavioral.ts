@@ -262,11 +262,10 @@ export const behavioral: Behavioral = () => {
       pending,
     })
     actionPublisher({
-      id: selectedEvent.id,
       type: selectedEvent.type,
       detail: selectedEvent.detail,
       topic: selectedEvent.topic,
-      payload: selectedEvent.payload
+      payload: selectedEvent.payload,
     })
 
     /**
@@ -287,16 +286,7 @@ export const behavioral: Behavioral = () => {
    * @internal
    * Implementation of the public `trigger` function.
    */
-  const useTrigger: UseTrigger = ({ topic, promises }) => (event) => {
-    if (promises) {
-      const { promise, resolve: resolvePromise, reject } = Promise.withResolvers<unknown>()
-      const correlationId = crypto.randomUUID()
-      promises.set(correlationId, {
-        resolve: resolvePromise as (value: unknown) => void,
-        reject: reject as (reason: unknown) => void,
-        promise
-      })
-    }
+  const useTrigger: UseTrigger = (topic) => (event) => {
     const thread = function* () {
       yield {
         request: event,
@@ -347,11 +337,10 @@ export const behavioral: Behavioral = () => {
         try {
           if (once) disconnect()
           await handler({
-            id: data.detail as Parameters<typeof handler>[0]['id'],
-            detail:data.detail as Parameters<typeof handler>[0]['detail'],
+            detail: data.detail as Parameters<typeof handler>[0]['detail'],
             disconnect,
             payload: data.payload as Parameters<typeof handler>[0]['payload'],
-            })
+          })
         } catch (error) {
           const message: FeedbackError = {
             kind: SNAPSHOT_MESSAGE_KINDS.feedback_error,
@@ -382,7 +371,7 @@ export const behavioral: Behavioral = () => {
       } else {
         snapshotPublisher({
           kind: SNAPSHOT_MESSAGE_KINDS.add_thread_error,
-          error: result.error.issues
+          error: result.error.issues,
         })
       }
     }
