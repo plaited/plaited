@@ -1,5 +1,5 @@
 import * as z from 'zod'
-import { DETAIL_MATCH, SNAPSHOT_MESSAGE_KINDS } from './behavioral.constants.ts'
+import { DETAIL_MATCH, IDIOMS, SNAPSHOT_MESSAGE_KINDS } from './behavioral.constants.ts'
 
 /** @public */
 export const JsonObjectSchema = z.object({}).catchall(z.json())
@@ -34,62 +34,73 @@ export type BPEvent = z.output<typeof BPEventSchema>
 
 export const BPListenerSchema = z.object({
   type: z.string(),
-  detailSchema: JsonObjectSchema.optional(),
+  detailSchema: z.custom<z.ZodType<z.infer<typeof JsonObjectSchema>>>(
+      (val) => val instanceof z.ZodType, // Zod exposes its base class internally here
+      { message: "Must be a valid Zod Schema" }
+    ).optional(),
   detailMatch: z.enum(Object.values(DETAIL_MATCH)).optional(),
+})
+
+export type BPListener = z.output<typeof BPListenerSchema>
+
+export const RegisteredBPListenerSchema = z.object({
+  ...BPListenerSchema.shape,
   topic: z.string().optional(),
 })
 
-export type BPListener = {
-  type: string
-  detailSchema?: z.ZodType<unknown>
-  detailMatch?: keyof typeof DETAIL_MATCH
+export type RegisteredBPListener = BPListener & {
   topic?: string
 }
 
-export const SpecIdiomsSchema = z.object({
-  waitFor: z.array(BPListenerSchema).min(1).optional(),
-  interrupt: z.array(BPListenerSchema).min(1).optional(),
-  block: z.array(BPListenerSchema).min(1).optional(),
-  request: BPEventSchema.optional(),
-})
-
-export type SpecIdioms = z.output<typeof SpecIdiomsSchema>
-
-export const SpecSchema = z.object({
-  label: z.string(),
-  thread: z.object({
-    once: z.literal(true).optional(),
-    syncPoints: z.array(SpecIdiomsSchema),
-  }),
-})
-
-export type Spec = z.output<typeof SpecSchema>
-
 /**
- * @internal
- * Shared schema for memory entry detail envelopes.
+ * Represents a synchronization statement yielded by a behavioral rule step.
+ * This is the core mechanism through which b-threads communicate their behavioral intentions
+ * to the behavioral program scheduler at each step of execution.
+ *
+ * @property request - Propose an event to be selected and triggered. Only one request per sync point.
+ * @property waitFor - Wait for specific events. Thread pauses until a matching event is selected.
+ * @property block - Prevent specific events from being selected. Higher precedence than requests.
+ * @property interrupt - Events that terminate the thread's execution if selected.
+ *
+ * @remarks
+ * - Multiple listeners can be provided as arrays
+ * - Blocked events have precedence over requested events
+ * - Interrupts cause thread termination
+ *
+ * @see {@link ReturnType<BSync>} for usage in behavioral rule steps
+ * @see {@link bSync} for creating single synchronization points
  */
-export const createMemoryEntryDetailSchema = (detailSchema: z.ZodType<unknown>) =>
+export const IdiomSchema = z.object({
+  [IDIOMS.waitFor]: z.array(BPListenerSchema).min(1).optional(),
+  [IDIOMS.interrupt]: z.array(BPListenerSchema).min(1).optional(),
+  [IDIOMS.block]: z.array(BPListenerSchema).min(1).optional(),
+  [IDIOMS.request]: BPEventSchema.optional(),
+})
+
+export type Idioms = z.output<typeof IdiomSchema>
+
+export const RegisteredIdiomsSchema = z.object({
+  [IDIOMS.waitFor]: z.array(RegisteredBPListenerSchema).min(1).optional(),
+  [IDIOMS.interrupt]: z.array(RegisteredBPListenerSchema).min(1).optional(),
+  [IDIOMS.block]: z.array(RegisteredBPListenerSchema).min(1).optional(),
+  [IDIOMS.request]: BPEventSchema.optional(),
+})
+
+export type RegisteredIdioms = z.output<typeof RegisteredIdiomsSchema>
+
+export const ThreadScehama = z.tuple([
+  z.string().min(1),
   z.object({
-    expiresAt: z.number().optional(),
-    createdAt: z.number(),
-    body: detailSchema,
-  })
+    once: z.literal(true).optional(),
+    rules: z.array(IdiomSchema),
+  }),
+])
 
-/**
- * @internal
- * Shared schema for memory response envelopes with request id.
- */
-export const createMemoryResponseDetailSchema = ({
-  id,
-  detailSchema,
-}: {
-  id: string
-  detailSchema: z.ZodType<unknown>
-}) =>
-  createMemoryEntryDetailSchema(detailSchema).extend({
-    id: z.literal(id),
-  })
+export type Thread = z.output<typeof ThreadScehama>
+
+export const ThreadsSchema = z.array(ThreadScehama)
+
+export type Threads = z.output<typeof ThreadsSchema>
 
 export const SnapshotEventSchema = BPEventSchema.extend({
   ingress: z.literal(true).optional(),
@@ -198,10 +209,7 @@ export type FeedbackError = z.output<typeof FeedbackErrorSchema>
  */
 export const AddThreadErrorSchema = z.object({
   kind: z.literal(SNAPSHOT_MESSAGE_KINDS.add_thread_error),
-  /** Label passed to `addThread`, used to identify which registration failed. */
-  label: z.string(),
-  /** Human-readable error message explaining why the value was rejected. */
-  error: z.string(),
+  error: z.custom<z.ZodIssue[]>() as z.ZodType<z.ZodIssue[]>,
 })
 
 /** @public */

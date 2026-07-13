@@ -1,36 +1,9 @@
 import type { FRONTIER_STATUS, THREAD_IDENTIFIER } from './behavioral.constants.ts'
-import type { BPEvent, BPListener, JsonObject, SnapshotMessage } from './behavioral.schemas.ts'
+import type { BPEvent, JsonObject, RegisteredIdioms, SnapshotMessage, Thread } from './behavioral.schemas.ts'
 
-/**
- * Represents a synchronization statement yielded by a behavioral rule step.
- * This is the core mechanism through which b-threads communicate their behavioral intentions
- * to the behavioral program scheduler at each step of execution.
- *
- * @property request - Propose an event to be selected and triggered. Only one request per sync point.
- * @property waitFor - Wait for specific events. Thread pauses until a matching event is selected.
- * @property block - Prevent specific events from being selected. Higher precedence than requests.
- * @property interrupt - Events that terminate the thread's execution if selected.
- *
- * @remarks
- * - Multiple listeners can be provided as arrays
- * - Blocked events have precedence over requested events
- * - Interrupts cause thread termination
- *
- * @see {@link ReturnType<BSync>} for usage in behavioral rule steps
- * @see {@link bSync} for creating single synchronization points
- */
-export type Idioms = {
-  /** Event(s) the thread is waiting for. Execution pauses until a matching event is selected. */
-  waitFor?: BPListener | BPListener[]
-  /** Event(s) that will interrupt the thread's execution if selected. */
-  interrupt?: BPListener | BPListener[]
-  /** An event the thread wishes to request. Can be a static event object or a template function. */
-  request?: BPEvent
-  /** Event(s) the thread wants to prevent from being selected. */
-  block?: BPListener | BPListener[]
-}
+export type RulesFunction = () => Generator<RegisteredIdioms, void, unknown>
 
-export type RulesFunction = () => Generator<Idioms, void, unknown>
+export type UseThread = (rules: RulesFunction[], once?: true) => RulesFunction
 
 /**
  * A factory function that creates a single synchronization step (a `ReturnType<BSync>`) for a b-thread.
@@ -42,7 +15,7 @@ export type RulesFunction = () => Generator<Idioms, void, unknown>
  *
  * @see bSync The implementation of this type that creates reusable synchronization steps.
  */
-export type Sync = (arg: Idioms) => RulesFunction
+export type Sync = (arg: RegisteredIdioms) => RulesFunction
 
 /**
  * A factory function that constructs a complete b-thread (`ReturnType<BSync>`) by composing multiple synchronization steps.
@@ -62,7 +35,7 @@ export type Sync = (arg: Idioms) => RulesFunction
  * @see {@link isThread} for the runtime type guard
  * @see {@link THREAD_IDENTIFIER} for the brand constant
  */
-export type Thread = (rules: ReturnType<Sync>[], once?: true) => ReturnType<Sync> & { $: typeof THREAD_IDENTIFIER }
+// export type Thread = (rules: ReturnType<Sync>[], once?: true) => ReturnType<Sync>
 
 /**
  * @internal
@@ -79,7 +52,7 @@ export type RunningBid = {
   /** The priority level of the thread, used for resolving conflicts when multiple threads request events. Lower numbers = higher priority. */
   priority: number
   /** Internal iterator representing the thread's execution state. Holds the current position in the rule sequence. */
-  generator: IterableIterator<Idioms>
+  generator: IterableIterator<RegisteredIdioms>
   ingress?: true
   topic?: string
 }
@@ -91,7 +64,7 @@ export type RunningBid = {
  * These threads have reached a synchronization point and declared their `Idioms` (request, waitFor, block, interrupt).
  * The thread remains in this state until an event matching its `waitFor`, `request`, or `interrupt` is selected.
  */
-export type PendingBid = Idioms & RunningBid
+export type PendingBid = RegisteredIdioms & RunningBid
 
 /**
  * @internal
@@ -219,9 +192,9 @@ export type AddHandler = <T extends JsonObject | undefined = undefined, P = unkn
  */
 export type UseSnapshot = (listener: SnapshotListener) => Disconnect
 
-export type BThreads = Record<string, ReturnType<Sync>>
+export type AddThread = (...args: Thread) => void
 
-export type AddThread = (label: string, thread: () => Generator<Idioms, void, unknown>) => void
+export type UseAddThread = (topic?: string) => AddThread
 
 /**
  * Injects external events into the behavioral program.
@@ -238,6 +211,8 @@ export type AddThread = (label: string, thread: () => Generator<Idioms, void, un
  * @see {@link PlaitedTrigger} for enhanced trigger
  */
 export type Trigger = <T extends BPEvent>(args: T) => void
+
+export type UseTrigger = (topic?: string) => Trigger
 
 /**
  * Factory function that creates and initializes a new behavioral program instance.
@@ -261,8 +236,8 @@ export type Trigger = <T extends BPEvent>(args: T) => void
  */
 export type Behavioral = () => Readonly<{
   addHandler: AddHandler
-  addThread: AddThread
   reportSnapshot: SnapshotListener
-  trigger: Trigger
+  useAddThread: UseAddThread
   useSnapshot: UseSnapshot
+  useTrigger: UseTrigger
 }>

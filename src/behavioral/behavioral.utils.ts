@@ -1,7 +1,7 @@
 import { deepEqual, isTypeOf } from '../utils.ts'
-import { FRONTIER_STATUS, THREAD_IDENTIFIER } from './behavioral.constants.ts'
-import type { BPEvent, BPListener } from './behavioral.schemas.ts'
-import type { CandidateBid, Frontier, PendingBid, RunningBid, Sync, Thread } from './behavioral.types.ts'
+import { FRONTIER_STATUS, IDIOMS, THREAD_IDENTIFIER } from './behavioral.constants.ts'
+import type { BPEvent, Idioms, RegisteredBPListener, RegisteredIdioms } from './behavioral.schemas.ts'
+import type { CandidateBid, Frontier, PendingBid, RulesFunction, RunningBid, UseThread } from './behavioral.types.ts'
 
 /**
  * @internal
@@ -17,16 +17,10 @@ export const isBPEvent = (data: unknown): data is BPEvent => {
 
 /**
  * @internal
- * Utility function to ensure a value is an array.
- */
-export const ensureArray = <T>(obj: T | T[] = []) => (Array.isArray(obj) ? obj : [obj])
-
-/**
- * @internal
  * Creates a checker function to determine if a given BPListener matches a CandidateBid.
  */
 export const isListeningFor = ({ type, detail, topic }: CandidateBid) => {
-  return (listener: BPListener): boolean => {
+  return (listener: RegisteredBPListener): boolean => {
     const topicMatches = listener.topic ? topic === listener.topic : true
     const schemaMatches = listener.detailSchema ? listener.detailSchema.safeParse(detail).success : true
     const detailMatches = listener.detailMatch === 'invalid' ? !schemaMatches : schemaMatches
@@ -44,11 +38,11 @@ export const isListeningFor = ({ type, detail, topic }: CandidateBid) => {
  * - a scheduler-facing status classification
  */
 export const computeFrontier = ({ pending }: { pending: Set<PendingBid> }): Frontier => {
-  const blocked: BPListener[] = []
+  const blocked: RegisteredBPListener[] = []
   const candidates: CandidateBid[] = []
 
   for (const { request, priority, block, ingress, topic } of pending) {
-    block && blocked.push(...ensureArray(block))
+    block && blocked.push(...block)
     request &&
       candidates.push({
         priority,
@@ -110,8 +104,8 @@ export const resumePendingThreadsForSelectedEvent = ({
 }) => {
   for (const bid of pending) {
     const { waitFor, request, generator, interrupt } = bid
-    const isInterrupted = ensureArray(interrupt).some(isListeningFor(selectedEvent))
-    const isWaitedFor = ensureArray(waitFor).some(isListeningFor(selectedEvent))
+    const isInterrupted = interrupt?.some(isListeningFor(selectedEvent))
+    const isWaitedFor = waitFor?.some(isListeningFor(selectedEvent))
     const hasPendingRequest = request && eventMatchesCandidate(request, selectedEvent)
     if (isInterrupted) {
       generator.return?.()
@@ -125,10 +119,41 @@ export const resumePendingThreadsForSelectedEvent = ({
   }
 }
 
-export const sync: Sync = (syncPoint) =>
-  function* () {
-    yield syncPoint
+export const generateRulesFunctions = (rules: Idioms[], topic?: string): RulesFunction[] => {
+  const syncs: RulesFunction[] = []
+  for (const { request, waitFor, block, interrupt } of rules) {
+    const registeredIdioms: RegisteredIdioms = {}
+    if (request) {
+      registeredIdioms[IDIOMS.request] = {
+        type: request.type,
+        topic,
+        detail: request.detail,
+      }
+    }
+    if (block) {
+      registeredIdioms[IDIOMS.block] = block.map((listener) => ({
+        ...listener,
+        topic,
+      }))
+    }
+    if (waitFor) {
+      registeredIdioms[IDIOMS.waitFor] = waitFor.map((listener) => ({
+        ...listener,
+        topic,
+      }))
+    }
+    if (interrupt) {
+      registeredIdioms[IDIOMS.interrupt] = interrupt.map((listener) => ({
+        ...listener,
+        topic,
+      }))
+    }
+    syncs.push(function* () {
+      yield registeredIdioms
+    })
   }
+  return syncs
+}
 
 /**
  * Composes multiple synchronization rules into a single behavioral thread generator.
@@ -151,43 +176,19 @@ export const sync: Sync = (syncPoint) =>
  * @see {@link isThread} for the runtime type guard
  * @see {@link THREAD_IDENTIFIER} for the brand constant
  */
-export const thread: Thread = (rules, once) =>
-  Object.assign(
-    once
-      ? function* () {
+export const useThread: UseThread = (rules: RulesFunction[], once?: true) =>
+  once
+    ? function* () {
+        const length = rules.length
+        for (let i = 0; i < length; i++) {
+          yield* rules[i]!()
+        }
+      }
+    : function* () {
+        while (true) {
           const length = rules.length
           for (let i = 0; i < length; i++) {
             yield* rules[i]!()
           }
         }
-      : function* () {
-          while (true) {
-            const length = rules.length
-            for (let i = 0; i < length; i++) {
-              yield* rules[i]!()
-            }
-          }
-        },
-    { $: THREAD_IDENTIFIER },
-  )
-
-/**
- * Runtime type guard that distinguishes behavioral thread generators from plain rule generators.
- *
- * Checks that the value is a function bearing the `{ $: THREAD_IDENTIFIER }` brand
- * attached by the {@link thread} function.
- *
- * @param value - Value to test.
- * @returns `true` if the value is a branded thread generator function.
- *
- * @remarks
- * - Plain generators created directly with {@link sync} will NOT match.
- * - Only generators created through the {@link thread} compose function carry the brand.
- *
- * @see {@link thread} for the function that produces branded generators
- * @see {@link THREAD_IDENTIFIER} for the brand constant
- *
- * @internal
- */
-export const isThread = (value: unknown): value is ReturnType<Thread> =>
-  isTypeOf<(...args: unknown[]) => unknown>(value, 'generatorfunction') && '$' in value && value.$ === THREAD_IDENTIFIER
+      }

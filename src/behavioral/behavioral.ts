@@ -1,24 +1,30 @@
 import * as z from 'zod'
 import { FRONTIER_STATUS, SNAPSHOT_MESSAGE_KINDS } from './behavioral.constants.ts'
-import type { BPEvent, BPListener, FeedbackError, JsonObject, SnapshotMessage } from './behavioral.schemas.ts'
+import {
+  type BPEvent,
+  type FeedbackError,
+  type JsonObject,
+  type RegisteredBPListener,
+  type SnapshotMessage,
+  ThreadScehama,
+} from './behavioral.schemas.ts'
 import type {
   AddHandler,
-  AddThread,
   Behavioral,
   CandidateBid,
   PendingBid,
   RunningBid,
   SnapshotListener,
-  Sync,
-  Trigger,
+  UseAddThread,
   UseSnapshot,
+  UseTrigger,
 } from './behavioral.types.ts'
 import {
   advanceRunningToPending,
   computeFrontier,
-  ensureArray,
-  isThread,
+  generateRulesFunctions,
   resumePendingThreadsForSelectedEvent,
+  useThread,
 } from './behavioral.utils.ts'
 
 /**
@@ -31,8 +37,8 @@ import {
  * @template T - Type of values published through this mechanism.
  * @returns A publisher function with a `subscribe` method attached.
  */
-const normalizeListeners = (listener: BPListener | BPListener[]) =>
-  ensureArray(listener).map(({ type, detailSchema, ...rest }) => ({
+const normalizeListeners = (listener: RegisteredBPListener[]) =>
+  listener.map(({ type, detailSchema, ...rest }) => ({
     type,
     ...(detailSchema && { detailSchema: z.toJSONSchema(detailSchema) as JsonObject }),
     ...rest,
@@ -280,13 +286,14 @@ export const behavioral: Behavioral = () => {
    * @internal
    * Implementation of the public `trigger` function.
    */
-  const trigger: Trigger = (event) => {
+  const useTrigger: UseTrigger = (topic) => (event) => {
     const thread = function* () {
       yield {
         request: event,
       }
     }
     running.add({
+      topic,
       priority: 0,
       generator: thread(),
       ingress: true,
@@ -348,19 +355,26 @@ export const behavioral: Behavioral = () => {
     return disconnect
   }
 
-  const addThread: AddThread = (label: string, thread: ReturnType<Sync>) => {
-    isThread(thread)
-      ? running.add({
+  const useAddThread: UseAddThread =
+    (topic) =>
+    (...args) => {
+      const result = ThreadScehama.safeParse(args)
+      if (result.success) {
+        const [label, { rules, once }] = args
+        const syncPoints = generateRulesFunctions(rules, topic)
+        const thread = useThread(syncPoints, once)
+        running.add({
           priority: running.size + 1,
           generator: thread(),
           label,
         })
-      : snapshotPublisher({
+      } else {
+        snapshotPublisher({
           kind: SNAPSHOT_MESSAGE_KINDS.add_thread_error,
-          label,
-          error: `addThread: "${label}" is not a behavioral thread. Use thread() to compose synchronization rules before calling addThread.`,
+          error: result.error.issues
         })
-  }
+      }
+    }
   /**
    * @internal
    * Implementation of the public `useSnapshot` hook.
@@ -380,9 +394,9 @@ export const behavioral: Behavioral = () => {
    */
   return Object.freeze({
     /** Add thread to program. */
-    addThread,
+    useAddThread,
     /** Function to inject external events into the program. */
-    trigger,
+    useTrigger,
 
     addHandler,
     /** Hook to subscribe to internal state snapshots for monitoring/debugging. */
