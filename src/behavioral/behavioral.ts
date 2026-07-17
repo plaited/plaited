@@ -9,12 +9,12 @@ import {
   ThreadScehama,
 } from './behavioral.schemas.ts'
 import type {
-  AddHandler,
   Behavioral,
   CandidateBid,
   PendingBid,
   RunningBid,
   SnapshotListener,
+  UseAddHandler,
   UseAddThread,
   UseSnapshot,
   UseTrigger,
@@ -331,9 +331,10 @@ export const behavioral: Behavioral = () => {
    * The generic type parameter `Details` enables type-safe handler mapping,
    * where each handler receives its correctly-typed detail payload.
    */
-  const addHandler: AddHandler = (type, handler, once) => {
+  const useAddHandler: UseAddHandler = (topic) => (type, handler, once) => {
     const disconnect = actionPublisher.subscribe(async (data: BPEvent) => {
-      if (data.type === type) {
+      const match = topic ? topic === data.topic && type === data.type : type === data.type
+      if (match) {
         try {
           if (once) disconnect()
           await handler({
@@ -398,7 +399,7 @@ export const behavioral: Behavioral = () => {
     /** Function to inject external events into the program. */
     useTrigger,
 
-    addHandler,
+    useAddHandler,
     /** Hook to subscribe to internal state snapshots for monitoring/debugging. */
     useSnapshot,
 

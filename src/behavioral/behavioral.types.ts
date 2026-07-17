@@ -174,6 +174,8 @@ export type AddHandler = <T extends JsonObject | undefined = undefined, P = unkn
   once?: true,
 ) => () => void
 
+export type UseAddHandler = (topic?: string) => AddHandler
+
 /**
  * Hook for monitoring internal state transitions of the behavioral program.
  * Provides debugging, visualization, and analysis capabilities.
@@ -234,7 +236,7 @@ export type UseTrigger = (topic?: string) => Trigger
  * @see {@link UseSnapshot} for state monitoring
  */
 export type Behavioral = () => Readonly<{
-  addHandler: AddHandler
+  useAddHandler: UseAddHandler
   reportSnapshot: SnapshotListener
   useAddThread: UseAddThread
   useSnapshot: UseSnapshot
