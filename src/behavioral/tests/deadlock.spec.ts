@@ -3,7 +3,6 @@ import * as z from 'zod'
 import { SNAPSHOT_MESSAGE_KINDS } from '../behavioral.constants.ts'
 import type { DeadlockSnapshot, FrontierSnapshot, SelectionSnapshot, SnapshotMessage } from '../behavioral.schemas.ts'
 import { behavioral } from '../behavioral.ts'
-import { sync, thread } from '../behavioral.utils.ts'
 
 const onType = (type: string) => ({
   type,
@@ -12,14 +11,16 @@ const onType = (type: string) => ({
 describe(SNAPSHOT_MESSAGE_KINDS.deadlock, () => {
   test('publishes deadlock snapshot when candidates exist but none are selectable', () => {
     const snapshots: SnapshotMessage[] = []
-    const { addThread, trigger, useSnapshot } = behavioral()
+    const { useAddThread, useTrigger, useSnapshot } = behavioral()
+    const addThread = useAddThread()
+    const trigger = useTrigger()
 
     useSnapshot((snapshot: SnapshotMessage) => {
       snapshots.push(snapshot)
     })
 
-    addThread('safety', thread([sync({ block: onType('dangerous') })]))
-    addThread('interruptor', thread([sync({ interrupt: onType('dangerous') })]))
+    addThread('safety', { rules: [{ block: [onType('dangerous')] }] })
+    addThread('interruptor', { rules: [{ interrupt: [onType('dangerous')] }] })
 
     trigger({ type: 'dangerous' })
 
@@ -50,13 +51,14 @@ describe(SNAPSHOT_MESSAGE_KINDS.deadlock, () => {
 
   test('does not publish deadlock snapshot when no candidates exist', () => {
     const snapshots: SnapshotMessage[] = []
-    const { addThread, useSnapshot } = behavioral()
+    const { useAddThread, useSnapshot } = behavioral()
+    const addThread = useAddThread()
 
     useSnapshot((snapshot: SnapshotMessage) => {
       snapshots.push(snapshot)
     })
 
-    addThread('watcher', thread([sync({ waitFor: onType('dangerous') })]))
+    addThread('watcher', { rules: [{ waitFor: [onType('dangerous')] }] })
 
     expect(snapshots).toHaveLength(0)
   })
@@ -64,7 +66,10 @@ describe(SNAPSHOT_MESSAGE_KINDS.deadlock, () => {
   test('publishes selection snapshot when enabled candidates exist and keeps priority selection behavior', () => {
     const snapshots: SnapshotMessage[] = []
     const selected: string[] = []
-    const { addThread, trigger, addHandler, useSnapshot } = behavioral()
+    const { useAddThread, useTrigger, useAddHandler, useSnapshot } = behavioral()
+    const addThread = useAddThread()
+    const trigger = useTrigger()
+    const addHandler = useAddHandler()
 
     useSnapshot((snapshot: SnapshotMessage) => {
       snapshots.push(snapshot)
@@ -77,8 +82,8 @@ describe(SNAPSHOT_MESSAGE_KINDS.deadlock, () => {
       selected.push('high')
     })
 
-    addThread('low', thread([sync({ request: { type: 'low' } })], true))
-    addThread('high', thread([sync({ request: { type: 'high' } })], true))
+    addThread('low', { rules: [{ request: { type: 'low' } }], once: true })
+    addThread('high', { rules: [{ request: { type: 'high' } }], once: true })
 
     trigger({ type: 'tick' })
 
@@ -102,25 +107,28 @@ describe(SNAPSHOT_MESSAGE_KINDS.deadlock, () => {
 
   test('selection snapshot reports the chosen candidate event', () => {
     const snapshots: SnapshotMessage[] = []
-    const { addThread, trigger, useSnapshot } = behavioral()
+    const { useAddThread, useTrigger, useSnapshot } = behavioral()
+    const addThread = useAddThread()
+    const trigger = useTrigger()
 
     useSnapshot((snapshot: SnapshotMessage) => {
       snapshots.push(snapshot)
     })
 
-    addThread(
-      'blockSecond',
-      thread([
-        sync({
-          block: {
-            type: 'same_type',
-            detailSchema: z.object({ n: z.literal(2) }),
-          },
-        }),
-      ]),
-    )
-    addThread('first', thread([sync({ request: { type: 'same_type', detail: { n: 1 } } })], true))
-    addThread('second', thread([sync({ request: { type: 'same_type', detail: { n: 2 } } })], true))
+    addThread('blockSecond', {
+      rules: [
+        {
+          block: [
+            {
+              type: 'same_type',
+              detailSchema: z.object({ n: z.literal(2) }),
+            },
+          ],
+        },
+      ],
+    })
+    addThread('first', { rules: [{ request: { type: 'same_type', detail: { n: 1 } } }], once: true })
+    addThread('second', { rules: [{ request: { type: 'same_type', detail: { n: 2 } } }], once: true })
 
     trigger({ type: 'kickoff' })
 

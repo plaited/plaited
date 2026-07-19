@@ -1,18 +1,23 @@
 import { describe, expect, test } from 'bun:test'
 import type { SnapshotMessage } from '../behavioral.schemas.ts'
 import { behavioral } from '../behavioral.ts'
-import { sync, thread } from '../behavioral.utils.ts'
 
 describe('payload channel', () => {
   test('delivers non-JSON payload to handler as the third argument', () => {
-    const { addThread, trigger, addHandler } = behavioral()
+    const { useAddThread, useTrigger, useAddHandler } = behavioral()
+    const addThread = useAddThread()
+    const trigger = useTrigger()
+    const addHandler = useAddHandler()
 
     const payload = new Blob(['hello'])
     let receivedPayload: unknown = null
     let receivedDetail: unknown = null
 
-    addThread('producer', thread([sync({ request: { type: 'upload', detail: { name: 'file.txt' } } })], true))
-    addHandler<{ name: string }>('upload', (detail, _disconnect, payload) => {
+    addThread('producer', {
+      rules: [{ request: { type: 'upload', detail: { name: 'file.txt' } } }],
+      once: true,
+    })
+    addHandler<{ name: string }>('upload', ({ detail, payload }) => {
       receivedDetail = detail
       receivedPayload = payload
     })
@@ -26,14 +31,17 @@ describe('payload channel', () => {
 
   test('payload is absent from every SnapshotMessage variant when selected', () => {
     const snapshots: SnapshotMessage[] = []
-    const { addThread, trigger, addHandler, useSnapshot } = behavioral()
+    const { useAddThread, useTrigger, useAddHandler, useSnapshot } = behavioral()
+    const addThread = useAddThread()
+    const trigger = useTrigger()
+    const addHandler = useAddHandler()
     useSnapshot((msg) => {
       snapshots.push(msg)
     })
 
     const payload = { fn: () => {} }
 
-    addThread('producer', thread([sync({ request: { type: 'work', detail: { id: 1 } } })], true))
+    addThread('producer', { rules: [{ request: { type: 'work', detail: { id: 1 } } }], once: true })
     addHandler('work', () => {
       throw new Error('boom')
     })
@@ -64,11 +72,17 @@ describe('payload channel', () => {
   })
 
   test('payload never participates in matching (detail-only)', () => {
-    const { addThread, trigger, addHandler } = behavioral()
+    const { useAddThread, useTrigger, useAddHandler } = behavioral()
+    const addThread = useAddThread()
+    const trigger = useTrigger()
+    const addHandler = useAddHandler()
     const log: string[] = []
 
     // waiter waits for a task with matching detail; payload differs but must still match
-    addThread('waiter', thread([sync({ waitFor: { type: 'task' } }), sync({ request: { type: 'ack' } })], true))
+    addThread('waiter', {
+      rules: [{ waitFor: [{ type: 'task' }] }, { request: { type: 'ack' } }],
+      once: true,
+    })
     addHandler('task', () => {
       log.push('task')
     })

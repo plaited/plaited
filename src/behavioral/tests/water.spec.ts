@@ -2,7 +2,13 @@ import { expect, test } from 'bun:test'
 import { SNAPSHOT_MESSAGE_KINDS } from '../behavioral.constants.ts'
 import type { SnapshotMessage } from '../behavioral.schemas.ts'
 import { behavioral } from '../behavioral.ts'
-import { sync, thread } from '../behavioral.utils.ts'
+
+const addHotRules = [{ request: { type: 'hot' } }, { request: { type: 'hot' } }, { request: { type: 'hot' } }]
+const addColdRules = [{ request: { type: 'cold' } }, { request: { type: 'cold' } }, { request: { type: 'cold' } }]
+const mixHotColdRules = [
+  { waitFor: [{ type: 'hot' }], block: [{ type: 'cold' }] },
+  { waitFor: [{ type: 'cold' }], block: [{ type: 'hot' }] },
+]
 
 /**
  * Test scenario: Demonstrates a basic behavioral program (`bProgram`).
@@ -22,14 +28,11 @@ import { sync, thread } from '../behavioral.utils.ts'
  */
 test('Add hot water 3 times', () => {
   const actual: string[] = []
-  const { addThread, trigger, addHandler } = behavioral()
-  addThread(
-    'addHot',
-    thread(
-      [sync({ request: { type: 'hot' } }), sync({ request: { type: 'hot' } }), sync({ request: { type: 'hot' } })],
-      true,
-    ),
-  )
+  const { useAddThread, useTrigger, useAddHandler } = behavioral()
+  const addThread = useAddThread()
+  const trigger = useTrigger()
+  const addHandler = useAddHandler()
+  addThread('addHot', { rules: addHotRules, once: true })
   addHandler('hot', () => {
     actual.push('hot')
   })
@@ -53,21 +56,12 @@ test('Add hot water 3 times', () => {
  */
 test('Add hot/cold water 3 times', () => {
   const actual: string[] = []
-  const { addThread, trigger, addHandler } = behavioral()
-  addThread(
-    'addHot',
-    thread(
-      [sync({ request: { type: 'hot' } }), sync({ request: { type: 'hot' } }), sync({ request: { type: 'hot' } })],
-      true,
-    ),
-  )
-  addThread(
-    'addCold',
-    thread(
-      [sync({ request: { type: 'cold' } }), sync({ request: { type: 'cold' } }), sync({ request: { type: 'cold' } })],
-      true,
-    ),
-  )
+  const { useAddThread, useTrigger, useAddHandler } = behavioral()
+  const addThread = useAddThread()
+  const trigger = useTrigger()
+  const addHandler = useAddHandler()
+  addThread('addHot', { rules: addHotRules, once: true })
+  addThread('addCold', { rules: addColdRules, once: true })
   addHandler('hot', () => {
     actual.push('hot')
   })
@@ -86,28 +80,13 @@ test('Add hot/cold water 3 times', () => {
  */
 test('interleave', () => {
   const actual: string[] = []
-  const { addThread, trigger, addHandler } = behavioral()
-  addThread(
-    'addHot',
-    thread(
-      [sync({ request: { type: 'hot' } }), sync({ request: { type: 'hot' } }), sync({ request: { type: 'hot' } })],
-      true,
-    ),
-  )
-  addThread(
-    'addCold',
-    thread(
-      [sync({ request: { type: 'cold' } }), sync({ request: { type: 'cold' } }), sync({ request: { type: 'cold' } })],
-      true,
-    ),
-  )
-  addThread(
-    'mixHotCold',
-    thread([
-      sync({ waitFor: { type: 'hot' }, block: { type: 'cold' } }),
-      sync({ waitFor: { type: 'cold' }, block: { type: 'hot' } }),
-    ]),
-  )
+  const { useAddThread, useTrigger, useAddHandler } = behavioral()
+  const addThread = useAddThread()
+  const trigger = useTrigger()
+  const addHandler = useAddHandler()
+  addThread('addHot', { rules: addHotRules, once: true })
+  addThread('addCold', { rules: addColdRules, once: true })
+  addThread('mixHotCold', { rules: mixHotColdRules })
   addHandler('hot', () => {
     actual.push('hot')
   })
@@ -128,31 +107,15 @@ test('interleave', () => {
  */
 test('logging', () => {
   const snapshots: SnapshotMessage[] = []
-  const { addThread, trigger, useSnapshot } = behavioral()
+  const { useAddThread, useTrigger, useSnapshot } = behavioral()
+  const addThread = useAddThread()
+  const trigger = useTrigger()
   useSnapshot((snapshot: SnapshotMessage) => {
     snapshots.push(snapshot)
   })
-  addThread(
-    'addHot',
-    thread(
-      [sync({ request: { type: 'hot' } }), sync({ request: { type: 'hot' } }), sync({ request: { type: 'hot' } })],
-      true,
-    ),
-  )
-  addThread(
-    'addCold',
-    thread(
-      [sync({ request: { type: 'cold' } }), sync({ request: { type: 'cold' } }), sync({ request: { type: 'cold' } })],
-      true,
-    ),
-  )
-  addThread(
-    'mixHotCold',
-    thread([
-      sync({ waitFor: { type: 'hot' }, block: { type: 'cold' } }),
-      sync({ waitFor: { type: 'cold' }, block: { type: 'hot' } }),
-    ]),
-  )
+  addThread('addHot', { rules: addHotRules, once: true })
+  addThread('addCold', { rules: addColdRules, once: true })
+  addThread('mixHotCold', { rules: mixHotColdRules })
   trigger({ type: 'start' })
   const frontierSnapshots = snapshots.filter((snapshot) => snapshot.kind === SNAPSHOT_MESSAGE_KINDS.frontier)
   expect(frontierSnapshots.length).toBeGreaterThan(0)

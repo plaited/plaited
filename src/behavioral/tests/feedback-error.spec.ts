@@ -2,7 +2,6 @@ import { describe, expect, test } from 'bun:test'
 import { SNAPSHOT_MESSAGE_KINDS } from '../behavioral.constants.ts'
 import type { FeedbackError, SnapshotMessage } from '../behavioral.schemas.ts'
 import { behavioral } from '../behavioral.ts'
-import { sync, thread } from '../behavioral.utils.ts'
 
 /**
  * Test suite for the FeedbackError snapshot message.
@@ -12,11 +11,14 @@ import { sync, thread } from '../behavioral.utils.ts'
 describe(SNAPSHOT_MESSAGE_KINDS.feedback_error, () => {
   test('publishes feedback-error when handler throws synchronously', () => {
     const snapshots: SnapshotMessage[] = []
-    const { addThread, trigger, addHandler, useSnapshot } = behavioral()
+    const { useAddThread, useTrigger, useAddHandler, useSnapshot } = behavioral()
+    const addThread = useAddThread()
+    const trigger = useTrigger()
+    const addHandler = useAddHandler()
     useSnapshot((snapshot: SnapshotMessage) => {
       snapshots.push(snapshot)
     })
-    addThread('requestAction', thread([sync({ request: { type: 'doWork' } })], true))
+    addThread('requestAction', { rules: [{ request: { type: 'doWork' } }], once: true })
     addHandler('doWork', () => {
       throw new Error('handler failed')
     })
@@ -36,11 +38,17 @@ describe(SNAPSHOT_MESSAGE_KINDS.feedback_error, () => {
 
   test('publishes feedback-error with event detail', () => {
     const snapshots: SnapshotMessage[] = []
-    const { addThread, trigger, addHandler, useSnapshot } = behavioral()
+    const { useAddThread, useTrigger, useAddHandler, useSnapshot } = behavioral()
+    const addThread = useAddThread()
+    const trigger = useTrigger()
+    const addHandler = useAddHandler()
     useSnapshot((snapshot: SnapshotMessage) => {
       snapshots.push(snapshot)
     })
-    addThread('requestAction', thread([sync({ request: { type: 'process', detail: { id: 42 } } })], true))
+    addThread('requestAction', {
+      rules: [{ request: { type: 'process', detail: { id: 42 } } }],
+      once: true,
+    })
     addHandler('process', () => {
       throw new TypeError('invalid input')
     })
@@ -60,11 +68,14 @@ describe(SNAPSHOT_MESSAGE_KINDS.feedback_error, () => {
 
   test('stringifies non-Error thrown values', () => {
     const snapshots: SnapshotMessage[] = []
-    const { addThread, trigger, addHandler, useSnapshot } = behavioral()
+    const { useAddThread, useTrigger, useAddHandler, useSnapshot } = behavioral()
+    const addThread = useAddThread()
+    const trigger = useTrigger()
+    const addHandler = useAddHandler()
     useSnapshot((snapshot: SnapshotMessage) => {
       snapshots.push(snapshot)
     })
-    addThread('requestAction', thread([sync({ request: { type: 'fail' } })], true))
+    addThread('requestAction', { rules: [{ request: { type: 'fail' } }], once: true })
     addHandler('fail', () => {
       throw 'string error'
     })
@@ -77,11 +88,14 @@ describe(SNAPSHOT_MESSAGE_KINDS.feedback_error, () => {
 
   test('frontier and selection snapshots precede feedback-error in message order', () => {
     const snapshots: SnapshotMessage[] = []
-    const { addThread, trigger, addHandler, useSnapshot } = behavioral()
+    const { useAddThread, useTrigger, useAddHandler, useSnapshot } = behavioral()
+    const addThread = useAddThread()
+    const trigger = useTrigger()
+    const addHandler = useAddHandler()
     useSnapshot((snapshot: SnapshotMessage) => {
       snapshots.push(snapshot)
     })
-    addThread('requestAction', thread([sync({ request: { type: 'boom' } })], true))
+    addThread('requestAction', { rules: [{ request: { type: 'boom' } }], once: true })
     addHandler('boom', () => {
       throw new Error('exploded')
     })
@@ -101,11 +115,14 @@ describe(SNAPSHOT_MESSAGE_KINDS.feedback_error, () => {
 
   test('no feedback-error when handler succeeds', () => {
     const snapshots: SnapshotMessage[] = []
-    const { addThread, trigger, addHandler, useSnapshot } = behavioral()
+    const { useAddThread, useTrigger, useAddHandler, useSnapshot } = behavioral()
+    const addThread = useAddThread()
+    const trigger = useTrigger()
+    const addHandler = useAddHandler()
     useSnapshot((snapshot: SnapshotMessage) => {
       snapshots.push(snapshot)
     })
-    addThread('requestAction', thread([sync({ request: { type: 'ok' } })], true))
+    addThread('requestAction', { rules: [{ request: { type: 'ok' } }], once: true })
     addHandler('ok', () => {})
     trigger({ type: 'start' })
 

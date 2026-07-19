@@ -2,35 +2,42 @@ import { describe, expect, test } from 'bun:test'
 import { SNAPSHOT_MESSAGE_KINDS } from '../behavioral.constants.ts'
 import type { DeadlockSnapshot, FrontierSnapshot, SelectionSnapshot, SnapshotMessage } from '../behavioral.schemas.ts'
 import { behavioral } from '../behavioral.ts'
-import { sync, thread } from '../behavioral.utils.ts'
 
 const onType = (type: string) => ({ type })
 
 describe('addThread', () => {
   test('supports dynamic thread installation from feedback handlers', () => {
     const actual: string[] = []
-    const { addThread, trigger, addHandler } = behavioral()
+    const { useAddThread, useTrigger, useAddHandler } = behavioral()
+    const addThread = useAddThread()
+    const trigger = useTrigger()
+    const addHandler = useAddHandler()
 
-    addThread('addHotOnce', thread([sync({ request: { type: 'hot_1' } })], true))
-    addThread(
-      'mixHotCold',
-      thread([
-        sync({
+    addThread('addHotOnce', { rules: [{ request: { type: 'hot_1' } }], once: true })
+    addThread('mixHotCold', {
+      rules: [
+        {
           waitFor: [onType('hot_1'), onType('hot')],
-          block: onType('cold'),
-        }),
-        sync({
-          waitFor: onType('cold'),
+          block: [onType('cold')],
+        },
+        {
+          waitFor: [onType('cold')],
           block: [onType('hot_1'), onType('hot')],
-        }),
-      ]),
-    )
+        },
+      ],
+    })
 
     addHandler('hot_1', () => {
       actual.push('hot')
       trigger({ type: 'cold' })
-      addThread('addMoreHot', thread([sync({ request: { type: 'hot' } }), sync({ request: { type: 'hot' } })], true))
-      addThread('addMoreCold', thread([sync({ request: { type: 'cold' } }), sync({ request: { type: 'cold' } })], true))
+      addThread('addMoreHot', {
+        rules: [{ request: { type: 'hot' } }, { request: { type: 'hot' } }],
+        once: true,
+      })
+      addThread('addMoreCold', {
+        rules: [{ request: { type: 'cold' } }, { request: { type: 'cold' } }],
+        once: true,
+      })
     })
     addHandler('cold', () => {
       actual.push('cold')
@@ -49,14 +56,23 @@ describe('addThread', () => {
   test('frontier and selection snapshots include worker requests and selected events', () => {
     const snapshots: SnapshotMessage[] = []
     const completions: string[] = []
-    const { addThread, trigger, addHandler, useSnapshot } = behavioral()
+    const { useAddThread, useTrigger, useAddHandler, useSnapshot } = behavioral()
+    const addThread = useAddThread()
+    const trigger = useTrigger()
+    const addHandler = useAddHandler()
 
     useSnapshot((snapshot: SnapshotMessage) => {
       snapshots.push(snapshot)
     })
 
-    addThread('workerA', thread([sync({ waitFor: onType('start') }), sync({ request: { type: 'done_a' } })], true))
-    addThread('workerB', thread([sync({ waitFor: onType('start') }), sync({ request: { type: 'done_b' } })], true))
+    addThread('workerA', {
+      rules: [{ waitFor: [onType('start')] }, { request: { type: 'done_a' } }],
+      once: true,
+    })
+    addThread('workerB', {
+      rules: [{ waitFor: [onType('start')] }, { request: { type: 'done_b' } }],
+      once: true,
+    })
 
     addHandler('done_a', () => {
       completions.push('done')
@@ -87,15 +103,17 @@ describe('addThread', () => {
 
   test('deadlock snapshots publish frontier status and step continuity', () => {
     const snapshots: SnapshotMessage[] = []
-    const { addThread, trigger, useSnapshot } = behavioral()
+    const { useAddThread, useTrigger, useSnapshot } = behavioral()
+    const addThread = useAddThread()
+    const trigger = useTrigger()
 
     useSnapshot((snapshot: SnapshotMessage) => {
       snapshots.push(snapshot)
     })
 
-    addThread('guard', thread([sync({ block: onType('dangerous') })]))
-    addThread('watchdog', thread([sync({ interrupt: onType('dangerous') })]))
-    addThread('requester', thread([sync({ request: { type: 'dangerous' } })], true))
+    addThread('guard', { rules: [{ block: [onType('dangerous')] }] })
+    addThread('watchdog', { rules: [{ interrupt: [onType('dangerous')] }] })
+    addThread('requester', { rules: [{ request: { type: 'dangerous' } }], once: true })
 
     trigger({ type: 'start' })
 

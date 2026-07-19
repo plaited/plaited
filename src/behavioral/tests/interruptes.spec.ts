@@ -2,7 +2,6 @@ import { describe, expect, test } from 'bun:test'
 import { SNAPSHOT_MESSAGE_KINDS } from '../behavioral.constants.ts'
 import type { SnapshotMessage } from '../behavioral.schemas.ts'
 import { behavioral } from '../behavioral.ts'
-import { sync, thread } from '../behavioral.utils.ts'
 
 const onType = (type: string) => ({ type })
 
@@ -17,10 +16,9 @@ describe('interrupt', () => {
    * However, this thread can be interrupted by a 'terminate' event while waiting for 'add'.
    * Omitted `once` makes the thread repeat its behavior.
    */
-  const addHot = thread([
-    sync({ waitFor: onType('add'), interrupt: [onType('terminate')] }),
-    sync({ request: { type: 'hot' } }),
-  ])
+  const addHot = {
+    rules: [{ waitFor: [onType('add')], interrupt: [onType('terminate')] }, { request: { type: 'hot' } }],
+  }
 
   /**
    * Test case: Ensures the 'addHot' thread functions correctly without interruption.
@@ -29,7 +27,10 @@ describe('interrupt', () => {
    */
   test('should not interrupt', () => {
     const actual: string[] = []
-    const { addThread, trigger, addHandler } = behavioral()
+    const { useAddThread, useTrigger, useAddHandler } = behavioral()
+    const addThread = useAddThread()
+    const trigger = useTrigger()
+    const addHandler = useAddHandler()
     addThread('addHot', addHot)
     addHandler('hot', () => {
       actual.push('hot')
@@ -59,7 +60,10 @@ describe('interrupt', () => {
   test('should interrupt', () => {
     const snapshots: SnapshotMessage[] = []
     const actual: string[] = []
-    const { addThread, trigger, addHandler, useSnapshot } = behavioral()
+    const { useAddThread, useTrigger, useAddHandler, useSnapshot } = behavioral()
+    const addThread = useAddThread()
+    const trigger = useTrigger()
+    const addHandler = useAddHandler()
     useSnapshot((snapshot: SnapshotMessage) => {
       snapshots.push(snapshot)
     })

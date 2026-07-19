@@ -1,7 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 import type { SnapshotMessage } from '../behavioral.schemas.ts'
 import { behavioral } from '../behavioral.ts'
-import { sync, thread } from '../behavioral.utils.ts'
 
 const onType = (type: string) => ({ type })
 
@@ -33,10 +32,16 @@ describe('reportSnapshot', () => {
 
   test('does not alter event selection order', () => {
     const events: string[] = []
-    const { addThread, trigger, addHandler, reportSnapshot } = behavioral()
+    const { useAddThread, useTrigger, useAddHandler, reportSnapshot } = behavioral()
+    const addThread = useAddThread()
+    const trigger = useTrigger()
+    const addHandler = useAddHandler()
 
-    addThread('producer', thread([sync({ request: { type: 'task' } })], true))
-    addThread('consumer', thread([sync({ waitFor: onType('task') }), sync({ request: { type: 'ack' } })], true))
+    addThread('producer', { rules: [{ request: { type: 'task' } }], once: true })
+    addThread('consumer', {
+      rules: [{ waitFor: [onType('task')] }, { request: { type: 'ack' } }],
+      once: true,
+    })
 
     addHandler('task', () => {
       events.push('task')

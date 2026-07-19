@@ -1,8 +1,10 @@
 import { expect, test } from 'bun:test'
 import * as z from 'zod'
+import type { Idioms } from '../behavioral.schemas.ts'
 import { behavioral } from '../behavioral.ts'
-import type { Sync } from '../behavioral.types.ts'
-import { sync, thread } from '../behavioral.utils.ts'
+
+/** Author-facing thread arguments accepted by `useAddThread()(label, threadArgs)`. */
+type ThreadArgs = { rules: Idioms[]; once?: true }
 
 type WinningLine = [number, number, number]
 
@@ -52,14 +54,16 @@ const onPlayerMoveIn = (player: 'X' | 'O', lineSquares: WinningLine) => ({
  */
 test('taking a square', () => {
   // Create a new bProgram instance.
-  const { addHandler, trigger } = behavioral()
+  const { useTrigger, useAddHandler } = behavioral()
+  const trigger = useTrigger()
+  const addHandler = useAddHandler()
   // Initialize the board with all squares available for this test.
   board = new Set(squares)
   // Register feedback handlers to react to 'X' and 'O' events.
-  addHandler('X', ({ square }: Square) => {
+  addHandler<Square>('X', ({ detail: { square } }) => {
     board.delete(square)
   })
-  addHandler('O', ({ square }: Square) => {
+  addHandler<Square>('O', ({ detail: { square } }) => {
     board.delete(square)
   })
   // X takes square 1
@@ -77,10 +81,12 @@ test('taking a square', () => {
  * It waits for 'X', then blocks 'X' while waiting for 'O', and repeats.
  * Omitted `once` makes the thread loop indefinitely.
  */
-const enforceTurns = thread([
-  sync({ waitFor: onType('X'), block: onType('O') }),
-  sync({ waitFor: onType('O'), block: onType('X') }),
-])
+const enforceTurns: ThreadArgs = {
+  rules: [
+    { waitFor: [onType('X')], block: [onType('O')] },
+    { waitFor: [onType('O')], block: [onType('X')] },
+  ],
+}
 
 /**
  * Test case: Verifies the `enforceTurns` b-thread correctly manages player turns.
@@ -89,16 +95,19 @@ const enforceTurns = thread([
  */
 test('take turns', () => {
   // Create a new bProgram instance.
-  const { addHandler, trigger, addThread } = behavioral()
+  const { useAddThread, useTrigger, useAddHandler } = behavioral()
+  const addThread = useAddThread()
+  const trigger = useTrigger()
+  const addHandler = useAddHandler()
   addThread('enforceTurns', enforceTurns)
   // Initialize the board.
   board = new Set(squares)
   // Add the turn-enforcing thread.
   // Register feedback handlers to update the board.
-  addHandler('X', ({ square }: Square) => {
+  addHandler<Square>('X', ({ detail: { square } }) => {
     board.delete(square)
   })
-  addHandler('O', ({ square }: Square) => {
+  addHandler<Square>('O', ({ detail: { square } }) => {
     board.delete(square)
   })
   // X takes square 1 (valid).
@@ -118,17 +127,17 @@ test('take turns', () => {
  * Each thread waits for any player ('X' or 'O') to take its specific square,
  * then blocks any further attempts to take that same square.
  */
-const squaresTaken: Record<string, ReturnType<Sync>> = {}
+const squaresTaken: Record<string, ThreadArgs> = {}
 for (const square of squares) {
-  squaresTaken[`(${square}) taken`] = thread(
-    [
+  squaresTaken[`(${square}) taken`] = {
+    rules: [
       // Wait for an event (X or O) targeting this specific square.
-      sync({ waitFor: [onMove('X', square), onMove('O', square)] }),
+      { waitFor: [onMove('X', square), onMove('O', square)] },
       // Once taken, block any future event targeting this square.
-      sync({ block: [onMove('X', square), onMove('O', square)] }),
+      { block: [onMove('X', square), onMove('O', square)] },
     ],
-    true,
-  )
+    once: true,
+  }
 }
 
 /**
@@ -139,19 +148,22 @@ for (const square of squares) {
  */
 test('squares taken', () => {
   // Create a new bProgram instance.
-  const { addHandler, trigger, addThread } = behavioral()
+  const { useAddThread, useTrigger, useAddHandler } = behavioral()
+  const addThread = useAddThread()
+  const trigger = useTrigger()
+  const addHandler = useAddHandler()
   addThread('enforceTurns', enforceTurns)
-  for (const [key, thread] of Object.entries(squaresTaken)) {
-    addThread(key, thread)
+  for (const [key, threadArgs] of Object.entries(squaresTaken)) {
+    addThread(key, threadArgs)
   }
   // Initialize the board.
   board = new Set(squares)
   // Add threads for turn enforcement and preventing taking occupied squares.
   // Register feedback handlers.
-  addHandler('X', ({ square }: Square) => {
+  addHandler<Square>('X', ({ detail: { square } }) => {
     board.delete(square)
   })
-  addHandler('O', ({ square }: Square) => {
+  addHandler<Square>('O', ({ detail: { square } }) => {
     board.delete(square)
   })
   // X takes square 1 (valid).
@@ -184,28 +196,20 @@ type Winner = { player: 'X' | 'O'; squares: number[] }
  * @returns Record of b-threads, one for each potential winning line for the player.
  */
 const detectWins = (player: 'X' | 'O') =>
-  winConditions.reduce((acc: Record<string, ReturnType<Sync>>, squares) => {
-    acc[`${player}Wins (${squares})`] = thread(
-      [
+  winConditions.reduce((acc: Record<string, ThreadArgs>, squares) => {
+    acc[`${player}Wins (${squares})`] = {
+      rules: [
         // Wait for the player to take the first square of this winning line.
-        sync({
-          waitFor: onPlayerMoveIn(player, squares),
-        }),
+        { waitFor: [onPlayerMoveIn(player, squares)] },
         // Wait for the player to take the second square of this winning line.
-        sync({
-          waitFor: onPlayerMoveIn(player, squares),
-        }),
+        { waitFor: [onPlayerMoveIn(player, squares)] },
         // Wait for the player to take the third square of this winning line.
-        sync({
-          waitFor: onPlayerMoveIn(player, squares),
-        }),
+        { waitFor: [onPlayerMoveIn(player, squares)] },
         // Request a 'win' event if all three squares are taken by the player.
-        sync({
-          request: { type: 'win', detail: { squares, player } },
-        }),
+        { request: { type: 'win', detail: { squares, player } } },
       ],
-      true,
-    )
+      once: true,
+    }
     return acc
   }, {})
 
@@ -216,16 +220,19 @@ const detectWins = (player: 'X' | 'O') =>
  */
 test('detect winner', () => {
   // Create a new bProgram instance.
-  const { addHandler, trigger, addThread } = behavioral()
+  const { useAddThread, useTrigger, useAddHandler } = behavioral()
+  const addThread = useAddThread()
+  const trigger = useTrigger()
+  const addHandler = useAddHandler()
   addThread('enforceTurns', enforceTurns)
-  for (const [key, thread] of Object.entries(squaresTaken)) {
-    addThread(key, thread)
+  for (const [key, threadArgs] of Object.entries(squaresTaken)) {
+    addThread(key, threadArgs)
   }
-  for (const [key, thread] of Object.entries(detectWins('X'))) {
-    addThread(key, thread)
+  for (const [key, threadArgs] of Object.entries(detectWins('X'))) {
+    addThread(key, threadArgs)
   }
-  for (const [key, thread] of Object.entries(detectWins('O'))) {
-    addThread(key, thread)
+  for (const [key, threadArgs] of Object.entries(detectWins('O'))) {
+    addThread(key, threadArgs)
   }
   // Initialize the board.
   board = new Set(squares)
@@ -233,13 +240,13 @@ test('detect winner', () => {
   /** Stores the winner information when a 'win' event occurs. */
   const winner: Winner | Record<string, unknown> = {}
   // Register feedback handlers, including one for the 'win' event.
-  addHandler('X', ({ square }: { square: number }) => {
+  addHandler<Square>('X', ({ detail: { square } }) => {
     board.delete(square)
   })
-  addHandler('O', ({ square }: { square: number }) => {
+  addHandler<Square>('O', ({ detail: { square } }) => {
     board.delete(square)
   })
-  addHandler('win', (detail: Winner) => {
+  addHandler<Winner>('win', ({ detail }) => {
     Object.assign(winner, detail)
   })
   // Simulate moves leading to X winning.
@@ -256,7 +263,9 @@ test('detect winner', () => {
  * A b-thread that stops the game once a 'win' event occurs.
  * It waits for the 'win' event and then blocks any further 'X' or 'O' moves indefinitely.
  */
-const stopGame = thread([sync({ waitFor: onType('win') }), sync({ block: [onType('X'), onType('O')] })])
+const stopGame: ThreadArgs = {
+  rules: [{ waitFor: [onType('win')] }, { block: [onType('X'), onType('O')] }],
+}
 
 /**
  * Test case: Verifies that the `stopGame` thread prevents further moves after a win.
@@ -265,16 +274,19 @@ const stopGame = thread([sync({ waitFor: onType('win') }), sync({ block: [onType
  */
 test('stop game', () => {
   // Create a new bProgram instance.
-  const { addHandler, trigger, addThread } = behavioral()
+  const { useAddThread, useTrigger, useAddHandler } = behavioral()
+  const addThread = useAddThread()
+  const trigger = useTrigger()
+  const addHandler = useAddHandler()
   addThread('enforceTurns', enforceTurns)
-  for (const [key, thread] of Object.entries(squaresTaken)) {
-    addThread(key, thread)
+  for (const [key, threadArgs] of Object.entries(squaresTaken)) {
+    addThread(key, threadArgs)
   }
-  for (const [key, thread] of Object.entries(detectWins('X'))) {
-    addThread(key, thread)
+  for (const [key, threadArgs] of Object.entries(detectWins('X'))) {
+    addThread(key, threadArgs)
   }
-  for (const [key, thread] of Object.entries(detectWins('O'))) {
-    addThread(key, thread)
+  for (const [key, threadArgs] of Object.entries(detectWins('O'))) {
+    addThread(key, threadArgs)
   }
   addThread('stopGame', stopGame)
   // Initialize the board.
@@ -282,13 +294,13 @@ test('stop game', () => {
   // Add all game rule threads, including the one to stop the game on win.
   const winner: Winner | Record<string, unknown> = {}
   // Register feedback handlers.
-  addHandler('X', ({ square }: { square: number }) => {
+  addHandler<Square>('X', ({ detail: { square } }) => {
     board.delete(square)
   })
-  addHandler('O', ({ square }: { square: number }) => {
+  addHandler<Square>('O', ({ detail: { square } }) => {
     board.delete(square)
   })
-  addHandler('win', (detail: Winner) => {
+  addHandler<Winner>('win', ({ detail }) => {
     Object.assign(winner, detail)
   })
   // Simulate moves leading to X winning.
@@ -309,16 +321,18 @@ test('stop game', () => {
  * Each thread requests to take a specific square ('O' move) and repeats indefinitely.
  * These act as low-priority suggestions for O's moves.
  */
-const defaultMoves: Record<string, ReturnType<Sync>> = {}
+const defaultMoves: Record<string, ThreadArgs> = {}
 for (const square of squares) {
-  defaultMoves[`defaultMoves(${square})`] = thread([
-    sync({
-      request: {
-        type: 'O',
-        detail: { square },
+  defaultMoves[`defaultMoves(${square})`] = {
+    rules: [
+      {
+        request: {
+          type: 'O',
+          detail: { square },
+        },
       },
-    }),
-  ])
+    ],
+  }
 }
 
 /**
@@ -329,30 +343,33 @@ for (const square of squares) {
  */
 test('defaultMoves', () => {
   // Create a new bProgram instance.
-  const { addHandler, trigger, addThread } = behavioral()
+  const { useAddThread, useTrigger, useAddHandler } = behavioral()
+  const addThread = useAddThread()
+  const trigger = useTrigger()
+  const addHandler = useAddHandler()
   addThread('enforceTurns', enforceTurns)
-  for (const [key, thread] of Object.entries(squaresTaken)) {
-    addThread(key, thread)
+  for (const [key, threadArgs] of Object.entries(squaresTaken)) {
+    addThread(key, threadArgs)
   }
-  for (const [key, thread] of Object.entries(detectWins('X'))) {
-    addThread(key, thread)
+  for (const [key, threadArgs] of Object.entries(detectWins('X'))) {
+    addThread(key, threadArgs)
   }
-  for (const [key, thread] of Object.entries(detectWins('O'))) {
-    addThread(key, thread)
+  for (const [key, threadArgs] of Object.entries(detectWins('O'))) {
+    addThread(key, threadArgs)
   }
   addThread('stopGame', stopGame)
-  for (const [key, thread] of Object.entries(defaultMoves)) {
-    addThread(key, thread)
+  for (const [key, threadArgs] of Object.entries(defaultMoves)) {
+    addThread(key, threadArgs)
   }
   // Initialize the board.
   board = new Set(squares)
   // Add game rules and default moves for O.
 
   // Register feedback handlers.
-  addHandler('X', ({ square }: { square: number }) => {
+  addHandler<Square>('X', ({ detail: { square } }) => {
     board.delete(square)
   })
-  addHandler('O', ({ square }: { square: number }) => {
+  addHandler<Square>('O', ({ detail: { square } }) => {
     board.delete(square)
   })
   // X takes square 0.
@@ -366,17 +383,17 @@ test('defaultMoves', () => {
  * A b-sync definition representing a strategy for player 'O' to start by taking the center square (4).
  * This is a single, high-priority request.
  */
-const startAtCenter = thread(
-  [
-    sync({
+const startAtCenter: ThreadArgs = {
+  rules: [
+    {
       request: {
         type: 'O',
         detail: { square: 4 },
       },
-    }),
+    },
   ],
-  true,
-)
+  once: true,
+}
 
 /**
  * Test case: Demonstrates overriding default moves with a specific strategy.
@@ -385,21 +402,24 @@ const startAtCenter = thread(
  */
 test('start at center', () => {
   // Create a new bProgram instance.
-  const { addHandler, trigger, addThread } = behavioral()
+  const { useAddThread, useTrigger, useAddHandler } = behavioral()
+  const addThread = useAddThread()
+  const trigger = useTrigger()
+  const addHandler = useAddHandler()
   addThread('enforceTurns', enforceTurns)
-  for (const [key, thread] of Object.entries(squaresTaken)) {
-    addThread(key, thread)
+  for (const [key, threadArgs] of Object.entries(squaresTaken)) {
+    addThread(key, threadArgs)
   }
-  for (const [key, thread] of Object.entries(detectWins('X'))) {
-    addThread(key, thread)
+  for (const [key, threadArgs] of Object.entries(detectWins('X'))) {
+    addThread(key, threadArgs)
   }
-  for (const [key, thread] of Object.entries(detectWins('O'))) {
-    addThread(key, thread)
+  for (const [key, threadArgs] of Object.entries(detectWins('O'))) {
+    addThread(key, threadArgs)
   }
   addThread('stopGame', stopGame)
   addThread('startAtCenter', startAtCenter)
-  for (const [key, thread] of Object.entries(defaultMoves)) {
-    addThread(key, thread)
+  for (const [key, threadArgs] of Object.entries(defaultMoves)) {
+    addThread(key, threadArgs)
   }
   // Initialize the board.
   board = new Set(squares)
@@ -407,10 +427,10 @@ test('start at center', () => {
   // `startAtCenter` likely has higher priority due to registration order or could be set explicitly.
 
   // Register feedback handlers.
-  addHandler('X', ({ square }: { square: number }) => {
+  addHandler<Square>('X', ({ detail: { square } }) => {
     board.delete(square)
   })
-  addHandler('O', ({ square }: { square: number }) => {
+  addHandler<Square>('O', ({ detail: { square } }) => {
     board.delete(square)
   })
   // X takes square 0.
@@ -427,33 +447,33 @@ test('start at center', () => {
  * @returns Record of b-threads, one for each potential winning line, designed to block X.
  */
 const preventCompletionOfLineWithTwoXs = () => {
-  const bThreads: Record<string, ReturnType<Sync>> = {}
+  const bThreads: Record<string, ThreadArgs> = {}
   for (const win of winConditions) {
     const [a, b, c] = win
-    bThreads[`StopXWin(${win})-ab`] = thread(
-      [
-        sync({ waitFor: onMove('X', a) }),
-        sync({ waitFor: onMove('X', b) }),
-        sync({ request: { type: 'O', detail: { square: c } } }),
+    bThreads[`StopXWin(${win})-ab`] = {
+      rules: [
+        { waitFor: [onMove('X', a)] },
+        { waitFor: [onMove('X', b)] },
+        { request: { type: 'O', detail: { square: c } } },
       ],
-      true,
-    )
-    bThreads[`StopXWin(${win})-ac`] = thread(
-      [
-        sync({ waitFor: onMove('X', a) }),
-        sync({ waitFor: onMove('X', c) }),
-        sync({ request: { type: 'O', detail: { square: b } } }),
+      once: true,
+    }
+    bThreads[`StopXWin(${win})-ac`] = {
+      rules: [
+        { waitFor: [onMove('X', a)] },
+        { waitFor: [onMove('X', c)] },
+        { request: { type: 'O', detail: { square: b } } },
       ],
-      true,
-    )
-    bThreads[`StopXWin(${win})-bc`] = thread(
-      [
-        sync({ waitFor: onMove('X', b) }),
-        sync({ waitFor: onMove('X', c) }),
-        sync({ request: { type: 'O', detail: { square: a } } }),
+      once: true,
+    }
+    bThreads[`StopXWin(${win})-bc`] = {
+      rules: [
+        { waitFor: [onMove('X', b)] },
+        { waitFor: [onMove('X', c)] },
+        { request: { type: 'O', detail: { square: a } } },
       ],
-      true,
-    )
+      once: true,
+    }
   }
   return bThreads
 }
@@ -466,34 +486,37 @@ const preventCompletionOfLineWithTwoXs = () => {
  */
 test('prevent completion of line with two Xs', () => {
   // Create a new bProgram instance.
-  const { addHandler, trigger, addThread } = behavioral()
+  const { useAddThread, useTrigger, useAddHandler } = behavioral()
+  const addThread = useAddThread()
+  const trigger = useTrigger()
+  const addHandler = useAddHandler()
   addThread('enforceTurns', enforceTurns)
-  for (const [key, thread] of Object.entries(squaresTaken)) {
-    addThread(key, thread)
+  for (const [key, threadArgs] of Object.entries(squaresTaken)) {
+    addThread(key, threadArgs)
   }
-  for (const [key, thread] of Object.entries(detectWins('X'))) {
-    addThread(key, thread)
+  for (const [key, threadArgs] of Object.entries(detectWins('X'))) {
+    addThread(key, threadArgs)
   }
-  for (const [key, thread] of Object.entries(detectWins('O'))) {
-    addThread(key, thread)
+  for (const [key, threadArgs] of Object.entries(detectWins('O'))) {
+    addThread(key, threadArgs)
   }
   addThread('stopGame', stopGame)
   addThread('startAtCenter', startAtCenter)
-  for (const [key, thread] of Object.entries(preventCompletionOfLineWithTwoXs())) {
-    addThread(key, thread)
+  for (const [key, threadArgs] of Object.entries(preventCompletionOfLineWithTwoXs())) {
+    addThread(key, threadArgs)
   }
   // Initialize the board.
   board = new Set(squares)
   // Add all game rules, including the blocking strategy for O.
   const winner: Winner | Record<string, unknown> = {}
   // Register feedback handlers with specific types for clarity.
-  addHandler('X', ({ square }: Square) => {
+  addHandler<Square>('X', ({ detail: { square } }) => {
     board.delete(square)
   })
-  addHandler('O', ({ square }: Square) => {
+  addHandler<Square>('O', ({ detail: { square } }) => {
     board.delete(square)
   })
-  addHandler('win', (detail: Winner) => {
+  addHandler<Winner>('win', ({ detail }) => {
     Object.assign(winner, detail)
   })
   // Simulate moves:
