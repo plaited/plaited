@@ -1,6 +1,13 @@
 import { describe, expect, test } from 'bun:test'
-import type { SnapshotMessage } from '../behavioral.schemas.ts'
+import type { PendingBidsSnapshot, SnapshotMessage } from '../behavioral.schemas.ts'
 import { behavioral } from '../behavioral.ts'
+
+const jsonSchema = {
+  type: 'object' as const,
+  properties: { id: { type: 'string' as const } },
+  required: ['id'],
+  additionalProperties: false,
+}
 
 describe('pending_bids snapshot', () => {
   test('publishes pending_bids snapshot with thread states during superstep', () => {
@@ -43,5 +50,46 @@ describe('pending_bids snapshot', () => {
     expect(pendingIdx).not.toBe(-1)
     expect(frontierIdx).not.toBe(-1)
     expect(pendingIdx).toBeLessThan(frontierIdx)
+  })
+
+  test('detailSchema in pending_bids snapshot echoes the input JSON Schema without conversion', () => {
+    const seen: SnapshotMessage[] = []
+    const { useAddThread, useTrigger, useSnapshot } = behavioral()
+    const addThread = useAddThread()
+    const trigger = useTrigger()
+    useSnapshot((msg) => {
+      seen.push(msg)
+    })
+
+    addThread('blocker', {
+      rules: [
+        {
+          block: [
+            {
+              type: 'task',
+              detailSchema: jsonSchema,
+            },
+          ],
+        },
+      ],
+    })
+    addThread('worker', { rules: [{ request: { type: 'task', detail: { id: 'job-1' } } }], once: true })
+
+    trigger({ type: 'start' })
+
+    const pending = seen.find((s) => s.kind === 'pending_bids') as PendingBidsSnapshot | undefined
+    expect(pending).toBeDefined()
+    expect(pending!.threads.length).toBeGreaterThanOrEqual(2)
+
+    // Find the blocker thread's block listener detailSchema
+    const blocker = pending!.threads.find((t) => t.label === 'blocker')
+    expect(blocker).toBeDefined()
+    const block = blocker!.block
+    expect(block).toBeDefined()
+    const listener = block![0]!
+    // The detailSchema in the snapshot must be deep-equal to the input, not a conversion
+    expect(listener.detailSchema).toEqual(jsonSchema)
+    // Specifically assert that additionalProperties: false survives (z.toJSONSchema drops it)
+    expect(listener.detailSchema).toHaveProperty('additionalProperties', false)
   })
 })

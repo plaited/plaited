@@ -1,9 +1,7 @@
-import * as z from 'zod'
 import { FRONTIER_STATUS, SNAPSHOT_MESSAGE_KINDS } from './behavioral.constants.ts'
 import {
   type BPEvent,
   type FeedbackError,
-  type JsonObject,
   type RegisteredBPListener,
   type SnapshotMessage,
   ThreadScehama,
@@ -13,7 +11,6 @@ import type {
   CandidateBid,
   PendingBid,
   RunningBid,
-  SnapshotListener,
   UseAddHandler,
   UseAddThread,
   UseSnapshot,
@@ -38,9 +35,9 @@ import {
  * @returns A publisher function with a `subscribe` method attached.
  */
 const normalizeListeners = (listener: RegisteredBPListener[]) =>
-  listener.map(({ type, detailSchema, ...rest }) => ({
+  listener.map(({ type, detailSchema, validate: _validate, ...rest }) => ({
     type,
-    ...(detailSchema && { detailSchema: z.toJSONSchema(detailSchema) as JsonObject }),
+    ...(detailSchema && { detailSchema }),
     ...rest,
   }))
 
@@ -362,13 +359,20 @@ export const behavioral: Behavioral = () => {
       const result = ThreadScehama.safeParse(args)
       if (result.success) {
         const [label, { rules, once }] = args
-        const syncPoints = generateRulesFunctions(rules, topic)
-        const thread = useThread(syncPoints, once)
-        running.add({
-          priority: running.size + 1,
-          generator: thread(),
-          label,
-        })
+        try {
+          const syncPoints = generateRulesFunctions(rules, topic)
+          const thread = useThread(syncPoints, once)
+          running.add({
+            priority: running.size + 1,
+            generator: thread(),
+            label,
+          })
+        } catch (err) {
+          snapshotPublisher({
+            kind: SNAPSHOT_MESSAGE_KINDS.add_thread_error,
+            error: err instanceof Error ? err.message : String(err),
+          })
+        }
       } else {
         snapshotPublisher({
           kind: SNAPSHOT_MESSAGE_KINDS.add_thread_error,
@@ -382,8 +386,6 @@ export const behavioral: Behavioral = () => {
    * Delegates directly to the snapshot publisher's subscribe method.
    */
   const useSnapshot: UseSnapshot = (listener) => snapshotPublisher.subscribe(listener)
-
-  const reportSnapshot: SnapshotListener = (message) => snapshotPublisher(message)
 
   /**
    * @internal
@@ -402,7 +404,5 @@ export const behavioral: Behavioral = () => {
     useAddHandler,
     /** Hook to subscribe to internal state snapshots for monitoring/debugging. */
     useSnapshot,
-
-    reportSnapshot,
   })
 }

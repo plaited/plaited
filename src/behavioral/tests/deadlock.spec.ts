@@ -1,5 +1,4 @@
 import { describe, expect, test } from 'bun:test'
-import * as z from 'zod'
 import { SNAPSHOT_MESSAGE_KINDS } from '../behavioral.constants.ts'
 import type { DeadlockSnapshot, FrontierSnapshot, SelectionSnapshot, SnapshotMessage } from '../behavioral.schemas.ts'
 import { behavioral } from '../behavioral.ts'
@@ -121,7 +120,12 @@ describe(SNAPSHOT_MESSAGE_KINDS.deadlock, () => {
           block: [
             {
               type: 'same_type',
-              detailSchema: z.object({ n: z.literal(2) }),
+              detailSchema: {
+                type: 'object' as const,
+                properties: { n: { const: 2 } },
+                required: ['n'],
+                additionalProperties: false,
+              },
             },
           ],
         },

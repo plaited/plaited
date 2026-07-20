@@ -2,7 +2,9 @@ import { describe, expect, test } from 'bun:test'
 import * as z from 'zod'
 
 import {
+  AddThreadErrorSchema,
   BPEventSchema,
+  BPListenerSchema,
   DeadlockSnapshotSchema,
   FrontierSnapshotSchema,
   SelectionSnapshotSchema,
@@ -112,5 +114,57 @@ describe('behavioral schemas', () => {
         detail: { value: 1 },
       },
     })
+  })
+
+  test('BPListenerSchema rejects detailSchema without JSON Schema keywords', () => {
+    // A plain object with no recognizable JSON Schema keywords should be rejected
+    expect(BPListenerSchema.safeParse({ type: 'x', detailSchema: { foo: 'bar' } }).success).toBe(false)
+
+    // A valid JSON Schema object should parse
+    expect(
+      BPListenerSchema.safeParse({
+        type: 'x',
+        detailSchema: {
+          type: 'object',
+          properties: { id: { type: 'string' } },
+          required: ['id'],
+          additionalProperties: false,
+        },
+      }).success,
+    ).toBe(true)
+
+    // detailSchema with $ref should also parse
+    expect(
+      BPListenerSchema.safeParse({
+        type: 'x',
+        detailSchema: { $ref: '#/$defs/MyType' },
+      }).success,
+    ).toBe(true)
+
+    // detailSchema with enum should parse
+    expect(
+      BPListenerSchema.safeParse({
+        type: 'x',
+        detailSchema: { enum: ['a', 'b', 'c'] },
+      }).success,
+    ).toBe(true)
+
+    // Missing detailSchema (undefined) should still parse (optional field)
+    expect(BPListenerSchema.safeParse({ type: 'x' }).success).toBe(true)
+  })
+
+  test('AddThreadErrorSchema accepts string error messages', () => {
+    expect(AddThreadErrorSchema.safeParse({ kind: 'add_thread_error', error: 'something went wrong' }).success).toBe(
+      true,
+    )
+  })
+
+  test('AddThreadErrorSchema accepts ZodIssue array errors', () => {
+    expect(
+      AddThreadErrorSchema.safeParse({
+        kind: 'add_thread_error',
+        error: [{ code: 'invalid_type', path: [], message: 'Expected string, received number' }],
+      }).success,
+    ).toBe(true)
   })
 })

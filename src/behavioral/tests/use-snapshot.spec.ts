@@ -2,12 +2,37 @@ import { describe, expect, test } from 'bun:test'
 import type { SnapshotMessage } from '../behavioral.schemas.ts'
 import { behavioral } from '../behavioral.ts'
 
-/**
- * Test suite for useSnapshot concurrent listener behaviour.
- * Verifies that multiple snapshot listeners can coexist and that
- * disconnecting one does not break the others.
- */
+const onType = (type: string) => ({ type })
+
 describe('useSnapshot', () => {
+  test('does not alter event selection order', () => {
+    const events: string[] = []
+    const { useAddThread, useTrigger, useAddHandler, useSnapshot } = behavioral()
+    const addThread = useAddThread()
+    const trigger = useTrigger()
+    const addHandler = useAddHandler()
+
+    // Subscribe to snapshots — this should not affect event ordering
+    useSnapshot(() => {})
+
+    addThread('producer', { rules: [{ request: { type: 'task' } }], once: true })
+    addThread('consumer', {
+      rules: [{ waitFor: [onType('task')] }, { request: { type: 'ack' } }],
+      once: true,
+    })
+
+    addHandler('task', () => {
+      events.push('task')
+    })
+    addHandler('ack', () => {
+      events.push('ack')
+    })
+
+    trigger({ type: 'kickoff' })
+
+    expect(events).toEqual(['task', 'ack'])
+  })
+
   test('second listener still receives after first disconnects', () => {
     const snapshotsA: SnapshotMessage[] = []
     const snapshotsB: SnapshotMessage[] = []

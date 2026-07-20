@@ -1,6 +1,5 @@
 import { expect, test } from 'bun:test'
-import * as z from 'zod'
-import type { Idioms } from '../behavioral.schemas.ts'
+import type { Idioms, JsonObject } from '../behavioral.schemas.ts'
 import { behavioral } from '../behavioral.ts'
 
 /** Author-facing thread arguments accepted by `useAddThread()(label, threadArgs)`. */
@@ -35,15 +34,29 @@ const onType = (type: string) => ({
 })
 const onMove = (player: 'X' | 'O', square?: number) => ({
   type: player,
-  detailSchema: z.object({
-    square: square === undefined ? z.number() : z.literal(square),
-  }),
+  detailSchema:
+    square === undefined
+      ? ({
+          type: 'object',
+          properties: { square: { type: 'number' } },
+          required: ['square'],
+          additionalProperties: false,
+        } as JsonObject)
+      : ({
+          type: 'object',
+          properties: { square: { const: square } },
+          required: ['square'],
+          additionalProperties: false,
+        } as JsonObject),
 })
-const onPlayerMoveIn = (player: 'X' | 'O', lineSquares: WinningLine) => ({
+const onPlayerMoveIn = (player: 'X' | 'O', [a, b, c]: WinningLine) => ({
   type: player,
-  detailSchema: z.object({
-    square: z.union([z.literal(lineSquares[0]), z.literal(lineSquares[1]), z.literal(lineSquares[2])]),
-  }),
+  detailSchema: {
+    type: 'object' as const,
+    properties: { square: { enum: [a, b, c] } },
+    required: ['square'],
+    additionalProperties: false,
+  },
 })
 
 /**

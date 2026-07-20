@@ -32,26 +32,40 @@ export const BPEventSchema = z.object({
 /** @public */
 export type BPEvent = z.output<typeof BPEventSchema>
 
+const JSON_SCHEMA_KEYWORDS = new Set([
+  'type',
+  '$ref',
+  '$schema',
+  'enum',
+  'const',
+  'properties',
+  'allOf',
+  'anyOf',
+  'oneOf',
+  'not',
+])
+
 export const BPListenerSchema = z.object({
   type: z.string(),
-  detailSchema: z
-    .custom<z.ZodType<z.infer<typeof JsonObjectSchema>>>(
-      (val) => val instanceof z.ZodType, // Zod exposes its base class internally here
-      { message: 'Must be a valid Zod Schema' },
-    )
-    .optional(),
+  detailSchema: JsonObjectSchema.optional().refine(
+    (val) => val === undefined || Object.keys(val).some((key) => JSON_SCHEMA_KEYWORDS.has(key)),
+    { message: 'detailSchema must be a valid JSON Schema object' },
+  ),
   detailMatch: z.enum(Object.values(DETAIL_MATCH)).optional(),
 })
 
 export type BPListener = z.output<typeof BPListenerSchema>
 
-export const RegisteredBPListenerSchema = z.object({
-  ...BPListenerSchema.shape,
-  topic: z.string().optional(),
-})
-
+/**
+ * Registered listener with topic stamping and compiled detail validator.
+ *
+ * The `validate` function is a compiled Ajv validator created at registration
+ * time in {@link generateRulesFunctions}. Returns `true` when the candidate
+ * event's `detail` conforms to the listener's `detailSchema`.
+ */
 export type RegisteredBPListener = BPListener & {
   topic?: string
+  validate: (detail: unknown) => boolean
 }
 
 /**
@@ -81,14 +95,20 @@ export const IdiomSchema = z.object({
 
 export type Idioms = z.output<typeof IdiomSchema>
 
-export const RegisteredIdiomsSchema = z.object({
-  [IDIOMS.waitFor]: z.array(RegisteredBPListenerSchema).min(1).optional(),
-  [IDIOMS.interrupt]: z.array(RegisteredBPListenerSchema).min(1).optional(),
-  [IDIOMS.block]: z.array(RegisteredBPListenerSchema).min(1).optional(),
-  [IDIOMS.request]: BPEventSchema.optional(),
-})
-
-export type RegisteredIdioms = z.output<typeof RegisteredIdiomsSchema>
+/**
+ * Registered idioms with compiled validators on each listener.
+ *
+ * Hand-written (not derived from a Zod schema) because the `validate`
+ * callable on each listener is non-serializable and cannot be expressed
+ * by a Zod schema. The author-facing shape is {@link IdiomSchema};
+ * `RegisteredIdioms` is the internal, post-registration representation.
+ */
+export type RegisteredIdioms = {
+  [IDIOMS.waitFor]?: RegisteredBPListener[]
+  [IDIOMS.interrupt]?: RegisteredBPListener[]
+  [IDIOMS.block]?: RegisteredBPListener[]
+  [IDIOMS.request]?: z.output<typeof BPEventSchema>
+}
 
 export const ThreadScehama = z.tuple([
   z.string().min(1),
@@ -197,12 +217,13 @@ export type FeedbackError = z.output<typeof FeedbackErrorSchema>
 
 /**
  * Schema for errors emitted when `useAddThread` receives arguments that fail
- * `ThreadScehama` validation.
+ * `ThreadScehama` validation or contain an un-compilable JSON Schema.
  *
  * @remarks
  * Published via the snapshot publisher when `useAddThread`'s `safeParse` rejects
- * the supplied `(label, { rules, once })` tuple. `error` carries the resulting
- * `ZodIssue[]` so consumers can report which fields were invalid.
+ * the supplied `(label, { rules, once })` tuple, or when Ajv fails to compile a
+ * `detailSchema`. `error` is either a human-readable string (Ajv compile failure)
+ * or a `ZodIssue[]` (thread-shape validation failure), narrowed via `Array.isArray`.
  *
  * @see {@link UseAddThread} for the consumer-facing API
  * @see {@link ThreadScehama} for the validating schema
@@ -211,7 +232,7 @@ export type FeedbackError = z.output<typeof FeedbackErrorSchema>
  */
 export const AddThreadErrorSchema = z.object({
   kind: z.literal(SNAPSHOT_MESSAGE_KINDS.add_thread_error),
-  error: z.custom<z.ZodIssue[]>() as z.ZodType<z.ZodIssue[]>,
+  error: z.union([z.array(z.unknown()), z.string()]),
 })
 
 /** @public */

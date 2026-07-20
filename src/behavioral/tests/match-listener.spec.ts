@@ -1,6 +1,12 @@
 import { expect, test } from 'bun:test'
-import * as z from 'zod'
 import { behavioral } from '../behavioral.ts'
+
+const stringIdSchema = {
+  type: 'object' as const,
+  properties: { id: { type: 'string' as const } },
+  required: ['id'],
+  additionalProperties: false,
+}
 
 test('match listener: waitFor resumes thread when type and detail schema match', () => {
   const log: string[] = []
@@ -16,7 +22,7 @@ test('match listener: waitFor resumes thread when type and detail schema match',
         waitFor: [
           {
             type: 'task',
-            detailSchema: z.object({ id: z.string() }),
+            detailSchema: stringIdSchema,
           },
         ],
       },
@@ -51,7 +57,7 @@ test('match listener: waitFor does not resume when detail schema fails', () => {
         waitFor: [
           {
             type: 'task',
-            detailSchema: z.object({ id: z.string() }),
+            detailSchema: stringIdSchema,
           },
         ],
       },
@@ -86,7 +92,7 @@ test('match listener: detailMatch invalid resumes thread when detail schema fail
         waitFor: [
           {
             type: 'task',
-            detailSchema: z.object({ id: z.string() }),
+            detailSchema: stringIdSchema,
             detailMatch: 'invalid',
           },
         ],
@@ -122,7 +128,7 @@ test('match listener: detailMatch invalid does not resume thread when detail sch
         waitFor: [
           {
             type: 'task',
-            detailSchema: z.object({ id: z.string() }),
+            detailSchema: stringIdSchema,
             detailMatch: 'invalid',
           },
         ],
@@ -158,7 +164,7 @@ test('match listener: type mismatch prevents match when source and detail would 
         waitFor: [
           {
             type: 'task',
-            detailSchema: z.object({ id: z.string() }),
+            detailSchema: stringIdSchema,
           },
         ],
       },
@@ -193,7 +199,7 @@ test('match listener: sourceSchema request accepts only requested events', () =>
         waitFor: [
           {
             type: 'task',
-            detailSchema: z.object({ id: z.string() }),
+            detailSchema: stringIdSchema,
           },
         ],
       },
@@ -228,7 +234,7 @@ test('match listener: trigger and requested events both satisfy matching listene
         waitFor: [
           {
             type: 'task',
-            detailSchema: z.object({ id: z.string() }),
+            detailSchema: stringIdSchema,
           },
         ],
       },
@@ -264,7 +270,7 @@ test('match listener: sourceSchema can accept trigger and request', () => {
         waitFor: [
           {
             type: 'task',
-            detailSchema: z.object({ id: z.string() }),
+            detailSchema: stringIdSchema,
           },
         ],
       },
@@ -299,7 +305,7 @@ test('match listener: sourceSchema request matches request-origin events only', 
         waitFor: [
           {
             type: 'task',
-            detailSchema: z.object({ id: z.string() }),
+            detailSchema: stringIdSchema,
           },
         ],
       },
@@ -337,7 +343,7 @@ test('match listener: block prevents matching requested event from being selecte
         block: [
           {
             type: 'task',
-            detailSchema: z.object({ id: z.string() }),
+            detailSchema: stringIdSchema,
           },
         ],
       },
@@ -387,7 +393,12 @@ test('match listener: interrupt terminates thread when matching event is selecte
         interrupt: [
           {
             type: 'kill',
-            detailSchema: z.object({ id: z.literal('victim') }),
+            detailSchema: {
+              type: 'object' as const,
+              properties: { id: { const: 'victim' } },
+              required: ['id'],
+              additionalProperties: false,
+            },
           },
         ],
       },
@@ -427,7 +438,12 @@ test('match listener: detail-schema listeners can express conditional matching',
         waitFor: [
           {
             type: 'task',
-            detailSchema: z.object({ ok: z.literal(true) }),
+            detailSchema: {
+              type: 'object' as const,
+              properties: { ok: { const: true } },
+              required: ['ok'],
+              additionalProperties: false,
+            },
           },
         ],
       },
@@ -477,4 +493,243 @@ test('match listener: non-selected same-type requesters remain pending until the
   trigger({ type: 'kickoff' })
 
   expect(log).toEqual(['same:1', 'first_done', 'same:2', 'second_done'])
+})
+
+test('match listener: detail schema with valid detail passes', () => {
+  const log: string[] = []
+  const { useAddThread, useTrigger, useAddHandler } = behavioral()
+  const addThread = useAddThread()
+  const trigger = useTrigger()
+  const addHandler = useAddHandler()
+
+  addThread('producer', { rules: [{ request: { type: 'task', detail: { id: 'job-1' } } }], once: true })
+  addThread('consumer', {
+    rules: [
+      {
+        waitFor: [
+          {
+            type: 'task',
+            detailSchema: {
+              type: 'object' as const,
+              properties: { id: { type: 'string' as const } },
+              required: ['id'],
+              additionalProperties: false,
+            },
+          },
+        ],
+      },
+      { request: { type: 'ack' } },
+    ],
+    once: true,
+  })
+
+  addHandler('task', () => {
+    log.push('task')
+  })
+  addHandler('ack', () => {
+    log.push('ack')
+  })
+
+  trigger({ type: 'kickoff' })
+
+  expect(log).toEqual(['task', 'ack'])
+})
+
+test('match listener: detail schema with invalid detail fails', () => {
+  const log: string[] = []
+  const { useAddThread, useTrigger, useAddHandler } = behavioral()
+  const addThread = useAddThread()
+  const trigger = useTrigger()
+  const addHandler = useAddHandler()
+
+  addThread('producer', { rules: [{ request: { type: 'task', detail: { id: 101 } } }], once: true })
+  addThread('consumer', {
+    rules: [
+      {
+        waitFor: [
+          {
+            type: 'task',
+            detailSchema: stringIdSchema,
+          },
+        ],
+      },
+      { request: { type: 'ack' } },
+    ],
+    once: true,
+  })
+
+  addHandler('task', () => {
+    log.push('task')
+  })
+  addHandler('ack', () => {
+    log.push('ack')
+  })
+
+  trigger({ type: 'kickoff' })
+
+  expect(log).toEqual(['task'])
+})
+
+test('match listener: 2020-12 prefixItems keyword compiles and matches', () => {
+  const log: string[] = []
+  const { useAddThread, useTrigger, useAddHandler } = behavioral()
+  const addThread = useAddThread()
+  const trigger = useTrigger()
+  const addHandler = useAddHandler()
+
+  addThread('producer', {
+    rules: [{ request: { type: 'task', detail: { items: [42, 'hello'] } } }],
+    once: true,
+  })
+  addThread('consumer', {
+    rules: [
+      {
+        waitFor: [
+          {
+            type: 'task',
+            detailSchema: {
+              type: 'object',
+              properties: {
+                items: {
+                  type: 'array',
+                  prefixItems: [{ type: 'number' }, { type: 'string' }],
+                },
+              },
+              required: ['items'],
+              additionalProperties: false,
+            },
+          },
+        ],
+      },
+      { request: { type: 'ack' } },
+    ],
+    once: true,
+  })
+
+  addHandler('task', () => {
+    log.push('task')
+  })
+  addHandler('ack', () => {
+    log.push('ack')
+  })
+
+  trigger({ type: 'kickoff' })
+
+  expect(log).toEqual(['task', 'ack'])
+})
+
+test('match listener: 2020-12 prefixItems enforces tuple ordering', () => {
+  const log: string[] = []
+  const { useAddThread, useTrigger, useAddHandler } = behavioral()
+  const addThread = useAddThread()
+  const trigger = useTrigger()
+  const addHandler = useAddHandler()
+
+  // Producer emits tuple [42, 'hello']; consumer expects [number, string]
+  addThread('producer', {
+    rules: [{ request: { type: 'task', detail: { items: ['x', 1] } } }],
+    once: true,
+  })
+  addThread('consumer', {
+    rules: [
+      {
+        waitFor: [
+          {
+            type: 'task',
+            detailSchema: {
+              type: 'object',
+              properties: {
+                items: {
+                  type: 'array',
+                  prefixItems: [{ type: 'number' }, { type: 'string' }],
+                },
+              },
+              required: ['items'],
+              additionalProperties: false,
+            },
+          },
+        ],
+      },
+      { request: { type: 'ack' } },
+    ],
+    once: true,
+  })
+
+  addHandler('task', () => {
+    log.push('task')
+  })
+  addHandler('ack', () => {
+    log.push('ack')
+  })
+
+  trigger({ type: 'kickoff' })
+
+  // Tuple out of order: ['x', 1] should not match [number, string]
+  // So consumer should NOT resume and 'ack' should not fire
+  // The producer's task event IS selected, but the consumer doesn't match
+  expect(log).toEqual(['task'])
+})
+
+test('match listener: malformed detailSchema publishes add_thread_error', () => {
+  const seen: import('../behavioral.schemas.ts').SnapshotMessage[] = []
+  const { useAddThread, useSnapshot } = behavioral()
+  const addThread = useAddThread()
+  useSnapshot((msg) => {
+    seen.push(msg)
+  })
+
+  // properties: 'not-an-object' is structurally valid JSON but un-compilable as JSON Schema
+  addThread('bad', {
+    rules: [
+      {
+        block: [
+          {
+            type: 'x',
+            detailSchema: { type: 'object', properties: 'not-an-object' },
+          },
+        ],
+      },
+    ],
+  })
+
+  const errors = seen.filter((s) => s.kind === 'add_thread_error')
+  expect(errors).toHaveLength(1)
+})
+
+test('match listener: malformed detailSchema in one listener rejects the whole thread', () => {
+  const seen: import('../behavioral.schemas.ts').SnapshotMessage[] = []
+  const { useAddThread, useTrigger, useAddHandler, useSnapshot } = behavioral()
+  const addThread = useAddThread()
+  const trigger = useTrigger()
+  const addHandler = useAddHandler()
+  useSnapshot((msg) => {
+    seen.push(msg)
+  })
+
+  const log: string[] = []
+
+  // A thread with one good rule and one rule with a bad detailSchema
+  addThread('mixed', {
+    rules: [
+      { request: { type: 'good' } },
+      {
+        block: [
+          {
+            type: 'x',
+            detailSchema: { type: 'object', properties: 'not-an-object' },
+          },
+        ],
+      },
+    ],
+  })
+
+  const errors = seen.filter((s) => s.kind === 'add_thread_error')
+  expect(errors).toHaveLength(1)
+
+  // The thread should not have registered — no running thread means triggering does nothing
+  addHandler('good', () => {
+    log.push('good')
+  })
+  trigger({ type: 'kickoff' })
+  expect(log).toEqual([])
 })

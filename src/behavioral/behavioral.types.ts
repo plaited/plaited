@@ -237,7 +237,6 @@ export type UseTrigger = (topic?: string) => Trigger
  */
 export type Behavioral = () => Readonly<{
   useAddHandler: UseAddHandler
-  reportSnapshot: SnapshotListener
   useAddThread: UseAddThread
   useSnapshot: UseSnapshot
   useTrigger: UseTrigger
