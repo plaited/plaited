@@ -3,7 +3,6 @@
 import {
   codeDocumentationCli,
   evalCli,
-  frontierAnalysisCli,
   gitContextCli,
   lspCli,
   makeCliRouter,
@@ -23,7 +22,6 @@ export const runCli = makeCliRouter({
     ...mcpClientCli,
     ...codeDocumentationCli,
     ...gitContextCli,
-    ...frontierAnalysisCli,
     ...evalCli,
     ...lspCli,
   },

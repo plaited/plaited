@@ -1,8 +1,8 @@
 ---
 name: frontier-analysis
-description: Analyze replay-safe behavioral specs with the `plaited frontier-analysis` CLI. Use when replaying selected-event snapshots, exploring reachable frontiers, testing supplied trigger events, comparing scheduler policies, or verifying deadlock findings in Plaited behavioral code.
+description: Analyze replay-safe behavioral specs with `replayToFrontier`, `exploreFrontiers`, and `verifyFrontiers`. Use when replaying selected-event snapshots, exploring reachable frontiers, testing supplied trigger events, comparing scheduler policies, or verifying deadlock findings in Plaited behavioral code.
 license: ISC
-compatibility: Requires `plaited` CLI
+compatibility: Requires `plaited` package (SDK util)
 allowed-tools: Bash Read
 ---
 
@@ -11,7 +11,11 @@ allowed-tools: Bash Read
 ## Purpose
 
 Use this skill for deterministic analysis of replay-safe behavioral specs
-through the `plaited frontier-analysis` command.
+through the three SDK util functions exported from `plaited/behavioral`:
+
+- `replayToFrontier` — replay a known selected-event snapshot trace and inspect the resulting frontier
+- `exploreFrontiers` — explore reachable histories to surface deadlocks
+- `verifyFrontiers` — verify whether a thread set is deadlock-free within an explored boundary
 
 Use it when you need to:
 
@@ -22,53 +26,88 @@ Use it when you need to:
 - include supplied external trigger events in exploration
 - compare scheduler behavior with all-enabled exploration
 
-## Command Surface
+## API Surface
 
-```bash
-`plaited frontier-analysis --schema input
-`plaited frontier-analysis --schema output
+### Signature
+
+```ts
+replayToFrontier({ threads: Thread[], snapshotMessages?: SnapshotMessage[], topic?: string }): ReplayToFrontierResult
+exploreFrontiers(args: ExploreFrontiersArgs): ExploreFrontiersResult
+verifyFrontiers(args: ExploreFrontiersArgs): VerifyFrontiersResult
 ```
 
-## When To Use Which Mode
+### Types
 
-- `replay`: inspect one concrete history and the frontier that follows it
-- `explore`: enumerate reachable histories and collect deadlock findings
-- `verify`: derive a verification status from exploration output
+Threads are JSON tuples: `['label', { rules: Idioms[], once?: true }]`.
 
-Use `replay` first when you already have a suspected event sequence.
-Use `explore` when you need to find problematic histories.
-Use `verify` when you need a compact pass/fail/truncated result for a thread set.
+```ts
+type Thread = [string, { rules: Idioms[]; once?: true }]
+```
 
-## Input Rules
+Each `Idiom` is a sync point with `request`, `waitFor`, `block`, and/or `interrupt`.
+`detailSchema` on listeners is JSON Schema (compiled via Ajv at registration time).
 
-- provide exactly one of `specs` or `specPath`
-- `specPath` is JSONL with one behavioral spec object per line
-- use `cwd` when `specPath` should resolve from a specific base directory
-- in `replay` mode, provide `snapshotMessages` when replaying a concrete trace
-- selected ingress events use `selected.ingress: true`
-- in `explore`/`verify`, use `triggers` to supply external events that may be
-  selected when a pending thread waits for or is interrupted by them
-- use `selectionPolicy: 'scheduler'` when priority order should follow runtime
-  scheduler choice; default `all-enabled` explores every enabled request branch
+## When To Use Which Function
 
-## Common Workflows
+- `replayToFrontier`: inspect one concrete history and the frontier that follows it
+- `exploreFrontiers`: enumerate reachable histories and collect deadlock findings
+- `verifyFrontiers`: derive a compact pass/fail/truncated result from exploration
+
+Use `replayToFrontier` first when you already have a suspected event sequence.
+Use `exploreFrontiers` when you need to find problematic histories.
+Use `verifyFrontiers` when you need a pass/fail/truncated summary.
+
+## Usage Examples
 
 ### Replay One History
 
-```bash
-`plaited frontier-analysis '{"mode":"replay","specs":[{"label":"chooseA","thread":{"once":true,"syncPoints":[{"request":{"type":"A"}}]}}],"snapshotMessages":[]}'
+```ts
+import { replayToFrontier } from 'plaited/behavioral'
+import type { Thread, SnapshotMessage } from 'plaited/behavioral'
+
+const threads: Thread[] = [
+  ['chooseA', { rules: [{ request: { type: 'A' } }], once: true }],
+]
+
+const snapshotMessages: SnapshotMessage[] = []
+
+const result = replayToFrontier({ threads, snapshotMessages })
+// result.frontier.status === 'ready' with candidate 'A'
 ```
 
 ### Explore Reachable Histories
 
-```bash
-`plaited frontier-analysis '{"mode":"explore","specs":[{"label":"watcher","thread":{"once":true,"syncPoints":[{"waitFor":[{"type":"ping"}]},{"request":{"type":"ack"}}]}}],"triggers":[{"type":"ping"}],"strategy":"bfs","maxDepth":2}'
+```ts
+import { exploreFrontiers } from 'plaited/behavioral'
+import type { Thread } from 'plaited/behavioral'
+
+const threads: Thread[] = [
+  ['watcher', { rules: [{ waitFor: [{ type: 'ping' }] }, { request: { type: 'ack' } }], once: true }],
+]
+
+const result = exploreFrontiers({
+  threads,
+  triggers: [{ type: 'ping' }],
+  strategy: 'bfs',
+  maxDepth: 2,
+})
+// result.findings — any deadlocks found
+// result.report.visitedCount — how many distinct frontiers were explored
+// result.report.truncated — true if maxDepth stopped exploration
 ```
 
 ### Verify Scheduler Policy
 
-```bash
-`plaited frontier-analysis '{"mode":"verify","specPath":"./specs.jsonl","strategy":"bfs","selectionPolicy":"scheduler","maxDepth":8}'
+```ts
+import { verifyFrontiers } from 'plaited/behavioral'
+
+const result = verifyFrontiers({
+  threads,
+  strategy: 'bfs',
+  selectionPolicy: 'scheduler',
+  maxDepth: 8,
+})
+// result.status: 'verified' | 'failed' | 'truncated'
 ```
 
 ## Output Interpretation
@@ -78,6 +117,7 @@ Use `verify` when you need a compact pass/fail/truncated result for a thread set
 - `traces[].snapshotMessages` records each explored history plus its frontier
 - `findings[].snapshotMessages` is the reproducible sequence to replay first
 - `report.truncated` means `maxDepth` stopped exploration before completion
+- `topic` is passed through to `generateRulesFunctions` for topic-stamped thread rules
 
 ## Review Discipline
 
@@ -86,3 +126,5 @@ Use `verify` when you need a compact pass/fail/truncated result for a thread set
 - When deadlocks appear, inspect whether the issue is real coordination logic
   or an intentionally blocked frontier
 - Pair frontier findings with nearby tests before changing runtime behavior
+- Threads are pure JSON tuples carrying JSON-Schema `detailSchema` constraints
+  — no Zod schemas, no non-serializable values reach the frontier engine
