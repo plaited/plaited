@@ -28,9 +28,9 @@ import {
   type FrontierTrace,
   type RegisteredIdioms,
   type SelectionTrace,
-  type SnapshotEvent,
   type Thread,
   type Trace,
+  type TraceEvent,
   TraceSchema,
 } from './behavioral.schemas.ts'
 import type { CandidateBid, Frontier, PendingBid, ReplayToFrontierResult, RunningBid } from './behavioral.types.ts'
@@ -78,6 +78,7 @@ const countSelectionTraces = ({ messages }: { messages: Trace[] }) =>
 
 const createFrontierTrace = ({ frontier, step }: { frontier: Frontier; step: number }): FrontierTrace => ({
   kind: 'frontier',
+  timestamp: Date.now(),
   step,
   status: frontier.status,
   candidates: frontier.candidates.map((candidate) => ({
@@ -104,6 +105,7 @@ const createSelectionTrace = ({
   step: number
 }): SelectionTrace => ({
   kind: TRACE_MESSAGE_KINDS.selection,
+  timestamp: Date.now(),
   step,
   selected: {
     type: event.type,
@@ -115,15 +117,16 @@ const createSelectionTrace = ({
 
 const createDeadlockTrace = ({ step }: { step: number }): Trace => ({
   kind: TRACE_MESSAGE_KINDS.deadlock,
+  timestamp: Date.now(),
   step,
 })
 
-const matchesSelectedEvent = ({ candidate, selected }: { candidate: CandidateBid; selected: SnapshotEvent }) =>
+const matchesSelectedEvent = ({ candidate, selected }: { candidate: CandidateBid; selected: TraceEvent }) =>
   candidate.type === selected.type &&
   candidate.topic === selected.topic &&
   Bun.deepEquals(candidate.detail, selected.detail)
 
-const addIngressTriggerToPending = ({ pending, selected }: { pending: Set<PendingBid>; selected: SnapshotEvent }) => {
+const addIngressTriggerToPending = ({ pending, selected }: { pending: Set<PendingBid>; selected: TraceEvent }) => {
   const triggerThread = function* () {
     yield {
       request: {

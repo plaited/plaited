@@ -203,6 +203,7 @@ export const behavioral = <T extends Trace>() => {
 
     snapshotPublisher({
       kind: TRACE_MESSAGE_KINDS.pending_bids,
+      timestamp: Date.now(),
       step,
       threads: serializePending(pending),
     })
@@ -211,6 +212,7 @@ export const behavioral = <T extends Trace>() => {
     const { enabled, candidates } = frontier
     snapshotPublisher({
       kind: TRACE_MESSAGE_KINDS.frontier,
+      timestamp: Date.now(),
       step,
       status: frontier.status,
       candidates: candidates.map(toCandidateSnapshot),
@@ -224,6 +226,7 @@ export const behavioral = <T extends Trace>() => {
       )[0]!
       snapshotPublisher({
         kind: TRACE_MESSAGE_KINDS.selection,
+        timestamp: Date.now(),
         step,
         selected: toSelectedSnapshot(selected),
       })
@@ -233,6 +236,7 @@ export const behavioral = <T extends Trace>() => {
     if (frontier.status === FRONTIER_STATUS.deadlock) {
       snapshotPublisher({
         kind: TRACE_MESSAGE_KINDS.deadlock,
+        timestamp: Date.now(),
         step,
       })
     }
@@ -341,6 +345,7 @@ export const behavioral = <T extends Trace>() => {
         } catch (error) {
           const message: FeedbackError = {
             kind: TRACE_MESSAGE_KINDS.feedback_error,
+            timestamp: Date.now(),
             type,
             detail: data.detail,
             error: error instanceof Error ? error.message : String(error),
@@ -369,12 +374,14 @@ export const behavioral = <T extends Trace>() => {
         } catch (err) {
           snapshotPublisher({
             kind: TRACE_MESSAGE_KINDS.add_thread_error,
+            timestamp: Date.now(),
             error: err instanceof Error ? err.message : String(err),
           })
         }
       } else {
         snapshotPublisher({
           kind: TRACE_MESSAGE_KINDS.add_thread_error,
+          timestamp: Date.now(),
           error: result.error.issues,
         })
       }

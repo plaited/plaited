@@ -124,14 +124,14 @@ export const ThreadsSchema = z.array(ThreadScehama)
 
 export type Threads = z.output<typeof ThreadsSchema>
 
-export const SnapshotEventSchema = BPEventSchema.extend({
+export const TraceEventSchema = BPEventSchema.extend({
   ingress: z.literal(true).optional(),
 })
 
 /** @public */
-export type SnapshotEvent = z.output<typeof SnapshotEventSchema>
+export type TraceEvent = z.output<typeof TraceEventSchema>
 
-export const SnapshotCandidateSchema = z.object({
+export const TraceCandidateSchema = z.object({
   type: z.string(),
   detail: JsonObjectSchema.optional(),
   ingress: z.literal(true).optional(),
@@ -140,14 +140,15 @@ export const SnapshotCandidateSchema = z.object({
 })
 
 /** @public */
-export type SnapshotCandidate = z.output<typeof SnapshotCandidateSchema>
+export type TraceCandidate = z.output<typeof TraceCandidateSchema>
 
 export const FrontieTraceSchema = z.object({
   kind: z.literal(TRACE_MESSAGE_KINDS.frontier),
+  timestamp: z.number(),
   step: z.number().int().nonnegative(),
   status: z.enum(['ready', 'deadlock', 'idle']),
-  candidates: z.array(SnapshotCandidateSchema),
-  enabled: z.array(SnapshotCandidateSchema),
+  candidates: z.array(TraceCandidateSchema),
+  enabled: z.array(TraceCandidateSchema),
 })
 
 /** @public */
@@ -166,8 +167,9 @@ export type FrontierTrace = z.output<typeof FrontieTraceSchema>
  */
 export const SelectionTraceSchema = z.object({
   kind: z.literal(TRACE_MESSAGE_KINDS.selection),
+  timestamp: z.number(),
   step: z.number().int().nonnegative(),
-  selected: SnapshotEventSchema,
+  selected: TraceEventSchema,
 })
 
 /** @public */
@@ -186,6 +188,7 @@ export type SelectionTrace = z.output<typeof SelectionTraceSchema>
  */
 export const DeadlockTraceSchema = z.object({
   kind: z.literal(TRACE_MESSAGE_KINDS.deadlock),
+  timestamp: z.number(),
   step: z.number().int().nonnegative(),
 })
 
@@ -206,6 +209,7 @@ export type DeadlockTrace = z.output<typeof DeadlockTraceSchema>
  */
 export const FeedbackErrorSchema = z.object({
   kind: z.literal(TRACE_MESSAGE_KINDS.feedback_error),
+  timestamp: z.number(),
   type: z.string(),
   topic: z.string().optional(),
   detail: JsonObjectSchema.optional(),
@@ -232,6 +236,7 @@ export type FeedbackError = z.output<typeof FeedbackErrorSchema>
  */
 export const AddThreadErrorSchema = z.object({
   kind: z.literal(TRACE_MESSAGE_KINDS.add_thread_error),
+  timestamp: z.number(),
   error: z.union([z.array(z.unknown()), z.string()]),
 })
 
@@ -255,6 +260,7 @@ export type AddThreadError = z.output<typeof AddThreadErrorSchema>
  */
 export const PendingBidsTraceSchema = z.object({
   kind: z.literal(TRACE_MESSAGE_KINDS.pending_bids),
+  timestamp: z.number(),
   step: z.number().int().nonnegative(),
   threads: z.array(
     z.object({
@@ -302,6 +308,7 @@ export type PendingBidsTrace = z.output<typeof PendingBidsTraceSchema>
 
 export const RuntimeErrorSchema = z.object({
   kind: z.literal(TRACE_MESSAGE_KINDS.runtime_error),
+  timestamp: z.number(),
   error: z.string(),
 })
 
