@@ -103,23 +103,23 @@ test('interleave', () => {
  * Test scenario: Demonstrates the use of `useTrace` to capture the state
  * of the behavioral program at each step (super-step).
  * This is useful for debugging and understanding the event selection process.
- * The captured snapshots are compared against a baseline snapshot.
+ * The captured traces are compared against a baseline trace.
  */
 test('logging', () => {
-  const snapshots: Trace[] = []
+  const traces: Trace[] = []
   const { useAddThread, useTrigger, useTrace } = behavioral()
   const addThread = useAddThread()
   const trigger = useTrigger()
-  useTrace((snapshot: Trace) => {
-    snapshots.push(snapshot)
+  useTrace((trace: Trace) => {
+    traces.push(trace)
   })
   addThread('addHot', { rules: addHotRules, once: true })
   addThread('addCold', { rules: addColdRules, once: true })
   addThread('mixHotCold', { rules: mixHotColdRules })
   trigger({ type: 'start' })
-  const frontierSnapshots = snapshots.filter((snapshot) => snapshot.kind === TRACE_MESSAGE_KINDS.frontier)
-  expect(frontierSnapshots.length).toBeGreaterThan(0)
-  const allCandidates = frontierSnapshots.flatMap((snapshot) => snapshot.candidates)
+  const frontierTraces = traces.filter((trace) => trace.kind === TRACE_MESSAGE_KINDS.frontier)
+  expect(frontierTraces.length).toBeGreaterThan(0)
+  const allCandidates = frontierTraces.flatMap((trace) => trace.candidates)
   expect(allCandidates.some((candidate) => candidate.type === 'hot')).toBe(true)
   expect(allCandidates.some((candidate) => candidate.type === 'cold')).toBe(true)
 })

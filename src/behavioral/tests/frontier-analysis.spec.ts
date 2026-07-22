@@ -9,7 +9,7 @@ const threads: Thread[] = [
 
 describe('replayToFrontier', () => {
   test('replays a known selection trace to the resulting frontier', () => {
-    const messages = [{ kind: 'selection' as const, step: 0, selected: { type: 'tick' } }]
+    const messages = [{ kind: 'selection' as const, timestamp: 0, step: 0, selected: { type: 'tick' } }]
     const result = replayToFrontier({ threads, messages })
 
     // tick completes (once: true), worker (start) remains pending
@@ -35,7 +35,7 @@ describe('replayToFrontier', () => {
     expect(result.frontier.enabled).toHaveLength(0)
   })
 
-  test('handles empty snapshot messages', () => {
+  test('handles empty trace messages', () => {
     const result = replayToFrontier({ threads })
     expect(result.frontier.status).toBe('ready')
     expect(result.frontier.enabled).toHaveLength(2)
@@ -47,7 +47,7 @@ describe('exploreFrontiers', () => {
     const result = exploreFrontiers({ threads, strategy: 'bfs', maxDepth: 3 })
     expect(result.report.visitedCount).toBeGreaterThan(0)
     expect(result.traces.length).toBe(result.report.visitedCount)
-    // All traces should end with a frontier snapshot
+    // All traces should end with a frontier trace
     for (const trace of result.traces) {
       expect(trace.messages.length).toBeGreaterThan(0)
       const last = trace.messages[trace.messages.length - 1]

@@ -34,28 +34,28 @@ describe('useTrace', () => {
   })
 
   test('second listener still receives after first disconnects', () => {
-    const snapshotsA: Trace[] = []
-    const snapshotsB: Trace[] = []
+    const tracesA: Trace[] = []
+    const tracesB: Trace[] = []
     const { useAddThread, useTrigger, useTrace } = behavioral()
     const addThread = useAddThread()
     const trigger = useTrigger()
 
     const disconnectA = useTrace((msg: Trace) => {
-      snapshotsA.push(msg)
+      tracesA.push(msg)
     })
     useTrace((msg: Trace) => {
-      snapshotsB.push(msg)
+      tracesB.push(msg)
     })
 
     addThread('req', { rules: [{ request: { type: 'ping' } }], once: true })
 
-    // Both listeners receive the first selection snapshot
+    // Both listeners receive the first selection trace
     trigger({ type: 'start' })
-    expect(snapshotsA.length).toBeGreaterThan(0)
-    expect(snapshotsB.length).toBeGreaterThan(0)
+    expect(tracesA.length).toBeGreaterThan(0)
+    expect(tracesB.length).toBeGreaterThan(0)
 
-    const countA = snapshotsA.length
-    const countB = snapshotsB.length
+    const countA = tracesA.length
+    const countB = tracesB.length
 
     // Disconnect listener A
     disconnectA()
@@ -65,45 +65,45 @@ describe('useTrace', () => {
     trigger({ type: 'go' })
 
     // A should not have received any new messages
-    expect(snapshotsA.length).toBe(countA)
+    expect(tracesA.length).toBe(countA)
     // B should still be receiving
-    expect(snapshotsB.length).toBeGreaterThan(countB)
+    expect(tracesB.length).toBeGreaterThan(countB)
   })
 
   test('re-subscribing after full disconnect still works', () => {
-    const snapshotsA: Trace[] = []
-    const snapshotsB: Trace[] = []
+    const tracesA: Trace[] = []
+    const tracesB: Trace[] = []
     const { useAddThread, useTrigger, useTrace } = behavioral()
     const addThread = useAddThread()
     const trigger = useTrigger()
 
     const disconnectA = useTrace((msg: Trace) => {
-      snapshotsA.push(msg)
+      tracesA.push(msg)
     })
     const disconnectB = useTrace((msg: Trace) => {
-      snapshotsB.push(msg)
+      tracesB.push(msg)
     })
 
     addThread('req', { rules: [{ request: { type: 'ping' } }], once: true })
     trigger({ type: 'start' })
 
     // Both received
-    expect(snapshotsA.length).toBeGreaterThan(0)
-    expect(snapshotsB.length).toBeGreaterThan(0)
+    expect(tracesA.length).toBeGreaterThan(0)
+    expect(tracesB.length).toBeGreaterThan(0)
 
     // Disconnect both
     disconnectA()
     disconnectB()
 
     // Re-subscribe — publisher is always available
-    const snapshotsC: Trace[] = []
+    const tracesC: Trace[] = []
     useTrace((msg: Trace) => {
-      snapshotsC.push(msg)
+      tracesC.push(msg)
     })
 
     addThread('req2', { rules: [{ request: { type: 'pong' } }], once: true })
     trigger({ type: 'go' })
 
-    expect(snapshotsC.length).toBeGreaterThan(0)
+    expect(tracesC.length).toBeGreaterThan(0)
   })
 })

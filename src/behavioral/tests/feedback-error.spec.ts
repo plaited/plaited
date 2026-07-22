@@ -4,19 +4,19 @@ import type { FeedbackError, Trace } from '../behavioral.schemas.ts'
 import { behavioral } from '../behavioral.ts'
 
 /**
- * Test suite for the FeedbackError snapshot message.
+ * Test suite for the FeedbackError trace message.
  * When a addHandler handler throws during side-effect execution,
- * the error surfaces through useTrace as a { kind: SNAPSHOT_MESSAGE_KINDS.feedback_error } message.
+ * the error surfaces through useTrace as a { kind: TRACE_MESSAGE_KINDS.feedback_error } message.
  */
 describe(TRACE_MESSAGE_KINDS.feedback_error, () => {
   test('publishes feedback-error when handler throws synchronously', () => {
-    const snapshots: Trace[] = []
+    const traces: Trace[] = []
     const { useAddThread, useTrigger, useAddHandler, useTrace } = behavioral()
     const addThread = useAddThread()
     const trigger = useTrigger()
     const addHandler = useAddHandler()
-    useTrace((snapshot: Trace) => {
-      snapshots.push(snapshot)
+    useTrace((trace: Trace) => {
+      traces.push(trace)
     })
     addThread('requestAction', { rules: [{ request: { type: 'doWork' } }], once: true })
     addHandler('doWork', () => {
@@ -24,11 +24,11 @@ describe(TRACE_MESSAGE_KINDS.feedback_error, () => {
     })
     trigger({ type: 'start' })
 
-    const errors = snapshots.filter((s) => s.kind === TRACE_MESSAGE_KINDS.feedback_error)
+    const errors = traces.filter((s) => s.kind === TRACE_MESSAGE_KINDS.feedback_error)
     expect(errors).toHaveLength(1)
 
     const error = errors[0]!
-    expect(error).toEqual({
+    expect(error).toMatchObject({
       kind: TRACE_MESSAGE_KINDS.feedback_error,
       type: 'doWork',
       detail: undefined,
@@ -37,13 +37,13 @@ describe(TRACE_MESSAGE_KINDS.feedback_error, () => {
   })
 
   test('publishes feedback-error with event detail', () => {
-    const snapshots: Trace[] = []
+    const traces: Trace[] = []
     const { useAddThread, useTrigger, useAddHandler, useTrace } = behavioral()
     const addThread = useAddThread()
     const trigger = useTrigger()
     const addHandler = useAddHandler()
-    useTrace((snapshot: Trace) => {
-      snapshots.push(snapshot)
+    useTrace((trace: Trace) => {
+      traces.push(trace)
     })
     addThread('requestAction', {
       rules: [{ request: { type: 'process', detail: { id: 42 } } }],
@@ -54,11 +54,11 @@ describe(TRACE_MESSAGE_KINDS.feedback_error, () => {
     })
     trigger({ type: 'start' })
 
-    const errors = snapshots.filter((s) => s.kind === TRACE_MESSAGE_KINDS.feedback_error)
+    const errors = traces.filter((s) => s.kind === TRACE_MESSAGE_KINDS.feedback_error)
     expect(errors).toHaveLength(1)
 
     const error = errors[0]!
-    expect(error).toEqual({
+    expect(error).toMatchObject({
       kind: TRACE_MESSAGE_KINDS.feedback_error,
       type: 'process',
       detail: { id: 42 },
@@ -67,13 +67,13 @@ describe(TRACE_MESSAGE_KINDS.feedback_error, () => {
   })
 
   test('stringifies non-Error thrown values', () => {
-    const snapshots: Trace[] = []
+    const traces: Trace[] = []
     const { useAddThread, useTrigger, useAddHandler, useTrace } = behavioral()
     const addThread = useAddThread()
     const trigger = useTrigger()
     const addHandler = useAddHandler()
-    useTrace((snapshot: Trace) => {
-      snapshots.push(snapshot)
+    useTrace((trace: Trace) => {
+      traces.push(trace)
     })
     addThread('requestAction', { rules: [{ request: { type: 'fail' } }], once: true })
     addHandler('fail', () => {
@@ -81,19 +81,19 @@ describe(TRACE_MESSAGE_KINDS.feedback_error, () => {
     })
     trigger({ type: 'start' })
 
-    const errors = snapshots.filter((s): s is FeedbackError => s.kind === TRACE_MESSAGE_KINDS.feedback_error)
+    const errors = traces.filter((s): s is FeedbackError => s.kind === TRACE_MESSAGE_KINDS.feedback_error)
     expect(errors).toHaveLength(1)
     expect(errors[0]!.error).toBe('string error')
   })
 
-  test('frontier and selection snapshots precede feedback-error in message order', () => {
-    const snapshots: Trace[] = []
+  test('frontier and selection traces precede feedback-error in message order', () => {
+    const traces: Trace[] = []
     const { useAddThread, useTrigger, useAddHandler, useTrace } = behavioral()
     const addThread = useAddThread()
     const trigger = useTrigger()
     const addHandler = useAddHandler()
-    useTrace((snapshot: Trace) => {
-      snapshots.push(snapshot)
+    useTrace((trace: Trace) => {
+      traces.push(trace)
     })
     addThread('requestAction', { rules: [{ request: { type: 'boom' } }], once: true })
     addHandler('boom', () => {
@@ -101,11 +101,11 @@ describe(TRACE_MESSAGE_KINDS.feedback_error, () => {
     })
     trigger({ type: 'start' })
 
-    expect(snapshots.length).toBeGreaterThanOrEqual(2)
+    expect(traces.length).toBeGreaterThanOrEqual(2)
 
-    const frontierIndex = snapshots.findIndex((s) => s.kind === TRACE_MESSAGE_KINDS.frontier)
-    const selectionIndex = snapshots.findIndex((s) => s.kind === TRACE_MESSAGE_KINDS.selection)
-    const errorIndex = snapshots.findIndex((s) => s.kind === TRACE_MESSAGE_KINDS.feedback_error)
+    const frontierIndex = traces.findIndex((s) => s.kind === TRACE_MESSAGE_KINDS.frontier)
+    const selectionIndex = traces.findIndex((s) => s.kind === TRACE_MESSAGE_KINDS.selection)
+    const errorIndex = traces.findIndex((s) => s.kind === TRACE_MESSAGE_KINDS.feedback_error)
     expect(frontierIndex).not.toBe(-1)
     expect(selectionIndex).not.toBe(-1)
     expect(errorIndex).not.toBe(-1)
@@ -114,21 +114,21 @@ describe(TRACE_MESSAGE_KINDS.feedback_error, () => {
   })
 
   test('no feedback-error when handler succeeds', () => {
-    const snapshots: Trace[] = []
+    const traces: Trace[] = []
     const { useAddThread, useTrigger, useAddHandler, useTrace } = behavioral()
     const addThread = useAddThread()
     const trigger = useTrigger()
     const addHandler = useAddHandler()
-    useTrace((snapshot: Trace) => {
-      snapshots.push(snapshot)
+    useTrace((trace: Trace) => {
+      traces.push(trace)
     })
     addThread('requestAction', { rules: [{ request: { type: 'ok' } }], once: true })
     addHandler('ok', () => {})
     trigger({ type: 'start' })
 
-    const errors = snapshots.filter((s) => s.kind === TRACE_MESSAGE_KINDS.feedback_error)
+    const errors = traces.filter((s) => s.kind === TRACE_MESSAGE_KINDS.feedback_error)
     expect(errors).toHaveLength(0)
-    expect(snapshots.some((s) => s.kind === TRACE_MESSAGE_KINDS.frontier)).toBe(true)
-    expect(snapshots.some((s) => s.kind === TRACE_MESSAGE_KINDS.selection)).toBe(true)
+    expect(traces.some((s) => s.kind === TRACE_MESSAGE_KINDS.frontier)).toBe(true)
+    expect(traces.some((s) => s.kind === TRACE_MESSAGE_KINDS.selection)).toBe(true)
   })
 })

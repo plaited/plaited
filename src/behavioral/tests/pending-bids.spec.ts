@@ -9,8 +9,8 @@ const jsonSchema = {
   additionalProperties: false,
 }
 
-describe('pending_bids snapshot', () => {
-  test('publishes pending_bids snapshot with thread states during superstep', () => {
+describe('pending_bids trace', () => {
+  test('publishes pending_bids trace with thread states during superstep', () => {
     const seen: Trace[] = []
     const { useAddThread, useTrigger, useTrace } = behavioral()
     const addThread = useAddThread()
@@ -52,7 +52,7 @@ describe('pending_bids snapshot', () => {
     expect(pendingIdx).toBeLessThan(frontierIdx)
   })
 
-  test('detailSchema in pending_bids snapshot echoes the input JSON Schema without conversion', () => {
+  test('detailSchema in pending_bids trace echoes the input JSON Schema without conversion', () => {
     const seen: Trace[] = []
     const { useAddThread, useTrigger, useTrace } = behavioral()
     const addThread = useAddThread()
@@ -87,7 +87,7 @@ describe('pending_bids snapshot', () => {
     const block = blocker!.block
     expect(block).toBeDefined()
     const listener = block![0]!
-    // The detailSchema in the snapshot must be deep-equal to the input, not a conversion
+    // The detailSchema in the trace must be deep-equal to the input, not a conversion
     expect(listener.detailSchema).toEqual(jsonSchema)
     // Specifically assert that additionalProperties: false survives (z.toJSONSchema drops it)
     expect(listener.detailSchema).toHaveProperty('additionalProperties', false)

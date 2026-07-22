@@ -58,14 +58,14 @@ describe('interrupt', () => {
    * - The `bThreads.has('addHot')` check should confirm the thread is neither running nor pending.
    */
   test('should interrupt', () => {
-    const snapshots: Trace[] = []
+    const traces: Trace[] = []
     const actual: string[] = []
     const { useAddThread, useTrigger, useAddHandler, useTrace } = behavioral()
     const addThread = useAddThread()
     const trigger = useTrigger()
     const addHandler = useAddHandler()
-    useTrace((snapshot: Trace) => {
-      snapshots.push(snapshot)
+    useTrace((trace: Trace) => {
+      traces.push(trace)
     })
     addThread('addHot', addHot)
     addHandler('hot', () => {
@@ -76,9 +76,9 @@ describe('interrupt', () => {
     trigger({ type: 'terminate' })
     trigger({ type: 'add' })
     expect(actual).toEqual(['hot', 'hot'])
-    expect(snapshots.some((snapshot) => snapshot.kind === TRACE_MESSAGE_KINDS.selection)).toBe(true)
-    const terminateSelection = snapshots.find(
-      (snapshot) => snapshot.kind === TRACE_MESSAGE_KINDS.selection && snapshot.selected.type === 'terminate',
+    expect(traces.some((trace) => trace.kind === TRACE_MESSAGE_KINDS.selection)).toBe(true)
+    const terminateSelection = traces.find(
+      (trace) => trace.kind === TRACE_MESSAGE_KINDS.selection && trace.selected.type === 'terminate',
     )
     expect(terminateSelection).toBeDefined()
   })

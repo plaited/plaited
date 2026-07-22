@@ -8,8 +8,8 @@ import {
   DeadlockTraceSchema,
   FrontieTraceSchema,
   SelectionTraceSchema,
-  SnapshotCandidateSchema,
-  SnapshotEventSchema,
+  TraceCandidateSchema,
+  TraceEventSchema,
   TraceSchema,
 } from '../behavioral.schemas.ts'
 
@@ -40,18 +40,18 @@ describe('behavioral schemas', () => {
   })
 
   test('SnapshotEventSchema accepts optional ingress', () => {
-    expect(SnapshotEventSchema.parse({ type: 'worker.done' })).toEqual({
+    expect(TraceEventSchema.parse({ type: 'worker.done' })).toEqual({
       type: 'worker.done',
     })
-    expect(SnapshotEventSchema.parse({ type: 'worker.done', ingress: true })).toEqual({
+    expect(TraceEventSchema.parse({ type: 'worker.done', ingress: true })).toEqual({
       type: 'worker.done',
       ingress: true,
     })
   })
 
-  test('SnapshotCandidateSchema rejects non-JSON detail values like functions', () => {
+  test('TraceCandidateSchema rejects non-JSON detail values like functions', () => {
     expect(() =>
-      SnapshotCandidateSchema.parse({
+      TraceCandidateSchema.parse({
         type: 'evt',
         detail: {
           fn: () => 'not json',
@@ -76,6 +76,7 @@ describe('behavioral schemas', () => {
     expect(() =>
       TraceSchema.parse({
         kind: 'selection',
+        timestamp: 0,
         step: 0,
         selected: {
           type: 'event',
@@ -100,6 +101,7 @@ describe('behavioral schemas', () => {
     expect(
       SelectionTraceSchema.parse({
         kind: 'selection',
+        timestamp: 3,
         step: 3,
         selected: {
           type: 'event',
@@ -108,6 +110,7 @@ describe('behavioral schemas', () => {
       }),
     ).toEqual({
       kind: 'selection',
+      timestamp: 3,
       step: 3,
       selected: {
         type: 'event',
@@ -154,15 +157,16 @@ describe('behavioral schemas', () => {
   })
 
   test('AddThreadErrorSchema accepts string error messages', () => {
-    expect(AddThreadErrorSchema.safeParse({ kind: 'add_thread_error', error: 'something went wrong' }).success).toBe(
-      true,
-    )
+    expect(
+      AddThreadErrorSchema.safeParse({ kind: 'add_thread_error', timestamp: 0, error: 'something went wrong' }).success,
+    ).toBe(true)
   })
 
   test('AddThreadErrorSchema accepts ZodIssue array errors', () => {
     expect(
       AddThreadErrorSchema.safeParse({
         kind: 'add_thread_error',
+        timestamp: 0,
         error: [{ code: 'invalid_type', path: [], message: 'Expected string, received number' }],
       }).success,
     ).toBe(true)
