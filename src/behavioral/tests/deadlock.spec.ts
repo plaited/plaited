@@ -8,14 +8,14 @@ const onType = (type: string) => ({
 })
 
 describe(TRACE_MESSAGE_KINDS.deadlock, () => {
-  test('publishes deadlock snapshot when candidates exist but none are selectable', () => {
-    const snapshots: Trace[] = []
+  test('publishes deadlock trace when candidates exist but none are selectable', () => {
+    const traces: Trace[] = []
     const { useAddThread, useTrigger, useTrace } = behavioral()
     const addThread = useAddThread()
     const trigger = useTrigger()
 
-    useTrace((snapshot: Trace) => {
-      snapshots.push(snapshot)
+    useTrace((trace: Trace) => {
+      traces.push(trace)
     })
 
     addThread('safety', { rules: [{ block: [onType('dangerous')] }] })
@@ -23,7 +23,7 @@ describe(TRACE_MESSAGE_KINDS.deadlock, () => {
 
     trigger({ type: 'dangerous' })
 
-    const frontiers = snapshots.filter((s): s is FrontierTrace => s.kind === TRACE_MESSAGE_KINDS.frontier)
+    const frontiers = traces.filter((s): s is FrontierTrace => s.kind === TRACE_MESSAGE_KINDS.frontier)
     expect(frontiers).toHaveLength(1)
     expect(frontiers[0]!.status).toBe('deadlock')
     expect(frontiers[0]!.candidates).toEqual([
@@ -35,43 +35,43 @@ describe(TRACE_MESSAGE_KINDS.deadlock, () => {
     ])
     expect(frontiers[0]!.enabled).toEqual([])
 
-    const deadlocks = snapshots.filter((s): s is DeadlockTrace => s.kind === TRACE_MESSAGE_KINDS.deadlock)
+    const deadlocks = traces.filter((s): s is DeadlockTrace => s.kind === TRACE_MESSAGE_KINDS.deadlock)
     expect(deadlocks).toHaveLength(1)
     expect(deadlocks[0]!.step).toBe(frontiers[0]!.step)
 
-    const selectionSnapshots = snapshots.filter((s) => s.kind === TRACE_MESSAGE_KINDS.selection)
-    expect(selectionSnapshots).toHaveLength(0)
+    const selectionTraces = traces.filter((s) => s.kind === TRACE_MESSAGE_KINDS.selection)
+    expect(selectionTraces).toHaveLength(0)
 
-    const frontierIndex = snapshots.findIndex((snapshot) => snapshot.kind === TRACE_MESSAGE_KINDS.frontier)
-    const deadlockIndex = snapshots.findIndex((snapshot) => snapshot.kind === TRACE_MESSAGE_KINDS.deadlock)
+    const frontierIndex = traces.findIndex((trace) => trace.kind === TRACE_MESSAGE_KINDS.frontier)
+    const deadlockIndex = traces.findIndex((trace) => trace.kind === TRACE_MESSAGE_KINDS.deadlock)
     expect(frontierIndex).toBeGreaterThanOrEqual(0)
     expect(deadlockIndex).toBeGreaterThan(frontierIndex)
   })
 
-  test('does not publish deadlock snapshot when no candidates exist', () => {
-    const snapshots: Trace[] = []
+  test('does not publish deadlock trace when no candidates exist', () => {
+    const traces: Trace[] = []
     const { useAddThread, useTrace } = behavioral()
     const addThread = useAddThread()
 
-    useTrace((snapshot: Trace) => {
-      snapshots.push(snapshot)
+    useTrace((trace: Trace) => {
+      traces.push(trace)
     })
 
     addThread('watcher', { rules: [{ waitFor: [onType('dangerous')] }] })
 
-    expect(snapshots).toHaveLength(0)
+    expect(traces).toHaveLength(0)
   })
 
-  test('publishes selection snapshot when enabled candidates exist and keeps priority selection behavior', () => {
-    const snapshots: Trace[] = []
+  test('publishes selection trace when enabled candidates exist and keeps priority selection behavior', () => {
+    const traces: Trace[] = []
     const selected: string[] = []
     const { useAddThread, useTrigger, useAddHandler, useTrace } = behavioral()
     const addThread = useAddThread()
     const trigger = useTrigger()
     const addHandler = useAddHandler()
 
-    useTrace((snapshot: Trace) => {
-      snapshots.push(snapshot)
+    useTrace((trace: Trace) => {
+      traces.push(trace)
     })
 
     addHandler('low', () => {
@@ -87,10 +87,10 @@ describe(TRACE_MESSAGE_KINDS.deadlock, () => {
     trigger({ type: 'tick' })
 
     expect(selected[0]).toBe('low')
-    const deadlocks = snapshots.filter((s): s is DeadlockTrace => s.kind === TRACE_MESSAGE_KINDS.deadlock)
+    const deadlocks = traces.filter((s): s is DeadlockTrace => s.kind === TRACE_MESSAGE_KINDS.deadlock)
     expect(deadlocks).toHaveLength(0)
-    const frontiers = snapshots.filter((s): s is FrontierTrace => s.kind === TRACE_MESSAGE_KINDS.frontier)
-    const selections = snapshots.filter((s): s is SelectionTrace => s.kind === TRACE_MESSAGE_KINDS.selection)
+    const frontiers = traces.filter((s): s is FrontierTrace => s.kind === TRACE_MESSAGE_KINDS.frontier)
+    const selections = traces.filter((s): s is SelectionTrace => s.kind === TRACE_MESSAGE_KINDS.selection)
     expect(frontiers.length).toBeGreaterThan(0)
     expect(selections.length).toBeGreaterThan(0)
     const lowSelection = selections.find((selection) => selection.selected.type === 'low')
@@ -99,19 +99,19 @@ describe(TRACE_MESSAGE_KINDS.deadlock, () => {
     const lowFrontier = frontiers.find((frontier) => frontier.step === lowSelection!.step)
     expect(lowFrontier).toBeDefined()
     expect(lowFrontier!.enabled.some((candidate) => candidate.type === 'low')).toBe(true)
-    const frontierIndex = snapshots.findIndex((snapshot) => snapshot.kind === TRACE_MESSAGE_KINDS.frontier)
-    const selectionIndex = snapshots.findIndex((snapshot) => snapshot.kind === TRACE_MESSAGE_KINDS.selection)
+    const frontierIndex = traces.findIndex((trace) => trace.kind === TRACE_MESSAGE_KINDS.frontier)
+    const selectionIndex = traces.findIndex((trace) => trace.kind === TRACE_MESSAGE_KINDS.selection)
     expect(selectionIndex).toBeGreaterThan(frontierIndex)
   })
 
-  test('selection snapshot reports the chosen candidate event', () => {
-    const snapshots: Trace[] = []
+  test('selection trace reports the chosen candidate event', () => {
+    const traces: Trace[] = []
     const { useAddThread, useTrigger, useTrace } = behavioral()
     const addThread = useAddThread()
     const trigger = useTrigger()
 
-    useTrace((snapshot: Trace) => {
-      snapshots.push(snapshot)
+    useTrace((trace: Trace) => {
+      traces.push(trace)
     })
 
     addThread('blockSecond', {
@@ -136,23 +136,22 @@ describe(TRACE_MESSAGE_KINDS.deadlock, () => {
 
     trigger({ type: 'kickoff' })
 
-    const frontier = snapshots.find(
-      (snapshot): snapshot is FrontierTrace =>
-        snapshot.kind === TRACE_MESSAGE_KINDS.frontier &&
-        snapshot.status === 'ready' &&
-        snapshot.candidates.some((candidate) => candidate.type === 'same_type'),
+    const frontier = traces.find(
+      (trace): trace is FrontierTrace =>
+        trace.kind === TRACE_MESSAGE_KINDS.frontier &&
+        trace.status === 'ready' &&
+        trace.candidates.some((candidate) => candidate.type === 'same_type'),
     )
     expect(frontier).toBeDefined()
     expect(frontier!.candidates.filter((candidate) => candidate.type === 'same_type')).toHaveLength(2)
 
-    const selection = snapshots.find(
-      (snapshot): snapshot is SelectionTrace =>
-        snapshot.kind === TRACE_MESSAGE_KINDS.selection && snapshot.selected.type === 'same_type',
+    const selection = traces.find(
+      (trace): trace is SelectionTrace =>
+        trace.kind === TRACE_MESSAGE_KINDS.selection && trace.selected.type === 'same_type',
     )
     expect(selection).toBeDefined()
-    const selectionFrontier = snapshots.find(
-      (snapshot): snapshot is FrontierTrace =>
-        snapshot.kind === TRACE_MESSAGE_KINDS.frontier && snapshot.step === selection!.step,
+    const selectionFrontier = traces.find(
+      (trace): trace is FrontierTrace => trace.kind === TRACE_MESSAGE_KINDS.frontier && trace.step === selection!.step,
     )
     expect(selectionFrontier).toBeDefined()
     expect(selectionFrontier!.candidates.some((candidate) => candidate.type === 'same_type')).toBe(true)

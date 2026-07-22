@@ -6,7 +6,7 @@ import { keyMirror } from '../utils.ts'
  * @remarks
  * Use the `kind` field to narrow the union:
  * - `'deadlock'` — no unblocked candidate could be selected
- * - `'selection'` — event selection snapshot
+ * - `'selection'` — event selection trace
  * - `'feedback_error'` — handler threw during side-effect execution
  * - `'add_thread_error'` — invalid thread arguments passed to `useAddThread`
  * - `'runtime_error'` — unrecoverable engine error

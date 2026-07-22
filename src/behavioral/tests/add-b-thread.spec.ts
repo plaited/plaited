@@ -53,16 +53,16 @@ describe('addThread', () => {
     expect(actual.filter((event) => event === 'cold')).toHaveLength(3)
   })
 
-  test('frontier and selection snapshots include worker requests and selected events', () => {
-    const snapshots: Trace[] = []
+  test('frontier and selection traces include worker requests and selected events', () => {
+    const traces: Trace[] = []
     const completions: string[] = []
     const { useAddThread, useTrigger, useAddHandler, useTrace } = behavioral()
     const addThread = useAddThread()
     const trigger = useTrigger()
     const addHandler = useAddHandler()
 
-    useTrace((snapshot: Trace) => {
-      snapshots.push(snapshot)
+    useTrace((trace: Trace) => {
+      traces.push(trace)
     })
 
     addThread('workerA', {
@@ -84,31 +84,30 @@ describe('addThread', () => {
     trigger({ type: 'start' })
 
     expect(completions).toHaveLength(2)
-    const frontierSnapshots = snapshots.filter(
-      (snapshot): snapshot is FrontierTrace =>
-        snapshot.kind === TRACE_MESSAGE_KINDS.frontier && snapshot.status === 'ready',
+    const frontierTraces = traces.filter(
+      (trace): trace is FrontierTrace => trace.kind === TRACE_MESSAGE_KINDS.frontier && trace.status === 'ready',
     )
-    const doneCandidates = frontierSnapshots
-      .flatMap((snapshot) => snapshot.candidates)
+    const doneCandidates = frontierTraces
+      .flatMap((trace) => trace.candidates)
       .filter((candidate) => candidate.type === 'done_a' || candidate.type === 'done_b')
     expect(new Set(doneCandidates.map((candidate) => candidate.type))).toEqual(new Set(['done_a', 'done_b']))
     expect(doneCandidates.every((candidate) => candidate.ingress === undefined)).toBe(true)
 
-    const selectionSnapshots = snapshots.filter(
-      (snapshot): snapshot is SelectionTrace => snapshot.kind === TRACE_MESSAGE_KINDS.selection,
+    const selectionTraces = traces.filter(
+      (trace): trace is SelectionTrace => trace.kind === TRACE_MESSAGE_KINDS.selection,
     )
-    expect(selectionSnapshots.some((snapshot) => snapshot.selected.type === 'done_a')).toBe(true)
-    expect(selectionSnapshots.some((snapshot) => snapshot.selected.type === 'done_b')).toBe(true)
+    expect(selectionTraces.some((trace) => trace.selected.type === 'done_a')).toBe(true)
+    expect(selectionTraces.some((trace) => trace.selected.type === 'done_b')).toBe(true)
   })
 
-  test('deadlock snapshots publish frontier status and step continuity', () => {
-    const snapshots: Trace[] = []
+  test('deadlock traces publish frontier status and step continuity', () => {
+    const traces: Trace[] = []
     const { useAddThread, useTrigger, useTrace } = behavioral()
     const addThread = useAddThread()
     const trigger = useTrigger()
 
-    useTrace((snapshot: Trace) => {
-      snapshots.push(snapshot)
+    useTrace((trace: Trace) => {
+      traces.push(trace)
     })
 
     addThread('guard', { rules: [{ block: [onType('dangerous')] }] })
@@ -117,17 +116,14 @@ describe('addThread', () => {
 
     trigger({ type: 'start' })
 
-    const deadlockFrontier = snapshots.find(
-      (snapshot): snapshot is FrontierTrace =>
-        snapshot.kind === TRACE_MESSAGE_KINDS.frontier && snapshot.status === 'deadlock',
+    const deadlockFrontier = traces.find(
+      (trace): trace is FrontierTrace => trace.kind === TRACE_MESSAGE_KINDS.frontier && trace.status === 'deadlock',
     )
     expect(deadlockFrontier).toBeDefined()
     expect(deadlockFrontier!.candidates.some((candidate) => candidate.type === 'dangerous')).toBe(true)
     expect(deadlockFrontier!.enabled).toEqual([])
 
-    const deadlockSnapshot = snapshots.find(
-      (snapshot): snapshot is DeadlockTrace => snapshot.kind === TRACE_MESSAGE_KINDS.deadlock,
-    )
+    const deadlockSnapshot = traces.find((trace): trace is DeadlockTrace => trace.kind === TRACE_MESSAGE_KINDS.deadlock)
     expect(deadlockSnapshot).toBeDefined()
     expect(deadlockSnapshot!.step).toBe(deadlockFrontier!.step)
   })

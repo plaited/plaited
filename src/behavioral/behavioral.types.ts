@@ -1,5 +1,5 @@
 import type { FRONTIER_STATUS } from './behavioral.constants.ts'
-import type { BPEvent, JsonObject, RegisteredIdioms, Thread, Trace } from './behavioral.schemas.ts'
+import type { BPEvent, JsonObject, RegisteredIdioms, Thread, Trace, TraceBase } from './behavioral.schemas.ts'
 
 export type RulesFunction = () => Generator<RegisteredIdioms, void, unknown>
 
@@ -89,7 +89,7 @@ export type CandidateBid = {
  *
  * This is an execution-oriented shape used by the scheduler to decide whether to:
  * - select and process an event (`ready`)
- * - emit a deadlock snapshot (`deadlock`)
+ * - emit a deadlock trace (`deadlock`)
  * - do nothing (`idle`)
  */
 export type Frontier = {
@@ -114,12 +114,12 @@ export type ReplayToFrontierResult = {
  * @returns `void` or `Promise<void>` for asynchronous cleanup.
  *
  * @see {@link UseFeedback} for event handler cleanup
- * @see {@link UseTrace} for snapshot listener cleanup
+ * @see {@link UseTrace} for trace listener cleanup
  */
 export type Disconnect = () => void | Promise<void>
 
 /**
- * A callback function invoked with a snapshot (`SnapshotMessage`) of the behavioral program's state
+ * A callback function invoked with a trace (`SnapshotMessage`) of the behavioral program's state
  * after each event selection step (super-step). This provides a hook for observing the program's
  * internal execution state in real-time without affecting its behavior.
  *
@@ -132,10 +132,10 @@ export type Disconnect = () => void | Promise<void>
  * @returns `void` for synchronous listeners or `Promise<void>` for asynchronous processing. The
  * return value is ignored by the behavioral program.
  *
- * @see {@link UseTrace} for registering snapshot listeners
- * @see {@link Trace} for snapshot structure
+ * @see {@link UseTrace} for registering trace listeners
+ * @see {@link Trace} for trace structure
  */
-export type TraceListener<T extends Trace> = (msg: T & Trace) => void | Promise<void>
+export type TraceListener<T extends TraceBase> = (msg: T & Trace) => void | Promise<void>
 
 /**
  * Represents a generic structure for event detail payloads.
@@ -160,7 +160,7 @@ export type EventDetails = Record<string, any>
  * @param params.detail - The JSON-serializable event detail.
  * @param params.disconnect - Cleanup function to unsubscribe this handler.
  * @param params.payload - Opaque non-JSON side-channel value, if one was supplied on the event.
- * @returns `void` or `Promise<void>`. Thrown errors surface as `feedback_error` snapshots.
+ * @returns `void` or `Promise<void>`. Thrown errors surface as `feedback_error` traces.
  */
 export type Handler<T, P = unknown> = (params: {
   detail: T
@@ -180,7 +180,7 @@ export type UseAddHandler = (topic?: string) => AddHandler
  * Hook for monitoring internal state transitions of the behavioral program.
  * Provides debugging, visualization, and analysis capabilities.
  *
- * @param listener - Callback receiving snapshots after each event selection.
+ * @param listener - Callback receiving traces after each event selection.
  * @returns Disconnect function for cleanup.
  *
  * @remarks
@@ -188,10 +188,10 @@ export type UseAddHandler = (topic?: string) => AddHandler
  * - Doesn't affect program execution
  * - Useful for debugging and tooling
  *
- * @see {@link Trace} for snapshot structure
+ * @see {@link Trace} for trace structure
  * @see {@link TraceListener} for listener type
  */
-export type UseTrace<T extends Trace> = (listener: TraceListener<T & Trace>) => Disconnect
+export type UseTrace<T extends TraceBase> = (listener: TraceListener<T & Trace>) => Disconnect
 
 export type AddThread = (...args: Thread) => void
 

@@ -24,7 +24,7 @@ export const BPEventSchema = z.object({
    * @remarks
    * `detail` stays JSON for frontier analysis; `payload` never participates
    * in event matching and never appears in any {@link Trace} variant.
-   * Frontier analysis snapshots field-pick `type`/`detail` only.
+   * Frontier analysis traces field-pick `type`/`detail` only.
    */
   payload: z.unknown().optional(),
 })
@@ -139,12 +139,19 @@ export const TraceCandidateSchema = z.object({
   priority: z.number(),
 })
 
+export const TraceBaseSchema = z.looseObject({
+  kind: z.string(),
+  timestamp: z.number(),
+})
+
+export type TraceBase = z.output<typeof TraceBaseSchema>
+
 /** @public */
 export type TraceCandidate = z.output<typeof TraceCandidateSchema>
 
 export const FrontieTraceSchema = z.object({
+  ...TraceBaseSchema.shape,
   kind: z.literal(TRACE_MESSAGE_KINDS.frontier),
-  timestamp: z.number(),
   step: z.number().int().nonnegative(),
   status: z.enum(['ready', 'deadlock', 'idle']),
   candidates: z.array(TraceCandidateSchema),
@@ -155,7 +162,7 @@ export const FrontieTraceSchema = z.object({
 export type FrontierTrace = z.output<typeof FrontieTraceSchema>
 
 /**
- * Schema for a snapshot of all bids considered during one event selection step.
+ * Schema for a trace of all bids considered during one event selection step.
  *
  * @remarks
  * Published via {@link useTrace} after each super-step's event selection.
@@ -166,8 +173,8 @@ export type FrontierTrace = z.output<typeof FrontieTraceSchema>
  * @public
  */
 export const SelectionTraceSchema = z.object({
+  ...TraceBaseSchema.shape,
   kind: z.literal(TRACE_MESSAGE_KINDS.selection),
-  timestamp: z.number(),
   step: z.number().int().nonnegative(),
   selected: TraceEventSchema,
 })
@@ -176,7 +183,7 @@ export const SelectionTraceSchema = z.object({
 export type SelectionTrace = z.output<typeof SelectionTraceSchema>
 
 /**
- * Schema for a snapshot emitted when no unblocked candidate can be selected.
+ * Schema for a trace emitted when no unblocked candidate can be selected.
  *
  * @remarks
  * Published via {@link useTrace} when at least one request candidate exists
@@ -187,8 +194,8 @@ export type SelectionTrace = z.output<typeof SelectionTraceSchema>
  * @public
  */
 export const DeadlockTraceSchema = z.object({
+  ...TraceBaseSchema.shape,
   kind: z.literal(TRACE_MESSAGE_KINDS.deadlock),
-  timestamp: z.number(),
   step: z.number().int().nonnegative(),
 })
 
@@ -200,7 +207,7 @@ export type DeadlockTrace = z.output<typeof DeadlockTraceSchema>
  *
  * @remarks
  * Emitted when a `useFeedback` handler throws during side-effect execution.
- * Published after the selection snapshot for the current super-step.
+ * Published after the selection trace for the current super-step.
  * Consumers narrow by `kind === 'feedback_error'`.
  *
  * @see {@link TraceSchema} for the full discriminated union
@@ -208,8 +215,8 @@ export type DeadlockTrace = z.output<typeof DeadlockTraceSchema>
  * @public
  */
 export const FeedbackErrorSchema = z.object({
+  ...TraceBaseSchema.shape,
   kind: z.literal(TRACE_MESSAGE_KINDS.feedback_error),
-  timestamp: z.number(),
   type: z.string(),
   topic: z.string().optional(),
   detail: JsonObjectSchema.optional(),
@@ -224,7 +231,7 @@ export type FeedbackError = z.output<typeof FeedbackErrorSchema>
  * `ThreadScehama` validation or contain an un-compilable JSON Schema.
  *
  * @remarks
- * Published via the snapshot publisher when `useAddThread`'s `safeParse` rejects
+ * Published via the trace publisher when `useAddThread`'s `safeParse` rejects
  * the supplied `(label, { rules, once })` tuple, or when Ajv fails to compile a
  * `detailSchema`. `error` is either a human-readable string (Ajv compile failure)
  * or a `ZodIssue[]` (thread-shape validation failure), narrowed via `Array.isArray`.
@@ -235,8 +242,8 @@ export type FeedbackError = z.output<typeof FeedbackErrorSchema>
  * @public
  */
 export const AddThreadErrorSchema = z.object({
+  ...TraceBaseSchema.shape,
   kind: z.literal(TRACE_MESSAGE_KINDS.add_thread_error),
-  timestamp: z.number(),
   error: z.union([z.array(z.unknown()), z.string()]),
 })
 
@@ -244,7 +251,7 @@ export const AddThreadErrorSchema = z.object({
 export type AddThreadError = z.output<typeof AddThreadErrorSchema>
 
 /**
- * Schema for the pending thread pool snapshot taken before each frontier computation.
+ * Schema for the pending thread pool trace taken before each frontier computation.
  *
  * @remarks
  * Published at the start of each super-step's event selection phase, before
@@ -259,8 +266,8 @@ export type AddThreadError = z.output<typeof AddThreadErrorSchema>
  * @public
  */
 export const PendingBidsTraceSchema = z.object({
+  ...TraceBaseSchema.shape,
   kind: z.literal(TRACE_MESSAGE_KINDS.pending_bids),
-  timestamp: z.number(),
   step: z.number().int().nonnegative(),
   threads: z.array(
     z.object({
@@ -307,8 +314,8 @@ export const PendingBidsTraceSchema = z.object({
 export type PendingBidsTrace = z.output<typeof PendingBidsTraceSchema>
 
 export const RuntimeErrorSchema = z.object({
+  ...TraceBaseSchema.shape,
   kind: z.literal(TRACE_MESSAGE_KINDS.runtime_error),
-  timestamp: z.number(),
   error: z.string(),
 })
 

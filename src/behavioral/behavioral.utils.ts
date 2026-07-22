@@ -31,7 +31,7 @@ export const isBPEvent = (data: unknown): data is BPEvent => {
  * Compiles a JSON Schema object into an Ajv validator function.
  * Returns a function that returns `true` when the value conforms to the schema.
  * Throws if the schema is un-compilable — caller is responsible for
- * handling the error and surfacing it as a snapshot.
+ * handling the error and surfacing it as a trace.
  */
 const compileValidator = (schema: JsonObject): ((detail: unknown) => boolean) => {
   const validate = ajv.compile(schema)

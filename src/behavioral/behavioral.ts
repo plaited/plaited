@@ -5,6 +5,7 @@ import {
   type RegisteredBPListener,
   ThreadScehama,
   type Trace,
+  type TraceBase,
 } from './behavioral.schemas.ts'
 import type {
   CandidateBid,
@@ -42,7 +43,7 @@ const normalizeListeners = (listener: RegisteredBPListener[]) =>
 
 /**
  * @internal
- * Serializes the pending set into a snapshot-friendly thread list.
+ * Serializes the pending set into a trace-friendly thread list.
  */
 const serializePending = (pending: Set<PendingBid>) =>
   Array.from(pending).map(({ waitFor, block, interrupt, request, generator: _gen, ...rest }) => ({
@@ -62,10 +63,10 @@ const serializePending = (pending: Set<PendingBid>) =>
 
 /**
  * @internal
- * Projects a {@link CandidateBid} to the JSON-only snapshot shape (`priority`,
+ * Projects a {@link CandidateBid} to the JSON-only trace shape (`priority`,
  * `type`, `detail`, `ingress`, `topic`), omitting the opaque `payload` side-channel.
  *
- * Frontiers must stay JSON so frontier analysis (snapshot replay/matching) and the
+ * Frontiers must stay JSON so frontier analysis (trace replay/matching) and the
  * visited-set key never observe non-serializable values.
  */
 const toCandidateSnapshot = ({ priority, type, detail, ingress, topic }: CandidateBid) => ({
@@ -132,7 +133,7 @@ const createPublisher = <T>() => {
  *
  * 4. **Notify & Update:**
  *    - If an event is selected:
- *      - Publish a snapshot if a listener is attached (for debugging/monitoring).
+ *      - Publish a trace if a listener is attached (for debugging/monitoring).
  *      - Identify threads waiting for, requesting, or interrupted by the selected event.
  *        Move these threads back to the 'running' state.
  *      - Publish the selected event via the `actionPublisher` (for `useFeedback` handlers).
@@ -145,7 +146,7 @@ const createPublisher = <T>() => {
  * and threads to run. If no events can be selected (either because all requests are blocked
  * or there are no requests), the program will pause until an external event is triggered.
  */
-export const behavioral = <T extends Trace>() => {
+export const behavioral = <T extends TraceBase>() => {
   /**
    * @internal
    * Set of threads that have yielded and are waiting for event selection.
@@ -173,7 +174,7 @@ export const behavioral = <T extends Trace>() => {
 
   /**
    * @internal
-   * Publisher for state snapshots, consumed by `useTrace`.
+   * Publisher for state traces, consumed by `useTrace`.
    * Always exists — subscribers are added/removed via `useTrace` which delegates to `subscribe`.
    */
   const snapshotPublisher = createPublisher<T & Trace>()
@@ -195,7 +196,7 @@ export const behavioral = <T extends Trace>() => {
    * 2. Collects all request declarations as candidate events
    * 3. Filters out candidates that are blocked
    * 4. Selects the highest priority remaining candidate
-   * 5. If an event is selected, publishes a snapshot and proceeds to the next step
+   * 5. If an event is selected, publishes a trace and proceeds to the next step
    * 6. If no event is selected, the super-step ends (program pauses until external trigger)
    */
   function selectNextEvent() {
@@ -324,7 +325,7 @@ export const behavioral = <T extends Trace>() => {
    *
    * @remarks
    * The subscriber is async so both sync and async handlers are caught by
-   * the try/catch. Errors are published as `feedback_error` snapshot messages
+   * the try/catch. Errors are published as `feedback_error` trace messages
    * and logged to console. The publisher still fire-and-forgets the returned
    * promise via `void cb(value)`, so the BP engine loop is never blocked.
    *
@@ -389,7 +390,7 @@ export const behavioral = <T extends Trace>() => {
   /**
    * @internal
    * Implementation of the public `useTrace` hook.
-   * Delegates directly to the snapshot publisher's subscribe method.
+   * Delegates directly to the trace publisher's subscribe method.
    */
   const useTrace: UseTrace<T> = (listener) => snapshotPublisher.subscribe(listener)
 
@@ -408,7 +409,7 @@ export const behavioral = <T extends Trace>() => {
     useTrigger,
 
     useAddHandler,
-    /** Hook to subscribe to internal state snapshots for monitoring/debugging. */
+    /** Hook to subscribe to internal state traces for monitoring/debugging. */
     useTrace,
   })
 }

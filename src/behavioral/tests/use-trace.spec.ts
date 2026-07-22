@@ -12,7 +12,7 @@ describe('useTrace', () => {
     const trigger = useTrigger()
     const addHandler = useAddHandler()
 
-    // Subscribe to snapshots — this should not affect event ordering
+    // Subscribe to traces — this should not affect event ordering
     useTrace(() => {})
 
     addThread('producer', { rules: [{ request: { type: 'task' } }], once: true })
