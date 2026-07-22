@@ -1,19 +1,19 @@
 import { describe, expect, test } from 'bun:test'
-import type { SnapshotMessage } from '../behavioral.schemas.ts'
+import type { Trace } from '../behavioral.schemas.ts'
 import { behavioral } from '../behavioral.ts'
 
 const onType = (type: string) => ({ type })
 
-describe('useSnapshot', () => {
+describe('useTrace', () => {
   test('does not alter event selection order', () => {
     const events: string[] = []
-    const { useAddThread, useTrigger, useAddHandler, useSnapshot } = behavioral()
+    const { useAddThread, useTrigger, useAddHandler, useTrace } = behavioral()
     const addThread = useAddThread()
     const trigger = useTrigger()
     const addHandler = useAddHandler()
 
     // Subscribe to snapshots — this should not affect event ordering
-    useSnapshot(() => {})
+    useTrace(() => {})
 
     addThread('producer', { rules: [{ request: { type: 'task' } }], once: true })
     addThread('consumer', {
@@ -34,16 +34,16 @@ describe('useSnapshot', () => {
   })
 
   test('second listener still receives after first disconnects', () => {
-    const snapshotsA: SnapshotMessage[] = []
-    const snapshotsB: SnapshotMessage[] = []
-    const { useAddThread, useTrigger, useSnapshot } = behavioral()
+    const snapshotsA: Trace[] = []
+    const snapshotsB: Trace[] = []
+    const { useAddThread, useTrigger, useTrace } = behavioral()
     const addThread = useAddThread()
     const trigger = useTrigger()
 
-    const disconnectA = useSnapshot((msg: SnapshotMessage) => {
+    const disconnectA = useTrace((msg: Trace) => {
       snapshotsA.push(msg)
     })
-    useSnapshot((msg: SnapshotMessage) => {
+    useTrace((msg: Trace) => {
       snapshotsB.push(msg)
     })
 
@@ -71,16 +71,16 @@ describe('useSnapshot', () => {
   })
 
   test('re-subscribing after full disconnect still works', () => {
-    const snapshotsA: SnapshotMessage[] = []
-    const snapshotsB: SnapshotMessage[] = []
-    const { useAddThread, useTrigger, useSnapshot } = behavioral()
+    const snapshotsA: Trace[] = []
+    const snapshotsB: Trace[] = []
+    const { useAddThread, useTrigger, useTrace } = behavioral()
     const addThread = useAddThread()
     const trigger = useTrigger()
 
-    const disconnectA = useSnapshot((msg: SnapshotMessage) => {
+    const disconnectA = useTrace((msg: Trace) => {
       snapshotsA.push(msg)
     })
-    const disconnectB = useSnapshot((msg: SnapshotMessage) => {
+    const disconnectB = useTrace((msg: Trace) => {
       snapshotsB.push(msg)
     })
 
@@ -96,8 +96,8 @@ describe('useSnapshot', () => {
     disconnectB()
 
     // Re-subscribe — publisher is always available
-    const snapshotsC: SnapshotMessage[] = []
-    useSnapshot((msg: SnapshotMessage) => {
+    const snapshotsC: Trace[] = []
+    useTrace((msg: Trace) => {
       snapshotsC.push(msg)
     })
 

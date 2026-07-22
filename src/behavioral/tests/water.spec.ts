@@ -1,6 +1,6 @@
 import { expect, test } from 'bun:test'
-import { SNAPSHOT_MESSAGE_KINDS } from '../behavioral.constants.ts'
-import type { SnapshotMessage } from '../behavioral.schemas.ts'
+import { TRACE_MESSAGE_KINDS } from '../behavioral.constants.ts'
+import type { Trace } from '../behavioral.schemas.ts'
 import { behavioral } from '../behavioral.ts'
 
 const addHotRules = [{ request: { type: 'hot' } }, { request: { type: 'hot' } }, { request: { type: 'hot' } }]
@@ -100,24 +100,24 @@ test('interleave', () => {
 })
 
 /**
- * Test scenario: Demonstrates the use of `useSnapshot` to capture the state
+ * Test scenario: Demonstrates the use of `useTrace` to capture the state
  * of the behavioral program at each step (super-step).
  * This is useful for debugging and understanding the event selection process.
  * The captured snapshots are compared against a baseline snapshot.
  */
 test('logging', () => {
-  const snapshots: SnapshotMessage[] = []
-  const { useAddThread, useTrigger, useSnapshot } = behavioral()
+  const snapshots: Trace[] = []
+  const { useAddThread, useTrigger, useTrace } = behavioral()
   const addThread = useAddThread()
   const trigger = useTrigger()
-  useSnapshot((snapshot: SnapshotMessage) => {
+  useTrace((snapshot: Trace) => {
     snapshots.push(snapshot)
   })
   addThread('addHot', { rules: addHotRules, once: true })
   addThread('addCold', { rules: addColdRules, once: true })
   addThread('mixHotCold', { rules: mixHotColdRules })
   trigger({ type: 'start' })
-  const frontierSnapshots = snapshots.filter((snapshot) => snapshot.kind === SNAPSHOT_MESSAGE_KINDS.frontier)
+  const frontierSnapshots = snapshots.filter((snapshot) => snapshot.kind === TRACE_MESSAGE_KINDS.frontier)
   expect(frontierSnapshots.length).toBeGreaterThan(0)
   const allCandidates = frontierSnapshots.flatMap((snapshot) => snapshot.candidates)
   expect(allCandidates.some((candidate) => candidate.type === 'hot')).toBe(true)

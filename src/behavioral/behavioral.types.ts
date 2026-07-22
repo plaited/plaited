@@ -1,5 +1,5 @@
 import type { FRONTIER_STATUS } from './behavioral.constants.ts'
-import type { BPEvent, JsonObject, RegisteredIdioms, SnapshotMessage, Thread } from './behavioral.schemas.ts'
+import type { BPEvent, JsonObject, RegisteredIdioms, Thread, Trace } from './behavioral.schemas.ts'
 
 export type RulesFunction = () => Generator<RegisteredIdioms, void, unknown>
 
@@ -114,7 +114,7 @@ export type ReplayToFrontierResult = {
  * @returns `void` or `Promise<void>` for asynchronous cleanup.
  *
  * @see {@link UseFeedback} for event handler cleanup
- * @see {@link UseSnapshot} for snapshot listener cleanup
+ * @see {@link UseTrace} for snapshot listener cleanup
  */
 export type Disconnect = () => void | Promise<void>
 
@@ -132,10 +132,10 @@ export type Disconnect = () => void | Promise<void>
  * @returns `void` for synchronous listeners or `Promise<void>` for asynchronous processing. The
  * return value is ignored by the behavioral program.
  *
- * @see {@link UseSnapshot} for registering snapshot listeners
- * @see {@link SnapshotMessage} for snapshot structure
+ * @see {@link UseTrace} for registering snapshot listeners
+ * @see {@link Trace} for snapshot structure
  */
-export type SnapshotListener = (msg: SnapshotMessage) => void | Promise<void>
+export type TraceListener<T extends Trace> = (msg: T & Trace) => void | Promise<void>
 
 /**
  * Represents a generic structure for event detail payloads.
@@ -188,10 +188,10 @@ export type UseAddHandler = (topic?: string) => AddHandler
  * - Doesn't affect program execution
  * - Useful for debugging and tooling
  *
- * @see {@link SnapshotMessage} for snapshot structure
- * @see {@link SnapshotListener} for listener type
+ * @see {@link Trace} for snapshot structure
+ * @see {@link TraceListener} for listener type
  */
-export type UseSnapshot = (listener: SnapshotListener) => Disconnect
+export type UseTrace<T extends Trace> = (listener: TraceListener<T & Trace>) => Disconnect
 
 export type AddThread = (...args: Thread) => void
 
@@ -214,30 +214,3 @@ export type UseAddThread = (topic?: string) => AddThread
 export type Trigger = <T extends BPEvent>(args: T) => void
 
 export type UseTrigger = (topic?: string) => Trigger
-
-/**
- * Factory function that creates and initializes a new behavioral program instance.
- * Returns an immutable API for thread management, event handling, and state monitoring.
- *
- * @returns Readonly behavioral programming API.
- *
- * @remarks
- * Super-step execution model:
- * 1. Advance threads to synchronization points
- * 2. Collect and filter event requests
- * 3. Select highest priority event
- * 4. Notify relevant threads
- * 5. Publish to feedback handlers
- * 6. Repeat until no events remain
- *
- * @see {@link BThreads} for thread management
- * @see {@link Trigger} for event injection
- * @see {@link UseFeedback} for event handling
- * @see {@link UseSnapshot} for state monitoring
- */
-export type Behavioral = () => Readonly<{
-  useAddHandler: UseAddHandler
-  useAddThread: UseAddThread
-  useSnapshot: UseSnapshot
-  useTrigger: UseTrigger
-}>

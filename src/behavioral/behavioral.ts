@@ -1,19 +1,18 @@
-import { FRONTIER_STATUS, SNAPSHOT_MESSAGE_KINDS } from './behavioral.constants.ts'
+import { FRONTIER_STATUS, TRACE_MESSAGE_KINDS } from './behavioral.constants.ts'
 import {
   type BPEvent,
   type FeedbackError,
   type RegisteredBPListener,
-  type SnapshotMessage,
   ThreadScehama,
+  type Trace,
 } from './behavioral.schemas.ts'
 import type {
-  Behavioral,
   CandidateBid,
   PendingBid,
   RunningBid,
   UseAddHandler,
   UseAddThread,
-  UseSnapshot,
+  UseTrace,
   UseTrigger,
 } from './behavioral.types.ts'
 import {
@@ -146,7 +145,7 @@ const createPublisher = <T>() => {
  * and threads to run. If no events can be selected (either because all requests are blocked
  * or there are no requests), the program will pause until an external event is triggered.
  */
-export const behavioral: Behavioral = () => {
+export const behavioral = <T extends Trace>() => {
   /**
    * @internal
    * Set of threads that have yielded and are waiting for event selection.
@@ -174,10 +173,10 @@ export const behavioral: Behavioral = () => {
 
   /**
    * @internal
-   * Publisher for state snapshots, consumed by `useSnapshot`.
-   * Always exists — subscribers are added/removed via `useSnapshot` which delegates to `subscribe`.
+   * Publisher for state snapshots, consumed by `useTrace`.
+   * Always exists — subscribers are added/removed via `useTrace` which delegates to `subscribe`.
    */
-  const snapshotPublisher = createPublisher<SnapshotMessage>()
+  const snapshotPublisher = createPublisher<T & Trace>()
   let stepId = 0
 
   const step = () => {
@@ -203,7 +202,7 @@ export const behavioral: Behavioral = () => {
     const step = stepId++
 
     snapshotPublisher({
-      kind: SNAPSHOT_MESSAGE_KINDS.pending_bids,
+      kind: TRACE_MESSAGE_KINDS.pending_bids,
       step,
       threads: serializePending(pending),
     })
@@ -211,7 +210,7 @@ export const behavioral: Behavioral = () => {
     const frontier = computeFrontier({ pending })
     const { enabled, candidates } = frontier
     snapshotPublisher({
-      kind: SNAPSHOT_MESSAGE_KINDS.frontier,
+      kind: TRACE_MESSAGE_KINDS.frontier,
       step,
       status: frontier.status,
       candidates: candidates.map(toCandidateSnapshot),
@@ -224,7 +223,7 @@ export const behavioral: Behavioral = () => {
         ({ priority: priorityA }, { priority: priorityB }) => priorityA - priorityB,
       )[0]!
       snapshotPublisher({
-        kind: SNAPSHOT_MESSAGE_KINDS.selection,
+        kind: TRACE_MESSAGE_KINDS.selection,
         step,
         selected: toSelectedSnapshot(selected),
       })
@@ -233,7 +232,7 @@ export const behavioral: Behavioral = () => {
     }
     if (frontier.status === FRONTIER_STATUS.deadlock) {
       snapshotPublisher({
-        kind: SNAPSHOT_MESSAGE_KINDS.deadlock,
+        kind: TRACE_MESSAGE_KINDS.deadlock,
         step,
       })
     }
@@ -341,7 +340,7 @@ export const behavioral: Behavioral = () => {
           })
         } catch (error) {
           const message: FeedbackError = {
-            kind: SNAPSHOT_MESSAGE_KINDS.feedback_error,
+            kind: TRACE_MESSAGE_KINDS.feedback_error,
             type,
             detail: data.detail,
             error: error instanceof Error ? error.message : String(error),
@@ -369,23 +368,23 @@ export const behavioral: Behavioral = () => {
           })
         } catch (err) {
           snapshotPublisher({
-            kind: SNAPSHOT_MESSAGE_KINDS.add_thread_error,
+            kind: TRACE_MESSAGE_KINDS.add_thread_error,
             error: err instanceof Error ? err.message : String(err),
           })
         }
       } else {
         snapshotPublisher({
-          kind: SNAPSHOT_MESSAGE_KINDS.add_thread_error,
+          kind: TRACE_MESSAGE_KINDS.add_thread_error,
           error: result.error.issues,
         })
       }
     }
   /**
    * @internal
-   * Implementation of the public `useSnapshot` hook.
+   * Implementation of the public `useTrace` hook.
    * Delegates directly to the snapshot publisher's subscribe method.
    */
-  const useSnapshot: UseSnapshot = (listener) => snapshotPublisher.subscribe(listener)
+  const useTrace: UseTrace<T> = (listener) => snapshotPublisher.subscribe(listener)
 
   /**
    * @internal
@@ -403,6 +402,6 @@ export const behavioral: Behavioral = () => {
 
     useAddHandler,
     /** Hook to subscribe to internal state snapshots for monitoring/debugging. */
-    useSnapshot,
+    useTrace,
   })
 }

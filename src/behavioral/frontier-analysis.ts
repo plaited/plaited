@@ -12,20 +12,26 @@
  * - {@link exploreFrontiers} — enumerate reachable histories, find deadlocks
  * - {@link verifyFrontiers} — derive a pass/fail/truncated status from exploration
  *
+ * ## Trace kind filters
+ *
+ * - {@link isSelectionTrace}
+ * - {@link isFrontierTrace}
+ * - {@link isDeadlockTrace}
+ *
  * @packageDocumentation
  */
 
 import * as z from 'zod'
-import { FRONTIER_STATUS, SNAPSHOT_MESSAGE_KINDS } from './behavioral.constants.ts'
+import { FRONTIER_STATUS, TRACE_MESSAGE_KINDS } from './behavioral.constants.ts'
 import {
   type BPEvent,
-  type FrontierSnapshot,
+  type FrontierTrace,
   type RegisteredIdioms,
-  type SelectionSnapshot,
+  type SelectionTrace,
   type SnapshotEvent,
-  type SnapshotMessage,
-  SnapshotMessageSchema,
   type Thread,
+  type Trace,
+  TraceSchema,
 } from './behavioral.schemas.ts'
 import type { CandidateBid, Frontier, PendingBid, ReplayToFrontierResult, RunningBid } from './behavioral.types.ts'
 import {
@@ -38,13 +44,39 @@ import {
 } from './behavioral.utils.ts'
 
 // ---------------------------------------------------------------------------
+// Trace kind filter guards
+// ---------------------------------------------------------------------------
+
+/**
+ * Narrow a {@link Trace} to a {@link SelectionTrace}.
+ *
+ * @public
+ */
+export const isSelectionTrace = (msg: Trace): msg is SelectionTrace => msg.kind === TRACE_MESSAGE_KINDS.selection
+
+/**
+ * Narrow a {@link Trace} to a {@link FrontierTrace}.
+ *
+ * @public
+ */
+export const isFrontierTrace = (msg: Trace): msg is FrontierTrace => msg.kind === TRACE_MESSAGE_KINDS.frontier
+
+/**
+ * Narrow a {@link Trace} to a deadlock trace.
+ *
+ * @public
+ */
+export const isDeadlockTrace = (msg: Trace): msg is Extract<Trace, { kind: typeof TRACE_MESSAGE_KINDS.deadlock }> =>
+  msg.kind === TRACE_MESSAGE_KINDS.deadlock
+
+// ---------------------------------------------------------------------------
 // Private helpers
 // ---------------------------------------------------------------------------
 
-const countSelectionSnapshots = ({ snapshotMessages }: { snapshotMessages: SnapshotMessage[] }) =>
-  snapshotMessages.reduce((count, snapshot) => count + (snapshot.kind === 'selection' ? 1 : 0), 0)
+const countSelectionTraces = ({ messages }: { messages: Trace[] }) =>
+  messages.reduce((count, msg) => count + (msg.kind === 'selection' ? 1 : 0), 0)
 
-const createFrontierSnapshot = ({ frontier, step }: { frontier: Frontier; step: number }): FrontierSnapshot => ({
+const createFrontierTrace = ({ frontier, step }: { frontier: Frontier; step: number }): FrontierTrace => ({
   kind: 'frontier',
   step,
   status: frontier.status,
@@ -64,14 +96,14 @@ const createFrontierSnapshot = ({ frontier, step }: { frontier: Frontier; step: 
   })),
 })
 
-const createSelectionSnapshot = ({
+const createSelectionTrace = ({
   event,
   step,
 }: {
   event: BPEvent & { ingress?: true }
   step: number
-}): SelectionSnapshot => ({
-  kind: SNAPSHOT_MESSAGE_KINDS.selection,
+}): SelectionTrace => ({
+  kind: TRACE_MESSAGE_KINDS.selection,
   step,
   selected: {
     type: event.type,
@@ -81,8 +113,8 @@ const createSelectionSnapshot = ({
   },
 })
 
-const createDeadlockSnapshot = ({ step }: { step: number }): SnapshotMessage => ({
-  kind: SNAPSHOT_MESSAGE_KINDS.deadlock,
+const createDeadlockTrace = ({ step }: { step: number }): Trace => ({
+  kind: TRACE_MESSAGE_KINDS.deadlock,
   step,
 })
 
@@ -115,10 +147,8 @@ const addIngressTriggerToPending = ({ pending, selected }: { pending: Set<Pendin
   }
 }
 
-const getSelectedEvents = ({ snapshotMessages }: { snapshotMessages: SnapshotMessage[] }) =>
-  snapshotMessages.flatMap((snapshot) =>
-    snapshot.kind === SNAPSHOT_MESSAGE_KINDS.selection ? [snapshot.selected] : [],
-  )
+const getSelectedEvents = ({ messages }: { messages: Trace[] }) =>
+  messages.flatMap((msg) => (msg.kind === TRACE_MESSAGE_KINDS.selection ? [msg.selected] : []))
 
 /**
  * Compiles an array of {@link Thread} tuples into the generator representations
@@ -149,8 +179,8 @@ const compileThreads = (
 export type ExploreFrontiersArgs = {
   /** Thread tuples to analyze. */
   threads: Thread[]
-  /** Prior snapshot stream prefix to replay before exploring. */
-  snapshotMessages?: SnapshotMessage[]
+  /** Prior trace prefix to replay before exploring. */
+  messages?: Trace[]
   /** External trigger events that may wake pending threads. */
   triggers?: BPEvent[]
   /** Exploration strategy: `'bfs'` (breadth-first) or `'dfs'` (depth-first). Default: `'bfs'`. */
@@ -164,12 +194,12 @@ export type ExploreFrontiersArgs = {
 }
 
 /**
- * One explored history: snapshot messages including the final frontier.
+ * One explored history: trace messages including the final frontier.
  *
  * @public
  */
-export type FrontierTrace = {
-  snapshotMessages: SnapshotMessage[]
+export type TraceRecord = {
+  messages: Trace[]
 }
 
 /**
@@ -179,7 +209,7 @@ export type FrontierTrace = {
  */
 export type DeadlockFinding = {
   code: 'deadlock'
-  snapshotMessages: SnapshotMessage[]
+  messages: Trace[]
 }
 
 /**
@@ -188,7 +218,7 @@ export type DeadlockFinding = {
  * @public
  */
 export type ExploreFrontiersResult = {
-  traces: FrontierTrace[]
+  traces: TraceRecord[]
   findings: DeadlockFinding[]
   report: {
     strategy: 'bfs' | 'dfs'
@@ -212,11 +242,11 @@ export type VerifyFrontiersResult = {
 }
 
 /**
- * Replays a concrete sequence of selection snapshot messages against a thread
+ * Replays a concrete sequence of selection trace messages against a thread
  * set and returns the resulting frontier.
  *
  * @param args.threads - Thread tuples to replay.
- * @param args.snapshotMessages - Selection trace to replay. Each selection is
+ * @param args.messages - Selection trace to replay. Each selection is
  *   checked for enablement at the corresponding step.
  * @param args.topic - Optional topic stamp applied to all thread rules.
  * @returns The replay result containing the pending set and final frontier.
@@ -227,11 +257,11 @@ export type VerifyFrontiersResult = {
  */
 export const replayToFrontier = ({
   threads,
-  snapshotMessages = [],
+  messages = [],
   topic,
 }: {
   threads: Thread[]
-  snapshotMessages?: SnapshotMessage[]
+  messages?: Trace[]
   topic?: string
 }): ReplayToFrontierResult => {
   const pending = new Set<PendingBid>()
@@ -249,7 +279,7 @@ export const replayToFrontier = ({
 
   advanceRunningToPending(running, pending)
 
-  for (const [step, selected] of getSelectedEvents({ snapshotMessages }).entries()) {
+  for (const [step, selected] of getSelectedEvents({ messages }).entries()) {
     if (selected.ingress === true) {
       addIngressTriggerToPending({ pending, selected })
     }
@@ -323,7 +353,7 @@ const getRequestSuccessors = ({
       : frontier.enabled
 
   return enabled.map((candidate) =>
-    createSelectionSnapshot({
+    createSelectionTrace({
       step,
       event: {
         type: candidate.type,
@@ -337,27 +367,27 @@ const getRequestSuccessors = ({
 
 const getTriggerSuccessors = ({
   pending,
-  snapshotMessages,
+  messages,
   threads,
   step,
   triggers,
   topic,
 }: {
   pending: Set<PendingBid>
-  snapshotMessages: SnapshotMessage[]
+  messages: Trace[]
   threads: Thread[]
   step: number
   triggers: BPEvent[]
   topic?: string
 }) => {
-  const successors: SelectionSnapshot[] = []
+  const successors: SelectionTrace[] = []
 
   for (const trigger of triggers) {
     if (![...pending].some((pendingBid) => triggerAffectsPendingBid({ pendingBid, trigger }))) {
       continue
     }
 
-    const selection = createSelectionSnapshot({
+    const selection = createSelectionTrace({
       step,
       event: {
         type: trigger.type,
@@ -370,7 +400,7 @@ const getTriggerSuccessors = ({
     try {
       replayToFrontier({
         threads,
-        snapshotMessages: [...snapshotMessages, selection],
+        messages: [...messages, selection],
         topic,
       })
       successors.push(selection)
@@ -388,11 +418,11 @@ const getTriggerSuccessors = ({
 
 const DeadlockFindingSchema = z.strictObject({
   code: z.literal('deadlock'),
-  snapshotMessages: SnapshotMessageSchema.array(),
+  messages: TraceSchema.array(),
 })
 
-const FrontierTraceSchema = z.strictObject({
-  snapshotMessages: SnapshotMessageSchema.array(),
+const TraceRecordSchema = z.strictObject({
+  messages: TraceSchema.array(),
 })
 
 const ExploreReportSchema = z.strictObject({
@@ -405,7 +435,7 @@ const ExploreReportSchema = z.strictObject({
 })
 
 const ExploreResultSchema = z.strictObject({
-  traces: z.array(FrontierTraceSchema),
+  traces: z.array(TraceRecordSchema),
   findings: z.array(DeadlockFindingSchema),
   report: ExploreReportSchema,
 })
@@ -417,7 +447,7 @@ const VerifyResultSchema = z.strictObject({
 })
 
 /**
- * Explores reachable frontiers from an initial snapshot prefix, collecting
+ * Explores reachable frontiers from an initial trace prefix, collecting
  * traces and deadlock findings.
  *
  * @param args - {@link ExploreFrontiersArgs}
@@ -427,7 +457,7 @@ const VerifyResultSchema = z.strictObject({
  */
 export const exploreFrontiers = ({
   threads,
-  snapshotMessages = [],
+  messages = [],
   triggers = [],
   strategy = 'bfs',
   selectionPolicy = 'all-enabled',
@@ -438,9 +468,9 @@ export const exploreFrontiers = ({
     throw new Error(`Unsupported frontier exploration strategy "${String(strategy)}".`)
   }
 
-  const pending = [snapshotMessages]
+  const pending = [messages]
   const visited = new Set<string>()
-  const traces: FrontierTrace[] = []
+  const traces: TraceRecord[] = []
   const findings: DeadlockFinding[] = []
   let truncated = false
 
@@ -453,12 +483,12 @@ export const exploreFrontiers = ({
     }
     visited.add(key)
 
-    const { frontier, pending: currentPending } = replayToFrontier({ threads, snapshotMessages: current, topic })
-    const step = countSelectionSnapshots({ snapshotMessages: current })
-    const frontierSnapshot = createFrontierSnapshot({ frontier, step })
+    const { frontier, pending: currentPending } = replayToFrontier({ threads, messages: current, topic })
+    const step = countSelectionTraces({ messages: current })
+    const frontierTrace = createFrontierTrace({ frontier, step })
 
     traces.push({
-      snapshotMessages: [...current, frontierSnapshot],
+      messages: [...current, frontierTrace],
     })
 
     const requestSuccessors = getRequestSuccessors({
@@ -468,7 +498,7 @@ export const exploreFrontiers = ({
     })
     const triggerSuccessors = getTriggerSuccessors({
       pending: currentPending,
-      snapshotMessages: current,
+      messages: current,
       threads,
       step,
       triggers,
@@ -479,7 +509,7 @@ export const exploreFrontiers = ({
     if (frontier.status === FRONTIER_STATUS.deadlock && triggerSuccessors.length === 0) {
       findings.push({
         code: 'deadlock',
-        snapshotMessages: [...current, frontierSnapshot, createDeadlockSnapshot({ step })],
+        messages: [...current, frontierTrace, createDeadlockTrace({ step })],
       })
     }
 

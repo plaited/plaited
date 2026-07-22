@@ -671,10 +671,10 @@ test('match listener: 2020-12 prefixItems enforces tuple ordering', () => {
 })
 
 test('match listener: malformed detailSchema publishes add_thread_error', () => {
-  const seen: import('../behavioral.schemas.ts').SnapshotMessage[] = []
-  const { useAddThread, useSnapshot } = behavioral()
+  const seen: import('../behavioral.schemas.ts').Trace[] = []
+  const { useAddThread, useTrace } = behavioral()
   const addThread = useAddThread()
-  useSnapshot((msg) => {
+  useTrace((msg) => {
     seen.push(msg)
   })
 
@@ -697,12 +697,12 @@ test('match listener: malformed detailSchema publishes add_thread_error', () => 
 })
 
 test('match listener: malformed detailSchema in one listener rejects the whole thread', () => {
-  const seen: import('../behavioral.schemas.ts').SnapshotMessage[] = []
-  const { useAddThread, useTrigger, useAddHandler, useSnapshot } = behavioral()
+  const seen: import('../behavioral.schemas.ts').Trace[] = []
+  const { useAddThread, useTrigger, useAddHandler, useTrace } = behavioral()
   const addThread = useAddThread()
   const trigger = useTrigger()
   const addHandler = useAddHandler()
-  useSnapshot((msg) => {
+  useTrace((msg) => {
     seen.push(msg)
   })
 

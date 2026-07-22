@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import type { PendingBidsSnapshot, SnapshotMessage } from '../behavioral.schemas.ts'
+import type { PendingBidsTrace, Trace } from '../behavioral.schemas.ts'
 import { behavioral } from '../behavioral.ts'
 
 const jsonSchema = {
@@ -11,11 +11,11 @@ const jsonSchema = {
 
 describe('pending_bids snapshot', () => {
   test('publishes pending_bids snapshot with thread states during superstep', () => {
-    const seen: SnapshotMessage[] = []
-    const { useAddThread, useTrigger, useSnapshot } = behavioral()
+    const seen: Trace[] = []
+    const { useAddThread, useTrigger, useTrace } = behavioral()
     const addThread = useAddThread()
     const trigger = useTrigger()
-    useSnapshot((msg) => {
+    useTrace((msg) => {
       seen.push(msg)
     })
 
@@ -28,11 +28,11 @@ describe('pending_bids snapshot', () => {
   })
 
   test('pending_bids appears before frontier in the same step', () => {
-    const seen: SnapshotMessage[] = []
-    const { useAddThread, useTrigger, useSnapshot } = behavioral()
+    const seen: Trace[] = []
+    const { useAddThread, useTrigger, useTrace } = behavioral()
     const addThread = useAddThread()
     const trigger = useTrigger()
-    useSnapshot((msg) => {
+    useTrace((msg) => {
       seen.push(msg)
     })
 
@@ -53,11 +53,11 @@ describe('pending_bids snapshot', () => {
   })
 
   test('detailSchema in pending_bids snapshot echoes the input JSON Schema without conversion', () => {
-    const seen: SnapshotMessage[] = []
-    const { useAddThread, useTrigger, useSnapshot } = behavioral()
+    const seen: Trace[] = []
+    const { useAddThread, useTrigger, useTrace } = behavioral()
     const addThread = useAddThread()
     const trigger = useTrigger()
-    useSnapshot((msg) => {
+    useTrace((msg) => {
       seen.push(msg)
     })
 
@@ -77,7 +77,7 @@ describe('pending_bids snapshot', () => {
 
     trigger({ type: 'start' })
 
-    const pending = seen.find((s) => s.kind === 'pending_bids') as PendingBidsSnapshot | undefined
+    const pending = seen.find((s) => s.kind === 'pending_bids') as PendingBidsTrace | undefined
     expect(pending).toBeDefined()
     expect(pending!.threads.length).toBeGreaterThanOrEqual(2)
 

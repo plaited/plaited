@@ -13,7 +13,7 @@ import { keyMirror } from '../utils.ts'
  *
  * @public
  */
-export const SNAPSHOT_MESSAGE_KINDS = keyMirror(
+export const TRACE_MESSAGE_KINDS = keyMirror(
   'deadlock',
   'feedback_error',
   'frontier',

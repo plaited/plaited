@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import type { SnapshotMessage } from '../behavioral.schemas.ts'
+import type { Trace } from '../behavioral.schemas.ts'
 import { behavioral } from '../behavioral.ts'
 
 describe('payload channel', () => {
@@ -30,12 +30,12 @@ describe('payload channel', () => {
   })
 
   test('payload is absent from every SnapshotMessage variant when selected', () => {
-    const snapshots: SnapshotMessage[] = []
-    const { useAddThread, useTrigger, useAddHandler, useSnapshot } = behavioral()
+    const snapshots: Trace[] = []
+    const { useAddThread, useTrigger, useAddHandler, useTrace } = behavioral()
     const addThread = useAddThread()
     const trigger = useTrigger()
     const addHandler = useAddHandler()
-    useSnapshot((msg) => {
+    useTrace((msg) => {
       snapshots.push(msg)
     })
 
@@ -61,13 +61,13 @@ describe('payload channel', () => {
     // Sanity: the non-JSON payload never leaked into the selection's detail.
     const selection = snapshots.find((s) => s.kind === 'selection')
     expect(selection).toBeDefined()
-    const selected = (selection as Extract<SnapshotMessage, { kind: 'selection' }>).selected
+    const selected = (selection as Extract<Trace, { kind: 'selection' }>).selected
     expect(Object.hasOwn(selected, 'payload')).toBe(false)
 
     // Sanity: feedback_error fired (proves the handler ran with payload).
     const errors = snapshots.filter((s) => s.kind === 'feedback_error')
     expect(errors).toHaveLength(1)
-    const err = errors[0] as Extract<SnapshotMessage, { kind: 'feedback_error' }>
+    const err = errors[0] as Extract<Trace, { kind: 'feedback_error' }>
     expect(Object.hasOwn(err, 'payload')).toBe(false)
   })
 

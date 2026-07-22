@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
-import { SNAPSHOT_MESSAGE_KINDS } from '../behavioral.constants.ts'
-import type { SnapshotMessage } from '../behavioral.schemas.ts'
+import { TRACE_MESSAGE_KINDS } from '../behavioral.constants.ts'
+import type { Trace } from '../behavioral.schemas.ts'
 import { behavioral } from '../behavioral.ts'
 
 const onType = (type: string) => ({ type })
@@ -58,13 +58,13 @@ describe('interrupt', () => {
    * - The `bThreads.has('addHot')` check should confirm the thread is neither running nor pending.
    */
   test('should interrupt', () => {
-    const snapshots: SnapshotMessage[] = []
+    const snapshots: Trace[] = []
     const actual: string[] = []
-    const { useAddThread, useTrigger, useAddHandler, useSnapshot } = behavioral()
+    const { useAddThread, useTrigger, useAddHandler, useTrace } = behavioral()
     const addThread = useAddThread()
     const trigger = useTrigger()
     const addHandler = useAddHandler()
-    useSnapshot((snapshot: SnapshotMessage) => {
+    useTrace((snapshot: Trace) => {
       snapshots.push(snapshot)
     })
     addThread('addHot', addHot)
@@ -76,9 +76,9 @@ describe('interrupt', () => {
     trigger({ type: 'terminate' })
     trigger({ type: 'add' })
     expect(actual).toEqual(['hot', 'hot'])
-    expect(snapshots.some((snapshot) => snapshot.kind === SNAPSHOT_MESSAGE_KINDS.selection)).toBe(true)
+    expect(snapshots.some((snapshot) => snapshot.kind === TRACE_MESSAGE_KINDS.selection)).toBe(true)
     const terminateSelection = snapshots.find(
-      (snapshot) => snapshot.kind === SNAPSHOT_MESSAGE_KINDS.selection && snapshot.selected.type === 'terminate',
+      (snapshot) => snapshot.kind === TRACE_MESSAGE_KINDS.selection && snapshot.selected.type === 'terminate',
     )
     expect(terminateSelection).toBeDefined()
   })

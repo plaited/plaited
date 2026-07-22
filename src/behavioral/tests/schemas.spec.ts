@@ -5,12 +5,12 @@ import {
   AddThreadErrorSchema,
   BPEventSchema,
   BPListenerSchema,
-  DeadlockSnapshotSchema,
-  FrontierSnapshotSchema,
-  SelectionSnapshotSchema,
+  DeadlockTraceSchema,
+  FrontieTraceSchema,
+  SelectionTraceSchema,
   SnapshotCandidateSchema,
   SnapshotEventSchema,
-  SnapshotMessageSchema,
+  TraceSchema,
 } from '../behavioral.schemas.ts'
 
 type JsonSchemaShape = {
@@ -26,14 +26,14 @@ const readRequired = (schema: unknown): string[] => {
 
 describe('behavioral schemas', () => {
   test('FrontierSnapshotSchema exports JSON Schema with step, status, candidates, and enabled as required fields', () => {
-    const schema = z.toJSONSchema(FrontierSnapshotSchema)
+    const schema = z.toJSONSchema(FrontieTraceSchema)
     const required = readRequired(schema)
 
     expect(required).toEqual(expect.arrayContaining(['kind', 'step', 'status', 'candidates', 'enabled']))
   })
 
   test('DeadlockSnapshotSchema exports JSON Schema with kind and step as required fields', () => {
-    const schema = z.toJSONSchema(DeadlockSnapshotSchema)
+    const schema = z.toJSONSchema(DeadlockTraceSchema)
     const required = readRequired(schema)
 
     expect(required).toEqual(expect.arrayContaining(['kind', 'step']))
@@ -74,7 +74,7 @@ describe('behavioral schemas', () => {
 
   test('SnapshotMessageSchema rejects non-JSON selected event detail values', () => {
     expect(() =>
-      SnapshotMessageSchema.parse({
+      TraceSchema.parse({
         kind: 'selection',
         step: 0,
         selected: {
@@ -87,7 +87,7 @@ describe('behavioral schemas', () => {
 
   test('SnapshotMessageSchema rejects worker protocol messages', () => {
     expect(() =>
-      SnapshotMessageSchema.parse({
+      TraceSchema.parse({
         kind: 'worker',
         response: {
           id: 'worker-1',
@@ -98,7 +98,7 @@ describe('behavioral schemas', () => {
 
   test('SelectionSnapshotSchema accepts selected event payload', () => {
     expect(
-      SelectionSnapshotSchema.parse({
+      SelectionTraceSchema.parse({
         kind: 'selection',
         step: 3,
         selected: {

@@ -1,5 +1,5 @@
 import * as z from 'zod'
-import { DETAIL_MATCH, IDIOMS, SNAPSHOT_MESSAGE_KINDS } from './behavioral.constants.ts'
+import { DETAIL_MATCH, IDIOMS, TRACE_MESSAGE_KINDS } from './behavioral.constants.ts'
 
 /** @public */
 export const JsonObjectSchema = z.object({}).catchall(z.json())
@@ -23,7 +23,7 @@ export const BPEventSchema = z.object({
    *
    * @remarks
    * `detail` stays JSON for frontier analysis; `payload` never participates
-   * in event matching and never appears in any {@link SnapshotMessage} variant.
+   * in event matching and never appears in any {@link Trace} variant.
    * Frontier analysis snapshots field-pick `type`/`detail` only.
    */
   payload: z.unknown().optional(),
@@ -142,8 +142,8 @@ export const SnapshotCandidateSchema = z.object({
 /** @public */
 export type SnapshotCandidate = z.output<typeof SnapshotCandidateSchema>
 
-export const FrontierSnapshotSchema = z.object({
-  kind: z.literal(SNAPSHOT_MESSAGE_KINDS.frontier),
+export const FrontieTraceSchema = z.object({
+  kind: z.literal(TRACE_MESSAGE_KINDS.frontier),
   step: z.number().int().nonnegative(),
   status: z.enum(['ready', 'deadlock', 'idle']),
   candidates: z.array(SnapshotCandidateSchema),
@@ -151,46 +151,46 @@ export const FrontierSnapshotSchema = z.object({
 })
 
 /** @public */
-export type FrontierSnapshot = z.output<typeof FrontierSnapshotSchema>
+export type FrontierTrace = z.output<typeof FrontieTraceSchema>
 
 /**
  * Schema for a snapshot of all bids considered during one event selection step.
  *
  * @remarks
- * Published via {@link UseSnapshot} after each super-step's event selection.
+ * Published via {@link useTrace} after each super-step's event selection.
  * Consumers narrow by `kind === 'selection'`.
  *
- * @see {@link SnapshotMessageSchema} for the full discriminated union
+ * @see {@link TraceSchema} for the full discriminated union
  *
  * @public
  */
-export const SelectionSnapshotSchema = z.object({
-  kind: z.literal(SNAPSHOT_MESSAGE_KINDS.selection),
+export const SelectionTraceSchema = z.object({
+  kind: z.literal(TRACE_MESSAGE_KINDS.selection),
   step: z.number().int().nonnegative(),
   selected: SnapshotEventSchema,
 })
 
 /** @public */
-export type SelectionSnapshot = z.output<typeof SelectionSnapshotSchema>
+export type SelectionTrace = z.output<typeof SelectionTraceSchema>
 
 /**
  * Schema for a snapshot emitted when no unblocked candidate can be selected.
  *
  * @remarks
- * Published via {@link UseSnapshot} when at least one request candidate exists
+ * Published via {@link useTrace} when at least one request candidate exists
  * but all candidates are blocked. Consumers narrow by `kind === 'deadlock'`.
  *
- * @see {@link SnapshotMessageSchema} for the full discriminated union
+ * @see {@link TraceSchema} for the full discriminated union
  *
  * @public
  */
-export const DeadlockSnapshotSchema = z.object({
-  kind: z.literal(SNAPSHOT_MESSAGE_KINDS.deadlock),
+export const DeadlockTraceSchema = z.object({
+  kind: z.literal(TRACE_MESSAGE_KINDS.deadlock),
   step: z.number().int().nonnegative(),
 })
 
 /** @public */
-export type DeadlockSnapshot = z.output<typeof DeadlockSnapshotSchema>
+export type DeadlockTrace = z.output<typeof DeadlockTraceSchema>
 
 /**
  * Schema for feedback handler errors published by the BP engine.
@@ -200,12 +200,12 @@ export type DeadlockSnapshot = z.output<typeof DeadlockSnapshotSchema>
  * Published after the selection snapshot for the current super-step.
  * Consumers narrow by `kind === 'feedback_error'`.
  *
- * @see {@link SnapshotMessageSchema} for the full discriminated union
+ * @see {@link TraceSchema} for the full discriminated union
  *
  * @public
  */
 export const FeedbackErrorSchema = z.object({
-  kind: z.literal(SNAPSHOT_MESSAGE_KINDS.feedback_error),
+  kind: z.literal(TRACE_MESSAGE_KINDS.feedback_error),
   type: z.string(),
   topic: z.string().optional(),
   detail: JsonObjectSchema.optional(),
@@ -231,7 +231,7 @@ export type FeedbackError = z.output<typeof FeedbackErrorSchema>
  * @public
  */
 export const AddThreadErrorSchema = z.object({
-  kind: z.literal(SNAPSHOT_MESSAGE_KINDS.add_thread_error),
+  kind: z.literal(TRACE_MESSAGE_KINDS.add_thread_error),
   error: z.union([z.array(z.unknown()), z.string()]),
 })
 
@@ -243,18 +243,18 @@ export type AddThreadError = z.output<typeof AddThreadErrorSchema>
  *
  * @remarks
  * Published at the start of each super-step's event selection phase, before
- * {@link FrontierSnapshotSchema}. Contains the serialized state of all pending
+ * {@link FrontieTraceSchema}. Contains the serialized state of all pending
  * threads — their labels, priorities, and synchronization intentions — without
  * collapsing them into candidates.
  *
  * Consumers narrow by `kind === 'pending_bids'`.
  *
- * @see {@link SnapshotMessageSchema} for the full discriminated union
+ * @see {@link TraceSchema} for the full discriminated union
  *
  * @public
  */
-export const PendingBidsSnapshotSchema = z.object({
-  kind: z.literal(SNAPSHOT_MESSAGE_KINDS.pending_bids),
+export const PendingBidsTraceSchema = z.object({
+  kind: z.literal(TRACE_MESSAGE_KINDS.pending_bids),
   step: z.number().int().nonnegative(),
   threads: z.array(
     z.object({
@@ -298,10 +298,10 @@ export const PendingBidsSnapshotSchema = z.object({
 })
 
 /** @public */
-export type PendingBidsSnapshot = z.output<typeof PendingBidsSnapshotSchema>
+export type PendingBidsTrace = z.output<typeof PendingBidsTraceSchema>
 
 export const RuntimeErrorSchema = z.object({
-  kind: z.literal(SNAPSHOT_MESSAGE_KINDS.runtime_error),
+  kind: z.literal(TRACE_MESSAGE_KINDS.runtime_error),
   error: z.string(),
 })
 
@@ -312,22 +312,22 @@ export type RuntimeError = z.infer<typeof RuntimeErrorSchema>
  * Discriminated union schema for all observable moments from the BP engine.
  * Consumers narrow by the `kind` field.
  *
- * @see {@link SelectionSnapshotSchema} for event selection observations
- * @see {@link DeadlockSnapshotSchema} for blocked-candidate deadlock observations
+ * @see {@link SelectionTraceSchema} for event selection observations
+ * @see {@link DeadlockTraceSchema} for blocked-candidate deadlock observations
  * @see {@link FeedbackErrorSchema} for feedback handler errors
  * @see {@link ExtensionErrorSchema} for host/runtime module diagnostics
  *
  * @public
  */
-export const SnapshotMessageSchema = z.discriminatedUnion('kind', [
+export const TraceSchema = z.discriminatedUnion('kind', [
   RuntimeErrorSchema,
-  FrontierSnapshotSchema,
-  DeadlockSnapshotSchema,
+  FrontieTraceSchema,
+  DeadlockTraceSchema,
   FeedbackErrorSchema,
-  SelectionSnapshotSchema,
+  SelectionTraceSchema,
   AddThreadErrorSchema,
-  PendingBidsSnapshotSchema,
+  PendingBidsTraceSchema,
 ])
 
 /** @public */
-export type SnapshotMessage = z.output<typeof SnapshotMessageSchema>
+export type Trace = z.output<typeof TraceSchema>
