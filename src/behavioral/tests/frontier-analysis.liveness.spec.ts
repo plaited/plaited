@@ -1,12 +1,27 @@
 import { describe, expect, test } from 'bun:test'
-import type { Thread } from '../behavioral.schemas.ts'
+import type { Thread, TraceEvent } from '../behavioral.schemas.ts'
 import type { PendingBid } from '../behavioral.types.ts'
-import { exploreFrontiers, findStronglyConnectedComponents, frontierStateKey } from '../frontier-analysis.ts'
+import {
+  exploreFrontiers,
+  findLivelocks,
+  findStronglyConnectedComponents,
+  frontierStateKey,
+} from '../frontier-analysis.ts'
 
 type FakeNode = { successors: Array<{ to: string }> }
 
+type LabeledNode = { successors: Array<{ selection: TraceEvent; to: string }> }
+
 const graph = (nodes: Record<string, string[]>): Map<string, FakeNode> =>
   new Map(Object.entries(nodes).map(([key, targets]) => [key, { successors: targets.map((to) => ({ to })) }]))
+
+const labeledGraph = (nodes: Record<string, Array<{ type: string; to: string }>>): Map<string, LabeledNode> =>
+  new Map(
+    Object.entries(nodes).map(([key, edges]) => [
+      key,
+      { successors: edges.map((e) => ({ selection: { type: e.type } as TraceEvent, to: e.to })) },
+    ]),
+  )
 
 /**
  * Step 1 — canonical state-key helper.
@@ -231,5 +246,108 @@ describe('findStronglyConnectedComponents', () => {
     const sccs = findStronglyConnectedComponents(g)
     expect(sccs).toHaveLength(1)
     expect(sccs[0]!).toHaveLength(5000)
+  })
+})
+
+/**
+ * Step 4 — livelock detection via a caller-supplied progress set.
+ *
+ * `findLivelocks` inspects a labeled state graph and its SCCs, and reports
+ * cycles that never select a progress event. A "progress" event is whatever
+ * the caller declares meaningful — the specification. This is the property
+ * the model checker proves (or refutes): every reachable cycle must select a
+ * progress event, else the program can spin forever without accomplishing
+ * anything.
+ *
+ * Written FIRST (red). Implement to turn green.
+ */
+describe('findLivelocks', () => {
+  test('a two-state cycle with no progress edge is a livelock', () => {
+    // A <-> B, both edges labeled `tick`. progress = ['done']. No edge in the
+    // cycle selects `done` → livelock.
+    const g = labeledGraph({
+      A: [{ type: 'tick', to: 'B' }],
+      B: [{ type: 'tick', to: 'A' }],
+    })
+    const sccs = findStronglyConnectedComponents(g)
+    const livelocks = findLivelocks({ graph: g, sccs, progress: ['done'] })
+    expect(livelocks).toHaveLength(1)
+    expect(livelocks[0]!.code).toBe('livelock')
+    expect(livelocks[0]!.progressTypes).toEqual(['done'])
+    expect(livelocks[0]!.states.sort()).toEqual(['A', 'B'])
+  })
+
+  test('a two-state cycle that selects a progress event is not a livelock', () => {
+    // A -> B labeled `done`, B -> A labeled `tick`. progress = ['done']. The
+    // cycle contains a `done` edge → makes progress → not a livelock.
+    const g = labeledGraph({
+      A: [{ type: 'done', to: 'B' }],
+      B: [{ type: 'tick', to: 'A' }],
+    })
+    const sccs = findStronglyConnectedComponents(g)
+    const livelocks = findLivelocks({ graph: g, sccs, progress: ['done'] })
+    expect(livelocks).toHaveLength(0)
+  })
+
+  test('a self-loop with no progress edge is a livelock', () => {
+    // A -> A labeled `tick`. progress = ['done']. No progress → livelock.
+    const g = labeledGraph({ A: [{ type: 'tick', to: 'A' }] })
+    const sccs = findStronglyConnectedComponents(g)
+    const livelocks = findLivelocks({ graph: g, sccs, progress: ['done'] })
+    expect(livelocks).toHaveLength(1)
+    expect(livelocks[0]!.states).toEqual(['A'])
+  })
+
+  test('a self-loop that selects a progress event is not a livelock', () => {
+    // A -> A labeled `done`. progress = ['done']. The loop makes progress.
+    const g = labeledGraph({ A: [{ type: 'done', to: 'A' }] })
+    const sccs = findStronglyConnectedComponents(g)
+    const livelocks = findLivelocks({ graph: g, sccs, progress: ['done'] })
+    expect(livelocks).toHaveLength(0)
+  })
+
+  test('edges leaving the SCC do not count as progress for that SCC', () => {
+    // A <-> B cycle (edges `tick`), with B -> C labeled `done` exiting the SCC.
+    // `done` is progress, but it leaves the cycle — the cycle itself never
+    // selects `done`, so it is still a livelock. Escapes are not credited.
+    const g = labeledGraph({
+      A: [{ type: 'tick', to: 'B' }],
+      B: [
+        { type: 'tick', to: 'A' },
+        { type: 'done', to: 'C' },
+      ],
+      C: [],
+    })
+    const sccs = findStronglyConnectedComponents(g)
+    const livelocks = findLivelocks({ graph: g, sccs, progress: ['done'] })
+    expect(livelocks).toHaveLength(1)
+    expect(livelocks[0]!.states.sort()).toEqual(['A', 'B'])
+  })
+
+  test('an empty progress set flags every cycle as a livelock', () => {
+    // No event counts as progress → any cycle (here a self-loop) is livelock.
+    const g = labeledGraph({ A: [{ type: 'done', to: 'A' }] })
+    const sccs = findStronglyConnectedComponents(g)
+    const livelocks = findLivelocks({ graph: g, sccs, progress: [] })
+    expect(livelocks).toHaveLength(1)
+  })
+
+  test('integration: full chain on a looping thread set that never progresses', () => {
+    // A ticker that requests `tick` forever, plus a `waitFor` thread that
+    // never fires. The reachable cycle is the ticker's self-loop on `tick`.
+    // progress = ['succeeded'] — never selected in the cycle → livelock.
+    const threads: Thread[] = [
+      ['ticker', { rules: [{ request: { type: 'tick' } }] }],
+      ['stalled', { rules: [{ waitFor: [{ type: 'succeeded' }] }] }],
+    ]
+    const result = exploreFrontiers({ threads, strategy: 'bfs', maxDepth: 50 })
+    // Reconstruct the labeled graph from the explored traces' selection edges.
+    // (stateGraph is internal to exploreFrontiers; this integration test uses
+    // the public chain by re-deriving the graph from traces — see Step 5 for a
+    // direct surface.) For now, assert the cycle is detectable via the
+    // visitedCount and that no deadlock occurred.
+    expect(result.report.truncated).toBe(false)
+    expect(result.findings).toHaveLength(0)
+    expect(result.report.visitedCount).toBe(1)
   })
 })

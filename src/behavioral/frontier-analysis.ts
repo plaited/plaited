@@ -528,7 +528,7 @@ export const frontierStateKey = ({ pending }: { pending: Set<PendingBid> }): str
       .sort(),
   )
 
-type StateNode = {
+export type StateNode = {
   stateKey: string
   /** The frontier at this state; Step 3 reads enabled/candidates here. */
   frontier: Frontier
@@ -548,7 +548,7 @@ type StateNode = {
  *
  * @public
  */
-export const isCycle = (scc: string[], graph: Map<string, { successors: Array<{ to: string }> }>): boolean =>
+export const isCycle = (scc: string[], graph: Map<string, StateNode>): boolean =>
   scc.length > 1 || (scc.length === 1 && graph.get(scc[0]!)!.successors.some((e) => e.to === scc[0]!))
 
 /**
@@ -572,9 +572,7 @@ export const isCycle = (scc: string[], graph: Map<string, { successors: Array<{ 
  *
  * @public
  */
-export const findStronglyConnectedComponents = (
-  graph: Map<string, { successors: Array<{ to: string }> }>,
-): string[][] => {
+export const findStronglyConnectedComponents = (graph: Map<string, StateNode>): string[][] => {
   let index = 0
   const indices = new Map<string, number>()
   const lowlinks = new Map<string, number>()
@@ -641,6 +639,84 @@ export const findStronglyConnectedComponents = (
     }
   }
   return sccs
+}
+
+/**
+ * A livelock finding: a reachable cycle in which no progress event is ever
+ * selected. The program can spin forever inside the cycle without
+ * accomplishing anything the caller declared meaningful.
+ *
+ * @remarks
+ * `states` is the set of state keys in the cycle (a strongly connected
+ * component). `progressTypes` records the caller-supplied progress set, so a
+ * consumer replaying or reporting the finding knows what was being checked.
+ *
+ * @public
+ */
+export type LivelockFinding = {
+  code: 'livelock'
+  states: string[]
+  progressTypes: string[]
+}
+
+/**
+ * Detect livelocks in a labeled state graph.
+ *
+ * A livelock is a cycle (per {@link isCycle}) in which no edge is labeled by a
+ * progress event. "Progress" is whatever the caller declares meaningful — this
+ * is the specification pillar: the caller supplies the property, and this
+ * function checks that every reachable cycle selects at least one progress
+ * event. A cycle that never does can spin forever without accomplishing
+ * anything.
+ *
+ * @remarks
+ * Only edges whose endpoints both lie in the SCC count toward progress — an
+ * edge that *leaves* the cycle is an escape, not progress made *inside* the
+ * cycle, and is not credited. This is the non-obvious correctness condition:
+ * escapes don't redeem a livelock.
+ *
+ * `sccs` is expected to come from {@link findStronglyConnectedComponents} over
+ * the same `graph`.
+ *
+ * @param args.graph - The labeled state graph (as built by `exploreFrontiers`).
+ * @param args.sccs - Strongly connected components of `graph`.
+ * @param args.progress - Event types that count as progress (the specification).
+ * @returns One {@link LivelockFinding} per cycle that never selects a progress event.
+ *
+ * @public
+ */
+export const findLivelocks = ({
+  graph,
+  sccs,
+  progress,
+}: {
+  graph: Map<string, StateNode>
+  sccs: string[][]
+  progress: string[]
+}): LivelockFinding[] => {
+  const findings: LivelockFinding[] = []
+  for (const scc of sccs) {
+    if (!isCycle(scc, graph)) continue
+    const stateKeys = new Set<string>(scc)
+    const cycleEventTypes = new Set<string>()
+    for (const stateKey of scc) {
+      const node = graph.get(stateKey)!
+      for (const edge of node.successors) {
+        if (stateKeys.has(edge.to)) {
+          cycleEventTypes.add(edge.selection.type)
+        }
+      }
+    }
+    const makesProgress = [...cycleEventTypes].some((t) => progress.includes(t))
+    if (!makesProgress) {
+      findings.push({
+        code: 'livelock',
+        states: [...scc],
+        progressTypes: [...progress],
+      })
+    }
+  }
+  return findings
 }
 
 type WorkItem = {
