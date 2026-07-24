@@ -6,20 +6,38 @@ import {
   findLivelocks,
   findStronglyConnectedComponents,
   frontierStateKey,
+  type StateNode,
+  verifyFrontiers,
 } from '../frontier-analysis.ts'
 
-type FakeNode = { successors: Array<{ to: string }> }
+/**
+ * Build a StateNode with throwaway defaults for the fields the SCC/livelock
+ * helpers never read (stateKey/step/frontier). Lets the fake-graph fixtures
+ * specify only the `successors` adjacency, which is all the algorithms under
+ * test consume, while satisfying the nominal StateNode param type.
+ */
+const fakeNode = (successors: StateNode['successors']): StateNode => ({
+  stateKey: '',
+  step: 0,
+  frontier: { candidates: [], enabled: [], status: 'idle' },
+  successors,
+})
 
-type LabeledNode = { successors: Array<{ selection: TraceEvent; to: string }> }
+const graph = (nodes: Record<string, string[]>): Map<string, StateNode> =>
+  new Map(
+    Object.entries(nodes).map(([key, targets]) => [
+      key,
+      // `selection` is unread by findStronglyConnectedComponents/isCycle; a placeholder
+      // satisfies the StateNode successor type without pretending the edge has a label.
+      fakeNode(targets.map((to) => ({ selection: { type: '' } as TraceEvent, to }))),
+    ]),
+  )
 
-const graph = (nodes: Record<string, string[]>): Map<string, FakeNode> =>
-  new Map(Object.entries(nodes).map(([key, targets]) => [key, { successors: targets.map((to) => ({ to })) }]))
-
-const labeledGraph = (nodes: Record<string, Array<{ type: string; to: string }>>): Map<string, LabeledNode> =>
+const labeledGraph = (nodes: Record<string, Array<{ type: string; to: string }>>): Map<string, StateNode> =>
   new Map(
     Object.entries(nodes).map(([key, edges]) => [
       key,
-      { successors: edges.map((e) => ({ selection: { type: e.type } as TraceEvent, to: e.to })) },
+      fakeNode(edges.map((e) => ({ selection: { type: e.type } as TraceEvent, to: e.to }))),
     ]),
   )
 
@@ -349,5 +367,81 @@ describe('findLivelocks', () => {
     expect(result.report.truncated).toBe(false)
     expect(result.findings).toHaveLength(0)
     expect(result.report.visitedCount).toBe(1)
+  })
+})
+
+/**
+ * Step 5 — verifyFrontiers wired to livelock + exposed state graph.
+ *
+ * verifyFrontiers now accepts an optional `progress` spec. When provided, it
+ * runs livelock detection over the explored state graph and folds livelock
+ * findings into the `failed` status alongside deadlocks. The explored state
+ * graph is exposed on ExploreFrontiersResult so callers can run their own
+ * graph analyses.
+ *
+ * Written FIRST (red). Implement to turn green.
+ */
+describe('verifyFrontiers livelock integration', () => {
+  test('a looping program with no progress is failed (livelock), not verified', () => {
+    // A ticker requesting `tick` forever. No deadlock, not truncated. Without
+    // a progress spec it would be `verified`; with progress=['succeeded'] the
+    // cycle never selects `succeeded` → livelock → `failed`.
+    const threads: Thread[] = [['ticker', { rules: [{ request: { type: 'tick' } }] }]]
+    const result = verifyFrontiers({ threads, progress: ['succeeded'], maxDepth: 50 })
+    expect(result.status).toBe('failed')
+    expect(result.livelocks).toHaveLength(1)
+    expect(result.livelocks[0]!.code).toBe('livelock')
+    expect(result.livelocks[0]!.progressTypes).toEqual(['succeeded'])
+  })
+
+  test('a looping program whose cycle selects a progress event is verified', () => {
+    // A ticker requesting `done` forever. progress=['done'] → the cycle DOES
+    // select a progress event → not a livelock → `verified`.
+    const threads: Thread[] = [['ticker', { rules: [{ request: { type: 'done' } }] }]]
+    const result = verifyFrontiers({ threads, progress: ['done'], maxDepth: 50 })
+    expect(result.status).toBe('verified')
+    expect(result.livelocks).toHaveLength(0)
+  })
+
+  test('omitting progress skips livelock detection (deadlock-only behavior preserved)', () => {
+    // Same looping ticker, no progress spec. Behaves as before Step 5: no
+    // deadlock, not truncated → `verified`, livelocks empty (not checked).
+    const threads: Thread[] = [['ticker', { rules: [{ request: { type: 'tick' } }] }]]
+    const result = verifyFrontiers({ threads, maxDepth: 50 })
+    expect(result.status).toBe('verified')
+    expect(result.livelocks).toHaveLength(0)
+  })
+
+  test('an empty progress set flags every cycle as a livelock', () => {
+    // progress=[] → nothing counts as progress → any cycle is a livelock.
+    const threads: Thread[] = [['ticker', { rules: [{ request: { type: 'done' } }] }]]
+    const result = verifyFrontiers({ threads, progress: [], maxDepth: 50 })
+    expect(result.status).toBe('failed')
+    expect(result.livelocks).toHaveLength(1)
+  })
+
+  test('deadlock still wins as failed even when progress is specified', () => {
+    // A blocked requester: deadlock. progress=['x'] is also checked, but the
+    // deadlock finding alone is enough to fail.
+    const threads: Thread[] = [
+      ['requester', { rules: [{ request: { type: 'a' } }] }],
+      ['blocker', { rules: [{ block: [{ type: 'a' }] }] }],
+    ]
+    const result = verifyFrontiers({ threads, progress: ['x'] })
+    expect(result.status).toBe('failed')
+    expect(result.findings.length).toBeGreaterThan(0)
+  })
+
+  test('exploreFrontiers exposes the state graph for downstream analysis', () => {
+    // The graph is the raw material for findLivelocks/findStronglyConnectedComponents.
+    // Verify it's present and well-formed: the toggle has 2 nodes, each with
+    // one labeled successor edge to the other.
+    const threads: Thread[] = [['toggle', { rules: [{ request: { type: 'on' } }, { request: { type: 'off' } }] }]]
+    const result = exploreFrontiers({ threads, strategy: 'bfs', maxDepth: 50 })
+    expect(result.stateGraph).toBeDefined()
+    expect(result.stateGraph.size).toBe(2)
+    for (const node of result.stateGraph.values()) {
+      expect(node.successors.length).toBeGreaterThanOrEqual(1)
+    }
   })
 })

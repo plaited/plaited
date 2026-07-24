@@ -20,19 +20,16 @@
  *
  * @packageDocumentation
  */
-
-import * as z from 'zod'
 import { FRONTIER_STATUS, TRACE_MESSAGE_KINDS } from './behavioral.constants.ts'
-import {
-  type BPEvent,
-  type FrontierTrace,
-  type RegisteredBPListener,
-  type RegisteredIdioms,
-  type SelectionTrace,
-  type Thread,
-  type Trace,
-  type TraceEvent,
-  TraceSchema,
+import type {
+  BPEvent,
+  FrontierTrace,
+  RegisteredBPListener,
+  RegisteredIdioms,
+  SelectionTrace,
+  Thread,
+  Trace,
+  TraceEvent,
 } from './behavioral.schemas.ts'
 import type { CandidateBid, Frontier, PendingBid, ReplayToFrontierResult, RunningBid } from './behavioral.types.ts'
 import {
@@ -171,32 +168,6 @@ const compileThreads = (
     generator: useThread(generateRulesFunctions(rules, topic), once)(),
   }))
 
-// ---------------------------------------------------------------------------
-// Public types
-// ---------------------------------------------------------------------------
-
-/**
- * Arguments for {@link exploreFrontiers} and {@link verifyFrontiers}.
- *
- * @public
- */
-export type ExploreFrontiersArgs = {
-  /** Thread tuples to analyze. */
-  threads: Thread[]
-  /** Prior trace prefix to replay before exploring. */
-  messages?: Trace[]
-  /** External trigger events that may wake pending threads. */
-  triggers?: BPEvent[]
-  /** Exploration strategy: `'bfs'` (breadth-first) or `'dfs'` (depth-first). Default: `'bfs'`. */
-  strategy?: 'bfs' | 'dfs'
-  /** How to select among enabled candidates: `'all-enabled'` (all branches) or `'scheduler'` (priority order, one at a time). Default: `'all-enabled'`. */
-  selectionPolicy?: 'all-enabled' | 'scheduler'
-  /** Maximum selection depth before truncating exploration. */
-  maxDepth?: number
-  /** Topic stamp applied to all thread rules. */
-  topic?: string
-}
-
 /**
  * One explored history: trace messages including the final frontier.
  *
@@ -214,35 +185,6 @@ export type TraceRecord = {
 export type DeadlockFinding = {
   code: 'deadlock'
   messages: Trace[]
-}
-
-/**
- * Result of an {@link exploreFrontiers} call.
- *
- * @public
- */
-export type ExploreFrontiersResult = {
-  traces: TraceRecord[]
-  findings: DeadlockFinding[]
-  report: {
-    strategy: 'bfs' | 'dfs'
-    selectionPolicy: 'all-enabled' | 'scheduler'
-    visitedCount: number
-    findingCount: number
-    truncated: boolean
-    maxDepth?: number
-  }
-}
-
-/**
- * Result of a {@link verifyFrontiers} call.
- *
- * @public
- */
-export type VerifyFrontiersResult = {
-  status: 'verified' | 'failed' | 'truncated'
-  findings: DeadlockFinding[]
-  report: ExploreFrontiersResult['report']
 }
 
 /**
@@ -310,10 +252,6 @@ export const replayToFrontier = ({
     frontier: computeFrontier({ pending }),
   }
 }
-
-// ---------------------------------------------------------------------------
-// Internal exploration helpers
-// ---------------------------------------------------------------------------
 
 const triggerAffectsPendingBid = ({ pendingBid, trigger }: { pendingBid: PendingBid; trigger: BPEvent }) => {
   if (pendingBid.ingress === true) {
@@ -415,40 +353,6 @@ const getTriggerSuccessors = ({
 
   return successors
 }
-
-// ---------------------------------------------------------------------------
-// Private self-validation schemas for explore/verify return shapes
-// ---------------------------------------------------------------------------
-
-const DeadlockFindingSchema = z.strictObject({
-  code: z.literal('deadlock'),
-  messages: TraceSchema.array(),
-})
-
-const TraceRecordSchema = z.strictObject({
-  messages: TraceSchema.array(),
-})
-
-const ExploreReportSchema = z.strictObject({
-  strategy: z.enum(['bfs', 'dfs']),
-  selectionPolicy: z.enum(['all-enabled', 'scheduler']),
-  visitedCount: z.number().int().nonnegative(),
-  findingCount: z.number().int().nonnegative(),
-  truncated: z.boolean(),
-  maxDepth: z.number().int().nonnegative().optional(),
-})
-
-const ExploreResultSchema = z.strictObject({
-  traces: z.array(TraceRecordSchema),
-  findings: z.array(DeadlockFindingSchema),
-  report: ExploreReportSchema,
-})
-
-const VerifyResultSchema = z.strictObject({
-  status: z.enum(['verified', 'failed', 'truncated']),
-  findings: z.array(DeadlockFindingSchema),
-  report: ExploreReportSchema,
-})
 
 /**
  * @internal
@@ -719,6 +623,47 @@ export const findLivelocks = ({
   return findings
 }
 
+/**
+ * Arguments for {@link exploreFrontiers} and {@link verifyFrontiers}.
+ *
+ * @public
+ */
+export type ExploreFrontiersArgs = {
+  /** Thread tuples to analyze. */
+  threads: Thread[]
+  /** Prior trace prefix to replay before exploring. */
+  messages?: Trace[]
+  /** External trigger events that may wake pending threads. */
+  triggers?: BPEvent[]
+  /** Exploration strategy: `'bfs'` (breadth-first) or `'dfs'` (depth-first). Default: `'bfs'`. */
+  strategy?: 'bfs' | 'dfs'
+  /** How to select among enabled candidates: `'all-enabled'` (all branches) or `'scheduler'` (priority order, one at a time). Default: `'all-enabled'`. */
+  selectionPolicy?: 'all-enabled' | 'scheduler'
+  /** Maximum selection depth before truncating exploration. */
+  maxDepth?: number
+  /** Topic stamp applied to all thread rules. */
+  topic?: string
+}
+
+/**
+ * Result of an {@link exploreFrontiers} call.
+ *
+ * @public
+ */
+export type ExploreFrontiersResult = {
+  traces: TraceRecord[]
+  findings: DeadlockFinding[]
+  report: {
+    strategy: 'bfs' | 'dfs'
+    selectionPolicy: 'all-enabled' | 'scheduler'
+    visitedCount: number
+    findingCount: number
+    truncated: boolean
+    maxDepth?: number
+  }
+  stateGraph: Map<string, StateNode>
+}
+
 type WorkItem = {
   messages: Trace[] // what you already push
   from?: string // stateKey of the state this item was pushed FROM
@@ -822,7 +767,7 @@ export const exploreFrontiers = ({
     }
   }
 
-  return ExploreResultSchema.parse({
+  return {
     traces,
     findings,
     report: {
@@ -833,8 +778,23 @@ export const exploreFrontiers = ({
       truncated,
       ...(maxDepth === undefined ? {} : { maxDepth }),
     },
-  })
+    stateGraph,
+  }
 }
+
+/**
+ * Result of a {@link verifyFrontiers} call.
+ *
+ * @public
+ */
+export type VerifyFrontiersResult = {
+  status: 'verified' | 'failed' | 'truncated'
+  findings: DeadlockFinding[]
+  report: ExploreFrontiersResult['report']
+  livelocks: LivelockFinding[]
+}
+
+export type VerifyFrontiersArgs = ExploreFrontiersArgs & { progress?: string[] }
 
 /**
  * Verifies a thread set by exploring its frontiers and deriving a
@@ -845,28 +805,40 @@ export const exploreFrontiers = ({
  *
  * @public
  */
-export const verifyFrontiers = (args: ExploreFrontiersArgs): VerifyFrontiersResult => {
-  const { findings, report } = exploreFrontiers(args)
-
-  if (findings.length > 0) {
-    return VerifyResultSchema.parse({
+export const verifyFrontiers = ({ progress, ...args }: VerifyFrontiersArgs): VerifyFrontiersResult => {
+  const { findings, report, stateGraph } = exploreFrontiers(args)
+  const livelocks: LivelockFinding[] = []
+  if (progress !== undefined) {
+    livelocks.push(
+      ...findLivelocks({
+        progress,
+        graph: stateGraph,
+        sccs: findStronglyConnectedComponents(stateGraph),
+      }),
+    )
+  }
+  if (findings.length > 0 || livelocks.length > 0) {
+    return {
       status: 'failed',
       findings,
       report,
-    })
+      livelocks,
+    }
   }
 
   if (report.truncated) {
-    return VerifyResultSchema.parse({
+    return {
       status: 'truncated',
       findings,
       report,
-    })
+      livelocks,
+    }
   }
 
-  return VerifyResultSchema.parse({
+  return {
     status: 'verified',
     findings,
     report,
-  })
+    livelocks,
+  }
 }
