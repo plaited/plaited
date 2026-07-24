@@ -13,6 +13,7 @@ export const CUSTOM_PROPERTY_REF_PATTERN = /var\(\s*--/
  * These are always valid as CSS property values, even for properties
  * with fixed enum value schemas.
  *
+
  * @public
  */
-export const customPropertyRefSchema = z.string().regex(CUSTOM_PROPERTY_REF_PATTERN)
+export const CustomPropertyRefSchema = z.string().regex(CUSTOM_PROPERTY_REF_PATTERN)

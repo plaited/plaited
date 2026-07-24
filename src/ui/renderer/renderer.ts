@@ -1,6 +1,6 @@
-import { B_PROGRAM_MESSAGE_TYPES, SWAP_MODES } from '../../b-program/message.constants.ts'
-import type { AttrsMessage, RenderMessage } from '../../b-program/message.schemas.ts'
 import type { BPEvent } from '../../behavioral.ts'
+import { B_PROGRAM_MESSAGE_TYPES, SWAP_MODES } from '../../ui/message.constants.ts'
+import type { AttrsMessage, RenderMessage } from '../../ui/message.schemas.ts'
 import { BOOLEAN_ATTRS, P_TARGET } from '../html.constants.ts'
 import { getNodeSchema } from '../html.schemas.ts'
 import { ValidationError } from './render.errors.ts'

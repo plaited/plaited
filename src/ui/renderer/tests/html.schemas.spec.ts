@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { CUSTOM_PROPERTY_REF_PATTERN, customPropertyRefSchema } from '../../css.constants.ts'
+import { CUSTOM_PROPERTY_REF_PATTERN, CustomPropertyRefSchema } from '../../css.constants.ts'
 import { P_TRIGGER, STYLE } from '../../html.constants.ts'
 import { PlaitedAttributesSchema } from '../../html.schemas.ts'
 
@@ -44,14 +44,14 @@ describe('CUSTOM_PROPERTY_REF_PATTERN', () => {
 
 describe('customPropertyRefSchema', () => {
   test('accepts valid var() references', () => {
-    expect(customPropertyRefSchema.safeParse('var(--my-prop)').success).toBe(true)
-    expect(customPropertyRefSchema.safeParse('var(  --my-prop)').success).toBe(true)
-    expect(customPropertyRefSchema.safeParse('var(--my-prop, red)').success).toBe(true)
+    expect(CustomPropertyRefSchema.safeParse('var(--my-prop)').success).toBe(true)
+    expect(CustomPropertyRefSchema.safeParse('var(  --my-prop)').success).toBe(true)
+    expect(CustomPropertyRefSchema.safeParse('var(--my-prop, red)').success).toBe(true)
   })
 
   test('rejects non-var() values', () => {
-    expect(customPropertyRefSchema.safeParse('red').success).toBe(false)
-    expect(customPropertyRefSchema.safeParse('5px').success).toBe(false)
+    expect(CustomPropertyRefSchema.safeParse('red').success).toBe(false)
+    expect(CustomPropertyRefSchema.safeParse('5px').success).toBe(false)
   })
 })
 

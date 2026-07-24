@@ -1,12 +1,12 @@
-import { B_PROGRAM_MESSAGE_TYPES, SWAP_MODES } from '../../b-program/message.constants.ts'
+import type { BPEvent, Disconnect } from '../../behavioral.ts'
+import { B_PROGRAM_MESSAGE_TYPES, SWAP_MODES } from '../../ui/message.constants.ts'
 import {
   type AttrsMessage,
   type DispatchCustomEventMessage,
   type NavigateMessage,
   type RenderMessage,
   ServerMessageSchema,
-} from '../../b-program/message.schemas.ts'
-import type { BPEvent, Disconnect } from '../../behavioral.ts'
+} from '../../ui/message.schemas.ts'
 import { BOOLEAN_ATTRS, P_FORM, P_TARGET, P_TRIGGER } from '../html.constants.ts'
 import { PAGE_EVENTS, UI_MESSAGE_TYPES } from '../message.constants.ts'
 import type { ClientMessage } from '../message.schemas.ts'

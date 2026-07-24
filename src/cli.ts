@@ -1,7 +1,1 @@
 export * from './cli/cli.ts'
-export * from './cli/code-documentation.ts'
-export * from './cli/eval.ts'
-export * from './cli/git-context.ts'
-export * from './cli/markdown.ts'
-export * from './cli/mcp-client.ts'
-export * from './cli/typescript-lsp.ts'
