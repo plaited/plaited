@@ -451,134 +451,6 @@ const VerifyResultSchema = z.strictObject({
 })
 
 /**
- * Explores reachable frontiers from an initial trace prefix, collecting
- * traces and deadlock findings.
- *
- * @param args - {@link ExploreFrontiersArgs}
- * @returns {@link ExploreFrontiersResult}
- *
- * @public
- */
-export const exploreFrontiers = ({
-  threads,
-  messages = [],
-  triggers = [],
-  strategy = 'bfs',
-  selectionPolicy = 'all-enabled',
-  maxDepth,
-  topic,
-}: ExploreFrontiersArgs): ExploreFrontiersResult => {
-  if (strategy !== 'bfs' && strategy !== 'dfs') {
-    throw new Error(`Unsupported frontier exploration strategy "${String(strategy)}".`)
-  }
-
-  const pending = [messages]
-  const visited = new Set<string>()
-  const traces: TraceRecord[] = []
-  const findings: DeadlockFinding[] = []
-  let truncated = false
-
-  while (pending.length > 0) {
-    const current = strategy === 'bfs' ? pending.shift()! : pending.pop()!
-    const key = JSON.stringify(current)
-
-    if (visited.has(key)) {
-      continue
-    }
-    visited.add(key)
-
-    const { frontier, pending: currentPending } = replayToFrontier({ threads, messages: current, topic })
-    const step = countSelectionTraces({ messages: current })
-    const frontierTrace = createFrontierTrace({ frontier, step })
-
-    traces.push({
-      messages: [...current, frontierTrace],
-    })
-
-    const requestSuccessors = getRequestSuccessors({
-      frontier,
-      selectionPolicy,
-      step,
-    })
-    const triggerSuccessors = getTriggerSuccessors({
-      pending: currentPending,
-      messages: current,
-      threads,
-      step,
-      triggers,
-      topic,
-    })
-    const successors = [...requestSuccessors, ...triggerSuccessors]
-
-    if (frontier.status === FRONTIER_STATUS.deadlock && triggerSuccessors.length === 0) {
-      findings.push({
-        code: 'deadlock',
-        messages: [...current, frontierTrace, createDeadlockTrace({ step })],
-      })
-    }
-
-    if (maxDepth !== undefined && step >= maxDepth) {
-      if (successors.length > 0) {
-        truncated = true
-      }
-      continue
-    }
-
-    for (const successor of successors) {
-      pending.push([...current, successor])
-    }
-  }
-
-  return ExploreResultSchema.parse({
-    traces,
-    findings,
-    report: {
-      strategy,
-      selectionPolicy,
-      visitedCount: traces.length,
-      findingCount: findings.length,
-      truncated,
-      ...(maxDepth === undefined ? {} : { maxDepth }),
-    },
-  })
-}
-
-/**
- * Verifies a thread set by exploring its frontiers and deriving a
- * pass/fail/truncated status.
- *
- * @param args - {@link ExploreFrontiersArgs}
- * @returns {@link VerifyFrontiersResult}
- *
- * @public
- */
-export const verifyFrontiers = (args: ExploreFrontiersArgs): VerifyFrontiersResult => {
-  const { findings, report } = exploreFrontiers(args)
-
-  if (findings.length > 0) {
-    return VerifyResultSchema.parse({
-      status: 'failed',
-      findings,
-      report,
-    })
-  }
-
-  if (report.truncated) {
-    return VerifyResultSchema.parse({
-      status: 'truncated',
-      findings,
-      report,
-    })
-  }
-
-  return VerifyResultSchema.parse({
-    status: 'verified',
-    findings,
-    report,
-  })
-}
-
-/**
  * @internal
  * Canonicalizes a listener set into a content-sorted array of JSON strings.
  *
@@ -655,3 +527,165 @@ export const frontierStateKey = ({ pending }: { pending: Set<PendingBid> }): str
       )
       .sort(),
   )
+
+type StateNode = {
+  stateKey: string
+  /** The frontier at this state; Step 3 reads enabled/candidates here. */
+  frontier: Frontier
+  /** Selection depth at first discovery (BFS-shortest under bfs; arbitrary under dfs). */
+  step: number
+  /** Labeled outgoing edges: the event selected to reach each successor state. */
+  successors: Array<{ selection: TraceEvent; to: string }>
+}
+
+type WorkItem = {
+  messages: Trace[] // what you already push
+  from?: string // stateKey of the state this item was pushed FROM
+  via?: TraceEvent // the selection that was appended to get here
+}
+
+/**
+ * Explores reachable frontiers from an initial trace prefix, collecting
+ * traces and deadlock findings.
+ *
+ * @param args - {@link ExploreFrontiersArgs}
+ * @returns {@link ExploreFrontiersResult}
+ *
+ * @public
+ */
+export const exploreFrontiers = ({
+  threads,
+  messages = [],
+  triggers = [],
+  strategy = 'bfs',
+  selectionPolicy = 'all-enabled',
+  maxDepth,
+  topic,
+}: ExploreFrontiersArgs): ExploreFrontiersResult => {
+  if (strategy !== 'bfs' && strategy !== 'dfs') {
+    throw new Error(`Unsupported frontier exploration strategy "${String(strategy)}".`)
+  }
+
+  const pending: WorkItem[] = [{ messages }]
+  const visited = new Set<string>()
+  const stateGraph = new Map<string, StateNode>()
+  const traces: TraceRecord[] = []
+  const findings: DeadlockFinding[] = []
+  let truncated = false
+
+  while (pending.length > 0) {
+    const current = strategy === 'bfs' ? pending.shift()! : pending.pop()!
+    const { frontier, pending: currentPending } = replayToFrontier({ threads, messages: current.messages, topic })
+
+    const stateKey = frontierStateKey({ pending: currentPending })
+
+    if (current.from !== undefined && current.via !== undefined) {
+      const parent = stateGraph.get(current.from)
+      if (parent) {
+        parent.successors.push({ selection: current.via, to: stateKey })
+      }
+    }
+
+    if (visited.has(stateKey)) continue
+    visited.add(stateKey)
+    const step = countSelectionTraces({ messages: current.messages })
+
+    stateGraph.set(stateKey, {
+      stateKey,
+      frontier,
+      step,
+      successors: [],
+    })
+
+    const frontierTrace = createFrontierTrace({ frontier, step })
+
+    traces.push({
+      messages: [...current.messages, frontierTrace],
+    })
+
+    const requestSuccessors = getRequestSuccessors({
+      frontier,
+      selectionPolicy,
+      step,
+    })
+    const triggerSuccessors = getTriggerSuccessors({
+      pending: currentPending,
+      messages: current.messages,
+      threads,
+      step,
+      triggers,
+      topic,
+    })
+    const successors = [...requestSuccessors, ...triggerSuccessors]
+
+    if (frontier.status === FRONTIER_STATUS.deadlock && triggerSuccessors.length === 0) {
+      findings.push({
+        code: 'deadlock',
+        messages: [...current.messages, frontierTrace, createDeadlockTrace({ step })],
+      })
+    }
+
+    if (maxDepth !== undefined && step >= maxDepth) {
+      if (successors.length > 0) {
+        truncated = true
+      }
+      continue
+    }
+
+    for (const successor of successors) {
+      pending.push({
+        messages: [...current.messages, successor],
+        from: stateKey,
+        via: successor.selected,
+      })
+    }
+  }
+
+  return ExploreResultSchema.parse({
+    traces,
+    findings,
+    report: {
+      strategy,
+      selectionPolicy,
+      visitedCount: traces.length,
+      findingCount: findings.length,
+      truncated,
+      ...(maxDepth === undefined ? {} : { maxDepth }),
+    },
+  })
+}
+
+/**
+ * Verifies a thread set by exploring its frontiers and deriving a
+ * pass/fail/truncated status.
+ *
+ * @param args - {@link ExploreFrontiersArgs}
+ * @returns {@link VerifyFrontiersResult}
+ *
+ * @public
+ */
+export const verifyFrontiers = (args: ExploreFrontiersArgs): VerifyFrontiersResult => {
+  const { findings, report } = exploreFrontiers(args)
+
+  if (findings.length > 0) {
+    return VerifyResultSchema.parse({
+      status: 'failed',
+      findings,
+      report,
+    })
+  }
+
+  if (report.truncated) {
+    return VerifyResultSchema.parse({
+      status: 'truncated',
+      findings,
+      report,
+    })
+  }
+
+  return VerifyResultSchema.parse({
+    status: 'verified',
+    findings,
+    report,
+  })
+}
