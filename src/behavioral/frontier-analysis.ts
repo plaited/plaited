@@ -26,6 +26,7 @@ import { FRONTIER_STATUS, TRACE_MESSAGE_KINDS } from './behavioral.constants.ts'
 import {
   type BPEvent,
   type FrontierTrace,
+  type RegisteredBPListener,
   type RegisteredIdioms,
   type SelectionTrace,
   type Thread,
@@ -576,3 +577,81 @@ export const verifyFrontiers = (args: ExploreFrontiersArgs): VerifyFrontiersResu
     report,
   })
 }
+
+/**
+ * @internal
+ * Canonicalizes a listener set into a content-sorted array of JSON strings.
+ *
+ * Each {@link RegisteredBPListener} is projected to its JSON-only form — the
+ * compiled `validate` function is dropped — and serialized. The resulting
+ * strings are sorted so two listener sets that differ only by declaration
+ * order produce the same array. This is what lets {@link frontierStateKey}
+ * treat structurally-equal pending sets as the same state.
+ *
+ * @param listener - Listeners (`waitFor`/`block`/`interrupt`) to canonicalize.
+ * @returns A sorted array of JSON strings, one per projected listener.
+ */
+const normalizeListeners = (listener: RegisteredBPListener[]) =>
+  listener
+    .map(({ type, detailSchema, validate: _validate, ...rest }) =>
+      JSON.stringify({
+        type,
+        ...(detailSchema && { detailSchema }),
+        ...rest,
+      }),
+    )
+    .sort()
+
+/**
+ * Derive a canonical string key for a BP pending set.
+ *
+ * Two pending sets collapse to the same key when they are structurally
+ * identical — same threads parked at the same sync points, yielding the same
+ * idioms with the same constraints — regardless of bid insertion order or the
+ * identity of the underlying generator closures. This is the abstraction that
+ * lets `exploreFrontiers` close the state graph for looping programs instead
+ * of chasing ever-growing traces.
+ *
+ * @remarks
+ * - Drops instance-identity and non-serializable artifacts: the `generator`
+ *   closure and each listener's compiled `validate` function.
+ * - Drops the opaque `payload` side-channel (frontier-analysis invariant:
+ *   frontiers stay JSON).
+ * - `request` is projected to `{ type, detail, topic }`. Bid order and listener
+ *   order are canonicalized by sorting on serialized content, yielding a total
+ *   order independent of input order.
+ *
+ * MINIMAL: relies on object-key insertion order being stable across paths
+ * (true while `advanceRunningToPending` constructs bids consistently). A
+ * reordered-keys `detail`/`detailSchema` would produce a different key for a
+ * semantically-equal state. Upgrade path: swap `JSON.stringify` for a
+ * recursive canonical-JSON serializer (an in-progress `canonicalJsonStringify`
+ * is referenced by `src/utils/tests/canonical-json.spec.ts`).
+ *
+ * @param pending - The pending bid set to canonicalize.
+ * @returns A stable string key; equal keys imply structurally-equal states.
+ *
+ * @public
+ */
+export const frontierStateKey = ({ pending }: { pending: Set<PendingBid> }): string =>
+  JSON.stringify(
+    [...pending]
+      .map(({ waitFor, block, interrupt, request, generator: _gen, ...rest }) =>
+        JSON.stringify({
+          ...rest,
+          // request is field-picked to { type, detail } so the opaque `payload`
+          // side-channel never enters any SnapshotMessage (frontier-analysis invariant).
+          ...(request && {
+            request: {
+              topic: request.topic,
+              type: request.type,
+              ...(request.detail === undefined ? {} : { detail: request.detail }),
+            },
+          }),
+          ...(waitFor && { waitFor: normalizeListeners(waitFor) }),
+          ...(block && { block: normalizeListeners(block) }),
+          ...(interrupt && { interrupt: normalizeListeners(interrupt) }),
+        }),
+      )
+      .sort(),
+  )
