@@ -538,6 +538,111 @@ type StateNode = {
   successors: Array<{ selection: TraceEvent; to: string }>
 }
 
+/**
+ * An SCC is a cycle iff it has more than one node, or a single node with a
+ * self-edge. Single-node SCCs without a self-edge are DAG leaves, not cycles.
+ *
+ * @param scc - One strongly connected component (array of state keys).
+ * @param graph - The graph the SCC came from, used to detect self-edges.
+ * @returns `true` when the SCC represents a reachable cycle.
+ *
+ * @public
+ */
+export const isCycle = (scc: string[], graph: Map<string, { successors: Array<{ to: string }> }>): boolean =>
+  scc.length > 1 || (scc.length === 1 && graph.get(scc[0]!)!.successors.some((e) => e.to === scc[0]!))
+
+/**
+ * Partition a labeled state graph into its strongly connected components via
+ * iterative Tarjan.
+ *
+ * Returns EVERY SCC, including trivial single-node components that are not
+ * cycles (a DAG yields one trivial SCC per node). Cycle interpretation is a
+ * separate concern handled by {@link isCycle}; this finder deliberately does
+ * not filter, so callers can inspect raw component structure and so the SCC
+ * algorithm stays independently testable.
+ *
+ * @remarks
+ * Iterative (explicit work stack) rather than recursive, so a large single
+ * cycle does not overflow the JS stack. Depends only on node adjacency
+ * (`successors: Array<{ to }>`), so it accepts the state graph built by
+ * `exploreFrontiers` as well as hand-constructed fake graphs for testing.
+ *
+ * @param graph - Graph keyed by state key; each node carries its successor edges.
+ * @returns One array per SCC, each containing the state keys in that component.
+ *
+ * @public
+ */
+export const findStronglyConnectedComponents = (
+  graph: Map<string, { successors: Array<{ to: string }> }>,
+): string[][] => {
+  let index = 0
+  const indices = new Map<string, number>()
+  const lowlinks = new Map<string, number>()
+  const onStack = new Set<string>()
+  const stack: string[] = []
+  const sccs: string[][] = []
+  const work: { node: string; cursor: number }[] = [] // explicit recursion stack
+
+  for (const root of graph.keys()) {
+    if (indices.has(root)) continue // already processed by an earlier DFS
+
+    // DISCOVER root: assign index, lowlink, push onto SCC stack, push work frame
+    indices.set(root, index)
+    lowlinks.set(root, index)
+    onStack.add(root)
+    stack.push(root)
+    work.push({ node: root, cursor: 0 })
+
+    index++
+    while (work.length > 0) {
+      const frame = work[work.length - 1]! // peek, don't pop yet
+      const succ = graph.get(frame.node)!.successors
+
+      if (frame.cursor < succ.length) {
+        const w = succ[frame.cursor]!.to
+        frame.cursor++
+
+        if (!indices.has(w)) {
+          // Case 1: descend. (cursor already advanced)
+          indices.set(w, index)
+          lowlinks.set(w, index)
+          index++
+          onStack.add(w)
+          stack.push(w)
+          work.push({ node: w, cursor: 0 })
+        } else if (onStack.has(w)) {
+          // Case 2: back-edge to an ancestor — use INDEX (this rule is now only
+          // ever reached for genuine back-edges, never for child-returns, because
+          // child-returns no longer revisit the edge).
+          lowlinks.set(frame.node, Math.min(lowlinks.get(frame.node)!, indices.get(w)!))
+        }
+        continue
+      }
+
+      // CURSOR EXHAUSTED
+      if (lowlinks.get(frame.node) === indices.get(frame.node)) {
+        const scc: string[] = []
+        let w: string
+        do {
+          w = stack.pop()!
+          onStack.delete(w)
+          scc.push(w)
+        } while (w !== frame.node)
+        sccs.push(scc)
+      }
+      work.pop()
+
+      // ← CHILD-RETURN PROPAGATION: the frame we just popped is a child of the new
+      // top frame. Propagate the child's LOWLINK (not its index) into the parent.
+      if (work.length > 0) {
+        const parent = work[work.length - 1]!
+        lowlinks.set(parent.node, Math.min(lowlinks.get(parent.node)!, lowlinks.get(frame.node)!))
+      }
+    }
+  }
+  return sccs
+}
+
 type WorkItem = {
   messages: Trace[] // what you already push
   from?: string // stateKey of the state this item was pushed FROM

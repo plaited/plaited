@@ -1,7 +1,12 @@
 import { describe, expect, test } from 'bun:test'
 import type { Thread } from '../behavioral.schemas.ts'
 import type { PendingBid } from '../behavioral.types.ts'
-import { exploreFrontiers, frontierStateKey } from '../frontier-analysis.ts'
+import { exploreFrontiers, findStronglyConnectedComponents, frontierStateKey } from '../frontier-analysis.ts'
+
+type FakeNode = { successors: Array<{ to: string }> }
+
+const graph = (nodes: Record<string, string[]>): Map<string, FakeNode> =>
+  new Map(Object.entries(nodes).map(([key, targets]) => [key, { successors: targets.map((to) => ({ to })) }]))
 
 /**
  * Step 1 — canonical state-key helper.
@@ -153,5 +158,78 @@ describe('exploreFrontiers state-keyed dedup', () => {
       const last = trace.messages[trace.messages.length - 1]
       expect(last!.kind).toBe('frontier')
     }
+  })
+})
+
+/**
+ * Step 3 — strongly connected components (Tarjan, iterative).
+ *
+ * `findStronglyConnectedComponents` returns the SCCs of a labeled state graph
+ * (the structure `exploreFrontiers` builds as a side effect). An SCC of size
+ * > 1, or a single node with a self-edge, is a cycle — the raw material for
+ * Step 4's livelock detection. The helper is pure and depends only on node
+ * adjacency (`successors: Array<{ to }>`), so tests build fake graphs directly.
+ *
+ * Written FIRST (red). Implement to turn green.
+ */
+describe('findStronglyConnectedComponents', () => {
+  test('a DAG yields only trivial single-node SCCs', () => {
+    // A -> B -> C, no cycles. Each node is its own trivial SCC.
+    const g = graph({ A: ['B'], B: ['C'], C: [] })
+    const sccs = findStronglyConnectedComponents(g)
+    expect(sccs).toHaveLength(3)
+    for (const scc of sccs) expect(scc).toHaveLength(1)
+  })
+
+  test('a two-node cycle is one SCC of size 2', () => {
+    // A <-> B. Both in one SCC.
+    const g = graph({ A: ['B'], B: ['A'] })
+    const sccs = findStronglyConnectedComponents(g)
+    expect(sccs).toHaveLength(1)
+    expect(sccs[0]!).toHaveLength(2)
+    expect([...sccs[0]!].sort()).toEqual(['A', 'B'])
+  })
+
+  test('a single node with a self-edge is a (trivial-looking but cyclic) SCC', () => {
+    // A -> A. Size-1 SCC, but it IS a cycle. (isCycle interpretation is Step 4.)
+    const g = graph({ A: ['A'] })
+    const sccs = findStronglyConnectedComponents(g)
+    expect(sccs).toHaveLength(1)
+    expect(sccs[0]!).toEqual(['A'])
+  })
+
+  test('isolates a cycle embedded in a larger graph', () => {
+    // A -> B <-> C -> D. {B,C} form an SCC; A and D are trivial.
+    const g = graph({ A: ['B'], B: ['C'], C: ['B', 'D'], D: [] })
+    const sccs = findStronglyConnectedComponents(g)
+    expect(sccs).toHaveLength(3)
+    const cycle = sccs.find((s) => s.length === 2)
+    expect(cycle).toBeDefined()
+    expect([...cycle!].sort()).toEqual(['B', 'C'])
+  })
+
+  test('handles two disjoint cycles in one graph', () => {
+    // A <-> B   and   C <-> D, plus a bridge A -> C.
+    const g = graph({ A: ['B', 'C'], B: ['A'], C: ['D'], D: ['C'] })
+    const sccs = findStronglyConnectedComponents(g)
+    const big = sccs.filter((s) => s.length === 2)
+    expect(big).toHaveLength(2)
+    const labels = big.map((s) => [...s].sort().join(',')).sort()
+    expect(labels).toEqual(['A,B', 'C,D'])
+  })
+
+  test('an empty graph yields no SCCs', () => {
+    expect(findStronglyConnectedComponents(new Map())).toEqual([])
+  })
+
+  test('terminates on a large single cycle without stack overflow', () => {
+    // 5000 nodes in one big ring: 0 -> 1 -> ... -> 4999 -> 0.
+    // Iterative Tarjan must handle this; a recursive impl would blow the stack.
+    const nodes: Record<string, string[]> = {}
+    for (let i = 0; i < 5000; i++) nodes[String(i)] = [String((i + 1) % 5000)]
+    const g = graph(nodes)
+    const sccs = findStronglyConnectedComponents(g)
+    expect(sccs).toHaveLength(1)
+    expect(sccs[0]!).toHaveLength(5000)
   })
 })
