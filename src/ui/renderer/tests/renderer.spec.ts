@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import type { BPEvent } from '../../../behavioral.ts'
+import type { BPEvent } from '../../../behavioral/behavioral.schemas.ts'
 import { B_PROGRAM_MESSAGE_TYPES, SWAP_MODES } from '../../../ui/message.constants.ts'
 import { P_TARGET } from '../../html.constants.ts'
 import { ValidationError } from '../render.errors.ts'

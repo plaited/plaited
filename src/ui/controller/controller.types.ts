@@ -8,7 +8,7 @@
  * @packageDocumentation
  */
 
-import type { Trigger } from '../../behavioral.ts'
+import type { Trigger } from '../../behavioral/behavioral.types.ts'
 
 /**
  * Resolves the specific event map for a given concrete event target type.

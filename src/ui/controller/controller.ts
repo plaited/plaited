@@ -1,4 +1,5 @@
-import type { BPEvent, Disconnect } from '../../behavioral.ts'
+import type { BPEvent } from '../../behavioral/behavioral.schemas.ts'
+import type { Disconnect } from '../../behavioral/behavioral.types.ts'
 import { B_PROGRAM_MESSAGE_TYPES, SWAP_MODES } from '../../ui/message.constants.ts'
 import {
   type AttrsMessage,
