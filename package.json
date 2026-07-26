@@ -17,11 +17,11 @@
     "plaited": "./bin/plaited.ts"
   },
   "type": "module",
+  "main": "./main.ts",
   "exports": {
-    "./behavioral": "./src/behavioral.ts",
+    ".": "./main.ts",
     "./cli": "./src/cli.ts",
-    "./eval": "./src/eval.ts",
-    "./ui": "./src/ui.ts",
+    "./controller": "./src/controller.ts",
     "./utils": "./src/utils.ts"
   },
   "files": [

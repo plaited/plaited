@@ -4,12 +4,12 @@
 // Command Registry
 // ============================================================================
 
+import { makeCliRouter } from '../cli.ts'
 import { codeDocumentationCli } from '../src/cli/code-documentation.ts'
 import { gitContextCli } from '../src/cli/git-context.ts'
 import { markdownCli } from '../src/cli/markdown.ts'
 import { mcpClientCli } from '../src/cli/mcp-client.ts'
 import { lspCli } from '../src/cli/typescript-lsp.ts'
-import { makeCliRouter } from '../src/cli.ts'
 
 export const runCli = makeCliRouter({
   name: 'plaited',

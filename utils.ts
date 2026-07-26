@@ -15,7 +15,7 @@
  * @since 1.0.0
  */
 
-export * from './utils/deep-equal.ts'
-export * from './utils/is-type-of.ts'
-export * from './utils/key-mirror.ts'
-export * from './utils/true-type-of.ts'
+export * from './src/utils/deep-equal.ts'
+export * from './src/utils/is-type-of.ts'
+export * from './src/utils/key-mirror.ts'
+export * from './src/utils/true-type-of.ts'

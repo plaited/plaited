@@ -16,7 +16,7 @@
  * - Electron-specific attributes hardcoded
  * - Case-sensitive attribute matching
  */
-import { keyMirror } from '../utils.ts'
+import { keyMirror } from '../../utils.ts'
 
 /**
  * Constant representing the attribute name (`p-target`) used to identify specific elements

@@ -1,4 +1,4 @@
-import { keyMirror } from '../utils.ts'
+import { keyMirror } from '../../utils.ts'
 
 /** @internal Error name registry for HTML rendering errors. */
 export const ERROR_TYPES = keyMirror(
