@@ -1,297 +1,33 @@
 /**
- * TypeScript LSP CLI — JSON-RPC passthrough over typescript-language-server.
+ * TypeScript LSP CLI — TypeScript 7 native API passthrough.
  *
  * @remarks
+ * Replaces the old typescript-language-server (which needed tsserver.js,
+ * removed in TS 5.8+) with TypeScript 7's native async API.
+ *
  * Two modes via `mode` discriminant:
- *   - `execute`: spawn server, open file, send raw JSON-RPC requests, return results
- *   - `discover`: spawn server, initialize, return supported capabilities (method names)
+ *   - `execute`: open file, run method handlers, return results
+ *   - `discover`: return list of supported method→capability mappings
  *
  * @public
  */
 
 import { isAbsolute, normalize, relative, resolve } from 'node:path'
-import type { Subprocess } from 'bun'
+import type { SourceFile, Statement } from 'typescript/unstable/ast'
+import { SyntaxKind } from 'typescript/unstable/ast'
+import {
+  isClassDeclaration,
+  isEnumDeclaration,
+  isFunctionDeclaration,
+  isInterfaceDeclaration,
+  isModuleDeclaration,
+  isTypeAliasDeclaration,
+  isVariableStatement,
+} from 'typescript/unstable/ast/is'
+import type { Project, Snapshot } from 'typescript/unstable/async'
+import { API } from 'typescript/unstable/async'
 import * as z from 'zod'
 import { makeCli } from './cli.ts'
-
-// ============================================================================
-// JSON-RPC Types
-// ============================================================================
-
-/** @internal */
-type JsonRpcRequest = {
-  jsonrpc: '2.0'
-  id: number
-  method: string
-  params?: unknown
-}
-
-/** @internal */
-type JsonRpcResponse = {
-  jsonrpc: '2.0'
-  id: number
-  result?: unknown
-  error?: { code: number; message: string; data?: unknown }
-}
-
-/** @internal */
-type JsonRpcNotification = {
-  jsonrpc: '2.0'
-  method: string
-  params?: unknown
-}
-
-/** @internal */
-type PendingRequest = {
-  resolve: (value: unknown) => void
-  reject: (error: Error) => void
-  timer?: ReturnType<typeof setTimeout>
-}
-
-type LspExecutionContext = {
-  workspace?: string
-  signal?: AbortSignal
-}
-
-// ============================================================================
-// Capability → Method Mapping
-// ============================================================================
-
-/** @internal */
-const CAPABILITY_TO_METHOD: Record<string, string> = {
-  hoverProvider: 'textDocument/hover',
-  referencesProvider: 'textDocument/references',
-  definitionProvider: 'textDocument/definition',
-  documentSymbolProvider: 'textDocument/documentSymbol',
-  workspaceSymbolProvider: 'workspace/symbol',
-  completionProvider: 'textDocument/completion',
-  signatureHelpProvider: 'textDocument/signatureHelp',
-  implementationProvider: 'textDocument/implementation',
-  typeDefinitionProvider: 'textDocument/typeDefinition',
-  renameProvider: 'textDocument/rename',
-  codeActionProvider: 'textDocument/codeAction',
-  documentFormattingProvider: 'textDocument/formatting',
-  documentHighlightProvider: 'textDocument/documentHighlight',
-  foldingRangeProvider: 'textDocument/foldingRange',
-  inlayHintProvider: 'textDocument/inlayHint',
-  semanticTokensProvider: 'textDocument/semanticTokens',
-  selectionRangeProvider: 'textDocument/selectionRange',
-}
-
-// ============================================================================
-// LSP Client
-// ============================================================================
-
-/**
- * TypeScript Language Server client using Bun.spawn.
- *
- * @remarks
- * Spawns typescript-language-server as a subprocess and communicates
- * via LSP JSON-RPC over stdio. Manages lifecycle: spawn → initialize →
- * open → request/notify → close → shutdown.
- *
- * @internal
- */
-export class LspClient {
-  #process: Subprocess | null = null
-  #requestId = 0
-  #pendingRequests = new Map<number, PendingRequest>()
-  #buffer = new Uint8Array(0)
-  #contentLength = -1
-  #initialized = false
-  #rootUri: string
-  #serverCommand: string[]
-  #requestTimeout: number
-  #capabilities: Record<string, unknown> | null = null
-
-  constructor({
-    rootUri,
-    command = ['bun', 'typescript-language-server', '--stdio'],
-    requestTimeout = 30000,
-  }: {
-    rootUri: string
-    command?: string[]
-    requestTimeout?: number
-  }) {
-    this.#rootUri = rootUri
-    this.#serverCommand = command
-    this.#requestTimeout = requestTimeout
-  }
-
-  /**
-   * Server capabilities returned by the `initialize` handshake.
-   */
-  get capabilities(): Record<string, unknown> | null {
-    return this.#capabilities
-  }
-
-  async start(): Promise<void> {
-    if (this.#process) throw new Error('LSP server already running')
-
-    this.#process = Bun.spawn(this.#serverCommand, {
-      stdin: 'pipe',
-      stdout: 'pipe',
-      stderr: 'pipe',
-    })
-
-    this.#readOutput()
-    await this.#initialize()
-  }
-
-  async stop(): Promise<void> {
-    if (!this.#process) return
-    try {
-      await this.request('shutdown', null)
-      this.notify('exit')
-    } catch {
-      // Ignore shutdown errors
-    }
-    this.#process.kill()
-    this.#process = null
-    this.#initialized = false
-  }
-
-  isRunning(): boolean {
-    return this.#process !== null && this.#initialized
-  }
-
-  async request<T = unknown>(method: string, params: unknown): Promise<T> {
-    if (!this.#process) throw new Error('LSP server not running')
-
-    this.#requestId += 1
-    const id = this.#requestId
-    const request: JsonRpcRequest = {
-      jsonrpc: '2.0',
-      id,
-      method,
-      params: params ?? undefined,
-    }
-
-    return new Promise((resolve, reject) => {
-      const timer = setTimeout(() => {
-        this.#pendingRequests.delete(id)
-        reject(new Error(`LSP request timeout: ${method} (id=${id})`))
-      }, this.#requestTimeout)
-      this.#pendingRequests.set(id, { resolve: resolve as (value: unknown) => void, reject, timer })
-      this.#send(request)
-    })
-  }
-
-  notify(method: string, params?: unknown): void {
-    if (!this.#process) throw new Error('LSP server not running')
-    this.#send({ jsonrpc: '2.0', method, params })
-  }
-
-  async #initialize(): Promise<void> {
-    const result = (await this.request('initialize', {
-      processId: process.pid,
-      rootUri: this.#rootUri,
-      capabilities: {
-        textDocument: {
-          hover: { contentFormat: ['markdown', 'plaintext'] },
-          definition: { linkSupport: true },
-          references: {},
-          completion: { completionItem: { snippetSupport: true, documentationFormat: ['markdown', 'plaintext'] } },
-          signatureHelp: { signatureInformation: { documentationFormat: ['markdown', 'plaintext'] } },
-          documentSymbol: { hierarchicalDocumentSymbolSupport: true },
-        },
-        workspace: { symbol: { symbolKind: {} } },
-      },
-    })) as Record<string, unknown> | undefined
-
-    this.notify('initialized', {})
-    this.#initialized = true
-    this.#capabilities = (result?.capabilities as Record<string, unknown>) ?? null
-  }
-
-  #send(message: JsonRpcRequest | JsonRpcNotification): void {
-    const stdin = this.#process?.stdin
-    if (!stdin || typeof stdin === 'number') throw new Error('LSP server stdin not available')
-    const content = JSON.stringify(message)
-    stdin.write(`Content-Length: ${Buffer.byteLength(content)}\r\n\r\n${content}`)
-  }
-
-  async #readOutput(): Promise<void> {
-    const stdout = this.#process?.stdout
-    if (!stdout || typeof stdout === 'number') return
-    const reader = stdout.getReader()
-
-    try {
-      while (true) {
-        const { done, value } = await reader.read()
-        if (done) break
-        const newBuffer = new Uint8Array(this.#buffer.length + value.length)
-        newBuffer.set(this.#buffer)
-        newBuffer.set(value, this.#buffer.length)
-        this.#buffer = newBuffer
-        this.#processBuffer()
-      }
-    } catch {
-      // Stream closed
-    }
-  }
-
-  #processBuffer(): void {
-    const decoder = new TextDecoder()
-
-    while (true) {
-      if (this.#contentLength === -1) {
-        const headerEndIndex = this.#findHeaderEnd()
-        if (headerEndIndex === -1) break
-        const headerBytes = this.#buffer.slice(0, headerEndIndex)
-        const match = decoder.decode(headerBytes).match(/Content-Length: (\d+)/)
-        if (!match?.[1]) {
-          this.#buffer = this.#buffer.slice(headerEndIndex + 4)
-          continue
-        }
-        this.#contentLength = parseInt(match[1], 10)
-        this.#buffer = this.#buffer.slice(headerEndIndex + 4)
-      }
-
-      if (this.#buffer.length < this.#contentLength) break
-
-      const contentBytes = this.#buffer.slice(0, this.#contentLength)
-      const content = decoder.decode(contentBytes)
-      this.#buffer = this.#buffer.slice(this.#contentLength)
-      this.#contentLength = -1
-
-      try {
-        this.#handleMessage(JSON.parse(content) as JsonRpcResponse)
-      } catch {
-        // Skip invalid JSON
-      }
-    }
-  }
-
-  #findHeaderEnd(): number {
-    for (let i = 0; i <= this.#buffer.length - 4; i++) {
-      if (
-        this.#buffer[i] === 13 &&
-        this.#buffer[i + 1] === 10 &&
-        this.#buffer[i + 2] === 13 &&
-        this.#buffer[i + 3] === 10
-      ) {
-        return i
-      }
-    }
-    return -1
-  }
-
-  #handleMessage(message: JsonRpcResponse): void {
-    if (message.id !== undefined) {
-      const pending = this.#pendingRequests.get(message.id)
-      if (pending) {
-        clearTimeout(pending.timer)
-        this.#pendingRequests.delete(message.id)
-        if (message.error) {
-          pending.reject(new Error(`LSP Error: ${message.error.message}`))
-        } else {
-          pending.resolve(message.result)
-        }
-      }
-    }
-  }
-}
 
 // ============================================================================
 // Helpers
@@ -324,48 +60,242 @@ const resolveUriPath = (uri: string): string | undefined => {
 }
 
 /** @internal */
-const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
+
+// ============================================================================
+// Project Resolution Helpers
+// ============================================================================
 
 /**
- * Recursively normalize LSP responses by converting `uri` and `targetUri`
- * fields to relative paths for agent consumption.
+ * Find the fully-initialized Project (with program/checker) that contains the
+ * given file path. Falls back to the first project if no match.
  *
- * @internal
+ * `getDefaultProjectForFile` returns a shallow proxy that lacks program/checker;
+ * only the Project instances from `getProjects()` are fully wired.
  */
-const normalizeUriBearingResult = (value: unknown, rootDir: string): unknown => {
-  if (Array.isArray(value)) {
-    return value.map((entry) => normalizeUriBearingResult(entry, rootDir))
+const findProjectForFile = (snapshot: Snapshot, filePath: string): Project | undefined => {
+  const projects = snapshot.getProjects()
+  for (const p of projects) {
+    if (p.rootFiles?.includes(filePath)) return p
   }
-  if (!isRecord(value)) {
-    return value
-  }
+  return projects[0]
+}
 
-  const normalized: Record<string, unknown> = {}
-  for (const [key, entry] of Object.entries(value)) {
-    normalized[key] = normalizeUriBearingResult(entry, rootDir)
-  }
+// ============================================================================
+// LSP Method → TS 7 API Handlers
+// ============================================================================
 
-  if (typeof value.uri === 'string') {
-    const absolutePath = resolveUriPath(value.uri)
-    if (absolutePath) {
-      normalized.path = makeDisplayPath(absolutePath, rootDir)
+type MethodHandler = (params: {
+  snapshot: Snapshot
+  rootDir: string
+  requestParams: Record<string, unknown>
+}) => Promise<unknown>
+
+/** Map of LSP method names to TypeScript 7 API handlers. */
+const METHOD_HANDLERS: Record<string, MethodHandler> = {
+  'textDocument/documentSymbol': async ({ snapshot, requestParams }) => {
+    const uri = (requestParams.textDocument as { uri?: string } | undefined)?.uri
+    if (!uri) throw new Error('textDocument/documentSymbol requires textDocument.uri')
+    const absolutePath = resolveUriPath(uri)
+    if (!absolutePath) throw new Error(`Invalid URI: ${uri}`)
+
+    const project = findProjectForFile(snapshot, absolutePath)
+    if (!project) throw new Error(`No project found for file: ${absolutePath}`)
+
+    const sourceFile = await project.program.getSourceFile(absolutePath)
+    if (!sourceFile) throw new Error(`Source file not found: ${absolutePath}`)
+
+    return extractDocumentSymbols(sourceFile)
+  },
+
+  'textDocument/hover': async ({ snapshot, requestParams }) => {
+    const uri = (requestParams.textDocument as { uri?: string } | undefined)?.uri
+    if (!uri) throw new Error('textDocument/hover requires textDocument.uri')
+    const absolutePath = resolveUriPath(uri)
+    if (!absolutePath) throw new Error(`Invalid URI: ${uri}`)
+
+    const position = requestParams.position as { line?: number; character?: number } | undefined
+    if (position?.line === undefined || position?.character === undefined) {
+      throw new Error('textDocument/hover requires position.line and position.character')
     }
-  }
-  if (typeof value.targetUri === 'string') {
-    const absolutePath = resolveUriPath(value.targetUri)
-    if (absolutePath) {
-      normalized.targetPath = makeDisplayPath(absolutePath, rootDir)
+
+    const project = findProjectForFile(snapshot, absolutePath)
+    if (!project) throw new Error(`No project found for file: ${absolutePath}`)
+
+    const sourceFile = await project.program.getSourceFile(absolutePath)
+    if (!sourceFile) throw new Error(`Source file not found: ${absolutePath}`)
+
+    const offset = sourceFile.getPositionOfLineAndCharacter(position.line, position.character)
+    const symbol = await project.checker.getSymbolAtPosition(absolutePath, offset)
+    if (!symbol) return undefined
+
+    const type = await project.checker.getTypeOfSymbol(symbol)
+    const typeStr = type ? project.checker.typeToString(type) : undefined
+    const docComment = await project.checker.getDocumentationCommentOfSymbol(symbol)
+    const jsdoc = await project.checker.getJsDocTagsOfSymbol(symbol)
+
+    return {
+      name: symbol.name,
+      kind: symbol.flags,
+      type: typeStr,
+      documentation: docComment,
+      tags: jsdoc.map((t) => ({ name: t.name, text: t.text })),
     }
-  }
-  return normalized
+  },
+
+  'textDocument/completion': async ({ snapshot, requestParams }) => {
+    const uri = (requestParams.textDocument as { uri?: string } | undefined)?.uri
+    if (!uri) throw new Error('textDocument/completion requires textDocument.uri')
+    const absolutePath = resolveUriPath(uri)
+    if (!absolutePath) throw new Error(`Invalid URI: ${uri}`)
+
+    const position = requestParams.position as { line?: number; character?: number } | undefined
+    if (position?.line === undefined || position?.character === undefined) {
+      throw new Error('textDocument/completion requires position.line and position.character')
+    }
+
+    const project = findProjectForFile(snapshot, absolutePath)
+    if (!project) throw new Error(`No project found for file: ${absolutePath}`)
+
+    const sourceFile = await project.program.getSourceFile(absolutePath)
+    if (!sourceFile) throw new Error(`Source file not found: ${absolutePath}`)
+
+    const offset = sourceFile.getPositionOfLineAndCharacter(position.line, position.character)
+    const info = await project.checker.getCompletionsAtPosition(absolutePath, offset)
+    if (!info) return { isIncomplete: false, entries: [] }
+
+    return {
+      isIncomplete: info.isIncomplete,
+      entries: info.entries.map((e) => ({
+        name: e.name,
+        kind: e.kind,
+        sortText: e.sortText,
+        insertText: e.insertText,
+        detail: e.detail,
+      })),
+    }
+  },
+
+  'textDocument/definition': async ({ snapshot, requestParams }) => {
+    const uri = (requestParams.textDocument as { uri?: string } | undefined)?.uri
+    if (!uri) throw new Error('textDocument/definition requires textDocument.uri')
+    const absolutePath = resolveUriPath(uri)
+    if (!absolutePath) throw new Error(`Invalid URI: ${uri}`)
+
+    const position = requestParams.position as { line?: number; character?: number } | undefined
+    if (position?.line === undefined || position?.character === undefined) {
+      throw new Error('textDocument/definition requires position.line and position.character')
+    }
+
+    const project = findProjectForFile(snapshot, absolutePath)
+    if (!project) throw new Error(`No project found for file: ${absolutePath}`)
+
+    const sourceFile = await project.program.getSourceFile(absolutePath)
+    if (!sourceFile) throw new Error(`Source file not found: ${absolutePath}`)
+
+    const offset = sourceFile.getPositionOfLineAndCharacter(position.line, position.character)
+    const symbol = await project.checker.getSymbolAtPosition(absolutePath, offset)
+    if (!symbol) return undefined
+
+    const decl = symbol.valueDeclaration
+    if (!decl) return undefined
+
+    const resolvedNode = await decl.resolve(project)
+    if (!resolvedNode) return undefined
+
+    const declFile = resolvedNode.getSourceFile()
+    const start = resolvedNode.getStart()
+    const end = resolvedNode.getEnd()
+    const lineChar = declFile.getLineAndCharacterOfPosition(start)
+    const endLineChar = declFile.getLineAndCharacterOfPosition(end)
+
+    return [
+      {
+        uri: `file://${declFile.fileName}`,
+        range: {
+          start: { line: lineChar.line, character: lineChar.character },
+          end: { line: endLineChar.line, character: endLineChar.character },
+        },
+      },
+    ]
+  },
+}
+
+/** Map of TS 7 capability names to LSP method names. */
+const CAPABILITY_TO_METHOD: Record<string, string> = {
+  documentSymbolProvider: 'textDocument/documentSymbol',
+  hoverProvider: 'textDocument/hover',
+  completionProvider: 'textDocument/completion',
+  definitionProvider: 'textDocument/definition',
+}
+
+// ============================================================================
+// Document Symbol Extraction
+// ============================================================================
+
+/** @internal */
+interface DocumentSymbolEntry {
+  name: string
+  kind: string
+  range: [number, number]
+}
+
+const SYMBOL_KIND_NAMES: Record<number, string> = {
+  [SyntaxKind.VariableStatement]: 'Variable',
+  [SyntaxKind.FunctionDeclaration]: 'Function',
+  [SyntaxKind.ClassDeclaration]: 'Class',
+  [SyntaxKind.InterfaceDeclaration]: 'Interface',
+  [SyntaxKind.TypeAliasDeclaration]: 'TypeAlias',
+  [SyntaxKind.EnumDeclaration]: 'Enum',
+  [SyntaxKind.ModuleDeclaration]: 'Module',
 }
 
 /** @internal */
-const getLanguageId = (path: string): string => {
-  if (path.endsWith('.tsx')) return 'typescriptreact'
-  if (path.endsWith('.ts')) return 'typescript'
-  if (path.endsWith('.jsx')) return 'javascriptreact'
-  return 'javascript'
+const extractNameFromStatement = (stmt: Statement, sourceFile: SourceFile): string | undefined => {
+  if (isVariableStatement(stmt)) {
+    const decl = stmt.declarationList.declarations[0]
+    if (!decl) return
+    const name = decl.name
+    if ('escapedText' in name) return (name as { escapedText: string }).escapedText
+    return name.getText(sourceFile)
+  }
+  if (isFunctionDeclaration(stmt) || isClassDeclaration(stmt)) {
+    return stmt.name?.text
+  }
+  if (isInterfaceDeclaration(stmt) || isTypeAliasDeclaration(stmt) || isEnumDeclaration(stmt)) {
+    return stmt.name.text
+  }
+  if (isModuleDeclaration(stmt)) {
+    return stmt.name?.text
+  }
+  return
+}
+
+/**
+ * Extract top-level symbols from a source file for documentSymbol response.
+ *
+ * @internal
+ */
+const extractDocumentSymbols = (sourceFile: SourceFile): DocumentSymbolEntry[] => {
+  const symbols: DocumentSymbolEntry[] = []
+
+  for (const stmt of sourceFile.statements) {
+    const name = extractNameFromStatement(stmt, sourceFile)
+    if (!name) continue
+
+    const kindNum = stmt.kind
+    const kindName = SYMBOL_KIND_NAMES[kindNum] ?? `Unknown(${kindNum})`
+    const start = stmt.getStart(sourceFile)
+    const end = stmt.getEnd()
+
+    symbols.push({
+      name,
+      kind: kindName,
+      range: [start, end],
+    })
+  }
+
+  return symbols
 }
 
 // ============================================================================
@@ -375,20 +305,20 @@ const getLanguageId = (path: string): string => {
 /** @public */
 const ExecuteModeSchema = z
   .object({
-    mode: z.literal('execute').describe('Execute JSON-RPC requests in an LSP session'),
+    mode: z.literal('execute').describe('Execute LSP-style requests against a file'),
     file: z.string().min(1).describe('Path to a TypeScript/JavaScript file'),
     rootDir: z.string().default('.').describe('Workspace root for file:// URI resolution'),
     requests: z
       .array(
         z.object({
-          method: z.string().describe('LSP method name, e.g. textDocument/hover'),
+          method: z.string().describe('LSP method name, e.g. textDocument/documentSymbol'),
           params: z.unknown().optional().describe('LSP method params'),
         }),
       )
       .min(1)
-      .describe('JSON-RPC requests to execute in a single session'),
+      .describe('Requests to execute in a single session'),
   })
-  .describe('Execute raw LSP requests against a file in a single server session')
+  .describe('Execute LSP-style requests against a file in a single server session')
 
 /** @public */
 const DiscoverModeSchema = z
@@ -396,7 +326,7 @@ const DiscoverModeSchema = z
     mode: z.literal('discover').describe('Discover available LSP methods supported by the server'),
     rootDir: z.string().default('.').describe('Workspace root for file:// URI resolution'),
   })
-  .describe('Discover LSP server capabilities via initialize handshake')
+  .describe('Discover TypeScript 7 API capabilities')
 
 /** @public */
 const LspInputSchema = z
@@ -425,10 +355,10 @@ const DiscoverOutputSchema = z.object({
     .array(
       z.object({
         method: z.string().describe('LSP method name'),
-        capability: z.string().describe('LSP capability flag name (from initialize response)'),
+        capability: z.string().describe('LSP capability flag name (from TypeScript 7 API)'),
       }),
     )
-    .describe('Supported LSP methods from server capabilities'),
+    .describe('Supported LSP methods from TypeScript 7 API'),
 })
 
 /** @public */
@@ -459,75 +389,68 @@ type LspOutput = z.infer<typeof LspOutputSchema>
 // ============================================================================
 
 /**
- * Execute raw JSON-RPC requests against a TypeScript/JavaScript file.
+ * Execute LSP-style requests against a TypeScript/JavaScript file.
  *
  * @remarks
- * Starts a `typescript-language-server` subprocess, opens the target file,
- * sends each request in sequence, then stops the server. Each request is
+ * Spawns a TypeScript 7 native server, opens the target file, sends each
+ * request via the TS 7 API, then stops the server. Each request is
  * independent — if one fails, the others still run.
  *
- * When `ctx` is provided, `workspace` sets the LSP rootUri and `signal`
- * enables abort-based subprocess cancellation via BP interrupt.
- *
  * @param input - Execute mode input with file and requests
- * @param ctx - Optional execution context for workspace root and abort signal
  * @returns File path and results array matching requests order
  *
  * @public
  */
-const executeLsp = async (input: LspInput, ctx?: LspExecutionContext): Promise<LspOutput> => {
+const executeLsp = async (input: LspInput): Promise<LspOutput> => {
   if (input.mode !== 'execute') {
     throw new Error('executeLsp requires mode: execute')
   }
-  if (ctx?.signal?.aborted) throw new Error('Aborted')
 
-  const workspaceBase = ctx?.workspace ?? process.cwd()
-  const rootDir = resolve(workspaceBase, input.rootDir)
+  const rootDir = resolve(input.rootDir)
   const absolutePath = resolveFilePath(input.file, rootDir)
 
   const file = Bun.file(absolutePath)
   if (!(await file.exists())) {
     throw new Error(`File not found: ${absolutePath}`)
   }
-  const text = await file.text()
-  const uri = `file://${absolutePath}`
 
-  const rootUri = `file://${rootDir}`
-  const client = new LspClient({ rootUri })
-
-  const onAbort = () => {
-    client.stop().catch(() => {})
-  }
-  ctx?.signal?.addEventListener('abort', onAbort, { once: true })
+  const api = new API({ cwd: rootDir })
 
   try {
-    await client.start()
-    const languageId = getLanguageId(input.file)
-    client.notify('textDocument/didOpen', {
-      textDocument: { uri, languageId, version: 1, text },
-    })
+    const snap = await api.updateSnapshot({ openFiles: [absolutePath] })
 
-    const results: Array<{ method: string; result?: unknown; error?: string }> = []
+    try {
+      const results: Array<{ method: string; result?: unknown; error?: string }> = []
 
-    for (const req of input.requests) {
-      try {
-        let data = await client.request(req.method, req.params)
-        data = normalizeUriBearingResult(data, rootDir)
-        results.push({ method: req.method, result: data })
-      } catch (error) {
-        results.push({ method: req.method, error: error instanceof Error ? error.message : String(error) })
+      for (const req of input.requests) {
+        try {
+          const handler = METHOD_HANDLERS[req.method]
+          if (!handler) {
+            results.push({ method: req.method, error: `Unsupported method: ${req.method}` })
+            continue
+          }
+
+          const result = await handler({
+            snapshot: snap,
+            rootDir,
+            requestParams: (req.params as Record<string, unknown>) ?? {},
+          })
+          results.push({ method: req.method, result })
+        } catch (error) {
+          results.push({
+            method: req.method,
+            error: error instanceof Error ? error.message : String(error),
+          })
+        }
       }
+
+      return { mode: 'execute', file: makeDisplayPath(absolutePath, rootDir), results }
+    } finally {
+      snap.dispose()
     }
-
-    client.notify('textDocument/didClose', { textDocument: { uri } })
-    await client.stop()
-
-    return { mode: 'execute', file: makeDisplayPath(absolutePath, rootDir), results }
-  } catch (error) {
-    await client.stop().catch(() => {})
-    throw error
   } finally {
-    ctx?.signal?.removeEventListener('abort', onAbort)
+    await sleep(200)
+    await api.close().catch(() => {})
   }
 }
 
@@ -538,34 +461,21 @@ export { executeLsp }
 // ============================================================================
 
 /**
- * Discover supported LSP methods by probing the server's initialize handshake.
+ * Discover supported LSP methods from TypeScript 7's native API.
  *
  * @remarks
- * Spawns typescript-language-server, performs the initialize handshake,
- * reads the server capabilities, maps capability flags to LSP method names,
- * then shuts down.
+ * No server spawn needed — the supported methods are derived from the
+ * Checker/Program API surface exposed by TypeScript 7.
  *
  * @internal
  */
-const handleDiscover = async (rootDir: string): Promise<LspOutput> => {
-  const rootUri = `file://${resolve(rootDir)}`
-  const client = new LspClient({ rootUri })
+const handleDiscover = async (_rootDir: string): Promise<LspOutput> => {
+  const capabilities = Object.entries(CAPABILITY_TO_METHOD).map(([capability, method]) => ({
+    method,
+    capability,
+  }))
 
-  try {
-    await client.start()
-
-    const caps = client.capabilities ?? {}
-    const capabilities = Object.entries(CAPABILITY_TO_METHOD)
-      .filter(([cap]) => Boolean(caps[cap]))
-      .map(([capability, method]) => ({ method, capability }))
-
-    await client.stop()
-
-    return { mode: 'discover', capabilities }
-  } catch (error) {
-    await client.stop().catch(() => {})
-    throw error
-  }
+  return { mode: 'discover', capabilities }
 }
 
 // ============================================================================
@@ -578,22 +488,25 @@ export const lspCli = makeCli({
   inputSchema: LspInputSchema,
   outputSchema: LspOutputSchema,
   help: [
-    'Raw JSON-RPC passthrough over typescript-language-server.',
+    'LSP-style queries over TypeScript 7 native API.',
     'Two modes via `mode` discriminant:',
     '',
-    '  execute   Open a file and send raw JSON-RPC LSP requests',
-    '  discover  Probe server capabilities and list supported methods',
+    '  execute   Open a file and run LSP methods against TypeScript 7',
+    '  discover  List supported LSP methods from TypeScript 7',
     '',
     'Execute mode fields:',
     '  file      Path to TypeScript/JavaScript file',
     '  rootDir   Workspace root for URI resolution (default ".")',
-    '  requests  Array of { method, params? } — raw LSP request objects',
+    '  requests  Array of { method, params? } — LSP method objects',
     '',
     'Discover mode fields:',
     '  rootDir   Workspace root for URI resolution (default ".")',
     '',
+    'Supported LSP methods:',
+    ...Object.entries(CAPABILITY_TO_METHOD).map(([cap, method]) => `  ${method} (${cap})`),
+    '',
     'Examples:',
-    '  plaited typescript-lsp \'{"mode":"execute","file":"src/index.ts","requests":[{"method":"textDocument/hover","params":{"textDocument":{"uri":"file://src/index.ts"},"position":{"line":5,"character":10}}}]}\'',
+    '  plaited typescript-lsp \'{"mode":"execute","file":"src/index.ts","requests":[{"method":"textDocument/documentSymbol","params":{"textDocument":{"uri":"file://src/index.ts"}}}]}\'',
     '  plaited typescript-lsp \'{"mode":"discover"}\'',
   ].join('\n'),
   run: async (input) => {
