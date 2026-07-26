@@ -110,7 +110,7 @@ test('logging', () => {
   const { useAddThread, useTrigger, useTrace } = behavioral()
   const addThread = useAddThread()
   const trigger = useTrigger()
-  useTrace((trace: Trace) => {
+  useTrace((trace) => {
     traces.push(trace)
   })
   addThread({ label: 'addHot', rules: addHotRules, once: true })

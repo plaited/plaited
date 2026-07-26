@@ -136,11 +136,27 @@ export const TraceCandidateSchema = z.object({
   priority: z.number(),
 })
 
+/**
+ * Structural contract for consumer-supplied trace extensions.
+ *
+ * @remarks
+ * `Trace` variants happen to satisfy this shape (each spreads it), but consumers
+ * should treat this as the contract their *extension* kinds must match when
+ * parameterizing {@link behavioral} with a custom trace type — namely
+ * `{ kind: string; timestamp: number }` plus kind-specific fields. Extension
+ * kinds should use literal `kind` strings distinct from the engine's
+ * `TRACE_MESSAGE_KINDS` so narrowing by `kind` remains unambiguous in the
+ * unified `Trace | T` stream.
+ *
+ * @see {@link Trace} for the engine's closed trace union
+ * @see {@link behavioral} for the `<T extends TraceBase>` type parameter
+ */
 export const TraceBaseSchema = z.looseObject({
   kind: z.string(),
   timestamp: z.number(),
 })
 
+/** @public */
 export type TraceBase = z.output<typeof TraceBaseSchema>
 
 /** @public */

@@ -147,7 +147,7 @@ const createPublisher = <T>() => {
  * and threads to run. If no events can be selected (either because all requests are blocked
  * or there are no requests), the program will pause until an external event is triggered.
  */
-export const behavioral = <T extends TraceBase>() => {
+export const behavioral = <T extends TraceBase = never>() => {
   /**
    * @internal
    * Set of threads that have yielded and are waiting for event selection.
@@ -178,7 +178,7 @@ export const behavioral = <T extends TraceBase>() => {
    * Publisher for state traces, consumed by `useTrace`.
    * Always exists — subscribers are added/removed via `useTrace` which delegates to `subscribe`.
    */
-  const snapshotPublisher = createPublisher<T | Trace>()
+  const tracePublisher = createPublisher<Trace | T>()
   let stepId = 0
 
   const step = () => {
@@ -203,7 +203,7 @@ export const behavioral = <T extends TraceBase>() => {
   function selectNextEvent() {
     const step = stepId++
 
-    snapshotPublisher({
+    tracePublisher({
       kind: TRACE_MESSAGE_KINDS.pending_bids,
       timestamp: Date.now(),
       step,
@@ -212,7 +212,7 @@ export const behavioral = <T extends TraceBase>() => {
 
     const frontier = computeFrontier({ pending })
     const { enabled, candidates } = frontier
-    snapshotPublisher({
+    tracePublisher({
       kind: TRACE_MESSAGE_KINDS.frontier,
       timestamp: Date.now(),
       step,
@@ -226,7 +226,7 @@ export const behavioral = <T extends TraceBase>() => {
       const selected = frontier.enabled.sort(
         ({ priority: priorityA }, { priority: priorityB }) => priorityA - priorityB,
       )[0]!
-      snapshotPublisher({
+      tracePublisher({
         kind: TRACE_MESSAGE_KINDS.selection,
         timestamp: Date.now(),
         step,
@@ -236,7 +236,7 @@ export const behavioral = <T extends TraceBase>() => {
       return
     }
     if (frontier.status === FRONTIER_STATUS.deadlock) {
-      snapshotPublisher({
+      tracePublisher({
         kind: TRACE_MESSAGE_KINDS.deadlock,
         timestamp: Date.now(),
         step,
@@ -352,7 +352,7 @@ export const behavioral = <T extends TraceBase>() => {
             detail: data.detail,
             error: error instanceof Error ? error.message : String(error),
           }
-          snapshotPublisher(message)
+          tracePublisher(message)
         }
       }
     })
@@ -372,14 +372,14 @@ export const behavioral = <T extends TraceBase>() => {
           label,
         })
       } catch (err) {
-        snapshotPublisher({
+        tracePublisher({
           kind: TRACE_MESSAGE_KINDS.add_thread_error,
           timestamp: Date.now(),
           error: err instanceof Error ? err.message : String(err),
         })
       }
     } else {
-      snapshotPublisher({
+      tracePublisher({
         kind: TRACE_MESSAGE_KINDS.add_thread_error,
         timestamp: Date.now(),
         error: result.error.issues,
@@ -391,10 +391,10 @@ export const behavioral = <T extends TraceBase>() => {
    * Implementation of the public `useTrace` hook.
    * Delegates directly to the trace publisher's subscribe method.
    */
-  const useTrace: UseTrace<T> = (listener) => snapshotPublisher.subscribe(listener)
+  const useTrace: UseTrace<T> = (listener) => tracePublisher.subscribe(listener)
 
-  const sendTrace: SendTrace<T> = (arg) => {
-    snapshotPublisher(arg)
+  const sendTrace: SendTrace<T> = (args) => {
+    tracePublisher(args)
   }
 
   /**
