@@ -15,8 +15,9 @@ test('match listener: waitFor resumes thread when type and detail schema match',
   const trigger = useTrigger()
   const addHandler = useAddHandler()
 
-  addThread('producer', { rules: [{ request: { type: 'task', detail: { id: 'job-1' } } }], once: true })
-  addThread('consumer', {
+  addThread({ label: 'producer', rules: [{ request: { type: 'task', detail: { id: 'job-1' } } }], once: true })
+  addThread({
+    label: 'consumer',
     rules: [
       {
         waitFor: [
@@ -50,8 +51,9 @@ test('match listener: waitFor does not resume when detail schema fails', () => {
   const trigger = useTrigger()
   const addHandler = useAddHandler()
 
-  addThread('producer', { rules: [{ request: { type: 'task', detail: { id: 101 } } }], once: true })
-  addThread('consumer', {
+  addThread({ label: 'producer', rules: [{ request: { type: 'task', detail: { id: 101 } } }], once: true })
+  addThread({
+    label: 'consumer',
     rules: [
       {
         waitFor: [
@@ -85,8 +87,9 @@ test('match listener: detailMatch invalid resumes thread when detail schema fail
   const trigger = useTrigger()
   const addHandler = useAddHandler()
 
-  addThread('producer', { rules: [{ request: { type: 'task', detail: { id: 101 } } }], once: true })
-  addThread('consumer', {
+  addThread({ label: 'producer', rules: [{ request: { type: 'task', detail: { id: 101 } } }], once: true })
+  addThread({
+    label: 'consumer',
     rules: [
       {
         waitFor: [
@@ -121,8 +124,9 @@ test('match listener: detailMatch invalid does not resume thread when detail sch
   const trigger = useTrigger()
   const addHandler = useAddHandler()
 
-  addThread('producer', { rules: [{ request: { type: 'task', detail: { id: 'job-1' } } }], once: true })
-  addThread('consumer', {
+  addThread({ label: 'producer', rules: [{ request: { type: 'task', detail: { id: 'job-1' } } }], once: true })
+  addThread({
+    label: 'consumer',
     rules: [
       {
         waitFor: [
@@ -157,8 +161,9 @@ test('match listener: type mismatch prevents match when source and detail would 
   const trigger = useTrigger()
   const addHandler = useAddHandler()
 
-  addThread('producer', { rules: [{ request: { type: 'other', detail: { id: 'job-1' } } }], once: true })
-  addThread('consumer', {
+  addThread({ label: 'producer', rules: [{ request: { type: 'other', detail: { id: 'job-1' } } }], once: true })
+  addThread({
+    label: 'consumer',
     rules: [
       {
         waitFor: [
@@ -192,8 +197,9 @@ test('match listener: sourceSchema request accepts only requested events', () =>
   const trigger = useTrigger()
   const addHandler = useAddHandler()
 
-  addThread('producer', { rules: [{ request: { type: 'task', detail: { id: 'job-1' } } }], once: true })
-  addThread('consumer', {
+  addThread({ label: 'producer', rules: [{ request: { type: 'task', detail: { id: 'job-1' } } }], once: true })
+  addThread({
+    label: 'consumer',
     rules: [
       {
         waitFor: [
@@ -227,8 +233,9 @@ test('match listener: trigger and requested events both satisfy matching listene
   const trigger = useTrigger()
   const addHandler = useAddHandler()
 
-  addThread('producer', { rules: [{ request: { type: 'task', detail: { id: 'job-1' } } }], once: true })
-  addThread('consumer', {
+  addThread({ label: 'producer', rules: [{ request: { type: 'task', detail: { id: 'job-1' } } }], once: true })
+  addThread({
+    label: 'consumer',
     rules: [
       {
         waitFor: [
@@ -263,8 +270,9 @@ test('match listener: sourceSchema can accept trigger and request', () => {
   const trigger = useTrigger()
   const addHandler = useAddHandler()
 
-  addThread('producer', { rules: [{ request: { type: 'task', detail: { id: 'job-1' } } }], once: true })
-  addThread('consumer', {
+  addThread({ label: 'producer', rules: [{ request: { type: 'task', detail: { id: 'job-1' } } }], once: true })
+  addThread({
+    label: 'consumer',
     rules: [
       {
         waitFor: [
@@ -298,8 +306,9 @@ test('match listener: sourceSchema request matches request-origin events only', 
   const trigger = useTrigger()
   const addHandler = useAddHandler()
 
-  addThread('producer', { rules: [{ request: { type: 'task', detail: { id: 'job-1' } } }], once: true })
-  addThread('consumer', {
+  addThread({ label: 'producer', rules: [{ request: { type: 'task', detail: { id: 'job-1' } } }], once: true })
+  addThread({
+    label: 'consumer',
     rules: [
       {
         waitFor: [
@@ -337,7 +346,8 @@ test('match listener: block prevents matching requested event from being selecte
   const trigger = useTrigger()
   const addHandler = useAddHandler()
 
-  addThread('blocker', {
+  addThread({
+    label: 'blocker',
     rules: [
       {
         block: [
@@ -350,13 +360,15 @@ test('match listener: block prevents matching requested event from being selecte
     ],
     once: true,
   })
-  addThread('taskProducer', { rules: [{ request: { type: 'task', detail: { id: 'job-1' } } }], once: true })
-  addThread('safeProducer', { rules: [{ request: { type: 'safe' } }], once: true })
-  addThread('safeFollower', {
+  addThread({ label: 'taskProducer', rules: [{ request: { type: 'task', detail: { id: 'job-1' } } }], once: true })
+  addThread({ label: 'safeProducer', rules: [{ request: { type: 'safe' } }], once: true })
+  addThread({
+    label: 'safeFollower',
     rules: [{ waitFor: [{ type: 'safe' }] }, { request: { type: 'safe_ack' } }],
     once: true,
   })
-  addThread('taskFollower', {
+  addThread({
+    label: 'taskFollower',
     rules: [{ waitFor: [{ type: 'task' }] }, { request: { type: 'task_ack' } }],
     once: true,
   })
@@ -386,7 +398,8 @@ test('match listener: interrupt terminates thread when matching event is selecte
   const trigger = useTrigger()
   const addHandler = useAddHandler()
 
-  addThread('interruptedThread', {
+  addThread({
+    label: 'interruptedThread',
     rules: [
       {
         waitFor: [{ type: 'start' }],
@@ -406,7 +419,8 @@ test('match listener: interrupt terminates thread when matching event is selecte
     ],
     once: true,
   })
-  addThread('interruptProducer', {
+  addThread({
+    label: 'interruptProducer',
     rules: [{ request: { type: 'kill', detail: { id: 'victim' } } }],
     once: true,
   })
@@ -431,8 +445,9 @@ test('match listener: detail-schema listeners can express conditional matching',
   const trigger = useTrigger()
   const addHandler = useAddHandler()
 
-  addThread('producer', { rules: [{ request: { type: 'task', detail: { ok: true } } }], once: true })
-  addThread('consumer', {
+  addThread({ label: 'producer', rules: [{ request: { type: 'task', detail: { ok: true } } }], once: true })
+  addThread({
+    label: 'consumer',
     rules: [
       {
         waitFor: [
@@ -471,11 +486,13 @@ test('match listener: non-selected same-type requesters remain pending until the
   const trigger = useTrigger()
   const addHandler = useAddHandler()
 
-  addThread('first', {
+  addThread({
+    label: 'first',
     rules: [{ request: { type: 'same', detail: { n: 1 } } }, { request: { type: 'first_done' } }],
     once: true,
   })
-  addThread('second', {
+  addThread({
+    label: 'second',
     rules: [{ request: { type: 'same', detail: { n: 2 } } }, { request: { type: 'second_done' } }],
     once: true,
   })
@@ -502,8 +519,9 @@ test('match listener: detail schema with valid detail passes', () => {
   const trigger = useTrigger()
   const addHandler = useAddHandler()
 
-  addThread('producer', { rules: [{ request: { type: 'task', detail: { id: 'job-1' } } }], once: true })
-  addThread('consumer', {
+  addThread({ label: 'producer', rules: [{ request: { type: 'task', detail: { id: 'job-1' } } }], once: true })
+  addThread({
+    label: 'consumer',
     rules: [
       {
         waitFor: [
@@ -542,8 +560,9 @@ test('match listener: detail schema with invalid detail fails', () => {
   const trigger = useTrigger()
   const addHandler = useAddHandler()
 
-  addThread('producer', { rules: [{ request: { type: 'task', detail: { id: 101 } } }], once: true })
-  addThread('consumer', {
+  addThread({ label: 'producer', rules: [{ request: { type: 'task', detail: { id: 101 } } }], once: true })
+  addThread({
+    label: 'consumer',
     rules: [
       {
         waitFor: [
@@ -577,11 +596,9 @@ test('match listener: 2020-12 prefixItems keyword compiles and matches', () => {
   const trigger = useTrigger()
   const addHandler = useAddHandler()
 
-  addThread('producer', {
-    rules: [{ request: { type: 'task', detail: { items: [42, 'hello'] } } }],
-    once: true,
-  })
-  addThread('consumer', {
+  addThread({ label: 'producer', rules: [{ request: { type: 'task', detail: { items: [42, 'hello'] } } }], once: true })
+  addThread({
+    label: 'consumer',
     rules: [
       {
         waitFor: [
@@ -626,11 +643,9 @@ test('match listener: 2020-12 prefixItems enforces tuple ordering', () => {
   const addHandler = useAddHandler()
 
   // Producer emits tuple [42, 'hello']; consumer expects [number, string]
-  addThread('producer', {
-    rules: [{ request: { type: 'task', detail: { items: ['x', 1] } } }],
-    once: true,
-  })
-  addThread('consumer', {
+  addThread({ label: 'producer', rules: [{ request: { type: 'task', detail: { items: ['x', 1] } } }], once: true })
+  addThread({
+    label: 'consumer',
     rules: [
       {
         waitFor: [
@@ -679,7 +694,8 @@ test('match listener: malformed detailSchema publishes add_thread_error', () => 
   })
 
   // properties: 'not-an-object' is structurally valid JSON but un-compilable as JSON Schema
-  addThread('bad', {
+  addThread({
+    label: 'bad',
     rules: [
       {
         block: [
@@ -709,7 +725,8 @@ test('match listener: malformed detailSchema in one listener rejects the whole t
   const log: string[] = []
 
   // A thread with one good rule and one rule with a bad detailSchema
-  addThread('mixed', {
+  addThread({
+    label: 'mixed',
     rules: [
       { request: { type: 'good' } },
       {

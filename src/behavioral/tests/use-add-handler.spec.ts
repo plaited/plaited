@@ -55,7 +55,7 @@ describe('useAddHandler topic scoping', () => {
     const trigger = useTrigger()
 
     // Producer under topicA requests 'event' — the selected event carries topicA.
-    addThread('producer', { rules: [{ request: { type: 'event' } }], once: true })
+    addThread({ label: 'producer', rules: [{ request: { type: 'event' } }], once: true })
 
     useAddHandler('topicA')('event', () => {
       received.push('topicA')

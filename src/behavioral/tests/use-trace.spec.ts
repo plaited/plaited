@@ -15,11 +15,8 @@ describe('useTrace', () => {
     // Subscribe to traces — this should not affect event ordering
     useTrace(() => {})
 
-    addThread('producer', { rules: [{ request: { type: 'task' } }], once: true })
-    addThread('consumer', {
-      rules: [{ waitFor: [onType('task')] }, { request: { type: 'ack' } }],
-      once: true,
-    })
+    addThread({ label: 'producer', rules: [{ request: { type: 'task' } }], once: true })
+    addThread({ label: 'consumer', rules: [{ waitFor: [onType('task')] }, { request: { type: 'ack' } }], once: true })
 
     addHandler('task', () => {
       events.push('task')
@@ -47,7 +44,7 @@ describe('useTrace', () => {
       tracesB.push(msg)
     })
 
-    addThread('req', { rules: [{ request: { type: 'ping' } }], once: true })
+    addThread({ label: 'req', rules: [{ request: { type: 'ping' } }], once: true })
 
     // Both listeners receive the first selection trace
     trigger({ type: 'start' })
@@ -61,7 +58,7 @@ describe('useTrace', () => {
     disconnectA()
 
     // Set up a new thread and trigger again
-    addThread('req2', { rules: [{ request: { type: 'pong' } }], once: true })
+    addThread({ label: 'req2', rules: [{ request: { type: 'pong' } }], once: true })
     trigger({ type: 'go' })
 
     // A should not have received any new messages
@@ -84,7 +81,7 @@ describe('useTrace', () => {
       tracesB.push(msg)
     })
 
-    addThread('req', { rules: [{ request: { type: 'ping' } }], once: true })
+    addThread({ label: 'req', rules: [{ request: { type: 'ping' } }], once: true })
     trigger({ type: 'start' })
 
     // Both received
@@ -101,7 +98,7 @@ describe('useTrace', () => {
       tracesC.push(msg)
     })
 
-    addThread('req2', { rules: [{ request: { type: 'pong' } }], once: true })
+    addThread({ label: 'req2', rules: [{ request: { type: 'pong' } }], once: true })
     trigger({ type: 'go' })
 
     expect(tracesC.length).toBeGreaterThan(0)

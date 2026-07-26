@@ -11,6 +11,7 @@ import type {
   CandidateBid,
   PendingBid,
   RunningBid,
+  SendTrace,
   UseAddHandler,
   UseAddThread,
   UseTrace,
@@ -177,7 +178,7 @@ export const behavioral = <T extends TraceBase>() => {
    * Publisher for state traces, consumed by `useTrace`.
    * Always exists — subscribers are added/removed via `useTrace` which delegates to `subscribe`.
    */
-  const snapshotPublisher = createPublisher<T & Trace>()
+  const snapshotPublisher = createPublisher<T | Trace>()
   let stepId = 0
 
   const step = () => {
@@ -358,41 +359,43 @@ export const behavioral = <T extends TraceBase>() => {
     return disconnect
   }
 
-  const useAddThread: UseAddThread =
-    (topic) =>
-    (...args) => {
-      const result = ThreadScehama.safeParse(args)
-      if (result.success) {
-        const [label, { rules, once }] = args
-        try {
-          const syncPoints = generateRulesFunctions(rules, topic)
-          const thread = useThread(syncPoints, once)
-          running.add({
-            priority: running.size + 1,
-            generator: thread(),
-            label,
-          })
-        } catch (err) {
-          snapshotPublisher({
-            kind: TRACE_MESSAGE_KINDS.add_thread_error,
-            timestamp: Date.now(),
-            error: err instanceof Error ? err.message : String(err),
-          })
-        }
-      } else {
+  const useAddThread: UseAddThread = (topic) => (args) => {
+    const result = ThreadScehama.safeParse(args)
+    if (result.success) {
+      const { label, rules, once } = args
+      try {
+        const syncPoints = generateRulesFunctions(rules, topic)
+        const thread = useThread(syncPoints, once)
+        running.add({
+          priority: running.size + 1,
+          generator: thread(),
+          label,
+        })
+      } catch (err) {
         snapshotPublisher({
           kind: TRACE_MESSAGE_KINDS.add_thread_error,
           timestamp: Date.now(),
-          error: result.error.issues,
+          error: err instanceof Error ? err.message : String(err),
         })
       }
+    } else {
+      snapshotPublisher({
+        kind: TRACE_MESSAGE_KINDS.add_thread_error,
+        timestamp: Date.now(),
+        error: result.error.issues,
+      })
     }
+  }
   /**
    * @internal
    * Implementation of the public `useTrace` hook.
    * Delegates directly to the trace publisher's subscribe method.
    */
   const useTrace: UseTrace<T> = (listener) => snapshotPublisher.subscribe(listener)
+
+  const sendTrace: SendTrace<T> = (arg) => {
+    snapshotPublisher(arg)
+  }
 
   /**
    * @internal
@@ -411,5 +414,7 @@ export const behavioral = <T extends TraceBase>() => {
     useAddHandler,
     /** Hook to subscribe to internal state traces for monitoring/debugging. */
     useTrace,
+
+    sendTrace,
   })
 }

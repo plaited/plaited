@@ -145,7 +145,7 @@ describe('exploreFrontiers state-keyed dedup', () => {
     // identical after every selection, so the graph closes at one state and
     // exploration stops well before maxDepth — proving termination, not a
     // depth cutoff.
-    const looping: Thread[] = [['ticker', { rules: [{ request: { type: 'tick' } }] }]]
+    const looping: Thread[] = [{ label: 'ticker', rules: [{ request: { type: 'tick' } }] }]
     const result = exploreFrontiers({ threads: looping, strategy: 'bfs', maxDepth: 100 })
     expect(result.report.truncated).toBe(false)
     // One distinct state: the single pending bid requesting `tick`.
@@ -158,7 +158,7 @@ describe('exploreFrontiers state-keyed dedup', () => {
     // Toggle: requests `on`, then `off`, then loops. Two distinct states
     // ({request on}, {request off}); the cycle closes back to the first
     // state. Generous maxDepth keeps the red phase from hanging.
-    const toggle: Thread[] = [['toggle', { rules: [{ request: { type: 'on' } }, { request: { type: 'off' } }] }]]
+    const toggle: Thread[] = [{ label: 'toggle', rules: [{ request: { type: 'on' } }, { request: { type: 'off' } }] }]
     const result = exploreFrontiers({ threads: toggle, strategy: 'bfs', maxDepth: 100 })
     expect(result.report.truncated).toBe(false)
     expect(result.report.visitedCount).toBe(2)
@@ -169,8 +169,8 @@ describe('exploreFrontiers state-keyed dedup', () => {
     // A looping requester whose only candidate is permanently blocked — the
     // deadlock is a genuine finding, not masked by state-keyed dedup.
     const blocked: Thread[] = [
-      ['requester', { rules: [{ request: { type: 'a' } }] }],
-      ['blocker', { rules: [{ block: [{ type: 'a' }] }] }],
+      { label: 'requester', rules: [{ request: { type: 'a' } }] },
+      { label: 'blocker', rules: [{ block: [{ type: 'a' }] }] },
     ]
     const result = exploreFrontiers({ threads: blocked, strategy: 'bfs' })
     expect(result.findings.length).toBeGreaterThan(0)
@@ -180,8 +180,8 @@ describe('exploreFrontiers state-keyed dedup', () => {
   test('finite one-shot programs still behave as before', () => {
     // Regression guard: the existing finite-thread semantics are unchanged.
     const finite: Thread[] = [
-      ['ticker', { rules: [{ request: { type: 'tick' } }], once: true }],
-      ['worker', { once: true, rules: [{ request: { type: 'start', detail: { id: 'job-1' } } }] }],
+      { label: 'ticker', rules: [{ request: { type: 'tick' } }], once: true },
+      { label: 'worker', once: true, rules: [{ request: { type: 'start', detail: { id: 'job-1' } } }] },
     ]
     const result = exploreFrontiers({ threads: finite, strategy: 'bfs', maxDepth: 3 })
     expect(result.report.visitedCount).toBeGreaterThan(0)
@@ -355,8 +355,8 @@ describe('findLivelocks', () => {
     // never fires. The reachable cycle is the ticker's self-loop on `tick`.
     // progress = ['succeeded'] — never selected in the cycle → livelock.
     const threads: Thread[] = [
-      ['ticker', { rules: [{ request: { type: 'tick' } }] }],
-      ['stalled', { rules: [{ waitFor: [{ type: 'succeeded' }] }] }],
+      { label: 'ticker', rules: [{ request: { type: 'tick' } }] },
+      { label: 'stalled', rules: [{ waitFor: [{ type: 'succeeded' }] }] },
     ]
     const result = exploreFrontiers({ threads, strategy: 'bfs', maxDepth: 50 })
     // Reconstruct the labeled graph from the explored traces' selection edges.
@@ -386,7 +386,7 @@ describe('verifyFrontiers livelock integration', () => {
     // A ticker requesting `tick` forever. No deadlock, not truncated. Without
     // a progress spec it would be `verified`; with progress=['succeeded'] the
     // cycle never selects `succeeded` → livelock → `failed`.
-    const threads: Thread[] = [['ticker', { rules: [{ request: { type: 'tick' } }] }]]
+    const threads: Thread[] = [{ label: 'ticker', rules: [{ request: { type: 'tick' } }] }]
     const result = verifyFrontiers({ threads, progress: ['succeeded'], maxDepth: 50 })
     expect(result.status).toBe('failed')
     expect(result.livelocks).toHaveLength(1)
@@ -397,7 +397,7 @@ describe('verifyFrontiers livelock integration', () => {
   test('a looping program whose cycle selects a progress event is verified', () => {
     // A ticker requesting `done` forever. progress=['done'] → the cycle DOES
     // select a progress event → not a livelock → `verified`.
-    const threads: Thread[] = [['ticker', { rules: [{ request: { type: 'done' } }] }]]
+    const threads: Thread[] = [{ label: 'ticker', rules: [{ request: { type: 'done' } }] }]
     const result = verifyFrontiers({ threads, progress: ['done'], maxDepth: 50 })
     expect(result.status).toBe('verified')
     expect(result.livelocks).toHaveLength(0)
@@ -406,7 +406,7 @@ describe('verifyFrontiers livelock integration', () => {
   test('omitting progress skips livelock detection (deadlock-only behavior preserved)', () => {
     // Same looping ticker, no progress spec. Behaves as before Step 5: no
     // deadlock, not truncated → `verified`, livelocks empty (not checked).
-    const threads: Thread[] = [['ticker', { rules: [{ request: { type: 'tick' } }] }]]
+    const threads: Thread[] = [{ label: 'ticker', rules: [{ request: { type: 'tick' } }] }]
     const result = verifyFrontiers({ threads, maxDepth: 50 })
     expect(result.status).toBe('verified')
     expect(result.livelocks).toHaveLength(0)
@@ -414,7 +414,7 @@ describe('verifyFrontiers livelock integration', () => {
 
   test('an empty progress set flags every cycle as a livelock', () => {
     // progress=[] → nothing counts as progress → any cycle is a livelock.
-    const threads: Thread[] = [['ticker', { rules: [{ request: { type: 'done' } }] }]]
+    const threads: Thread[] = [{ label: 'ticker', rules: [{ request: { type: 'done' } }] }]
     const result = verifyFrontiers({ threads, progress: [], maxDepth: 50 })
     expect(result.status).toBe('failed')
     expect(result.livelocks).toHaveLength(1)
@@ -424,8 +424,8 @@ describe('verifyFrontiers livelock integration', () => {
     // A blocked requester: deadlock. progress=['x'] is also checked, but the
     // deadlock finding alone is enough to fail.
     const threads: Thread[] = [
-      ['requester', { rules: [{ request: { type: 'a' } }] }],
-      ['blocker', { rules: [{ block: [{ type: 'a' }] }] }],
+      { label: 'requester', rules: [{ request: { type: 'a' } }] },
+      { label: 'blocker', rules: [{ block: [{ type: 'a' }] }] },
     ]
     const result = verifyFrontiers({ threads, progress: ['x'] })
     expect(result.status).toBe('failed')
@@ -436,7 +436,7 @@ describe('verifyFrontiers livelock integration', () => {
     // The graph is the raw material for findLivelocks/findStronglyConnectedComponents.
     // Verify it's present and well-formed: the toggle has 2 nodes, each with
     // one labeled successor edge to the other.
-    const threads: Thread[] = [['toggle', { rules: [{ request: { type: 'on' } }, { request: { type: 'off' } }] }]]
+    const threads: Thread[] = [{ label: 'toggle', rules: [{ request: { type: 'on' } }, { request: { type: 'off' } }] }]
     const result = exploreFrontiers({ threads, strategy: 'bfs', maxDepth: 50 })
     expect(result.stateGraph).toBeDefined()
     expect(result.stateGraph.size).toBe(2)

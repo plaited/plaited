@@ -16,8 +16,8 @@ test('async feedback ELEMENT_CALLBACKS', async () => {
   const addHandler = useAddHandler()
 
   /** Define behavioral threads using bSync for simplicity. */
-  addThread('onInit', { rules: [{ request: { type: 'init' } }], once: true })
-  addThread('afterInit', { rules: [{ request: { type: 'afterInit' } }], once: true })
+  addThread({ label: 'onInit', rules: [{ request: { type: 'init' } }], once: true })
+  addThread({ label: 'afterInit', rules: [{ request: { type: 'afterInit' } }], once: true })
 
   /** Register feedback handlers for specific events. */
   addHandler('init', async () => {

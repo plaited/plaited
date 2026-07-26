@@ -18,7 +18,7 @@ describe(TRACE_MESSAGE_KINDS.feedback_error, () => {
     useTrace((trace: Trace) => {
       traces.push(trace)
     })
-    addThread('requestAction', { rules: [{ request: { type: 'doWork' } }], once: true })
+    addThread({ label: 'requestAction', rules: [{ request: { type: 'doWork' } }], once: true })
     addHandler('doWork', () => {
       throw new Error('handler failed')
     })
@@ -45,10 +45,7 @@ describe(TRACE_MESSAGE_KINDS.feedback_error, () => {
     useTrace((trace: Trace) => {
       traces.push(trace)
     })
-    addThread('requestAction', {
-      rules: [{ request: { type: 'process', detail: { id: 42 } } }],
-      once: true,
-    })
+    addThread({ label: 'requestAction', rules: [{ request: { type: 'process', detail: { id: 42 } } }], once: true })
     addHandler('process', () => {
       throw new TypeError('invalid input')
     })
@@ -75,7 +72,7 @@ describe(TRACE_MESSAGE_KINDS.feedback_error, () => {
     useTrace((trace: Trace) => {
       traces.push(trace)
     })
-    addThread('requestAction', { rules: [{ request: { type: 'fail' } }], once: true })
+    addThread({ label: 'requestAction', rules: [{ request: { type: 'fail' } }], once: true })
     addHandler('fail', () => {
       throw 'string error'
     })
@@ -95,7 +92,7 @@ describe(TRACE_MESSAGE_KINDS.feedback_error, () => {
     useTrace((trace: Trace) => {
       traces.push(trace)
     })
-    addThread('requestAction', { rules: [{ request: { type: 'boom' } }], once: true })
+    addThread({ label: 'requestAction', rules: [{ request: { type: 'boom' } }], once: true })
     addHandler('boom', () => {
       throw new Error('exploded')
     })
@@ -122,7 +119,7 @@ describe(TRACE_MESSAGE_KINDS.feedback_error, () => {
     useTrace((trace: Trace) => {
       traces.push(trace)
     })
-    addThread('requestAction', { rules: [{ request: { type: 'ok' } }], once: true })
+    addThread({ label: 'requestAction', rules: [{ request: { type: 'ok' } }], once: true })
     addHandler('ok', () => {})
     trigger({ type: 'start' })
 

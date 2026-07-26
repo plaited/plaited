@@ -18,8 +18,8 @@ describe(TRACE_MESSAGE_KINDS.deadlock, () => {
       traces.push(trace)
     })
 
-    addThread('safety', { rules: [{ block: [onType('dangerous')] }] })
-    addThread('interruptor', { rules: [{ interrupt: [onType('dangerous')] }] })
+    addThread({ label: 'safety', rules: [{ block: [onType('dangerous')] }] })
+    addThread({ label: 'interruptor', rules: [{ interrupt: [onType('dangerous')] }] })
 
     trigger({ type: 'dangerous' })
 
@@ -57,7 +57,7 @@ describe(TRACE_MESSAGE_KINDS.deadlock, () => {
       traces.push(trace)
     })
 
-    addThread('watcher', { rules: [{ waitFor: [onType('dangerous')] }] })
+    addThread({ label: 'watcher', rules: [{ waitFor: [onType('dangerous')] }] })
 
     expect(traces).toHaveLength(0)
   })
@@ -81,8 +81,8 @@ describe(TRACE_MESSAGE_KINDS.deadlock, () => {
       selected.push('high')
     })
 
-    addThread('low', { rules: [{ request: { type: 'low' } }], once: true })
-    addThread('high', { rules: [{ request: { type: 'high' } }], once: true })
+    addThread({ label: 'low', rules: [{ request: { type: 'low' } }], once: true })
+    addThread({ label: 'high', rules: [{ request: { type: 'high' } }], once: true })
 
     trigger({ type: 'tick' })
 
@@ -114,7 +114,8 @@ describe(TRACE_MESSAGE_KINDS.deadlock, () => {
       traces.push(trace)
     })
 
-    addThread('blockSecond', {
+    addThread({
+      label: 'blockSecond',
       rules: [
         {
           block: [
@@ -131,8 +132,8 @@ describe(TRACE_MESSAGE_KINDS.deadlock, () => {
         },
       ],
     })
-    addThread('first', { rules: [{ request: { type: 'same_type', detail: { n: 1 } } }], once: true })
-    addThread('second', { rules: [{ request: { type: 'same_type', detail: { n: 2 } } }], once: true })
+    addThread({ label: 'first', rules: [{ request: { type: 'same_type', detail: { n: 1 } } }], once: true })
+    addThread({ label: 'second', rules: [{ request: { type: 'same_type', detail: { n: 2 } } }], once: true })
 
     trigger({ type: 'kickoff' })
 

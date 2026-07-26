@@ -19,7 +19,7 @@ describe('pending_bids trace', () => {
       seen.push(msg)
     })
 
-    addThread('worker', { rules: [{ request: { type: 'task' } }], once: true })
+    addThread({ label: 'worker', rules: [{ request: { type: 'task' } }], once: true })
     trigger({ type: 'start' })
 
     const pending = seen.find((s) => s.kind === 'pending_bids')
@@ -36,7 +36,7 @@ describe('pending_bids trace', () => {
       seen.push(msg)
     })
 
-    addThread('req', { rules: [{ request: { type: 'ping' } }], once: true })
+    addThread({ label: 'req', rules: [{ request: { type: 'ping' } }], once: true })
 
     // Step 0: pending_bids + frontier (since there's no external trigger yet,
     // the first addThread only sets up running but doesn't trigger a step)
@@ -61,7 +61,8 @@ describe('pending_bids trace', () => {
       seen.push(msg)
     })
 
-    addThread('blocker', {
+    addThread({
+      label: 'blocker',
       rules: [
         {
           block: [
@@ -73,7 +74,7 @@ describe('pending_bids trace', () => {
         },
       ],
     })
-    addThread('worker', { rules: [{ request: { type: 'task', detail: { id: 'job-1' } } }], once: true })
+    addThread({ label: 'worker', rules: [{ request: { type: 'task', detail: { id: 'job-1' } } }], once: true })
 
     trigger({ type: 'start' })
 

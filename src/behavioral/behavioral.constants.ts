@@ -1,4 +1,4 @@
-import { keyMirror } from '../utils.ts'
+import { keyMirror } from '../../utils.ts'
 
 /**
  * Discriminant values for the `SnapshotMessage` union.

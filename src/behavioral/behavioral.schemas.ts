@@ -110,14 +110,11 @@ export type RegisteredIdioms = {
   [IDIOMS.request]?: z.output<typeof BPEventSchema>
 }
 
-export const ThreadScehama = z.tuple([
-  z.string().min(1),
-  z.object({
-    once: z.literal(true).optional(),
-    rules: z.array(IdiomSchema),
-  }),
-])
-
+export const ThreadScehama = z.object({
+  label: z.string().min(1),
+  once: z.literal(true).optional(),
+  rules: z.array(IdiomSchema),
+})
 export type Thread = z.output<typeof ThreadScehama>
 
 export const ThreadsSchema = z.array(ThreadScehama)

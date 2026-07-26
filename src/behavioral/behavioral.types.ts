@@ -135,7 +135,7 @@ export type Disconnect = () => void | Promise<void>
  * @see {@link UseTrace} for registering trace listeners
  * @see {@link Trace} for trace structure
  */
-export type TraceListener<T extends TraceBase> = (msg: T & Trace) => void | Promise<void>
+export type TraceListener<T extends TraceBase> = (msg: T | Trace) => void | Promise<void>
 
 /**
  * Represents a generic structure for event detail payloads.
@@ -176,6 +176,8 @@ export type AddHandler = <T extends JsonObject | undefined = undefined, P = unkn
 
 export type UseAddHandler = (topic?: string) => AddHandler
 
+export type SendTrace<T extends TraceBase> = (arg: T) => void
+
 /**
  * Hook for monitoring internal state transitions of the behavioral program.
  * Provides debugging, visualization, and analysis capabilities.
@@ -191,9 +193,9 @@ export type UseAddHandler = (topic?: string) => AddHandler
  * @see {@link Trace} for trace structure
  * @see {@link TraceListener} for listener type
  */
-export type UseTrace<T extends TraceBase> = (listener: TraceListener<T & Trace>) => Disconnect
+export type UseTrace<T extends TraceBase> = (listener: TraceListener<T | Trace>) => Disconnect
 
-export type AddThread = (...args: Thread) => void
+export type AddThread = (args: Thread) => void
 
 export type UseAddThread = (topic?: string) => AddThread
 

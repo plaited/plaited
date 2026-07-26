@@ -11,7 +11,7 @@ describe('trigger', () => {
     const addHandler = useAddHandler()
     const received: string[] = []
 
-    addThread('listener', { rules: [{ waitFor: [onType('allowed_event')] }], once: true })
+    addThread({ label: 'listener', rules: [{ waitFor: [onType('allowed_event')] }], once: true })
     addHandler('allowed_event', () => {
       received.push('allowed_event')
     })
@@ -28,7 +28,7 @@ describe('trigger', () => {
     const addHandler = useAddHandler()
     const received: Array<{ id: number }> = []
 
-    addThread('listener', { rules: [{ waitFor: [onType('payload_event')] }], once: true })
+    addThread({ label: 'listener', rules: [{ waitFor: [onType('payload_event')] }], once: true })
     addHandler<{ id: number }>('payload_event', ({ detail }) => {
       received.push(detail)
     })

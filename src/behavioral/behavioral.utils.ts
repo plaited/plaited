@@ -1,5 +1,5 @@
 import Ajv2020 from 'ajv/dist/2020'
-import { deepEqual, isTypeOf } from '../utils.ts'
+import { deepEqual, isTypeOf } from '../../utils.ts'
 import { FRONTIER_STATUS, IDIOMS } from './behavioral.constants.ts'
 import type { BPEvent, Idioms, JsonObject, RegisteredBPListener, RegisteredIdioms } from './behavioral.schemas.ts'
 import type { CandidateBid, Frontier, PendingBid, RulesFunction, RunningBid, UseThread } from './behavioral.types.ts'

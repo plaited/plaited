@@ -13,8 +13,9 @@ describe('addThread', () => {
     const trigger = useTrigger()
     const addHandler = useAddHandler()
 
-    addThread('addHotOnce', { rules: [{ request: { type: 'hot_1' } }], once: true })
-    addThread('mixHotCold', {
+    addThread({ label: 'addHotOnce', rules: [{ request: { type: 'hot_1' } }], once: true })
+    addThread({
+      label: 'mixHotCold',
       rules: [
         {
           waitFor: [onType('hot_1'), onType('hot')],
@@ -30,11 +31,13 @@ describe('addThread', () => {
     addHandler('hot_1', () => {
       actual.push('hot')
       trigger({ type: 'cold' })
-      addThread('addMoreHot', {
+      addThread({
+        label: 'addMoreHot',
         rules: [{ request: { type: 'hot' } }, { request: { type: 'hot' } }],
         once: true,
       })
-      addThread('addMoreCold', {
+      addThread({
+        label: 'addMoreCold',
         rules: [{ request: { type: 'cold' } }, { request: { type: 'cold' } }],
         once: true,
       })
@@ -65,11 +68,13 @@ describe('addThread', () => {
       traces.push(trace)
     })
 
-    addThread('workerA', {
+    addThread({
+      label: 'workerA',
       rules: [{ waitFor: [onType('start')] }, { request: { type: 'done_a' } }],
       once: true,
     })
-    addThread('workerB', {
+    addThread({
+      label: 'workerB',
       rules: [{ waitFor: [onType('start')] }, { request: { type: 'done_b' } }],
       once: true,
     })
@@ -110,9 +115,9 @@ describe('addThread', () => {
       traces.push(trace)
     })
 
-    addThread('guard', { rules: [{ block: [onType('dangerous')] }] })
-    addThread('watchdog', { rules: [{ interrupt: [onType('dangerous')] }] })
-    addThread('requester', { rules: [{ request: { type: 'dangerous' } }], once: true })
+    addThread({ label: 'guard', rules: [{ block: [onType('dangerous')] }] })
+    addThread({ label: 'watchdog', rules: [{ interrupt: [onType('dangerous')] }] })
+    addThread({ label: 'requester', rules: [{ request: { type: 'dangerous' } }], once: true })
 
     trigger({ type: 'start' })
 

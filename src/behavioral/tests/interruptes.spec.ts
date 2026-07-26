@@ -31,7 +31,7 @@ describe('interrupt', () => {
     const addThread = useAddThread()
     const trigger = useTrigger()
     const addHandler = useAddHandler()
-    addThread('addHot', addHot)
+    addThread({ label: 'addHot', ...addHot })
     addHandler('hot', () => {
       actual.push('hot')
     })
@@ -67,7 +67,7 @@ describe('interrupt', () => {
     useTrace((trace: Trace) => {
       traces.push(trace)
     })
-    addThread('addHot', addHot)
+    addThread({ label: 'addHot', ...addHot })
     addHandler('hot', () => {
       actual.push('hot')
     })

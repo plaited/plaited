@@ -112,7 +112,7 @@ test('take turns', () => {
   const addThread = useAddThread()
   const trigger = useTrigger()
   const addHandler = useAddHandler()
-  addThread('enforceTurns', enforceTurns)
+  addThread({ label: 'enforceTurns', ...enforceTurns })
   // Initialize the board.
   board = new Set(squares)
   // Add the turn-enforcing thread.
@@ -165,9 +165,9 @@ test('squares taken', () => {
   const addThread = useAddThread()
   const trigger = useTrigger()
   const addHandler = useAddHandler()
-  addThread('enforceTurns', enforceTurns)
+  addThread({ label: 'enforceTurns', ...enforceTurns })
   for (const [key, threadArgs] of Object.entries(squaresTaken)) {
-    addThread(key, threadArgs)
+    addThread({ label: key, ...threadArgs })
   }
   // Initialize the board.
   board = new Set(squares)
@@ -237,15 +237,15 @@ test('detect winner', () => {
   const addThread = useAddThread()
   const trigger = useTrigger()
   const addHandler = useAddHandler()
-  addThread('enforceTurns', enforceTurns)
+  addThread({ label: 'enforceTurns', ...enforceTurns })
   for (const [key, threadArgs] of Object.entries(squaresTaken)) {
-    addThread(key, threadArgs)
+    addThread({ label: key, ...threadArgs })
   }
   for (const [key, threadArgs] of Object.entries(detectWins('X'))) {
-    addThread(key, threadArgs)
+    addThread({ label: key, ...threadArgs })
   }
   for (const [key, threadArgs] of Object.entries(detectWins('O'))) {
-    addThread(key, threadArgs)
+    addThread({ label: key, ...threadArgs })
   }
   // Initialize the board.
   board = new Set(squares)
@@ -291,17 +291,17 @@ test('stop game', () => {
   const addThread = useAddThread()
   const trigger = useTrigger()
   const addHandler = useAddHandler()
-  addThread('enforceTurns', enforceTurns)
+  addThread({ label: 'enforceTurns', ...enforceTurns })
   for (const [key, threadArgs] of Object.entries(squaresTaken)) {
-    addThread(key, threadArgs)
+    addThread({ label: key, ...threadArgs })
   }
   for (const [key, threadArgs] of Object.entries(detectWins('X'))) {
-    addThread(key, threadArgs)
+    addThread({ label: key, ...threadArgs })
   }
   for (const [key, threadArgs] of Object.entries(detectWins('O'))) {
-    addThread(key, threadArgs)
+    addThread({ label: key, ...threadArgs })
   }
-  addThread('stopGame', stopGame)
+  addThread({ label: 'stopGame', ...stopGame })
   // Initialize the board.
   board = new Set(squares)
   // Add all game rule threads, including the one to stop the game on win.
@@ -360,19 +360,19 @@ test('defaultMoves', () => {
   const addThread = useAddThread()
   const trigger = useTrigger()
   const addHandler = useAddHandler()
-  addThread('enforceTurns', enforceTurns)
+  addThread({ label: 'enforceTurns', ...enforceTurns })
   for (const [key, threadArgs] of Object.entries(squaresTaken)) {
-    addThread(key, threadArgs)
+    addThread({ label: key, ...threadArgs })
   }
   for (const [key, threadArgs] of Object.entries(detectWins('X'))) {
-    addThread(key, threadArgs)
+    addThread({ label: key, ...threadArgs })
   }
   for (const [key, threadArgs] of Object.entries(detectWins('O'))) {
-    addThread(key, threadArgs)
+    addThread({ label: key, ...threadArgs })
   }
-  addThread('stopGame', stopGame)
+  addThread({ label: 'stopGame', ...stopGame })
   for (const [key, threadArgs] of Object.entries(defaultMoves)) {
-    addThread(key, threadArgs)
+    addThread({ label: key, ...threadArgs })
   }
   // Initialize the board.
   board = new Set(squares)
@@ -419,20 +419,20 @@ test('start at center', () => {
   const addThread = useAddThread()
   const trigger = useTrigger()
   const addHandler = useAddHandler()
-  addThread('enforceTurns', enforceTurns)
+  addThread({ label: 'enforceTurns', ...enforceTurns })
   for (const [key, threadArgs] of Object.entries(squaresTaken)) {
-    addThread(key, threadArgs)
+    addThread({ label: key, ...threadArgs })
   }
   for (const [key, threadArgs] of Object.entries(detectWins('X'))) {
-    addThread(key, threadArgs)
+    addThread({ label: key, ...threadArgs })
   }
   for (const [key, threadArgs] of Object.entries(detectWins('O'))) {
-    addThread(key, threadArgs)
+    addThread({ label: key, ...threadArgs })
   }
-  addThread('stopGame', stopGame)
-  addThread('startAtCenter', startAtCenter)
+  addThread({ label: 'stopGame', ...stopGame })
+  addThread({ label: 'startAtCenter', ...startAtCenter })
   for (const [key, threadArgs] of Object.entries(defaultMoves)) {
-    addThread(key, threadArgs)
+    addThread({ label: key, ...threadArgs })
   }
   // Initialize the board.
   board = new Set(squares)
@@ -503,20 +503,20 @@ test('prevent completion of line with two Xs', () => {
   const addThread = useAddThread()
   const trigger = useTrigger()
   const addHandler = useAddHandler()
-  addThread('enforceTurns', enforceTurns)
+  addThread({ label: 'enforceTurns', ...enforceTurns })
   for (const [key, threadArgs] of Object.entries(squaresTaken)) {
-    addThread(key, threadArgs)
+    addThread({ label: key, ...threadArgs })
   }
   for (const [key, threadArgs] of Object.entries(detectWins('X'))) {
-    addThread(key, threadArgs)
+    addThread({ label: key, ...threadArgs })
   }
   for (const [key, threadArgs] of Object.entries(detectWins('O'))) {
-    addThread(key, threadArgs)
+    addThread({ label: key, ...threadArgs })
   }
-  addThread('stopGame', stopGame)
-  addThread('startAtCenter', startAtCenter)
+  addThread({ label: 'stopGame', ...stopGame })
+  addThread({ label: 'startAtCenter', ...startAtCenter })
   for (const [key, threadArgs] of Object.entries(preventCompletionOfLineWithTwoXs())) {
-    addThread(key, threadArgs)
+    addThread({ label: key, ...threadArgs })
   }
   // Initialize the board.
   board = new Set(squares)

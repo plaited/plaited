@@ -163,7 +163,7 @@ const compileThreads = (
   threads: Thread[],
   topic?: string,
 ): Array<{ label: string; generator: IterableIterator<RegisteredIdioms> }> =>
-  threads.map(([label, { rules, once }]) => ({
+  threads.map(({ label, rules, once }) => ({
     label,
     generator: useThread(generateRulesFunctions(rules, topic), once)(),
   }))

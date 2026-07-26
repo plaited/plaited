@@ -13,10 +13,7 @@ describe('payload channel', () => {
     let receivedPayload: unknown = null
     let receivedDetail: unknown = null
 
-    addThread('producer', {
-      rules: [{ request: { type: 'upload', detail: { name: 'file.txt' } } }],
-      once: true,
-    })
+    addThread({ label: 'producer', rules: [{ request: { type: 'upload', detail: { name: 'file.txt' } } }], once: true })
     addHandler<{ name: string }>('upload', ({ detail, payload }) => {
       receivedDetail = detail
       receivedPayload = payload
@@ -41,7 +38,7 @@ describe('payload channel', () => {
 
     const payload = { fn: () => {} }
 
-    addThread('producer', { rules: [{ request: { type: 'work', detail: { id: 1 } } }], once: true })
+    addThread({ label: 'producer', rules: [{ request: { type: 'work', detail: { id: 1 } } }], once: true })
     addHandler('work', () => {
       throw new Error('boom')
     })
@@ -79,10 +76,7 @@ describe('payload channel', () => {
     const log: string[] = []
 
     // waiter waits for a task with matching detail; payload differs but must still match
-    addThread('waiter', {
-      rules: [{ waitFor: [{ type: 'task' }] }, { request: { type: 'ack' } }],
-      once: true,
-    })
+    addThread({ label: 'waiter', rules: [{ waitFor: [{ type: 'task' }] }, { request: { type: 'ack' } }], once: true })
     addHandler('task', () => {
       log.push('task')
     })

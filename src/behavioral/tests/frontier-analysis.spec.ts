@@ -3,8 +3,8 @@ import type { Thread } from '../behavioral.schemas.ts'
 import { exploreFrontiers, replayToFrontier, verifyFrontiers } from '../frontier-analysis.ts'
 
 const threads: Thread[] = [
-  ['ticker', { rules: [{ request: { type: 'tick' } }], once: true }],
-  ['worker', { once: true, rules: [{ request: { type: 'start', detail: { id: 'job-1' } } }] }],
+  { label: 'ticker', rules: [{ request: { type: 'tick' } }], once: true },
+  { label: 'worker', once: true, rules: [{ request: { type: 'start', detail: { id: 'job-1' } } }] },
 ]
 
 describe('replayToFrontier', () => {
@@ -20,15 +20,15 @@ describe('replayToFrontier', () => {
   })
 
   test('returns idle frontier when no threads request events', () => {
-    const idleThreads: Thread[] = [['quiet', { rules: [{ waitFor: [{ type: 'never' }] }], once: true }]]
+    const idleThreads: Thread[] = [{ label: 'quiet', rules: [{ waitFor: [{ type: 'never' }] }], once: true }]
     const result = replayToFrontier({ threads: idleThreads })
     expect(result.frontier.status).toBe('idle')
   })
 
   test('returns deadlock frontier when candidates exist but all are blocked', () => {
     const blockedThreads: Thread[] = [
-      ['requester', { rules: [{ request: { type: 'a' } }] }],
-      ['blocker', { rules: [{ block: [{ type: 'a' }] }] }],
+      { label: 'requester', rules: [{ request: { type: 'a' } }] },
+      { label: 'blocker', rules: [{ block: [{ type: 'a' }] }] },
     ]
     const result = replayToFrontier({ threads: blockedThreads })
     expect(result.frontier.status).toBe('deadlock')
@@ -62,8 +62,8 @@ describe('exploreFrontiers', () => {
 
   test('finds deadlock', () => {
     const deadlockThreads: Thread[] = [
-      ['requester', { rules: [{ request: { type: 'a' } }] }],
-      ['blocker', { rules: [{ block: [{ type: 'a' }] }] }],
+      { label: 'requester', rules: [{ request: { type: 'a' } }] },
+      { label: 'blocker', rules: [{ block: [{ type: 'a' }] }] },
     ]
     const result = exploreFrontiers({ threads: deadlockThreads })
     expect(result.findings.length).toBeGreaterThan(0)
@@ -88,7 +88,7 @@ describe('exploreFrontiers', () => {
 
   test('explores with trigger events that affect pending threads', () => {
     const waitingThreads: Thread[] = [
-      ['waiter', { rules: [{ waitFor: [{ type: 'ping' }] }, { request: { type: 'ack' } }], once: true }],
+      { label: 'waiter', rules: [{ waitFor: [{ type: 'ping' }] }, { request: { type: 'ack' } }], once: true },
     ]
     const result = exploreFrontiers({
       threads: waitingThreads,
@@ -105,7 +105,7 @@ describe('exploreFrontiers', () => {
   })
 
   test('ingress trigger events produce successors', () => {
-    const blockingThreads: Thread[] = [['blocker', { rules: [{ block: [{ type: 'signal' }] }], once: true }]]
+    const blockingThreads: Thread[] = [{ label: 'blocker', rules: [{ block: [{ type: 'signal' }] }], once: true }]
     const result = exploreFrontiers({
       threads: blockingThreads,
       triggers: [{ type: 'signal' }],
@@ -126,8 +126,8 @@ describe('verifyFrontiers', () => {
 
   test('returns failed when deadlocks found', () => {
     const deadlockThreads: Thread[] = [
-      ['requester', { rules: [{ request: { type: 'a' } }] }],
-      ['blocker', { rules: [{ block: [{ type: 'a' }] }] }],
+      { label: 'requester', rules: [{ request: { type: 'a' } }] },
+      { label: 'blocker', rules: [{ block: [{ type: 'a' }] }] },
     ]
     const result = verifyFrontiers({ threads: deadlockThreads })
     expect(result.status).toBe('failed')
