@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 import type { BPEvent } from '../../../behavioral/behavioral.schemas.ts'
-import { B_PROGRAM_MESSAGE_TYPES, SWAP_MODES } from '../../../ui/message.constants.ts'
+import { RENDERER_RESULTS_MESSAGE_TYPES, SWAP_MODES } from '../../../ui/message.constants.ts'
 import { P_TARGET } from '../../html.constants.ts'
 import { ValidationError } from '../render.errors.ts'
 import { Renderer } from '../renderer.ts'
@@ -92,7 +92,7 @@ describe('Renderer.render — match param', () => {
     const before = r.html
     const evt = r.render({ id: '1', target: 'nope', html: 'x', swap: SWAP_MODES.innerHTML })
     expect(r.html).toBe(before)
-    expect(evt.type).toBe(B_PROGRAM_MESSAGE_TYPES.render)
+    expect(evt.type).toBe(RENDERER_RESULTS_MESSAGE_TYPES.render_result)
   })
 })
 
@@ -150,7 +150,7 @@ describe('Renderer.attrs — updateAttributes rules', () => {
     const before = r.html
     const evt = r.attrs({ id: '1', target: 'nope', attr: { 'data-x': '1' } })
     expect(r.html).toBe(before)
-    expect(evt.type).toBe(B_PROGRAM_MESSAGE_TYPES.attrs)
+    expect(evt.type).toBe(RENDERER_RESULTS_MESSAGE_TYPES.attrs_result)
   })
 })
 
@@ -158,14 +158,14 @@ describe('Renderer — BPEvent return shape', () => {
   test('render returns a render BPEvent whose detail.html carries the new state', () => {
     const r = new Renderer({ html: `<div ${P_TARGET}="t">old</div>` })
     const evt: BPEvent = r.render({ id: 'i1', target: 't', html: 'new', swap: SWAP_MODES.innerHTML })
-    expect(evt.type).toBe(B_PROGRAM_MESSAGE_TYPES.render)
+    expect(evt.type).toBe(RENDERER_RESULTS_MESSAGE_TYPES.render_result)
     expect(evt.detail).toEqual({ id: 'i1', target: 't', html: `<div ${P_TARGET}="t">new</div>` })
   })
 
   test('attrs returns an attrs BPEvent whose detail.html carries the new state', () => {
     const r = new Renderer({ html: `<div ${P_TARGET}="t"></div>` })
     const evt: BPEvent = r.attrs({ id: 'i2', target: 't', attr: { 'data-n': 9 } })
-    expect(evt.type).toBe(B_PROGRAM_MESSAGE_TYPES.attrs)
+    expect(evt.type).toBe(RENDERER_RESULTS_MESSAGE_TYPES.attrs_result)
     expect(evt.detail).toEqual({ id: 'i2', target: 't', html: `<div ${P_TARGET}="t" data-n="9"></div>` })
   })
 })

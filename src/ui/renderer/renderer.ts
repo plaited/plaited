@@ -1,5 +1,5 @@
 import type { BPEvent } from '../../behavioral/behavioral.schemas.ts'
-import { B_PROGRAM_MESSAGE_TYPES, SWAP_MODES } from '../../ui/message.constants.ts'
+import { RENDERER_RESULTS_MESSAGE_TYPES, SWAP_MODES } from '../../ui/message.constants.ts'
 import type { AttrsMessage, RenderMessage } from '../../ui/message.schemas.ts'
 import { BOOLEAN_ATTRS, P_TARGET } from '../html.constants.ts'
 import { getNodeSchema } from '../html.schemas.ts'
@@ -88,6 +88,15 @@ const updateAttributes = ({
   }
 }
 
+export type RendererResult = {
+  type: typeof RENDERER_RESULTS_MESSAGE_TYPES.attrs_result | typeof RENDERER_RESULTS_MESSAGE_TYPES.render_result
+  detail: {
+    id: string
+    target: string
+    html: string
+  }
+}
+
 /**
  * Server-side renderer — the SSR counterpart to the browser Controller.
  *
@@ -132,12 +141,13 @@ const updateAttributes = ({
  * attribute value fails per-tag schema validation. The behavioral engine's
  * `feedback_error` snapshot mechanism captures those throws.
  *
- * ## Returned BPEvent shape
+ * ## Returned `RendererResult` shape
  *
- * `render`/`attrs` return a {@link BPEvent} whose `type` reuses
- * {@link B_PROGRAM_MESSAGE_TYPES.render} / {@link B_PROGRAM_MESSAGE_TYPES.attrs}
- * and whose `detail` is `{ id, target, html }` — `html` is the new buffer state
- * so the calling bProgram handler can thread state forward.
+ * `render`/`attrs` return a {@link RendererResult} whose `type` is
+ * {@link RENDERER_RESULTS_MESSAGE_TYPES.render_result} /
+ * {@link RENDERER_RESULTS_MESSAGE_TYPES.attrs_result} and whose `detail` is
+ * `{ id, target, html }` — `html` is the new buffer state so the calling
+ * bProgram handler can thread state forward.
  *
  * @public
  */
@@ -161,7 +171,7 @@ export class Renderer {
 
   /**
    * Apply a `render` command — insert or replace content at every element
-   * matching the `p-target` selector — and return a success {@link BPEvent}.
+   * matching the `p-target` selector — and return a success {@link RendererResult}.
    *
    * @remarks
    * Targets all matches (mirroring `querySelectorAll`): the `match` operator
@@ -173,10 +183,10 @@ export class Renderer {
    *
    * @param detail - A {@link RenderMessage} detail: `target`, `html`, `swap`,
    *   `id`, and optional `match` (defaults to `=`).
-   * @returns A {@link BPEvent} of type {@link B_PROGRAM_MESSAGE_TYPES.render}
+   * @returns A {@link RendererResult} of type {@link RENDERER_RESULTS_MESSAGE_TYPES.render_result}
    *   with `detail = { id, target, html }` where `html` is the new buffer.
    */
-  render({ target, html, swap, id, match = '=' }: RenderMessage['detail']): BPEvent {
+  render({ target, html, swap, id, match = '=' }: RenderMessage['detail']): RendererResult {
     const validatedHtml = validateAndEscapeHtml(html)
     this.#html = new HTMLRewriter()
       .on(`[${P_TARGET}${match}"${target}"]`, {
@@ -185,12 +195,12 @@ export class Renderer {
         },
       })
       .transform(this.#html)
-    return { type: B_PROGRAM_MESSAGE_TYPES.render, detail: { id, target, html: this.#html } }
+    return { type: RENDERER_RESULTS_MESSAGE_TYPES.render_result, detail: { id, target, html: this.#html } }
   }
 
   /**
    * Apply an `attrs` command — merge an attribute map into every element
-   * matching the `p-target` selector — and return a success {@link BPEvent}.
+   * matching the `p-target` selector — and return a success {@link RendererResult}.
    *
    * @remarks
    * Targets all matches and applies {@link updateAttributes} for each key in
@@ -200,10 +210,10 @@ export class Renderer {
    *
    * @param detail - An {@link AttrsMessage} detail: `target`, `attr`, `id`, and
    *   optional `match` (defaults to `=`).
-   * @returns A {@link BPEvent} of type {@link B_PROGRAM_MESSAGE_TYPES.attrs}
+   * @returns A {@link RendererResult} of type {@link RENDERER_RESULTS_MESSAGE_TYPES.attrs_result}
    *   with `detail = { id, target, html }` where `html` is the new buffer.
    */
-  attrs({ target, attr, id, match = '=' }: AttrsMessage['detail']): BPEvent {
+  attrs({ target, attr, id, match = '=' }: AttrsMessage['detail']): RendererResult {
     this.#html = new HTMLRewriter()
       .on(`[${P_TARGET}${match}"${target}"]`, {
         element: (el) => {
@@ -211,6 +221,6 @@ export class Renderer {
         },
       })
       .transform(this.#html)
-    return { type: B_PROGRAM_MESSAGE_TYPES.attrs, detail: { id, target, html: this.#html } }
+    return { type: RENDERER_RESULTS_MESSAGE_TYPES.attrs_result, detail: { id, target, html: this.#html } }
   }
 }

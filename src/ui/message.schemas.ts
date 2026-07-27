@@ -1,6 +1,11 @@
 import * as z from 'zod'
 import { BPEventSchema } from '../behavioral/behavioral.schemas.ts'
-import { B_PROGRAM_MESSAGE_TYPES, PAGE_EVENTS, SWAP_MODES, UI_MESSAGE_TYPES } from './message.constants.ts'
+import {
+  CONTROLLER_INCOMING_MESSAGE_TYPES,
+  CONTROLLER_OUTGOING_MESSAGE_TYPES,
+  PAGE_EVENTS,
+  SWAP_MODES,
+} from './message.constants.ts'
 
 /**
  * Schema for BP events sent from a controller island to the server.
@@ -8,7 +13,7 @@ import { B_PROGRAM_MESSAGE_TYPES, PAGE_EVENTS, SWAP_MODES, UI_MESSAGE_TYPES } fr
  * @public
  */
 export const UiEventMessageSchema = z.object({
-  type: z.literal(UI_MESSAGE_TYPES.ui_event),
+  type: z.literal(CONTROLLER_OUTGOING_MESSAGE_TYPES.ui_event),
   detail: z.object({
     event: BPEventSchema,
     timeStamp: z.number(),
@@ -26,7 +31,7 @@ const FormSubmitFieldValueSchema = z.union([z.string(), z.array(z.string())])
  * @public
  */
 export const FormSubmitMessageSchema = z.object({
-  type: z.literal(UI_MESSAGE_TYPES.form_submit),
+  type: z.literal(CONTROLLER_OUTGOING_MESSAGE_TYPES.form_submit),
   detail: z.object({
     name: z.string().nullable(),
     timeStamp: z.number(),
@@ -42,15 +47,15 @@ export type FormSubmitMessage = z.output<typeof FormSubmitMessageSchema>
  * Schema for controller runtime errors sent from a controller island to the server.
  *
  * @remarks
- * `description` provides a human-readable category string for agent consumers
- * (e.g. "CSSStyleSheet replacement or adoption failed") rather than a terse
- * category literal, since these messages flow back to agent runtimes that benefit
- * from richer context.
+ * `name` carries the error class (e.g. `ElementNotFoundError`,
+ * `ValidationError`); `error` carries the message and `stack` the optional
+ * stack trace. These flow back to agent runtimes, so the fields are kept
+ * human-readable rather than terse category literals.
  *
  * @public
  */
 export const ErrorMessageSchema = z.object({
-  type: z.literal(UI_MESSAGE_TYPES.error),
+  type: z.literal(CONTROLLER_OUTGOING_MESSAGE_TYPES.error),
   detail: z.object({
     timeStamp: z.number(),
     id: z.string().optional(),
@@ -70,7 +75,7 @@ export type ErrorMessage = z.output<typeof ErrorMessageSchema>
  * @public
  */
 export const SuccessMessageSchema = z.object({
-  type: z.literal(UI_MESSAGE_TYPES.success),
+  type: z.literal(CONTROLLER_OUTGOING_MESSAGE_TYPES.success),
   detail: z.object({
     id: z.string(),
     timeStamp: z.number(),
@@ -87,7 +92,7 @@ export type SuccessMessage = z.output<typeof SuccessMessageSchema>
  * @public
  */
 export const PageSnapshotSchema = z.object({
-  type: z.literal(UI_MESSAGE_TYPES.snapshot),
+  type: z.literal(CONTROLLER_OUTGOING_MESSAGE_TYPES.snapshot),
   detail: z.object({
     timeStamp: z.number(),
     type: z.enum(Object.values(PAGE_EVENTS)),
@@ -136,7 +141,7 @@ export type SelectorMatch = z.output<typeof SelectorMatchScehama>
  * @public
  */
 export const RenderMessageSchema = z.object({
-  type: z.literal(B_PROGRAM_MESSAGE_TYPES.render),
+  type: z.literal(CONTROLLER_INCOMING_MESSAGE_TYPES.render),
   detail: z.object({
     id: z.string(),
     target: z.string(),
@@ -162,7 +167,7 @@ export type RenderMessage = z.output<typeof RenderMessageSchema>
  * @public
  */
 export const AttrsMessageSchema = z.object({
-  type: z.literal(B_PROGRAM_MESSAGE_TYPES.attrs),
+  type: z.literal(CONTROLLER_INCOMING_MESSAGE_TYPES.attrs),
   detail: z.object({
     id: z.string(),
     target: z.string(),
@@ -181,7 +186,7 @@ export type AttrsMessage = z.output<typeof AttrsMessageSchema>
  * @public
  */
 export const DispatchCustomEventMessageSchema = z.object({
-  type: z.literal(B_PROGRAM_MESSAGE_TYPES.dispatch_custom_event),
+  type: z.literal(CONTROLLER_INCOMING_MESSAGE_TYPES.dispatch_custom_event),
   detail: z.object({
     id: z.string(),
     target: z.string(),
@@ -206,7 +211,7 @@ export type DispatchCustomEventMessage = z.output<typeof DispatchCustomEventMess
  * @public
  */
 export const NavigateMessageSchema = z.object({
-  type: z.literal(B_PROGRAM_MESSAGE_TYPES.navigate),
+  type: z.literal(CONTROLLER_INCOMING_MESSAGE_TYPES.navigate),
   detail: z.object({
     id: z.string(),
     url: z.string(),

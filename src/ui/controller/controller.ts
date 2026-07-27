@@ -1,6 +1,6 @@
 import type { BPEvent } from '../../behavioral/behavioral.schemas.ts'
 import type { Disconnect } from '../../behavioral/behavioral.types.ts'
-import { B_PROGRAM_MESSAGE_TYPES, SWAP_MODES } from '../../ui/message.constants.ts'
+import { CONTROLLER_INCOMING_MESSAGE_TYPES, SWAP_MODES } from '../../ui/message.constants.ts'
 import {
   type AttrsMessage,
   type DispatchCustomEventMessage,
@@ -9,7 +9,7 @@ import {
   ServerMessageSchema,
 } from '../../ui/message.schemas.ts'
 import { BOOLEAN_ATTRS, P_FORM, P_TARGET, P_TRIGGER } from '../html.constants.ts'
-import { PAGE_EVENTS, UI_MESSAGE_TYPES } from '../message.constants.ts'
+import { CONTROLLER_OUTGOING_MESSAGE_TYPES, PAGE_EVENTS } from '../message.constants.ts'
 import type { ClientMessage } from '../message.schemas.ts'
 import { UI_CORE_MAX_RETRIES, UI_CORE_RETRY_STATUS_CODES } from './controller.constants.ts'
 import {
@@ -172,7 +172,7 @@ export class Controller {
   }
   #sendSnapshot(type: keyof typeof PAGE_EVENTS) {
     this.#send({
-      type: UI_MESSAGE_TYPES.snapshot,
+      type: CONTROLLER_OUTGOING_MESSAGE_TYPES.snapshot,
       detail: {
         timeStamp: Date.now(),
         type,
@@ -182,7 +182,7 @@ export class Controller {
   }
   #reportError(error: Error, id?: string) {
     this.#send({
-      type: UI_MESSAGE_TYPES.error,
+      type: CONTROLLER_OUTGOING_MESSAGE_TYPES.error,
       detail: {
         timeStamp: Date.now(),
         id,
@@ -194,7 +194,7 @@ export class Controller {
   }
   #trigger(event: BPEvent) {
     this.#send({
-      type: UI_MESSAGE_TYPES.ui_event,
+      type: CONTROLLER_OUTGOING_MESSAGE_TYPES.ui_event,
       detail: {
         event,
         timeStamp: Date.now(),
@@ -326,7 +326,7 @@ export class Controller {
     for (let i = 0; i < length; i++) {
       const element = nodelist[i]
       if (!element)
-        throw new ElementNotFoundError(`${B_PROGRAM_MESSAGE_TYPES.render}`, {
+        throw new ElementNotFoundError(`${CONTROLLER_INCOMING_MESSAGE_TYPES.render}`, {
           cause: {
             id,
             target,
@@ -345,7 +345,7 @@ export class Controller {
     for (let i = 0; i < length; i++) {
       const element = nodelist[i]
       if (!element)
-        throw new ElementNotFoundError(`${B_PROGRAM_MESSAGE_TYPES.attrs}`, {
+        throw new ElementNotFoundError(`${CONTROLLER_INCOMING_MESSAGE_TYPES.attrs}`, {
           cause: {
             id,
             target,
@@ -370,7 +370,7 @@ export class Controller {
   }: DispatchCustomEventMessage['detail']) {
     const element = document.querySelector(`[${P_TARGET}="${target}"]`)
     if (!element)
-      throw new ElementNotFoundError(`${B_PROGRAM_MESSAGE_TYPES.dispatch_custom_event}`, {
+      throw new ElementNotFoundError(`${CONTROLLER_INCOMING_MESSAGE_TYPES.dispatch_custom_event}`, {
         cause: {
           id,
           target,
@@ -395,25 +395,25 @@ export class Controller {
       const { type, detail } = ServerMessageSchema.parse(raw)
       id = detail.id
       switch (type) {
-        case B_PROGRAM_MESSAGE_TYPES.render: {
+        case CONTROLLER_INCOMING_MESSAGE_TYPES.render: {
           this.#render(detail)
           break
         }
-        case B_PROGRAM_MESSAGE_TYPES.attrs: {
+        case CONTROLLER_INCOMING_MESSAGE_TYPES.attrs: {
           this.#attrs(detail)
           break
         }
-        case B_PROGRAM_MESSAGE_TYPES.dispatch_custom_event: {
+        case CONTROLLER_INCOMING_MESSAGE_TYPES.dispatch_custom_event: {
           this.#dispatchCustomEvent(detail)
           break
         }
-        case B_PROGRAM_MESSAGE_TYPES.navigate: {
+        case CONTROLLER_INCOMING_MESSAGE_TYPES.navigate: {
           this.#navigate(detail)
           break
         }
       }
       this.#send({
-        type: UI_MESSAGE_TYPES.success,
+        type: CONTROLLER_OUTGOING_MESSAGE_TYPES.success,
         detail: {
           id,
           timeStamp: Date.now(),

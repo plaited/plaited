@@ -6,7 +6,7 @@ import { keyMirror } from '../../utils.ts'
  *
  * @public
  */
-export const UI_MESSAGE_TYPES = keyMirror('ui_event', 'error', 'form_submit', 'success', 'snapshot')
+export const CONTROLLER_OUTGOING_MESSAGE_TYPES = keyMirror('ui_event', 'error', 'form_submit', 'success', 'snapshot')
 
 /**
  * Page lifecycle event keys observed by the browser controller and reported
@@ -22,7 +22,15 @@ export const PAGE_EVENTS = keyMirror('pagereveal', 'pageswap', 'pagehide', 'page
  *
  * @public
  */
-export const B_PROGRAM_MESSAGE_TYPES = keyMirror('attrs', 'render', 'dispatch_custom_event', 'navigate')
+export const CONTROLLER_INCOMING_MESSAGE_TYPES = keyMirror('attrs', 'render', 'dispatch_custom_event', 'navigate')
+
+/**
+ * Event keys used for messages emitted by the behavioral engine to the browser
+ * controller.
+ *
+ * @public
+ */
+export const RENDERER_RESULTS_MESSAGE_TYPES = keyMirror('attrs_result', 'render_result')
 
 /**
  * Supported DOM insertion modes for `render` protocol messages.
