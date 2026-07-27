@@ -179,7 +179,10 @@ Expand test coverage when the impact is broad, shared, or uncertain.
 # Core Conventions
 
 **Type over interface** — `type User = {` not `interface User {`
-**No any** — use `unknown` with type guards.
+**No any** — use `unknown` with type guards. At external boundaries (`JSON.parse`,
+file/network/IPC/event-detail payloads), validate with Zod `.parse()` rather than
+`as` casts; `z.output<typeof MySchema>` gives the static type for free. Trust the
+parsed value downstream.
 **PascalCase types** — schemas get `Schema` suffix.
 **CLI schema semantics** — any Zod schema exposed through CLI `--schema input|output` must use
 `.describe(...)` on the top-level schema and meaningful fields so agent consumers get semantic context.
@@ -208,6 +211,9 @@ Before writing code, resolve the task at the FIRST step that holds:
    Say so in one sentence and stop.
 2. Does something already in THIS codebase do it? Reuse it. Read before you write;
    re-implementing a helper that lives three files over is the most common waste.
+   Check `src/utils.ts` first (`keyMirror`, `deepEqual`, `isTypeOf`, `trueTypeOf`,
+   `ueid`, case conversion, `htmlEscape`, `wait`); use `plaited typescript-lsp`
+   to explore its exports when uncertain.
 3. Does the standard library or the runtime/platform already do it? (`<input type="date">`, a DB
    unique constraint, a CSS rule.) Use it.
 4. Does an already-installed dependency do it? Use it. Do not add a new dependency for something
