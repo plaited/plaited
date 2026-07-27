@@ -51,8 +51,8 @@ export type ParsedCliRequest<TSchema extends z.ZodType> = {
   flags: CliFlags
 }
 
-type CliHandlerConfig<TInputSchema extends z.ZodType, TOutput> = {
-  name: string
+type CliHandlerConfig<TInputSchema extends z.ZodType, TOutput, TName extends string = string> = {
+  name: TName
   inputSchema: TInputSchema
   outputSchema: z.ZodType<TOutput>
   help: string
@@ -212,46 +212,47 @@ export const parseCli = async <TSchema extends z.ZodType>(
  *
  * @public
  */
-export const makeCli = <TInputSchema extends z.ZodType, TOutput>({
+export const makeCli = <TInputSchema extends z.ZodType, TOutput, TName extends string>({
   name,
   inputSchema,
   outputSchema,
   help,
   run,
-}: CliHandlerConfig<TInputSchema, TOutput>) => ({
-  [name]: async (args: string[]): Promise<void> => {
-    const { input, flags } = await parseCliRequest(args, inputSchema, {
-      name,
-      outputSchema,
-      help,
-    })
+}: CliHandlerConfig<TInputSchema, TOutput, TName>): { [K in TName]: (args: string[]) => Promise<void> } =>
+  ({
+    [name]: async (args: string[]): Promise<void> => {
+      const { input, flags } = await parseCliRequest(args, inputSchema, {
+        name,
+        outputSchema,
+        help,
+      })
 
-    if (flags.dryRun) {
-      console.log(
-        JSON.stringify(
-          {
-            command: name,
-            input,
-            dryRun: true,
-          },
-          null,
-          2,
-        ),
-      )
-      return
-    }
+      if (flags.dryRun) {
+        console.log(
+          JSON.stringify(
+            {
+              command: name,
+              input,
+              dryRun: true,
+            },
+            null,
+            2,
+          ),
+        )
+        return
+      }
 
-    const result = (await run(input, flags)) as TOutput
+      const result = (await run(input, flags)) as TOutput
 
-    const parsed = outputSchema.safeParse(result)
-    if (!parsed.success) {
-      console.error(JSON.stringify(parsed.error.issues, null, 2))
-      process.exit(1)
-    }
+      const parsed = outputSchema.safeParse(result)
+      if (!parsed.success) {
+        console.error(JSON.stringify(parsed.error.issues, null, 2))
+        process.exit(1)
+      }
 
-    console.log(JSON.stringify(parsed.data, null, 2))
-  },
-})
+      console.log(JSON.stringify(parsed.data, null, 2))
+    },
+  }) as { [K in TName]: (args: string[]) => Promise<void> }
 
 /**
  * Define and execute a self-contained CLI script.

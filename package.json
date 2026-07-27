@@ -19,8 +19,7 @@
   "type": "module",
   "main": "./main.ts",
   "exports": {
-    ".": "./main.ts",
-    "./cli": "./src/cli.ts",
+    ".": "./src/main.ts",
     "./controller": "./src/controller.ts",
     "./utils": "./src/utils.ts"
   },

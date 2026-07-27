@@ -1,4 +1,4 @@
-import { keyMirror } from '../../utils.ts'
+import { keyMirror } from '../utils.ts'
 
 /**
  * Discriminant values for the `SnapshotMessage` union.
@@ -38,5 +38,3 @@ export const FRONTIER_STATUS = keyMirror('ready', 'deadlock', 'idle')
 export const IDIOMS = keyMirror('waitFor', 'interrupt', 'request', 'block')
 
 export const DETAIL_MATCH = keyMirror('valid', 'invalid')
-
-export const B_PROGRAM_IDENTIFIER = '🎛️' as const

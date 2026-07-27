@@ -8,7 +8,7 @@
  */
 import { join } from 'node:path'
 import type { ServerWebSocket } from 'bun'
-import { P_TRIGGER } from '../../../html.constants.ts'
+import { P_TRIGGER } from '../../../main/html.constants.ts'
 import { bundleController, CONNECT_PLAITED_ROUTE } from './bundle-controller.ts'
 
 const FIXTURES_DIR = import.meta.dir

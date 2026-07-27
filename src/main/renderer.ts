@@ -1,8 +1,8 @@
-import type { BPEvent } from '../../behavioral/behavioral.schemas.ts'
-import { RENDERER_RESULTS_MESSAGE_TYPES, SWAP_MODES } from '../../ui/message.constants.ts'
-import type { AttrsMessage, RenderMessage } from '../../ui/message.schemas.ts'
-import { BOOLEAN_ATTRS, P_TARGET } from '../html.constants.ts'
-import { getNodeSchema } from '../html.schemas.ts'
+import type { BPEvent } from './behavioral.schemas.ts'
+import { BOOLEAN_ATTRS, P_TARGET } from './html.constants.ts'
+import { getNodeSchema } from './html.schemas.ts'
+import { RENDERER_RESULTS_MESSAGE_TYPES, SWAP_MODES } from './message.constants.ts'
+import type { AttrsMessage, RenderMessage } from './message.schemas.ts'
 import { ValidationError } from './render.errors.ts'
 import { validateAndEscapeHtml } from './validate-and-escape-html.ts'
 

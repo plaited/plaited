@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test'
-import { CUSTOM_PROPERTY_REF_PATTERN, CustomPropertyRefSchema } from '../../css.constants.ts'
-import { P_TRIGGER, STYLE } from '../../html.constants.ts'
-import { PlaitedAttributesSchema } from '../../html.schemas.ts'
+import { CUSTOM_PROPERTY_REF_PATTERN, CustomPropertyRefSchema } from '../css.constants.ts'
+import { P_TRIGGER, STYLE } from '../html.constants.ts'
+import { PlaitedAttributesSchema } from '../html.schemas.ts'
 
 describe('CUSTOM_PROPERTY_REF_PATTERN', () => {
   test('matches basic var() with custom property', () => {

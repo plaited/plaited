@@ -1,4 +1,4 @@
-import { keyMirror } from '../../../utils.ts'
+import { keyMirror } from '../utils.ts'
 
 /** @internal WebSocket close codes that warrant reconnect attempts. */
 export const UI_CORE_RETRY_STATUS_CODES = new Set([1006, 1012, 1013])

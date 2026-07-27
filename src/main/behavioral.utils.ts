@@ -1,5 +1,5 @@
 import Ajv2020 from 'ajv/dist/2020'
-import { deepEqual, isTypeOf } from '../../utils.ts'
+import { isTypeOf } from '../utils.ts'
 import { FRONTIER_STATUS, IDIOMS } from './behavioral.constants.ts'
 import type { BPEvent, Idioms, JsonObject, RegisteredBPListener, RegisteredIdioms } from './behavioral.schemas.ts'
 import type { CandidateBid, Frontier, PendingBid, RulesFunction, RunningBid, UseThread } from './behavioral.types.ts'
@@ -118,7 +118,7 @@ export const advanceRunningToPending = (running: Set<RunningBid>, pending: Set<P
 const eventMatchesCandidate = (request: BPEvent, selectedEvent: CandidateBid) => {
   if (selectedEvent.type !== request.type) return false
   if (selectedEvent.topic && selectedEvent.topic !== request.topic) return false
-  return deepEqual(request.detail, selectedEvent.detail)
+  return Bun.deepEquals(request.detail, selectedEvent.detail)
 }
 
 export const resumePendingThreadsForSelectedEvent = ({

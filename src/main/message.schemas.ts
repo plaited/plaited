@@ -1,5 +1,5 @@
 import * as z from 'zod'
-import { BPEventSchema } from '../behavioral/behavioral.schemas.ts'
+import { BPEventSchema } from './behavioral.schemas.ts'
 import {
   CONTROLLER_INCOMING_MESSAGE_TYPES,
   CONTROLLER_OUTGOING_MESSAGE_TYPES,

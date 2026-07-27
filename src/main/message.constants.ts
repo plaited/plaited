@@ -1,4 +1,4 @@
-import { keyMirror } from '../../utils.ts'
+import { keyMirror } from '../utils.ts'
 
 /**
  * Event keys used for messages emitted by the browser controller to the

@@ -4,7 +4,7 @@
 // Command Registry
 // ============================================================================
 
-import { makeCliRouter } from '../cli.ts'
+import { makeCliRouter } from '../src/cli/cli.ts'
 import { gitContextCli } from '../src/cli/git-context.ts'
 import { markdownCli } from '../src/cli/markdown.ts'
 import { mcpClientCli } from '../src/cli/mcp-client.ts'

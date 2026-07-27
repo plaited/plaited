@@ -1,8 +1,8 @@
-/// <reference path="../../../scripts/types/css-tree.d.ts" />
+/// <reference path="../../scripts/types/css-tree.d.ts" />
 import { parse, walk } from 'css-tree'
-import { CUSTOM_PROPERTY_REF_PATTERN } from '../css.constants.ts'
-import { CSSPropertiesSchema } from '../css.schemas.ts'
-import { getNodeSchema } from '../html.schemas.ts'
+import { CUSTOM_PROPERTY_REF_PATTERN } from './css.constants.ts'
+import { CSSPropertiesSchema } from './css.schemas.ts'
+import { getNodeSchema } from './html.schemas.ts'
 import { type CssError, type HtmlError, ValidationError } from './render.errors.ts'
 
 export type { CssError, HtmlError } from './render.errors.ts'

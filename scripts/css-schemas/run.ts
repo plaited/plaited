@@ -20,7 +20,7 @@ import { generateCssSchemas } from './generate.ts'
 // ============================================================================
 
 const CSS_DATA_PATH = 'node_modules/@webref/css/css.json'
-const DEFAULT_OUTPUT_PATH = 'src/ui/css.schemas.ts'
+const DEFAULT_OUTPUT_PATH = 'src/main/css.schemas.ts'
 
 // ============================================================================
 // Helpers

@@ -1,16 +1,20 @@
-import type { BPEvent } from '../../behavioral/behavioral.schemas.ts'
-import type { Disconnect } from '../../behavioral/behavioral.types.ts'
-import { CONTROLLER_INCOMING_MESSAGE_TYPES, SWAP_MODES } from '../../ui/message.constants.ts'
+import type { BPEvent } from '../main/behavioral.schemas.ts'
+import type { Disconnect } from '../main/behavioral.types.ts'
+import { BOOLEAN_ATTRS, P_FORM, P_TARGET, P_TRIGGER } from '../main/html.constants.ts'
+import {
+  CONTROLLER_INCOMING_MESSAGE_TYPES,
+  CONTROLLER_OUTGOING_MESSAGE_TYPES,
+  PAGE_EVENTS,
+  SWAP_MODES,
+} from '../main/message.constants.ts'
+import type { ClientMessage } from '../main/message.schemas.ts'
 import {
   type AttrsMessage,
   type DispatchCustomEventMessage,
   type NavigateMessage,
   type RenderMessage,
   ServerMessageSchema,
-} from '../../ui/message.schemas.ts'
-import { BOOLEAN_ATTRS, P_FORM, P_TARGET, P_TRIGGER } from '../html.constants.ts'
-import { CONTROLLER_OUTGOING_MESSAGE_TYPES, PAGE_EVENTS } from '../message.constants.ts'
-import type { ClientMessage } from '../message.schemas.ts'
+} from '../main/message.schemas.ts'
 import { UI_CORE_MAX_RETRIES, UI_CORE_RETRY_STATUS_CODES } from './controller.constants.ts'
 import {
   ElementNotFoundError,

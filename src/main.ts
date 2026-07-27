@@ -1,5 +1,5 @@
-export * from './src/behavioral/behavioral.ts'
-export type * from './src/behavioral/behavioral.types.ts'
+export * from './main/behavioral.ts'
+export type * from './main/behavioral.types.ts'
 export {
   type DeadlockFinding,
   type ExploreFrontiersArgs,
@@ -11,6 +11,5 @@ export {
   type VerifyFrontiersArgs,
   type VerifyFrontiersResult,
   verifyFrontiers,
-} from './src/behavioral/frontier-analysis.ts'
-
-export type * from './src/ui/renderer/renderer.ts'
+} from './main/frontier-analysis.ts'
+export type * from './main/renderer.ts'

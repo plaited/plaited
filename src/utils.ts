@@ -15,7 +15,11 @@
  * @since 1.0.0
  */
 
-export * from './src/utils/deep-equal.ts'
-export * from './src/utils/is-type-of.ts'
-export * from './src/utils/key-mirror.ts'
-export * from './src/utils/true-type-of.ts'
+export * from './utils/case.ts'
+export * from './utils/deep-equal.ts'
+export * from './utils/escape.ts'
+export * from './utils/is-type-of.ts'
+export * from './utils/key-mirror.ts'
+export * from './utils/true-type-of.ts'
+export * from './utils/ueid.ts'
+export * from './utils/wait.ts'

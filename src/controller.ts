@@ -13,5 +13,5 @@
  * @public
  */
 
-export * from './src/ui/controller/controller.ts'
-export * from './src/ui/controller/controller.types.ts'
+export * from './controller/controller.ts'
+export * from './controller/controller.types.ts'
