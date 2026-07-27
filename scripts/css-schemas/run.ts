@@ -19,8 +19,7 @@ import { generateCssSchemas } from './generate.ts'
 // Config
 // ============================================================================
 
-const CSS_DATA_PATH = 'node_modules/@webref/css/css.json'
-const DEFAULT_OUTPUT_PATH = 'src/main/css.schemas.ts'
+const DEFAULT_OUTPUT_PATH = 'packages/framework/src/main/css.schemas.ts'
 
 // ============================================================================
 // Helpers
@@ -69,7 +68,7 @@ const main = async () => {
 
   // Resolve paths relative to repo root (two levels up from this script)
   const repoRoot = path.resolve(import.meta.dir, '../..')
-  const cssDataPath = path.resolve(repoRoot, CSS_DATA_PATH)
+  const cssDataPath = Bun.resolveSync('@webref/css/css.json', import.meta.dir)
   const outputPathResolved = path.resolve(repoRoot, outputPath)
 
   // Read @webref/css data

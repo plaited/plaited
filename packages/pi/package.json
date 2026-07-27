@@ -1,0 +1,23 @@
+{
+  "name": "@plaited/pi",
+  "version": "0.0.0",
+  "license": "ISC",
+  "engines": {
+    "bun": ">= v1.2.9"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/plaited/plaited.git",
+    "directory": "packages/pi"
+  },
+  "bugs": {
+    "url": "https://github.com/plaited/plaited/issues"
+  },
+  "scripts": {
+    "check": "bun run check:biome && bun run check:types",
+    "check:biome": "biome check",
+    "check:types": "tsc --noEmit",
+    "check:write": "biome check --write && format-package --write",
+    "test": "bun test"
+  }
+}

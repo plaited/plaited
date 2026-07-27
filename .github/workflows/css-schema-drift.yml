@@ -12,11 +12,11 @@ jobs:
   drift-check:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
-      - name: Install dependencies
+      - name: Install dependenciesscripts/css-schemas
         run: |
           bun install
       - name: Check for CSS schema drift
@@ -26,7 +26,7 @@ jobs:
           bun run scripts/css-schemas/run.ts diff
       - name: Create issue if drift detected
         if: steps.drift.outcome == 'failure'
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           script: |
             const { data: issues } = await github.rest.issues.listForRepo({

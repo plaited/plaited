@@ -1,4 +1,4 @@
-/// <reference path="../../scripts/types/css-tree.d.ts" />
+/// <reference path="../../../../scripts/types/css-tree.d.ts" />
 import { parse, walk } from 'css-tree'
 import { CUSTOM_PROPERTY_REF_PATTERN } from './css.constants.ts'
 import { CSSPropertiesSchema } from './css.schemas.ts'

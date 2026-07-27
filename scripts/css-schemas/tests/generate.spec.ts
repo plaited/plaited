@@ -91,7 +91,7 @@ test('hardcoded vendor entries appear in output', () => {
 })
 
 test('generated output uses z.object with catchall and property name/type exports', async () => {
-  const cssDataPath = new URL('../../../node_modules/@webref/css/css.json', import.meta.url)
+  const cssDataPath = Bun.resolveSync('@webref/css/css.json', import.meta.dir)
   const cssFile = Bun.file(cssDataPath)
   const cssJson = await cssFile.json()
 
@@ -116,7 +116,7 @@ test('generated output uses z.object with catchall and property name/type export
 })
 
 test('all properties are optional in the generated schema', async () => {
-  const cssDataPath = new URL('../../../node_modules/@webref/css/css.json', import.meta.url)
+  const cssDataPath = Bun.resolveSync('@webref/css/css.json', import.meta.dir)
   const cssFile = Bun.file(cssDataPath)
   const cssJson = await cssFile.json()
 

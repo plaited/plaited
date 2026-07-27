@@ -1,0 +1,46 @@
+{
+  "name": "plaited",
+  "version": "7.2.0",
+  "license": "ISC",
+  "engines": {
+    "bun": ">= v1.2.9"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/plaited/plaited.git",
+    "directory": "packages/framework"
+  },
+  "bugs": {
+    "url": "https://github.com/plaited/plaited/issues"
+  },
+  "bin": {
+    "plaited": "./bin/plaited.ts"
+  },
+  "type": "module",
+  "main": "./main.ts",
+  "exports": {
+    ".": "./src/main.ts",
+    "./controller": "./src/controller.ts",
+    "./utils": "./src/utils.ts"
+  },
+  "files": [
+    "./.bin/**",
+    "./AGENTS.md",
+    "./src/**"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "check": "bun run check:biome && bun run check:types",
+    "check:biome": "biome check",
+    "check:types": "tsc --noEmit",
+    "check:write": "biome check --write && format-package --write",
+    "test": "bun test"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "ajv": "8.20.0",
+    "zod": "4.4.3"
+  }
+}

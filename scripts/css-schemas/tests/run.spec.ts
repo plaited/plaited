@@ -47,6 +47,6 @@ describe('css-schemas run script', () => {
     expect(typeof output.propertyCount).toBe('number')
     expect(output.propertyCount).toBeGreaterThan(0)
     expect(typeof output.keywordEnumCount).toBe('number')
-    expect(output.path).toBe('src/main/css.schemas.ts')
+    expect(output.path).toBe('packages/framework/src/main/css.schemas.ts')
   })
 })
