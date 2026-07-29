@@ -440,16 +440,21 @@ const extractLocalLinksFromMarkdown = async (markdownBody: string): Promise<Loca
 const validateMarkdownLocalLinks = async ({
   baseDir,
   markdownBody,
+  rootRelative = false,
 }: {
   baseDir: string
   markdownBody: string
+  rootRelative?: boolean
 }): Promise<MarkdownLocalLinksValidationResult> => {
   const present = new Map<string, LocalMarkdownLink>()
   const missing = new Map<string, LocalMarkdownLink>()
   const links = await extractLocalLinksFromMarkdown(markdownBody)
 
   for (const link of links) {
-    const absolutePath = resolve(baseDir, link.value)
+    // When rootRelative, a leading '/' marks a root-relative path (e.g. an OKF
+    // bundle-relative link), resolved against baseDir rather than the filesystem root.
+    const linkPath = rootRelative && link.value.startsWith('/') ? link.value.slice(1) : link.value
+    const absolutePath = resolve(baseDir, linkPath)
     const file = Bun.file(absolutePath)
     const key = `${link.value}\u0000${link.text}`
     if (await file.exists()) {
@@ -498,6 +503,12 @@ const MarkdownCliInputSchema = z.discriminatedUnion('mode', [
     mode: z.literal('validate-links'),
     directory: z.string().min(1),
     markdownBody: z.string().min(1),
+    rootRelative: z
+      .boolean()
+      .optional()
+      .describe(
+        'Treat leading-slash links as relative to `directory` (project/bundle root) instead of the filesystem root.',
+      ),
   }),
   z.object({
     mode: z.literal('frontmatter'),
@@ -532,6 +543,7 @@ const run = async (input: unknown): Promise<z.infer<typeof MarkdownCliOutputSche
     case 'validate-links': {
       const linkResult = await validateMarkdownLocalLinks({
         baseDir: parsed.directory,
+        rootRelative: parsed.rootRelative,
         markdownBody: parsed.markdownBody,
       })
       return {

@@ -211,6 +211,74 @@ describe('markdownCli', () => {
     }
   })
 
+  test('validate-links with rootRelative resolves leading-slash links against directory', async () => {
+    const baseDir = await mkdtemp(join(tmpdir(), 'plaited-markdown-cli-'))
+
+    try {
+      await mkdir(join(baseDir, 'tables'), { recursive: true })
+      await Bun.write(join(baseDir, 'tables', 'customers.md'), '# customers')
+
+      const proc = Bun.spawn(
+        [
+          'bun',
+          '-e',
+          [
+            "import { markdownCli } from '../markdown.ts'",
+            `const input = { mode: 'validate-links', directory: '${baseDir}', markdownBody: 'See [customers](/tables/customers.md) and [gone](/tables/gone.md)', rootRelative: true }`,
+            'await markdownCli.markdown([JSON.stringify(input)])',
+          ].join(';\n'),
+        ],
+        { stdout: 'pipe', stderr: 'pipe', cwd: import.meta.dir },
+      )
+
+      expect(await proc.exited).toBe(0)
+      const output = JSON.parse(await new Response(proc.stdout).text())
+      expect(output).toEqual({
+        mode: 'validate-links',
+        result: {
+          present: [{ value: '/tables/customers.md', text: 'customers' }],
+          missing: [{ value: '/tables/gone.md', text: 'gone' }],
+        },
+      })
+    } finally {
+      await rm(baseDir, { recursive: true, force: true })
+    }
+  })
+
+  test('validate-links without rootRelative treats leading-slash links as filesystem-root (unchanged)', async () => {
+    const baseDir = await mkdtemp(join(tmpdir(), 'plaited-markdown-cli-'))
+
+    try {
+      await mkdir(join(baseDir, 'tables'), { recursive: true })
+      await Bun.write(join(baseDir, 'tables', 'customers.md'), '# customers')
+
+      const proc = Bun.spawn(
+        [
+          'bun',
+          '-e',
+          [
+            "import { markdownCli } from '../markdown.ts'",
+            `const input = { mode: 'validate-links', directory: '${baseDir}', markdownBody: 'See [customers](/tables/customers.md)' }`,
+            'await markdownCli.markdown([JSON.stringify(input)])',
+          ].join(';\n'),
+        ],
+        { stdout: 'pipe', stderr: 'pipe', cwd: import.meta.dir },
+      )
+
+      expect(await proc.exited).toBe(0)
+      const output = JSON.parse(await new Response(proc.stdout).text())
+      expect(output).toEqual({
+        mode: 'validate-links',
+        result: {
+          present: [],
+          missing: [{ value: '/tables/customers.md', text: 'customers' }],
+        },
+      })
+    } finally {
+      await rm(baseDir, { recursive: true, force: true })
+    }
+  })
+
   test('frontmatter returns parsed frontmatter and body', async () => {
     const proc = Bun.spawn(
       [
