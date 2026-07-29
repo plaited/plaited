@@ -12,4 +12,4 @@ export {
   type VerifyFrontiersResult,
   verifyFrontiers,
 } from './main/frontier-analysis.ts'
-export type * from './main/renderer.ts'
+export * from './main/renderer.ts'
