@@ -16,8 +16,6 @@ different purpose.
 ```ts
 import {
   behavioral,
-  type Trace,
-  type TraceBase,
   type UseTrace,
   type SendTrace,
   type TraceListener,
@@ -30,9 +28,14 @@ consumers can type their own listeners and extension events.
 
 `Trace` is the engine's closed discriminated union of trace kinds
 (`selection`, `frontier`, `pending_bids`, `deadlock`, `runtime_error`,
-`feedback_error`, `add_thread_error`). `TraceBase` is the structural contract
-for consumer-supplied extensions: `{ kind: string; timestamp: number }` plus
-kind-specific fields.
+`feedback_error`, `add_thread_error`). It is not directly importable from
+`'plaited'` — use `useTrace((msg) => ...)` with inference, and let the
+listener parameter type narrow by `msg.kind`.
+
+`TraceBase` is the structural contract for consumer-supplied extensions:
+`{ kind: string; timestamp: number }` plus kind-specific fields. It is not
+an importable type — use the structural shape inline or infer it from
+`behavioral<T>()` where `T extends { kind: string; timestamp: number }`.
 
 For divergence analysis over a captured run, also import the
 [frontier-analysis](./frontier-analysis.md) functions (`exploreFrontiers`,
@@ -60,12 +63,11 @@ does not prescribe JSONL, a database, a socket, or any particular store. The
 callback writes wherever the consumer wants.
 
 ```ts
-import { behavioral, type TraceBase } from 'plaited'
+import { behavioral } from 'plaited'
 
 // 1. Define the agent-lifecycle events you want to capture alongside the
-//    engine's Trace variants. Extend TraceBase ({ kind, timestamp }) with
-//    kind-specific fields. Use literal `kind` strings distinct from the
-//    engine's TRACE_MESSAGE_KINDS so narrowing by `kind` is unambiguous.
+//    engine's Trace variants. The structural constraint is
+//    { kind: string; timestamp: number } — define it inline, don't import it.
 type AgentEvent =
   | { kind: 'tool_call'; timestamp: number; tool: string; args: unknown }
   | { kind: 'agent_message'; timestamp: number; content: string }
@@ -78,7 +80,7 @@ const { useTrace, sendTrace, useAddThread, useTrigger } = program
 
 // 3. Subscribe a capture listener. It receives Trace | AgentEvent — engine
 //    traces and your injected agent events in one stream, in publication order.
-const events: Array<Trace | AgentEvent> = []
+const events = []
 useTrace((msg) => {
   events.push(msg)
   // ...or write to a file, socket, DB, stdout — the callback is the sink.
@@ -178,23 +180,42 @@ analysis; if it does, capture `Thread[]` alongside the trace. If it doesn't
 
 ## Going deeper
 
-The capture primitives are in `src/behavioral/behavioral.ts` (`useTrace`,
-`sendTrace`) and the trace types are in `src/behavioral/behavioral.schemas.ts`
-(`Trace`, `TraceBase`, the variant schemas). Each export's TSDoc names its
-contract — fetch it with the TypeScript LSP CLI rather than re-reading the
-whole file.
+The capture primitives (`useTrace`, `sendTrace`) are reachable by resolving
+the public specifier to its backing file and inspecting with the TypeScript
+LSP CLI — no hardcoded source paths, so the examples survive refactors that
+move impl files.
 
-### Enumerate the file's public exports
+### Resolve the specifier and enumerate exports
 
 ```bash
-plaited typescript-lsp '{"mode":"execute","file":"src/behavioral/behavioral.types.ts","requests":[{"method":"textDocument/documentSymbol","params":{"textDocument":{"uri":"file://src/behavioral/behavioral.types.ts"}}}]}'
+# Step 1 — resolve the specifier to its backing file (barrel)
+cd packages/framework && bun -e 'console.log(Bun.resolveSync("plaited", process.cwd()+"/"))'
+# → /path/to/packages/framework/src/main.ts
+
+# Step 2 — read the barrel to find the backing module that exports your symbol
+# The barrel re-exports: export * from './main/behavioral.ts'
+#                       export type * from './main/behavioral.types.ts'
+#                       export { ... } from './main/frontier-analysis.ts'
+#                       export * from './main/renderer.ts'
+# Pick the module that declares the symbol you need (e.g. src/main/behavioral.ts)
+
+# Step 3 — enumerate the backing module's symbols with documentSymbol
+plaited typescript-lsp '{"mode":"execute","file":"<resolved-path>","requests":[{"method":"textDocument/documentSymbol","params":{"textDocument":{"uri":"file://<resolved-path>"}}}]}'
 ```
+
+`documentSymbol` returns each symbol in the backing module with its kind
+and `range.start` location — hover the symbol you want using the position
+from the output (no hardcoded line numbers).
 
 ### Fetch one symbol's TSDoc and type
 
 ```bash
-plaited typescript-lsp '{"mode":"execute","file":"src/behavioral/behavioral.types.ts","requests":[{"method":"textDocument/hover","params":{"textDocument":{"uri":"file://src/behavioral/behavioral.types.ts"},"position":{"line":142,"character":13}}}]}'
+# Step 4 — fetch one symbol's TSDoc and type (use range.start from Step 3 as the position)
+plaited typescript-lsp '{"mode":"execute","file":"<resolved-path>","requests":[{"method":"textDocument/hover","params":{"textDocument":{"uri":"file://<resolved-path>"},"position":{"line":0,"character":0}}}]}'
 ```
+
+Returns the `/** ... */` block plus the resolved type signature — the deeper
+"what it does / how to debug it" content for the symbol.
 
 `position` is 0-indexed. Get the exact line from `documentSymbol` output (its
 `range.start` is also 0-indexed), not by counting in your editor. `hover`

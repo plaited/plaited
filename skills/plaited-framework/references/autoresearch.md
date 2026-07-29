@@ -36,14 +36,18 @@ plaited does not ship the loop.
 ```ts
 import {
   behavioral,
-  type Trace,
-  type TraceBase,
   type UseTrace,
   type SendTrace,
 } from 'plaited'
 ```
 
-`useTrace` and `sendTrace` are returned by `behavioral()`. For analyzing the
+`useTrace` and `sendTrace` are returned by `behavioral()`. `Trace` is the
+engine's closed discriminated union — not directly importable; use inference
+via `useTrace((msg) => ...)`. The structural constraint for extension events
+is `{ kind: string; timestamp: number }` — define it inline, not as an
+imported type.
+
+For analyzing the
 reachable branches of a mutated program (optional — see below), also import
 the [frontier-analysis](./frontier-analysis.md) functions.
 
@@ -69,7 +73,7 @@ from run-start to budget-elapsed or terminal result. The sink is whatever the
 an append to a running log the analyzer reads.
 
 ```ts
-import { behavioral, type TraceBase } from 'plaited'
+import { behavioral } from 'plaited'
 
 type AgentEvent =
   | { kind: 'tool_call'; timestamp: number; tool: string }
@@ -77,14 +81,14 @@ type AgentEvent =
 
 // Per-iteration: construct, capture, run, measure, decide.
 async function runOneExperiment(
-  threads: Thread[],
-  triggers: BPEvent[],
+  threads: Array<{ label: string; rules: any[] }>,
+  triggers: Array<{ type: string }>,
   budgetMs: number,
-): Promise<{ events: Array<Trace | AgentEvent>; metric: number }> {
+): Promise<{ events: Array<{ kind: string; timestamp: number }>; metric: number }> {
   const program = behavioral<AgentEvent>()
   const { useTrace, sendTrace, useAddThread, useTrigger } = program
 
-  const events: Array<Trace | AgentEvent> = []
+  const events = []
   useTrace((msg) => { events.push(msg) })  // callback is the sink
 
   for (const t of threads) useAddThread()(t)
@@ -153,17 +157,33 @@ and decides keep/discard immediately; the trace is feedback, not an artifact.
 
 ## Going deeper
 
-The capture primitives are in `src/behavioral/behavioral.ts`; the trace types
-are in `src/behavioral/behavioral.schemas.ts`. For divergence analysis between
-iterations, see [frontier-analysis](./frontier-analysis.md). Fetch any
-export's TSDoc with the TypeScript LSP CLI:
+The capture primitives (`useTrace`, `sendTrace`) are reachable by resolving
+the public specifier to its backing file and inspecting with the TypeScript
+LSP CLI — no hardcoded source paths, so the examples survive refactors that
+move impl files.
 
 ```bash
-plaited typescript-lsp '{"mode":"execute","file":"src/behavioral/behavioral.types.ts","requests":[{"method":"textDocument/documentSymbol","params":{"textDocument":{"uri":"file://src/behavioral/behavioral.types.ts"}}}]}'
+# Step 1 — resolve the specifier to its backing file (barrel)
+cd packages/framework && bun -e 'console.log(Bun.resolveSync("plaited", process.cwd()+"/"))'
+# → /path/to/packages/framework/src/main.ts
+
+# Step 2 — read the barrel to find the backing module that exports your symbol
+# The barrel re-exports: export * from './main/behavioral.ts'
+#                       export type * from './main/behavioral.types.ts'
+#                       export { ... } from './main/frontier-analysis.ts'
+#                       export * from './main/renderer.ts'
+# Pick the module that declares the symbol you need (e.g. src/main/behavioral.ts)
+
+# Step 3 — enumerate the backing module's symbols with documentSymbol
+plaited typescript-lsp '{"mode":"execute","file":"<resolved-path>","requests":[{"method":"textDocument/documentSymbol","params":{"textDocument":{"uri":"file://<resolved-path>"}}}]}'
 ```
 
-`position` is 0-indexed; get the exact line from `documentSymbol` output, then
-`hover` with that position for the TSDoc.
+Fetch any export's TSDoc with `hover` using the position from the
+`documentSymbol` output. `position` is 0-indexed; get the exact line from
+`documentSymbol` output (`range.start` is also 0-indexed).
+
+For divergence analysis between iterations, see
+[frontier-analysis](./frontier-analysis.md).
 
 ## See also
 

@@ -115,22 +115,30 @@ refactors that move impl files.
 ### Resolve the specifier and enumerate exports
 
 ```bash
-# Resolve the public specifier to its backing file (refactor-proof — follows the exports map)
-FILE=$(bun -e 'console.log(Bun.resolveSync("plaited", process.cwd()+"/"))')
+# Step 1 — resolve the specifier to its backing file (barrel)
+cd packages/framework && bun -e 'console.log(Bun.resolveSync("plaited", process.cwd()+"/"))'
+# → /path/to/packages/framework/src/main.ts
 
-# Enumerate what the specifier exports, and which backing file each symbol lives in
-plaited typescript-lsp "{{"mode":"execute","file":"$FILE","requests":[{"method":"textDocument/documentSymbol","params":{"textDocument":{"uri":"file://$FILE"}}}]}}"
+# Step 2 — read the barrel to find the backing module that exports your symbol
+# The barrel re-exports: export * from './main/behavioral.ts'
+#                       export type * from './main/behavioral.types.ts'
+#                       export { exploreFrontiers, ... } from './main/frontier-analysis.ts'
+#                       export * from './main/renderer.ts'
+# Pick the module that declares the symbol you need (e.g. src/main/frontier-analysis.ts)
+
+# Step 3 — enumerate the backing module's symbols with documentSymbol
+plaited typescript-lsp '{"mode":"execute","file":"<resolved-path>","requests":[{"method":"textDocument/documentSymbol","params":{"textDocument":{"uri":"file://<resolved-path>"}}}]}'
 ```
 
-`documentSymbol` returns each symbol with its kind and `range.start` location —
-read those to find which backing file holds the symbol you want, then hover it
-there using the position from the output (no hardcoded line numbers).
+`documentSymbol` returns each symbol in the backing module with its kind
+and `range.start` location — hover the symbol you want using the position
+from the output (no hardcoded line numbers).
 
 ### Fetch one symbol's TSDoc and type
 
 ```bash
-# $FILE and $POS come from the documentSymbol output above
-plaited typescript-lsp "{{"mode":"execute","file":"$FILE","requests":[{"method":"textDocument/hover","params":{"textDocument":{"uri":"file://$FILE"},"position":$POS}}]}}"
+# Step 4 — fetch one symbol's TSDoc and type (use range.start from Step 3 as the position)
+plaited typescript-lsp '{"mode":"execute","file":"<resolved-path>","requests":[{"method":"textDocument/hover","params":{"textDocument":{"uri":"file://<resolved-path>"},"position":{"line":0,"character":0}}}]}'
 ```
 
 Returns the `/** ... */` block plus the resolved type signature — the deeper
@@ -147,8 +155,8 @@ mix up:
 
 `method` lives inside `requests[]`, not at the top level:
 
-✓ `{{"mode":"execute","file":"...","requests":[{{"method":"textDocument/hover","params":{{...}}}}]}}`
-✗ `{{"mode":"execute","file":"...","method":"textDocument/hover"}}` → `method` is
+✓ `{"mode":"execute","file":"...","requests":[{"method":"textDocument/hover","params":{...}}]}`
+✗ `{"mode":"execute","file":"...","method":"textDocument/hover"}` → `method` is
   silently dropped and the request does nothing.
 
 ## See also

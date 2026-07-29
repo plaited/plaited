@@ -19,7 +19,7 @@ tool used at every stage of that authoring loop.
 ## The authoring loop
 
 1. **Pick a server** — choose from the curated list in
-   [`assets/ai-catalog.json`](../plaited-framework/assets/ai-catalog.json), or use one the
+   [`assets/ai-catalog.json`](./assets/ai-catalog.json), or use one the
    engineer supplied.
 2. **Discover capabilities** — `plaited mcp-client '{"mode":"discover",...}'`
    to see the server's tools, prompts, and resources.
@@ -172,7 +172,7 @@ come from environment variables. Specifically:
 
 ## Finding an MCP to install or generate a skill for
 
-[`assets/ai-catalog.json`](../plaited-framework/assets/ai-catalog.json) is the curated list of
+[`assets/ai-catalog.json`](./assets/ai-catalog.json) is the curated list of
 resources to point an agent at — MCP servers to call and skills repositories
 to install from — in the [ARD / AI Catalog](https://ai-catalog.io/specification/)
 format. It is a **reference, not a requirement** — the engineer may point at
@@ -196,13 +196,13 @@ To search the catalog from a shell:
 
 ```bash
 # List all entries: name, type, url, and description
-jq '.entries[] | {name: .displayName, type, url, description}' ../plaited-framework/assets/ai-catalog.json
+jq '.entries[] | {name: .displayName, type, url, description}' skills/mcp-client/assets/ai-catalog.json
 
 # MCP servers only (candidates for new skill authoring)
-jq '.entries[] | select(.type == "application/mcp-server+json") | {name: .displayName, url, description}' ../plaited-framework/assets/ai-catalog.json
+jq '.entries[] | select(.type == "application/mcp-server+json") | {name: .displayName, url, description}' skills/mcp-client/assets/ai-catalog.json
 
 # Skills repos only (candidates for installing ready-made skills)
-jq '.entries[] | select(.type == "application/agent-skills+json") | {name: .displayName, url, description}' ../plaited-framework/assets/ai-catalog.json
+jq '.entries[] | select(.type == "application/agent-skills+json") | {name: .displayName, url, description}' skills/mcp-client/assets/ai-catalog.json
 ```
 
 The catalog is the starting point for the [authoring loop](#the-authoring-loop):
@@ -241,7 +241,7 @@ source:
 
 ## See also
 
-- [`assets/ai-catalog.json`](../plaited-framework/assets/ai-catalog.json) — curated list of
+- [`assets/ai-catalog.json`](./assets/ai-catalog.json) — curated list of
   MCP servers to generate skills for (AI Catalog format).
 - [AI Catalog specification](https://ai-catalog.io/specification/) — the
   format used by the asset.
