@@ -1,1 +1,66 @@
-{}
+{
+  "specVersion": "1.0",
+  "host": {
+    "displayName": "Plaited",
+    "identifier": "plaited.dev",
+    "documentationUrl": "https://github.com/plaited/plaited"
+  },
+  "entries": [
+    {
+      "identifier": "urn:ai:plaited.dev:mcp:bun",
+      "displayName": "Bun Documentation",
+      "type": "application/mcp-server+json",
+      "url": "https://bun.com/docs/mcp",
+      "description": "MCP server \u2014 search the Bun runtime knowledge base (Bun APIs, shell, bundler). Call via plaited mcp-client."
+    },
+    {
+      "identifier": "urn:ai:plaited.dev:mcp:mdn",
+      "displayName": "MDN Web Docs",
+      "type": "application/mcp-server+json",
+      "url": "https://mcp.mdn.mozilla.net/",
+      "description": "MCP server \u2014 web platform documentation and browser compatibility data. Call via plaited mcp-client."
+    },
+    {
+      "identifier": "urn:ai:plaited.dev:mcp:agentclientprotocol",
+      "displayName": "Agent Client Protocol",
+      "type": "application/mcp-server+json",
+      "url": "https://agentclientprotocol.com/mcp",
+      "description": "MCP server \u2014 Agent Client Protocol (ACP) specification search. Call via plaited mcp-client."
+    },
+    {
+      "identifier": "urn:ai:plaited.dev:mcp:agentskills",
+      "displayName": "AgentSkills Specification",
+      "type": "application/mcp-server+json",
+      "url": "https://agentskills.io/mcp",
+      "description": "MCP server \u2014 AgentSkills specification search (SKILL.md format, references/ directory). Call via plaited mcp-client."
+    },
+    {
+      "identifier": "urn:ai:plaited.dev:mcp:modelcontextprotocol",
+      "displayName": "Model Context Protocol",
+      "type": "application/mcp-server+json",
+      "url": "https://modelcontextprotocol.io/mcp",
+      "description": "MCP server \u2014 Model Context Protocol (MCP) specification search. Call via plaited mcp-client."
+    },
+    {
+      "identifier": "urn:ai:plaited.dev:mcp:varlock",
+      "displayName": "Varlock Documentation",
+      "type": "application/mcp-server+json",
+      "url": "https://docs.mcp.varlock.dev/mcp",
+      "description": "MCP server \u2014 Varlock AI-safe environment configuration docs (.env.schema, secret providers). Call via plaited mcp-client."
+    },
+    {
+      "identifier": "urn:ai:plaited.dev:mcp:you",
+      "displayName": "You.com (Web Research)",
+      "type": "application/mcp-server+json",
+      "url": "https://api.you.com/mcp",
+      "description": "MCP server \u2014 web search, research, content extraction, financial data. Requires bearer-token auth (env-resolved). Call via plaited mcp-client."
+    },
+    {
+      "identifier": "urn:ai:plaited.dev:skills:you-agent-skills",
+      "displayName": "You.com Agent Skills",
+      "type": "application/agent-skills+json",
+      "url": "https://github.com/youdotcom-oss/agent-skills",
+      "description": "Agent-skills repository \u2014 You.com's published skills and plugins for web search, research, finance, and integration discovery. Read the repo README for install instructions (not an MCP server)."
+    }
+  ]
+}

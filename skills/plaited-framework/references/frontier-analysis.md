@@ -107,40 +107,36 @@ failure of the tool.
 
 ## Going deeper
 
-The three functions above are the importable surface. `frontier-analysis.ts`
-exports more — the graph internals that `verifyFrontiers` composes
-internally (`findStronglyConnectedComponents`, `findLivelocks`, `isCycle`,
-`frontierStateKey`, `StateNode`). These are not re-exported from `plaited`;
-reach them by reading `src/behavioral/frontier-analysis.ts` and fetching each
-export's TSDoc with the TypeScript LSP CLI.
+The public surface above is importable. Deeper internals are reachable by
+resolving the public specifier to its backing file and inspecting with the
+TypeScript LSP CLI — no hardcoded source paths, so the examples survive
+refactors that move impl files.
 
-### Enumerate the file's public exports
+### Resolve the specifier and enumerate exports
 
 ```bash
-plaited typescript-lsp '{"mode":"execute","file":"src/behavioral/frontier-analysis.ts","requests":[{"method":"textDocument/documentSymbol","params":{"textDocument":{"uri":"file://src/behavioral/frontier-analysis.ts"}}}]}'
+# Resolve the public specifier to its backing file (refactor-proof — follows the exports map)
+FILE=$(bun -e 'console.log(Bun.resolveSync("plaited", process.cwd()+"/"))')
+
+# Enumerate what the specifier exports, and which backing file each symbol lives in
+plaited typescript-lsp "{{"mode":"execute","file":"$FILE","requests":[{"method":"textDocument/documentSymbol","params":{"textDocument":{"uri":"file://$FILE"}}}]}}"
 ```
 
-Returns each symbol with its kind (`Function`/`TypeAlias`/`Interface`) and
-position. Pick the symbol you need, then fetch its TSDoc + signature with
-`hover`:
+`documentSymbol` returns each symbol with its kind and `range.start` location —
+read those to find which backing file holds the symbol you want, then hover it
+there using the position from the output (no hardcoded line numbers).
 
 ### Fetch one symbol's TSDoc and type
 
 ```bash
-plaited typescript-lsp '{"mode":"execute","file":"src/behavioral/frontier-analysis.ts","requests":[{"method":"textDocument/hover","params":{"textDocument":{"uri":"file://src/behavioral/frontier-analysis.ts"},"position":{"line":478,"character":13}}}]}'
+# $FILE and $POS come from the documentSymbol output above
+plaited typescript-lsp "{{"mode":"execute","file":"$FILE","requests":[{"method":"textDocument/hover","params":{"textDocument":{"uri":"file://$FILE"},"position":$POS}}]}}"
 ```
 
-Returns the `/** ... */` block plus the resolved type signature — that is the
-deeper "what it does / how to debug it" content for the symbol. Each export's
-TSDoc names its algorithm (e.g. iterative Tarjan SCC) and the decision rules
-and failure modes relevant to a caller. Use this rather than re-reading the
-whole file.
+Returns the `/** ... */` block plus the resolved type signature — the deeper
+"what it does / how to debug it" content for the symbol.
 
 ### Getting the position right (common mistakes)
-
-`position` is **0-indexed** — `line: 478` is the 479th line. Get the exact
-line from `documentSymbol` output (the `range.start` it returns is also
-0-indexed), not by counting in your editor.
 
 `hover` requires `position`; `documentSymbol` does not. These are easy to
 mix up:
@@ -151,22 +147,11 @@ mix up:
 
 `method` lives inside `requests[]`, not at the top level:
 
-✓ `{"mode":"execute","file":"...","requests":[{"method":"textDocument/hover","params":{...}}]}`
-✗ `{"mode":"execute","file":"...","method":"textDocument/hover"}` → `method` is
-  silently dropped (not a documented field of the input) and the request does
-  nothing.
-
-### Where the algorithm names come from
-
-When a `hover` TSDoc names an algorithm (e.g. "iterative Tarjan SCC") and you
-suspect the implementation itself is wrong — not your call, but the function —
-that name is the minimal information for filing an issue or opening a PR. Use
-`plaited typescript-lsp` (`definition`, `references`) to locate and read the
-implementation, or cite the algorithm name and the observed wrong result. The
-TSDoc deliberately omits algorithm internals; it gives you what to use the
-function and what to name in a bug report, not how to audit it.
+✓ `{{"mode":"execute","file":"...","requests":[{{"method":"textDocument/hover","params":{{...}}}}]}}`
+✗ `{{"mode":"execute","file":"...","method":"textDocument/hover"}}` → `method` is
+  silently dropped and the request does nothing.
 
 ## See also
 
-- [`plaited typescript-lsp --help`](../typescript-lsp/SKILL.md) — the LSP CLI
+- [`plaited typescript-lsp --help`](../../typescript-lsp/SKILL.md) — the LSP CLI
   used by the going-deeper workflow.
