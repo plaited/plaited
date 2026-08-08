@@ -33,6 +33,9 @@ in the Plaited repo itself. Specifically:
   hill-climb loops over a behavioral agent.
 - Authoring or validating **OKF knowledge bundles** (the Open Knowledge
   Format).
+- Designing the **design-system spec** — a DESIGN.md derivative re-grounded
+  on mise en mode, CSS custom properties, and `@scope`/`:host()`/`::part()`
+  modes.
 
 For the `plaited` CLI tools (`markdown`, `git-context`, `mcp-client`,
 `typescript-lsp`), use their standalone skills — they are not
@@ -52,6 +55,7 @@ only when the task calls for it.
 | Capturing/grading an agent run — eval trace primitives, divergence analysis | [`references/eval.md`](./references/eval.md) |
 | Iterative hill-climb over a behavioral agent — autoresearch, mutation/selection loops | [`references/autoresearch.md`](./references/autoresearch.md) |
 | OKF knowledge bundles — authoring, validation, §11 conformance, attested computations | [`references/okf.md`](./references/okf.md) |
+| Design-system spec — DESIGN.md derivative, mise en mode, custom properties, `@scope`/`:host()`/`::part()` modes (in-progress consensus surface) | [`references/design-spec.md`](./references/design-spec.md) |
 
 ## Related standalone skills
 
