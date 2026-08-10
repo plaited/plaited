@@ -1,8 +1,7 @@
 # Design spec (consensus surface)
 
 Reference for an agent assisting in the design of Plaited's design-system
-specification — a derivative of [DESIGN.md] re-grounded on Donnie D'Amato's
-[mise en mode] and [Complementary Space], then expanded with Rachel Jaffe's
+specification — a derivative of [DESIGN.md] re-grounded on Rachel Jaffe's
 [Structural IA] to move beyond atomic visual styling into a full structural
 + expressive system an agent can use to build interfaces. This document is
 the **editable consensus surface** for an in-progress wayfinding effort, not
@@ -112,7 +111,8 @@ side; the functional vocabulary lives in the thread layer, which the spec
 6. **`p-density` dropped entirely.** Density is **not an attribute**.
    `--space-near` / `--space-away` are relationship multipliers (stable);
    `--density-base` is the magnitude, **implied by `p-scale`** (deeper =
-   denser, per Complementary Space tunneling). Final spacing is
+   denser, per Structural IA scale nesting — deeper = more specific, smaller
+   scope). Final spacing is
    `calc(var(--density-base) * var(--space-near))`. No override attribute —
    an S5 is always roomy, an S1 is always compact; the scale nesting *is*
    the density curve. See [Density & spacing](#density--spacing).
@@ -335,8 +335,8 @@ shared attribute.**
 `calc(var(--density-base) * var(--space-near))` (gap) and
 `calc(var(--density-base) * var(--space-away))` (padding). **No `p-density`
 attribute** — the scale nesting *is* the density curve. This is the
-Complementary Space tunneling effect expressed in pure CSS custom properties
-+ `calc()`, no JS — and it keeps the "looking for a smaller button = asking
+tunneling effect (deeper = denser) expressed in pure CSS custom properties +
+`calc()`, no JS — and it keeps the "looking for a smaller button = asking
 the surrounding density to change" property: a button's padding shrinks
 automatically in a denser (lower-scale) scope.
 
@@ -484,7 +484,8 @@ appears in HTML), **functional** (affordances + feedback, vocabulary for
 thread objects, not in HTML), and **expressive** (`--*` tokens + carrier
 model). `p-scale` is the only spec attribute in HTML. `p-mode` and
 `p-density` are gone. The original's `components:` token map is eliminated
-(the anti-pattern mise en mode dissolves).
+(the anti-pattern of variant-per-intent token proliferation that structural
+patterns + functional vocabulary dissolve).
 
 ## Substrate facts (gathered from the codebase)
 
