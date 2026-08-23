@@ -82,7 +82,8 @@
   <!-- Horizontal separator -->
   <rect x="470" y="355" width="500" height="1" fill="url(#lineGrad)"/>
   
-  <text x="470" y="395" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="16" fill="#AAAAAA">Sovereign Agent Nodes</text>
-  <text x="470" y="420" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="16" fill="#AAAAAA">A2A Modnets and Generative UI</text>
-  <text x="470" y="445" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="16" fill="#AAAAAA">Behavioral Runtime, Memory, and Provenance</text>
+  <text x="470" y="395" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="16" fill="#AAAAAA">Generative UI</text>
+  <text x="470" y="420" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="16" fill="#AAAAAA">Self-evolving Agents</text>
+  <text x="470" y="445" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="16" fill="#AAAAAA">ATProto Distribution and Discovery</text>
+  <text x="470" y="470" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="16" fill="#AAAAAA">Memory, Provenance, and Verifiable Work</text>
 </svg>

@@ -1,4 +1,4 @@
-![Plaited sovereign agent node framework: sovereign nodes, A2A modnets, generative UI, and behavioral runtime provenance](assets/banner.svg)
+![Plaited sovereign agent node framework: generative UI, self-evolving agents, ATProto distribution and discovery, and memory, provenance, and verifiable work](assets/banner.svg)
 
 **Sovereign agent nodes first. Framework details second.**
 
