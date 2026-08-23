@@ -1,7 +1,21 @@
+![Plaited sovereign agent node framework: generative UI, self-evolving agents, ATProto distribution and discovery, and memory, provenance, and verifiable work](assets/banner.svg)
+
 # plaited
 
 The Plaited framework — behavioral-programming runtime, SSR Renderer, browser
 Controller, HTML/CSS schemas, validation utils, and CLI.
+
+## Repository Map
+
+- `src/` — the framework (runtime, schemas, Renderer/Controller, CLI)
+- `skills/` — published reference skills (`plaited-framework`, `design`, `git-context`, `markdown`, `mcp-client`, `typescript-lsp`)
+- `.agents/skills/` — workspace-installed skills
+- `research/` — research briefs (`atproto-content-sites`, `mcp-apps`, Spatiotemporal Composability paper)
+- `prompts/` — implementation prompts
+- `scripts/` — repo setup and package-maintenance shell glue
+- `bin/` — CLI entry point
+- `assets/` — brand assets
+
 
 ## Public API
 

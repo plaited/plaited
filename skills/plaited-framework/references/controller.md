@@ -87,8 +87,8 @@ refactors that move impl files.
 
 ```bash
 # Step 1 — resolve the specifier to its backing file (barrel)
-cd packages/framework && bun -e 'console.log(Bun.resolveSync("plaited/controller", process.cwd()+"/"))'
-# → /path/to/packages/framework/src/controller.ts
+bun -e 'console.log(Bun.resolveSync("plaited/controller", process.cwd()+"/"))'
+# → /path/to/src/controller.ts
 
 # Step 2 — read the barrel to find the backing module that exports your symbol
 # The barrel re-exports: export * from './controller/controller.ts'

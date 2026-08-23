@@ -189,8 +189,8 @@ move impl files.
 
 ```bash
 # Step 1 — resolve the specifier to its backing file (barrel)
-cd packages/framework && bun -e 'console.log(Bun.resolveSync("plaited", process.cwd()+"/"))'
-# → /path/to/packages/framework/src/main.ts
+bun -e 'console.log(Bun.resolveSync("plaited", process.cwd()+"/"))'
+# → /path/to/src/main.ts
 
 # Step 2 — read the barrel to find the backing module that exports your symbol
 # The barrel re-exports: export * from './main/behavioral.ts'

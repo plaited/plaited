@@ -233,7 +233,7 @@ flow, so the same thread drives both.
 **Locked** — Plaited's codebase already defines the structural axis:
 
 ```ts
-// packages/framework/src/main/html.constants.ts
+// src/main/html.constants.ts
 export const P_SCALE = 'p-scale'
 export const SCALE = keyMirror('s1','s2','s3','s4','s5','s6','rel')
 export const SCALE_RANK = { s1:1, s2:2, s3:3, s4:4, s5:5, s6:6, rel:0 }
@@ -506,10 +506,10 @@ actually works, not decisions.
 
 | Surface | What it does | Relevance |
 |---------|--------------|-----------|
-| **Renderer** (SSR, `packages/framework/src/main/renderer.ts`) | HTML-string in → `#html` buffer → `HTMLRewriter` mutations on `[p-target]` → HTML-string out. Synchronous, no live DOM. Styling lives as inline `<style>` tags in the HTML. | The spec's styling vehicle is inline `<style>`; SSR pre-renders with no JS. |
-| **Controller** (browser, `packages/framework/src/controller/controller.ts`) | WebSocket-push-driven; binds `p-trigger`/`p-form` in light DOM; applies `render`/`attrs`/`dispatch_custom_event`/`navigate`. Swaps fragments via `<template>` + `setHTMLUnsafe`. User events emit `ui_event` BPEvents (`{type, detail: getAttributes(element)}`). | The Controller touches only the **light DOM**. The same `render`/`attrs` BPEvents drive both SSR (Renderer) and CSR (Controller) — the vocabulary flows through both unchanged. |
+| **Renderer** (SSR, `src/main/renderer.ts`) | HTML-string in → `#html` buffer → `HTMLRewriter` mutations on `[p-target]` → HTML-string out. Synchronous, no live DOM. Styling lives as inline `<style>` tags in the HTML. | The spec's styling vehicle is inline `<style>`; SSR pre-renders with no JS. |
+| **Controller** (browser, `src/controller/controller.ts`) | WebSocket-push-driven; binds `p-trigger`/`p-form` in light DOM; applies `render`/`attrs`/`dispatch_custom_event`/`navigate`. Swaps fragments via `<template>` + `setHTMLUnsafe`. User events emit `ui_event` BPEvents (`{type, detail: getAttributes(element)}`). | The Controller touches only the **light DOM**. The same `render`/`attrs` BPEvents drive both SSR (Renderer) and CSR (Controller) — the vocabulary flows through both unchanged. |
 | **Snapshot** | `#sendSnapshot` uses `document.documentElement.getHTML({ serializableShadowRoots: true })`. | **Declarative Shadow DOM is first-class and round-trips** through snapshots. |
-| **`p-scale` / `SCALE` / `SCALE_RANK`** (`packages/framework/src/main/html.constants.ts`) | `P_SCALE = 'p-scale'`; `SCALE = keyMirror('s1'..'s6','rel')`; `SCALE_RANK = { s1:1 … s6:6, rel:0 }`. Old `template.ts` enforced: higher scale cannot nest inside lower; `rel` is scale-less (rank 0, nests anywhere). | The structural axis already exists in the codebase. The spec adopts it as a fixed enum + nesting constraint. `p-scale` is the only spec attribute in HTML. |
+| **`p-scale` / `SCALE` / `SCALE_RANK`** (`src/main/html.constants.ts`) | `P_SCALE = 'p-scale'`; `SCALE = keyMirror('s1'..'s6','rel')`; `SCALE_RANK = { s1:1 … s6:6, rel:0 }`. Old `template.ts` enforced: higher scale cannot nest inside lower; `rel` is scale-less (rank 0, nests anywhere). | The structural axis already exists in the codebase. The spec adopts it as a fixed enum + nesting constraint. `p-scale` is the only spec attribute in HTML. |
 | **BPEvent shape** | One currency across the agent↔browser boundary: `render`/`attrs`/`dispatch_custom_event`/`navigate` (agent→browser) and `ui_event`/`snapshot`/`error`/`success` (browser→agent). | The functional flow (trigger→logic→render) is *already* the behavioral runtime's shape. Threads orchestrating BPEvents *are* loops; *how* they orchestrate *is* the mechanic. The spec names this shape substrate-neutrally; the framework executes it. |
 
 ## Web-platform facts (gathered from MDN)
