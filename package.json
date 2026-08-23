@@ -1,20 +1,44 @@
 {
-  "private": true,
+  "name": "plaited",
+  "version": "7.2.0",
+  "license": "ISC",
   "engines": {
-    "bun": ">= 1.3.14"
+    "bun": ">= v1.2.9"
   },
-  "workspaces": [
-    "packages/*"
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/plaited/plaited.git",
+    "directory": "packages/framework"
+  },
+  "bugs": {
+    "url": "https://github.com/plaited/plaited/issues"
+  },
+  "bin": {
+    "plaited": "./bin/plaited.ts"
+  },
+  "type": "module",
+  "main": "./main.ts",
+  "exports": {
+    ".": "./src/main.ts",
+    "./controller": "./src/controller.ts",
+    "./utils": "./src/utils.ts"
+  },
+  "files": [
+    "./.bin/**",
+    "./AGENTS.md",
+    "./src/**"
   ],
   "config": {
     "commitizen": {
       "path": "cz-conventional-changelog"
     }
   },
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
-    "check": "bun run check:biome && bun run check:types && bun run check:package",
+    "check": "bun run check:biome && bun run check:types",
     "check:biome": "biome check",
-    "check:package": "format-package --check",
     "check:types": "tsc --noEmit",
     "check:write": "biome check --write && format-package --write",
     "generate:css-schemas": "bun run scripts/css-schemas/run.ts generate",
@@ -28,6 +52,11 @@
     "package.json": [
       "format-package -w"
     ]
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "ajv": "8.20.0",
+    "zod": "4.4.3"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.6",
