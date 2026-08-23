@@ -1,9 +1,9 @@
 import { describe, expect, test } from 'bun:test'
-import { ValidationError } from '../../main/render.errors.ts'
-import { Renderer } from '../../main/renderer.ts'
 import type { BPEvent } from '../behavioral.schemas.ts'
 import { P_TARGET, SCALE } from '../html.constants.ts'
 import { RENDERER_RESULTS_MESSAGE_TYPES, SWAP_MODES } from '../message.constants.ts'
+import { ValidationError } from '../render.errors.ts'
+import { Renderer } from '../renderer.ts'
 
 describe('Renderer — construction', () => {
   test('constructor owns the html string and html() returns it unchanged', () => {

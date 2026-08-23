@@ -1,5 +1,5 @@
 {
-  "name": "@plaited/pi",
+  "name": "@plaited/pi-assemble",
   "version": "0.0.0",
   "license": "ISC",
   "engines": {
@@ -8,7 +8,7 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/plaited/plaited.git",
-    "directory": "packages/pi"
+    "directory": "packages/pi-assemble"
   },
   "bugs": {
     "url": "https://github.com/plaited/plaited/issues"
@@ -19,5 +19,8 @@
     "check:types": "tsc --noEmit",
     "check:write": "biome check --write && format-package --write",
     "test": "bun test"
+  },
+  "dependencies": {
+    "plaited": "workspace:*"
   }
 }
