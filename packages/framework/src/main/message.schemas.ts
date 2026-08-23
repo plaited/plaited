@@ -1,5 +1,6 @@
 import * as z from 'zod'
 import { BPEventSchema } from './behavioral.schemas.ts'
+import { SCALE } from './html.constants.ts'
 import {
   CONTROLLER_INCOMING_MESSAGE_TYPES,
   CONTROLLER_OUTGOING_MESSAGE_TYPES,
@@ -102,6 +103,26 @@ export const PageSnapshotSchema = z.object({
 
 /** @public */
 export type PageSnapshot = z.output<typeof PageSnapshotSchema>
+
+/**
+ * Schema for scale-check results sent from the controller/renderer back to the
+ * behavioral engine, carrying the resolved effective structural scale.
+ *
+ * @public
+ */
+export const ScaleCheckResultMessageSchema = z.object({
+  type: z.literal(CONTROLLER_OUTGOING_MESSAGE_TYPES.scale_check_result),
+  detail: z.object({
+    id: z.string(),
+    target: z.string(),
+    effectiveScale: z.enum(Object.values(SCALE)),
+    timeStamp: z.number(),
+  }),
+})
+
+/** @public */
+export type ScaleCheckResultMessage = z.output<typeof ScaleCheckResultMessageSchema>
+
 /**
  * Discriminated union schema for all controller-to-server messages.
  *
@@ -113,6 +134,7 @@ export const ClientMessageSchema = z.discriminatedUnion('type', [
   ErrorMessageSchema,
   SuccessMessageSchema,
   PageSnapshotSchema,
+  ScaleCheckResultMessageSchema,
 ])
 
 /** @public */
@@ -223,6 +245,38 @@ export const NavigateMessageSchema = z.object({
 export type NavigateMessage = z.output<typeof NavigateMessageSchema>
 
 /**
+ * Schema for scale-check messages that pre-flight a `render` to learn the
+ * structural scale context the content must respect.
+ *
+ * @remarks
+ * Advisory only — does not enforce nesting. The agent sends this before
+ * `render` to learn the `p-scale` boundary. The Controller/Renderer walk the
+ * matched target's `p-scale` (or nearest ancestor's) and reply with a
+ * {@link ScaleCheckResultMessageSchema}.
+ *
+ * @public
+ */
+export const ScaleCheckMessageSchema = z.object({
+  type: z.literal(CONTROLLER_INCOMING_MESSAGE_TYPES.scale_check),
+  detail: z.object({
+    id: z.string(),
+    target: z.string(),
+    swap: z.enum([
+      SWAP_MODES.afterbegin,
+      SWAP_MODES.afterend,
+      SWAP_MODES.beforebegin,
+      SWAP_MODES.beforeend,
+      SWAP_MODES.innerHTML,
+      SWAP_MODES.outerHTML,
+    ]),
+    match: SelectorMatchScehama.optional(),
+  }),
+})
+
+/** @public */
+export type ScaleCheckMessage = z.output<typeof ScaleCheckMessageSchema>
+
+/**
  * Discriminated union schema for all server-to-controller messages.
  *
  * @public
@@ -232,6 +286,7 @@ export const ServerMessageSchema = z.discriminatedUnion('type', [
   AttrsMessageSchema,
   DispatchCustomEventMessageSchema,
   NavigateMessageSchema,
+  ScaleCheckMessageSchema,
 ])
 
 /** @public */

@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test'
 import { ValidationError } from '../../main/render.errors.ts'
 import { Renderer } from '../../main/renderer.ts'
 import type { BPEvent } from '../behavioral.schemas.ts'
-import { P_TARGET } from '../html.constants.ts'
+import { P_TARGET, SCALE } from '../html.constants.ts'
 import { RENDERER_RESULTS_MESSAGE_TYPES, SWAP_MODES } from '../message.constants.ts'
 
 describe('Renderer — construction', () => {
@@ -269,5 +269,63 @@ describe('Renderer.render — payload validation', () => {
         swap: SWAP_MODES.innerHTML,
       }),
     ).toThrow(ValidationError)
+  })
+})
+
+describe('Renderer.scaleCheck — into modes (self boundary)', () => {
+  test('target with own p-scale returns that scale', () => {
+    const r = new Renderer({ html: `<div ${P_TARGET}="t" p-scale="s3">old</div>` })
+    const result = r.scaleCheck({ id: '1', target: 't', swap: SWAP_MODES.innerHTML })
+    expect(result).toEqual({
+      type: RENDERER_RESULTS_MESSAGE_TYPES.scale_check_result,
+      detail: { id: '1', target: 't', effectiveScale: SCALE.s3 },
+    })
+  })
+
+  test('target without own p-scale inherits nearest ancestor scale', () => {
+    const r = new Renderer({
+      html: `<section p-scale="s5"><article p-scale="s3"><span ${P_TARGET}="t">x</span></article></section>`,
+    })
+    const result = r.scaleCheck({ id: '1', target: 't', swap: SWAP_MODES.innerHTML })
+    expect(result.type).toBe(RENDERER_RESULTS_MESSAGE_TYPES.scale_check_result)
+    expect(result.detail).toEqual({ id: '1', target: 't', effectiveScale: SCALE.s3 })
+  })
+})
+
+describe('Renderer.scaleCheck — replace/beside modes (parent boundary)', () => {
+  test('outerHTML uses parent scale, ignores target own p-scale', () => {
+    const r = new Renderer({
+      html: `<section p-scale="s5"><span ${P_TARGET}="t" p-scale="s1">x</span></section>`,
+    })
+    const result = r.scaleCheck({ id: '1', target: 't', swap: SWAP_MODES.outerHTML })
+    expect(result.type).toBe(RENDERER_RESULTS_MESSAGE_TYPES.scale_check_result)
+    expect(result.detail).toEqual({ id: '1', target: 't', effectiveScale: SCALE.s5 })
+  })
+})
+
+describe('Renderer.scaleCheck — no scale found', () => {
+  test('no p-scale anywhere returns rel', () => {
+    const r = new Renderer({ html: `<div><span ${P_TARGET}="t">x</span></div>` })
+    const result = r.scaleCheck({ id: '1', target: 't', swap: SWAP_MODES.innerHTML })
+    expect(result.type).toBe(RENDERER_RESULTS_MESSAGE_TYPES.scale_check_result)
+    expect(result.detail).toEqual({ id: '1', target: 't', effectiveScale: SCALE.rel })
+  })
+
+  test('zero matches returns rel', () => {
+    const r = new Renderer({ html: `<div ${P_TARGET}="t">x</div>` })
+    const result = r.scaleCheck({ id: '1', target: 'nope', swap: SWAP_MODES.innerHTML })
+    expect(result.type).toBe(RENDERER_RESULTS_MESSAGE_TYPES.scale_check_result)
+    expect(result.detail).toEqual({ id: '1', target: 'nope', effectiveScale: SCALE.rel })
+  })
+})
+
+describe('Renderer.scaleCheck — multiple matches', () => {
+  test('most restrictive (lowest rank) across matches wins', () => {
+    const r = new Renderer({
+      html: `<section p-scale="s5"><div ${P_TARGET}="t">a</div></section><article p-scale="s2"><div ${P_TARGET}="t">b</div></article>`,
+    })
+    const result = r.scaleCheck({ id: '1', target: 't', swap: SWAP_MODES.innerHTML })
+    expect(result.type).toBe(RENDERER_RESULTS_MESSAGE_TYPES.scale_check_result)
+    expect(result.detail).toEqual({ id: '1', target: 't', effectiveScale: SCALE.s2 })
   })
 })

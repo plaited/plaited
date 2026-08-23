@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
+import { validateAndEscapeHtml, validateAttributeValue } from '../html-rewriter.utils.ts'
 import { ValidationError } from '../render.errors.ts'
-import { validateAndEscapeHtml } from '../validate-and-escape-html.ts'
 
 describe('validateAndEscapeHtml — happy path', () => {
   test('valid HTML with no on* handlers returns the HTML unchanged', () => {
@@ -266,5 +266,28 @@ describe('validateAndEscapeHtml — CSS validation', () => {
   test('empty <style> and @media with no declarations do not throw', () => {
     const html = `<style></style><style>@media (max-width: 600px) {}</style>`
     expect(() => validateAndEscapeHtml(html)).not.toThrow()
+  })
+})
+
+describe('validateAttributeValue — on* security', () => {
+  test('on* attribute throws ValidationError', () => {
+    expect(() => validateAttributeValue({ tag: 'div', attr: 'onclick', val: 'alert(1)' })).toThrow(ValidationError)
+  })
+})
+
+describe('validateAttributeValue — schema validation', () => {
+  test('valid p-scale value passes (no throw)', () => {
+    expect(() => validateAttributeValue({ tag: 'div', attr: 'p-scale', val: 's3' })).not.toThrow()
+  })
+
+  test('invalid p-scale value throws ValidationError', () => {
+    let caught: InstanceType<typeof ValidationError> | undefined
+    try {
+      validateAttributeValue({ tag: 'div', attr: 'p-scale', val: 's99' })
+    } catch (err) {
+      if (err instanceof ValidationError) caught = err
+    }
+    expect(caught).toBeInstanceOf(ValidationError)
+    expect(caught!.htmlErrors[0]).toMatchObject({ tag: 'div', attribute: 'p-scale' })
   })
 })

@@ -249,10 +249,22 @@ This is Rachel Jaffe's Structural IA **Scale** hierarchy (S1 singular object
 
 …with `rel` as scale-less (rank 0 — nests anywhere, accepts anything). The
 spec adopts this scale vocabulary as a **fixed enum** (not per-project
-frontmatter): S1–S6 + `rel` + ranks. The nesting constraint is part of the
-spec's mechanism — a Phase B agent's generated HTML must respect it
-(higher scale cannot nest inside lower). `p-scale` is the **only** spec
-attribute that appears in HTML.
+frontmatter): S1–S6 + `rel` + ranks.
+
+**Advisory, not enforced.** The nesting constraint is a **generation-layer
+convention**, not a runtime invariant. The Renderer and Controller do not
+throw on scale violations. Instead, the framework exposes a pre-flight
+`scaleCheck` operation (Renderer method + Controller `scale_check` WS message)
+that returns the effective structural boundary a `render` target lives in, so
+an agent can generate content that respects the boundary before rendering. The
+rule: **into** modes (`afterbegin`, `beforeend`, `innerHTML`) read the target's
+own `p-scale`, falling back to the nearest ancestor; **replace/beside** modes
+(`beforebegin`, `afterend`, `outerHTML`) read the target's parent's nearest
+`p-scale`. Across multiple matches, the most restrictive (lowest-rank) scale
+wins. No `p-scale` found anywhere → `rel` (permissive). `SCALE_RANK` drives
+this min-reduction, not an enforcement throw.
+
+`p-scale` is the **only** spec attribute that appears in HTML.
 
 `SCALE.rel` (rank 0) is the **scale-less / expression-only** home. A region
 with no structural role carries `rel` — no nesting constraint. This is the

@@ -12,4 +12,11 @@ export {
   type VerifyFrontiersResult,
   verifyFrontiers,
 } from './main/frontier-analysis.ts'
+export {
+  type CssError,
+  type HtmlError,
+  ValidationError,
+  validateAndEscapeHtml,
+  validateAttributeValue,
+} from './main/html-rewriter.utils.ts'
 export * from './main/renderer.ts'

@@ -90,6 +90,8 @@ const TEST_PAGE_CONTENT: Record<string, string> = {
   'retry-test': `<div p-target="main"><p>connecting</p></div>`,
   'lifecycle-test': `<div p-target="main"><p>lifecycle</p></div>`,
   'navigate-test': `<div p-target="main"><p>navigate target</p></div>`,
+  'scale-check-test': `<section p-scale="s5"><article p-scale="s3"><div p-target="slot">content</div></article></section>`,
+  'scale-check-parent-test': `<section p-scale="s5"><span p-target="slot" p-scale="s1">content</span></section>`,
 }
 
 // Inline scripts injected before the connect module, keyed by source tag.
@@ -230,6 +232,7 @@ export type FixtureServer = {
   uiEvents: { source: string; message: Record<string, unknown> }[]
   errors: { source: string; message: Record<string, unknown> }[]
   successes: { source: string; message: Record<string, unknown> }[]
+  scaleCheckResults: { source: string; message: Record<string, unknown> }[]
   snapshots: { source: string; message: Record<string, unknown> }[]
   formPosts: { source: string; trigger: string; body: Record<string, unknown> }[]
 }
@@ -244,6 +247,7 @@ export const startServer = (port = 0): FixtureServer => {
     uiEvents: [] as { source: string; message: Record<string, unknown> }[],
     errors: [] as { source: string; message: Record<string, unknown> }[],
     successes: [] as { source: string; message: Record<string, unknown> }[],
+    scaleCheckResults: [] as { source: string; message: Record<string, unknown> }[],
     snapshots: [] as { source: string; message: Record<string, unknown> }[],
     formPosts: [] as { source: string; trigger: string; body: Record<string, unknown> }[],
     retryConnections: 0,
@@ -310,6 +314,22 @@ export const startServer = (port = 0): FixtureServer => {
           case 'navigate-test':
             ws.send(JSON.stringify({ type: 'navigate', detail: { id: 'n1', url: '/test/swap-test' } }))
             break
+          case 'scale-check-test':
+            ws.send(
+              JSON.stringify({
+                type: 'scale_check',
+                detail: { id: 'sc1', target: 'slot', swap: 'innerHTML' },
+              }),
+            )
+            break
+          case 'scale-check-parent-test':
+            ws.send(
+              JSON.stringify({
+                type: 'scale_check',
+                detail: { id: 'sc2', target: 'slot', swap: 'outerHTML' },
+              }),
+            )
+            break
           case 'retry-test': {
             state.retryConnections++
             if (state.retryConnections === 1) setTimeout(() => ws.close(1012, 'test retry'), 100)
@@ -350,6 +370,7 @@ export const startServer = (port = 0): FixtureServer => {
             )
           }
         } else if (data.type === 'success') state.successes.push(entry)
+        else if (data.type === 'scale_check_result') state.scaleCheckResults.push(entry)
         else if (data.type === 'snapshot') state.snapshots.push(entry)
       },
       close() {},
@@ -401,6 +422,9 @@ export const startServer = (port = 0): FixtureServer => {
     },
     get successes() {
       return state.successes
+    },
+    get scaleCheckResults() {
+      return state.scaleCheckResults
     },
     get snapshots() {
       return state.snapshots

@@ -6,7 +6,14 @@ import { keyMirror } from '../utils.ts'
  *
  * @public
  */
-export const CONTROLLER_OUTGOING_MESSAGE_TYPES = keyMirror('ui_event', 'error', 'form_submit', 'success', 'snapshot')
+export const CONTROLLER_OUTGOING_MESSAGE_TYPES = keyMirror(
+  'ui_event',
+  'error',
+  'form_submit',
+  'success',
+  'snapshot',
+  'scale_check_result',
+)
 
 /**
  * Page lifecycle event keys observed by the browser controller and reported
@@ -22,7 +29,13 @@ export const PAGE_EVENTS = keyMirror('pagereveal', 'pageswap', 'pagehide', 'page
  *
  * @public
  */
-export const CONTROLLER_INCOMING_MESSAGE_TYPES = keyMirror('attrs', 'render', 'dispatch_custom_event', 'navigate')
+export const CONTROLLER_INCOMING_MESSAGE_TYPES = keyMirror(
+  'attrs',
+  'render',
+  'dispatch_custom_event',
+  'navigate',
+  'scale_check',
+)
 
 /**
  * Event keys used for messages emitted by the behavioral engine to the browser
@@ -30,7 +43,7 @@ export const CONTROLLER_INCOMING_MESSAGE_TYPES = keyMirror('attrs', 'render', 'd
  *
  * @public
  */
-export const RENDERER_RESULTS_MESSAGE_TYPES = keyMirror('attrs_result', 'render_result')
+export const RENDERER_RESULTS_MESSAGE_TYPES = keyMirror('attrs_result', 'render_result', 'scale_check_result')
 
 /**
  * Supported DOM insertion modes for `render` protocol messages.
@@ -42,3 +55,5 @@ export const RENDERER_RESULTS_MESSAGE_TYPES = keyMirror('attrs_result', 'render_
  * @public
  */
 export const SWAP_MODES = keyMirror('afterbegin', 'afterend', 'beforebegin', 'beforeend', 'innerHTML', 'outerHTML')
+
+export const SWAP_TARGETS = keyMirror('parent', 'self')

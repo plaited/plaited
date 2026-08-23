@@ -397,3 +397,23 @@ describe('controller: error reporting & success acks', () => {
     expect((snap.message.detail as { adoptedStyleSheets?: unknown }).adoptedStyleSheets).toBeUndefined()
   }, 15000)
 })
+
+describe('controller: scaleCheck handler', () => {
+  test('into target without own p-scale inherits nearest ancestor scale', async () => {
+    await goto('/test/scale-check-test')
+    const result = await waitFor(
+      () => Promise.resolve(getFixture().scaleCheckResults.find((s) => s.source === 'scale-check-test')),
+      8000,
+    )
+    expect((result.message.detail as { effectiveScale: string }).effectiveScale).toBe('s3')
+  }, 15000)
+
+  test('outerHTML uses parent scale, ignores target own p-scale', async () => {
+    await goto('/test/scale-check-parent-test')
+    const result = await waitFor(
+      () => Promise.resolve(getFixture().scaleCheckResults.find((s) => s.source === 'scale-check-parent-test')),
+      8000,
+    )
+    expect((result.message.detail as { effectiveScale: string }).effectiveScale).toBe('s5')
+  }, 15000)
+})

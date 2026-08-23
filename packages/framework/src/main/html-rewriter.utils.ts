@@ -135,3 +135,55 @@ export const validateAndEscapeHtml = (html: string): string => {
   }
   return out
 }
+
+/**
+ * Validate a single attribute value against the per-tag schema and the
+ * `on*` inline event handler blocklist.
+ *
+ * @remarks
+ * Substrate-neutral — takes `{ tag, attr, val }` (plain strings), not a DOM
+ * or {@link HTMLRewriter} element. Both surfaces (the SSR
+ * {@link HTMLRewriter}-based {@link updateAttributes} and the browser
+ * Controller's `updateAttributes`) and a b-thread validating a dynamic
+ * `attrs` message before sending it to the browser call this same function.
+ *
+ * Rules:
+ * 1. `on*` attributes are always blocked (security: events must use
+ *    `p-trigger`) — throws {@link ValidationError} with an `HtmlError`.
+ * 2. Otherwise the value is validated against the per-tag attribute schema
+ *    via {@link getNodeSchema}; schema failures throw {@link ValidationError}.
+ *
+ * @param tag - The element tag name (lowercase, e.g. `'div'`, `'a'`).
+ * @param attr - The attribute name.
+ * @param val - The attribute value (coerced to string by the caller for
+ *   comparison; passed as-is to the schema).
+ * @throws {ValidationError} when the attribute is an `on*` handler or fails
+ *   per-tag schema validation.
+ * @public
+ */
+export const validateAttributeValue = ({
+  tag,
+  attr,
+  val,
+}: {
+  tag: string
+  attr: string
+  val: string | number | boolean | null
+}): void => {
+  if (attr.startsWith('on')) {
+    throw new ValidationError({
+      htmlErrors: [{ tag, attribute: attr, message: `Event handler attributes are not allowed: [${attr}]` }],
+    })
+  }
+  const schema = getNodeSchema(tag)
+  const result = schema.shape.attributes.safeParse({ [attr]: val })
+  if (!result.success) {
+    throw new ValidationError({
+      htmlErrors: result.error.issues.map((issue) => ({
+        tag,
+        attribute: issue.path.join('.') || attr,
+        message: issue.message,
+      })),
+    })
+  }
+}

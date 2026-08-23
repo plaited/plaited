@@ -1,5 +1,16 @@
 # Prompt: Add `p-scale` nesting validation to Renderer and Controller
 
+> **Status: Superseded.** This prompt proposed runtime *enforcement* of
+> `p-scale` nesting + a "scale-as-data" channel for MCP Apps. The decision
+> (2026-08) took a different path: `p-scale` is **advisory structural
+> metadata**, not enforced at runtime. The implemented `scaleCheck` operation
+> (Renderer method + Controller `scale_check` WS message) is a read-only
+> pre-flight that returns the effective structural boundary, so the agent can
+> generate content that respects it *before* rendering. No `scale-as-data`
+> field was added to `RenderMessage` — MCP Apps / A2UI host composition is
+> out of scope. See `design-spec.md` → Structural scale for the current
+> mechanism.
+
 ## Goal
 
 Add structural-scale (`p-scale`) nesting validation to the Renderer (SSR) and Controller (browser CSR), mirroring the constraint that used to live in the old `src/client/template.ts` (commit `425dcab`). The validation must also **pass scale in data, not just HTML**, so the same structural intent flows to the MCP App host pattern (A2UI-in-MCP-apps) where the payload is JSON, not an HTML attribute the host renders.

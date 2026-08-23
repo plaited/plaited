@@ -1,10 +1,48 @@
 import type { BPEvent } from './behavioral.schemas.ts'
-import { BOOLEAN_ATTRS, P_TARGET } from './html.constants.ts'
-import { getNodeSchema } from './html.schemas.ts'
-import { RENDERER_RESULTS_MESSAGE_TYPES, SWAP_MODES } from './message.constants.ts'
-import type { AttrsMessage, RenderMessage } from './message.schemas.ts'
+import { BOOLEAN_ATTRS, P_SCALE, P_TARGET, SCALE, SCALE_RANK } from './html.constants.ts'
+import { validateAndEscapeHtml, validateAttributeValue } from './html-rewriter.utils.ts'
+import { RENDERER_RESULTS_MESSAGE_TYPES, SWAP_MODES, SWAP_TARGETS } from './message.constants.ts'
+import type { AttrsMessage, RenderMessage, ScaleCheckMessage } from './message.schemas.ts'
 import { ValidationError } from './render.errors.ts'
-import { validateAndEscapeHtml } from './validate-and-escape-html.ts'
+import { swapBoundary } from './swap-boundary.ts'
+
+/**
+ * Apply one attribute update to a Bun {@link HTMLRewriter} element, with
+ * validation. Rules: null + present → removeAttribute; null + absent → no-op;
+ * {@link BOOLEAN_ATTRS} member → set bare when absent; otherwise setAttribute
+ * (when changed) after validating the value via {@link validateAttributeValue}.
+ * The rewriter serializes attribute values itself; no manual escaping.
+ *
+ * @param element - The {@link HTMLRewriterTypes.Element} to mutate.
+ * @param attr - The attribute name.
+ * @param val - The new value (or `null` to remove).
+ * @throws {ValidationError} when the value fails `on*` or per-tag schema
+ *   validation.
+ * @public
+ */
+export const updateAttributes = ({
+  element,
+  attr,
+  val,
+}: {
+  element: HTMLRewriterTypes.Element
+  attr: string
+  val: string | null | number | boolean
+}): void => {
+  if (val === null && element.hasAttribute(attr)) {
+    element.removeAttribute(attr)
+    return
+  }
+  if (val === null) return
+  if (BOOLEAN_ATTRS.has(attr)) {
+    if (!element.hasAttribute(attr)) element.setAttribute(attr, '')
+    return
+  }
+  if (element.getAttribute(attr) !== `${val}`) {
+    validateAttributeValue({ tag: element.tagName, attr, val })
+    element.setAttribute(attr, `${val}`)
+  }
+}
 
 /**
  * Apply one swap-mode insertion to a matching HTMLRewriter element. Each mode
@@ -38,64 +76,15 @@ const applySwap = ({
   }
 }
 
-/**
- * Port of the browser Controller's `updateAttributes` helper, retargeted at the
- * Bun HTMLRewriter element API (same getAttribute/hasAttribute/setAttribute/
- * removeAttribute surface). Rules: null + present → removeAttribute; null +
- * absent → no-op; BOOLEAN_ATTRS member → set bare when absent; otherwise
- * setAttribute(attr, String(val)) when the value changed. The rewriter
- * serializes attribute values itself; no manual escaping (matches Controller).
- *
- * @internal
- */
-const updateAttributes = ({
-  element,
-  attr,
-  val,
-}: {
-  element: HTMLRewriterTypes.Element
-  attr: string
-  val: string | null | number | boolean
-}) => {
-  // on* inline event handlers are always blocked (security: use p-trigger).
-  if (attr.startsWith('on')) {
-    throw new ValidationError({
-      htmlErrors: [
-        { tag: element.tagName, attribute: attr, message: `Event handler attributes are not allowed: [${attr}]` },
-      ],
-    })
-  }
-  if (val === null && element.hasAttribute(attr)) return element.removeAttribute(attr)
-  if (val === null) return
-  if (BOOLEAN_ATTRS.has(attr)) {
-    if (!element.hasAttribute(attr)) element.setAttribute(attr, '')
-    return
-  }
-  if (element.getAttribute(attr) !== `${val}`) {
-    // Validate the new value against the per-tag attribute schema.
-    const schema = getNodeSchema(element.tagName)
-    const result = schema.shape.attributes.safeParse({ [attr]: val })
-    if (!result.success) {
-      throw new ValidationError({
-        htmlErrors: result.error.issues.map((issue) => ({
-          tag: element.tagName,
-          attribute: issue.path.join('.') || attr,
-          message: issue.message,
-        })),
-      })
+export type RendererResult =
+  | {
+      type: typeof RENDERER_RESULTS_MESSAGE_TYPES.attrs_result | typeof RENDERER_RESULTS_MESSAGE_TYPES.render_result
+      detail: { id: string; target: string; html: string }
     }
-    element.setAttribute(attr, `${val}`)
-  }
-}
-
-export type RendererResult = {
-  type: typeof RENDERER_RESULTS_MESSAGE_TYPES.attrs_result | typeof RENDERER_RESULTS_MESSAGE_TYPES.render_result
-  detail: {
-    id: string
-    target: string
-    html: string
-  }
-}
+  | {
+      type: typeof RENDERER_RESULTS_MESSAGE_TYPES.scale_check_result
+      detail: { id: string; target: string; effectiveScale: keyof typeof SCALE }
+    }
 
 /**
  * Server-side renderer — the SSR counterpart to the browser Controller.
@@ -222,5 +211,77 @@ export class Renderer {
       })
       .transform(this.#html)
     return { type: RENDERER_RESULTS_MESSAGE_TYPES.attrs_result, detail: { id, target, html: this.#html } }
+  }
+
+  /**
+   * Pre-flight read: resolve the structural scale context a `render` into or
+   * beside this `target` would nest inside.
+   *
+   * @remarks
+   * Walks the owned buffer with a single read-only `HTMLRewriter` pass,
+   * maintaining an open-element stack to track ancestor `p-scale` values.
+   * For every `[p-target]` match, resolves the effective structural boundary:
+   *
+   * - **Into modes** (`afterbegin`, `beforeend`, `innerHTML`): the target IS
+   *   the container → read its own `p-scale`; if absent, inherit the nearest
+   *   ancestor's.
+   * - **Replace/beside modes** (`beforebegin`, `afterend`, `outerHTML`): the
+   *   target's PARENT is the container → read the nearest ancestor's `p-scale`
+   *   (the target's own scale does not govern).
+   *
+   * Across multiple matches, returns the **most restrictive** (lowest-rank)
+   * effective scale, so a single content blob respects every target's
+   * boundary. Zero matches or no `p-scale` found anywhere → `rel` (scale-less,
+   * permissive).
+   *
+   * Advisory only — does not enforce nesting. The agent calls this before
+   * `render` to learn the boundary its content must respect.
+   *
+   * @param detail - `{ target, swap, id, match }` (no `html` — this is a read).
+   * @returns A {@link RendererResult} of type `scale_check_result` with
+   *   `detail = { id, target, effectiveScale }`.
+   */
+  scaleCheck({ target, swap, id, match = '=' }: ScaleCheckMessage['detail']): RendererResult {
+    const boundary = swapBoundary(swap)
+    const stack: (string | null)[] = []
+    const scales: (keyof typeof SCALE)[] = []
+
+    new HTMLRewriter()
+      .on('*', {
+        element(el) {
+          if (el.canHaveContent) {
+            stack.push(el.getAttribute(P_SCALE))
+            el.onEndTag(() => void stack.pop())
+          }
+        },
+      })
+      .on(`[${P_TARGET}${match}"${target}"]`, {
+        element(el) {
+          const ownScale = el.getAttribute(P_SCALE)
+          let scale: string | null = null
+          if (boundary === SWAP_TARGETS.self && ownScale) {
+            scale = ownScale
+          } else {
+            const ancestorStart = el.canHaveContent ? stack.length - 2 : stack.length - 1
+            for (let i = ancestorStart; i >= 0; i--) {
+              const pScale = stack[i]
+              if (pScale) {
+                scale = pScale
+                break
+              }
+            }
+          }
+          scales.push((scale ?? SCALE.rel) as keyof typeof SCALE)
+        },
+      })
+      .transform(this.#html)
+
+    const effectiveScale: keyof typeof SCALE =
+      scales.filter((s) => s !== SCALE.rel).sort((a, b) => SCALE_RANK[a] - SCALE_RANK[b])[0] ?? SCALE.rel
+
+    return {
+      type: RENDERER_RESULTS_MESSAGE_TYPES.scale_check_result,
+      detail: { id, target, effectiveScale },
+    }
   }
 }

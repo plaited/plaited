@@ -1,20 +1,23 @@
 import type { BPEvent } from '../main/behavioral.schemas.ts'
 import type { Disconnect } from '../main/behavioral.types.ts'
-import { BOOLEAN_ATTRS, P_FORM, P_TARGET, P_TRIGGER } from '../main/html.constants.ts'
+import { BOOLEAN_ATTRS, P_FORM, P_SCALE, P_TARGET, P_TRIGGER, SCALE, SCALE_RANK } from '../main/html.constants.ts'
 import {
   CONTROLLER_INCOMING_MESSAGE_TYPES,
   CONTROLLER_OUTGOING_MESSAGE_TYPES,
   PAGE_EVENTS,
   SWAP_MODES,
+  SWAP_TARGETS,
 } from '../main/message.constants.ts'
-import type { ClientMessage } from '../main/message.schemas.ts'
-import {
-  type AttrsMessage,
-  type DispatchCustomEventMessage,
-  type NavigateMessage,
-  type RenderMessage,
-  ServerMessageSchema,
+import type {
+  AttrsMessage,
+  ClientMessage,
+  DispatchCustomEventMessage,
+  NavigateMessage,
+  RenderMessage,
+  ScaleCheckMessage,
 } from '../main/message.schemas.ts'
+import { ServerMessageSchema } from '../main/message.schemas.ts'
+import { swapBoundary } from '../main/swap-boundary.ts'
 import { UI_CORE_MAX_RETRIES, UI_CORE_RETRY_STATUS_CODES } from './controller.constants.ts'
 import {
   ElementNotFoundError,
@@ -392,6 +395,25 @@ export class Controller {
     if (replace) window.location.replace(url)
     else window.location.assign(url)
   }
+  #scaleCheck({ target, swap, id, match = '=' }: ScaleCheckMessage['detail']) {
+    const nodelist = document.querySelectorAll(`[${P_TARGET}${match}"${target}"]`)
+    const boundary = swapBoundary(swap)
+    const scales: (keyof typeof SCALE)[] = []
+    for (const element of nodelist) {
+      const scaleEl =
+        boundary === SWAP_TARGETS.self
+          ? element.closest(`[${P_SCALE}]`)
+          : element.parentElement?.closest(`[${P_SCALE}]`)
+      const scale = scaleEl?.getAttribute(P_SCALE) ?? SCALE.rel
+      scales.push(scale as keyof typeof SCALE)
+    }
+    const effectiveScale =
+      scales.filter((s) => s !== SCALE.rel).sort((a, b) => SCALE_RANK[a] - SCALE_RANK[b])[0] ?? SCALE.rel
+    this.#send({
+      type: CONTROLLER_OUTGOING_MESSAGE_TYPES.scale_check_result,
+      detail: { id, target, effectiveScale, timeStamp: Date.now() },
+    })
+  }
   #webSocketListener(message: MessageEvent) {
     let id: string | undefined
     try {
@@ -414,6 +436,10 @@ export class Controller {
         case CONTROLLER_INCOMING_MESSAGE_TYPES.navigate: {
           this.#navigate(detail)
           break
+        }
+        case CONTROLLER_INCOMING_MESSAGE_TYPES.scale_check: {
+          this.#scaleCheck(detail)
+          return
         }
       }
       this.#send({
