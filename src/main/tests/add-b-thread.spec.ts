@@ -133,3 +133,52 @@ describe('addThread', () => {
     expect(deadlockSnapshot!.step).toBe(deadlockFrontier!.step)
   })
 })
+
+describe('agent thread contract — JSON-only rules', () => {
+  test('a thread with a generator function in rules is rejected (add_thread_error)', () => {
+    const traces: Trace[] = []
+    const { useAddThread, useTrace } = behavioral()
+    const addThread = useAddThread()
+
+    useTrace((trace: Trace) => {
+      traces.push(trace)
+    })
+
+    // A closure-bearing rule (generator function) is NOT JSON — ThreadScehama.safeParse rejects it.
+    addThread({
+      label: 'bad-closure',
+      rules: [
+        function* () {
+          yield { request: { type: 'evil' } }
+        },
+      ] as unknown as import('../behavioral.schemas.ts').Thread['rules'],
+    })
+
+    const errors = traces.filter((t) => t.kind === TRACE_MESSAGE_KINDS.add_thread_error)
+    expect(errors).toHaveLength(1)
+  })
+
+  test('a thread with valid JSON rules is accepted (no add_thread_error)', () => {
+    const traces: Trace[] = []
+    const { useAddThread, useTrigger, useAddHandler, useTrace } = behavioral()
+    const addThread = useAddThread()
+    const trigger = useTrigger()
+    const addHandler = useAddHandler()
+    const received: string[] = []
+
+    useTrace((trace: Trace) => {
+      traces.push(trace)
+    })
+
+    addThread({ label: 'good', rules: [{ waitFor: [onType('ping')] }, { request: { type: 'pong' } }] })
+    addHandler('pong', () => {
+      received.push('pong')
+    })
+
+    trigger({ type: 'ping' })
+
+    const errors = traces.filter((t) => t.kind === TRACE_MESSAGE_KINDS.add_thread_error)
+    expect(errors).toHaveLength(0)
+    expect(received).toEqual(['pong'])
+  })
+})
