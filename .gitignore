@@ -58,4 +58,5 @@ yarn.lock
 
 # autoresearch
 .plaited
+.prompts/
 .src/.archive-modules

@@ -147,7 +147,10 @@ user-provided adapter seam. pi-ai is at most one future adapter, not a dependenc
   start/delta/done, terminal done/error with stop reason).
 - `src/agent/stream.ts` — `type StreamFn = (req) => AsyncIterable<StreamEvent>`; contract
   documented: never throw, encode failure as a terminal error event.
-- `src/agent/adapters/` seam: an adapter maps a non-conformant provider to the contract.
+- `src/agent/adapters/` seam: an adapter maps a non-conformant provider to the
+  contract. Contract: a factory module with a default export returning
+  `{ provider: string, stream: StreamFn }` — the daemon routes model traffic by
+  `provider` name without a lookup map. IoC: adapters are passed in by the harness.
   Ship one test double (scripted event sequences), no real provider.
 
 **Done when:** tests drive a scripted StreamFn through deltas → terminal error → abort;
@@ -443,10 +446,23 @@ the experimental micro-VM row.
 
 **Pack contract:**
 
-- A pack is a module exporting `(spaceHooks) => Promise<void> | Disconnect`, where
-  `spaceHooks = { useAddThread, useAddHandler, useTrigger, useTool }` are already
-  bound to the pack's declared space. A pack provisions its space's threads,
-  handlers, and tools as one importable unit; `useEject(space)` unwinds it entirely.
+- A pack is a plugin directory in Agent Plugins format: `plugin.json` manifest plus
+  component directories. Space-provisioning code lives in the client-extension
+  namespace `dev.plaited/` (e.g. `dev.plaited/provision.ts` exporting
+  `(spaceHooks) => Promise<void> | Disconnect`, where `spaceHooks =
+  { useAddThread, useAddHandler, useTrigger, useTool }` are bound to the pack's
+  declared space). A pack provisions its space's threads, handlers, and tools as one
+  importable unit; `useEject(space)` unwinds it entirely.
+- **Adapter discovery:** a plugin may declare adapters via the client extension
+  field in `plugin.json`:
+  ```json
+  { "extensions": { "plaited": { "adapters": ["./adapters/anthropic.ts"] } } }
+  ```
+  Paths are relative to the plugin directory; the daemon imports each module's
+  default export (the factory contract from Phase 0). Wrong shape = skip + report
+  (fail-soft per the plugin spec's component-failure principle). Security note:
+  activating a plugin imports its adapter code with daemon privileges — same trust
+  boundary as pi extensions.
 - Space semantics (authority, membership, atproto binding, tenancy) are pack-level
   concerns expressed as threads/handlers — never engine concerns.
 
