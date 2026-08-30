@@ -13,9 +13,9 @@ import type { Adapter } from './use-response.ts'
  * Each hook is already partially-applied with no space (root scope).
  */
 export type AgentHooks = {
-  useAddThread: AddThread
-  useAddHandler: AddHandler
-  useTrigger: Trigger
+  addThread: AddThread
+  addHandler: AddHandler
+  trigger: Trigger
 }
 
 /**
@@ -36,7 +36,7 @@ export type AgentHooks = {
  * @param adapter - The provider adapter driving the model stream.
  */
 export const registerAgentThreads = (hooks: AgentHooks, adapter: Adapter): void => {
-  const { useAddThread, useAddHandler, useTrigger } = hooks
+  const { addThread, addHandler, trigger } = hooks
 
   // ----------------------------------------------------------------
   // Items store — handler-owned state
@@ -81,7 +81,7 @@ export const registerAgentThreads = (hooks: AgentHooks, adapter: Adapter): void 
   // ----------------------------------------------------------------
   // Handler: user.prompt — capture the prompt text
   // ----------------------------------------------------------------
-  useAddHandler('user.prompt', ({ detail }) => {
+  addHandler('user.prompt', ({ detail }) => {
     const { prompt } = (detail ?? {}) as { prompt: string }
     currentPrompt = prompt
   })
@@ -90,7 +90,7 @@ export const registerAgentThreads = (hooks: AgentHooks, adapter: Adapter): void 
   // Handler: respond — assemble request, stream events, dispatch tool calls,
   //            detect compaction threshold
   // ----------------------------------------------------------------
-  useAddHandler('respond', async () => {
+  addHandler('respond', async () => {
     if (!currentPrompt) return
 
     const request: OpenResponsesRequest = {
@@ -109,7 +109,7 @@ export const registerAgentThreads = (hooks: AgentHooks, adapter: Adapter): void 
 
     for await (const event of stream) {
       // Trigger each stream event verbatim — spec event types in traces.
-      useTrigger({ type: event.type, detail: extractDetail(event) })
+      trigger({ type: event.type, detail: extractDetail(event) })
 
       // Collect function_call items for later dispatch.
       if (
@@ -129,7 +129,7 @@ export const registerAgentThreads = (hooks: AgentHooks, adapter: Adapter): void 
       if (isTerminalEvent(event)) {
         const usage = getUsage(event)
         if (usage && adapter.contextWindow !== undefined && usage.input_tokens >= adapter.contextWindow) {
-          useTrigger({ type: 'context.threshold', detail: { usage } })
+          trigger({ type: 'context.threshold', detail: { usage } })
         }
       }
     }
@@ -138,7 +138,7 @@ export const registerAgentThreads = (hooks: AgentHooks, adapter: Adapter): void 
     // MINIMAL: sequential dispatch. Upgrade path: parallel tool dispatch with
     //   a thread that tracks outstanding call_ids.
     for (const call of pendingCalls) {
-      useTrigger({ type: call.name, detail: { call_id: call.call_id, arguments: call.arguments } })
+      trigger({ type: call.name, detail: { call_id: call.call_id, arguments: call.arguments } })
     }
   })
 
@@ -154,17 +154,17 @@ export const registerAgentThreads = (hooks: AgentHooks, adapter: Adapter): void 
   // MINIMAL: single generic handler. Upgrade path: per-tool handlers
   // registered via useTool (Phase 2) that can validate call_id matching
   // through detailSchema.
-  useAddHandler('tool.result', ({ detail }) => {
+  addHandler('tool.result', ({ detail }) => {
     const { call_id, output } = (detail ?? {}) as { call_id: string; output: string }
     items.push({ type: 'function_call_output', call_id, output })
     // Continue the turn by re-triggering respond with the updated items.
-    useTrigger({ type: 'respond' })
+    trigger({ type: 'respond' })
   })
 
   // ----------------------------------------------------------------
   // Handler: compaction.start — compact the conversation, reset items
   // ----------------------------------------------------------------
-  useAddHandler('compaction.start', async () => {
+  addHandler('compaction.start', async () => {
     const req = lastRequest
     if (!req) return
 
@@ -184,14 +184,14 @@ export const registerAgentThreads = (hooks: AgentHooks, adapter: Adapter): void 
       const lastTurn = items.slice(-2).filter((item): item is InputItem & { role: string } => 'role' in item)
       items = [...systemMessages, ...lastTurn]
     }
-    useTrigger({ type: 'compaction.done' })
+    trigger({ type: 'compaction.done' })
   })
 
   // ----------------------------------------------------------------
   // Thread: turn loop (looping)
   //   Coordinates the prompt → respond → terminal cycle.
   // ----------------------------------------------------------------
-  useAddThread({
+  addThread({
     label: 'turn-loop',
     rules: [
       { waitFor: [{ type: 'user.prompt' }, { type: 'respond' }], interrupt: [{ type: 'cancel' }] },
@@ -210,7 +210,7 @@ export const registerAgentThreads = (hooks: AgentHooks, adapter: Adapter): void 
   //   `turn.end`, not just the first. Failed / incomplete keep the
   //   loop alive.
   // ----------------------------------------------------------------
-  useAddThread({
+  addThread({
     label: 'stop-condition',
     rules: [{ waitFor: [{ type: 'response.completed' }] }, { request: { type: 'turn.end' } }],
   })
@@ -221,7 +221,7 @@ export const registerAgentThreads = (hooks: AgentHooks, adapter: Adapter): void 
   //   The compaction handler calls adapter.compact (or synthesizes) and
   //   triggers `compaction.done` — which unblocks `respond`.
   // ----------------------------------------------------------------
-  useAddThread({
+  addThread({
     label: 'compaction-gate',
     rules: [
       { waitFor: [{ type: 'context.threshold' }] },

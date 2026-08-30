@@ -38,7 +38,7 @@ function setupTest(adapter: Adapter) {
   })
 
   // Register the agent loop
-  registerAgentThreads({ useAddThread: addThread, useAddHandler: addHandler, useTrigger: trigger }, adapter)
+  registerAgentThreads({ addThread, addHandler, trigger }, adapter)
 
   return {
     addHandler,
