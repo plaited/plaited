@@ -177,32 +177,49 @@ conditions) is expressed as threads, not callbacks.
 
 **Deliverables:**
 
-- `src/agent/loop.ts` — the turn loop thread (see shape below), plus:
-  - a stream-adapter handler that iterates the adapter's `UseResponse` and `trigger`s
-    `llm.delta` / `llm.toolCall` / `llm.done` b-events;
-  - cancellation is an `interrupt` on the loop thread's rules, not a separate
-    thread: the loop carries `interrupt: [{ type: 'cancel' }]` at each step, so
-    triggering `cancel` in the space tears the turn down via the interrupt path;
-  - stop-condition as a thread requesting `turn.end`, not a callback.
+- `src/agent/threads.ts` — a file of threads: the turn loop thread (see shape
+  below), the stream-adapter handler, the stop-condition thread, and the compaction
+  thread.
+- **Spec events verbatim — no `llm.*` translation layer.** The stream-adapter
+  handler iterates the adapter's `UseResponse` (yielding typed
+  `OpenResponsesStreamEvent`s) and triggers each as a b-event as-is:
+  `trigger({ type: event.type, detail: <event fields minus type> })`. Phase 0's
+  typed events make an invented `llm.*` vocabulary redundant; traces then show
+  spec-aligned event types end to end (Phase 4's `toItems` projection reads the
+  same types the loop matched on).
+- Loop thread reacts declaratively via `detailSchema` matching:
+  - tool calls arrive as `response.output_item.done` with `detailSchema` matching
+    `item.type: 'function_call'` — no separate toolCall event;
+  - terminal wait is the three spec terminal types:
+    `waitFor: ['response.completed', 'response.failed', 'response.incomplete']`.
+- Cancellation is an `interrupt` on the loop thread's rules, not a separate
+  thread: the loop carries `interrupt: [{ type: 'cancel' }]` at each step, so
+  triggering `cancel` in the space tears the turn down via the interrupt path.
+- Stop-condition as a thread requesting `turn.end`, not a callback.
 - Loop thread shape (looping, no `once`), each rule carrying the cancel interrupt:
-  `{ waitFor: [userPrompt], interrupt: [cancel] }` → `request: llm.stream` →
-  `{ waitFor: [llm.done], interrupt: [cancel] }` → `request: <tool name>` per parsed
-  function_call → `{ waitFor: [<name>_result], interrupt: [cancel] }` (matched by
-  `detailSchema` const on `call_id`) → append items → loop.
+  `{ waitFor: [user.prompt], interrupt: [cancel] }` → request stream (the handler
+  calls `respond(req)` on the space's adapter) →
+  `{ waitFor: [terminal types], interrupt: [cancel] }` → request `<tool name>` per
+  parsed function_call → `{ waitFor: [<name>_result], interrupt: [cancel] }`
+  (matched by `detailSchema` const on `call_id`) → append items → loop.
   The ingress event is `user.prompt`, triggered into the space by the CLI (Phase 6
   input `{ space, prompt }`).
 - Context management as a b-thread: after each turn's terminal event, a compaction
-  thread reads `usage.input_tokens` and compares against the adapter-declared
-  context limit; below threshold it does nothing; at/above threshold it blocks the
-  loop's next `llm.stream` request until a compaction completes (provider compact
+  thread reads the terminal event's `usage.input_tokens` and compares against the
+  model's context limit, declared on the adapter (`Adapter` gains an optional
+  `contextWindow: number` — the spec doesn't carry it; adapters know their
+  providers). Below threshold it does nothing; at/above threshold it blocks the
+  loop's next stream request until a compaction completes (provider compact
   endpoint or adapter-synthesized summary producing a `compaction` item, which
   becomes base input). Use `truncation: 'disabled'` so overflow is a hard,
   catchable error — never silent degradation. The compaction gate is a plain
   block/waitFor pattern; no callback.
 
 **Done when:** tests prove — happy path (prompt → stream → tool call → result →
-next stream), cancel mid-turn via interrupt, terminal error stops the turn. All
-coordination appears as events in traces (assert via `useTrace`).
+next stream), cancel mid-turn via interrupt, terminal error stops the turn,
+threshold crossing blocks the next stream until compaction completes. All
+coordination appears as events in traces (assert via `useTrace`); event types in
+traces are spec event types, not an invented vocabulary.
 
 ---
 

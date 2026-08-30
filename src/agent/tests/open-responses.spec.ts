@@ -1,10 +1,11 @@
 import { describe, expect, test } from 'bun:test'
-import type { OpenResponsesStreamEvent } from '../open-responses.schemas.ts'
+import type { KnownStreamEvent, OpenResponsesRequest, OpenResponsesStreamEvent } from '../open-responses.schemas.ts'
 import {
   CompactionItemSchema,
   ErrorSchema,
   FunctionCallItemSchema,
   FunctionCallOutputItemSchema,
+  KnownStreamEventSchema,
   MessageItemSchema,
   OpenResponsesRequestSchema,
   OutputTextContentSchema,
@@ -12,12 +13,13 @@ import {
   StreamEventLaxSchema,
   UsageSchema,
 } from '../open-responses.schemas.ts'
+import type { UseResponse } from '../use-response.ts'
 import { useResponse } from '../use-response.ts'
 
 // --- Test double: a scripted adapter ---
 
-function scriptedAdapter(events: OpenResponsesStreamEvent[]): UseResponse {
-  return async function* (_req) {
+function scriptedAdapter(events: KnownStreamEvent[]): UseResponse {
+  return async function* (_req: OpenResponsesRequest) {
     for (const ev of events) {
       yield ev
     }
@@ -25,7 +27,7 @@ function scriptedAdapter(events: OpenResponsesStreamEvent[]): UseResponse {
 }
 
 // --- Scenario 1: happy text turn ---
-const happyEvents: OpenResponsesStreamEvent[] = [
+const happyEvents: KnownStreamEvent[] = [
   {
     type: 'response.output_item.added',
     item: {
@@ -67,7 +69,7 @@ const happyEvents: OpenResponsesStreamEvent[] = [
 ]
 
 // --- Scenario 2: function call with argument deltas ---
-const functionCallEvents: OpenResponsesStreamEvent[] = [
+const functionCallEvents: KnownStreamEvent[] = [
   {
     type: 'response.output_item.added',
     item: {
@@ -109,7 +111,7 @@ const functionCallEvents: OpenResponsesStreamEvent[] = [
 ]
 
 // --- Scenario 3: failed response ---
-const failedEvents: OpenResponsesStreamEvent[] = [
+const failedEvents: KnownStreamEvent[] = [
   {
     type: 'response.output_item.added',
     item: {
@@ -128,7 +130,7 @@ const failedEvents: OpenResponsesStreamEvent[] = [
 ]
 
 // --- Scenario 4: compaction item + usage ---
-const compactionEvents: OpenResponsesStreamEvent[] = [
+const compactionEvents: KnownStreamEvent[] = [
   {
     type: 'response.output_item.added',
     item: {
@@ -267,6 +269,16 @@ describe('schema validation — request', () => {
     expect(result.tools).toHaveLength(1)
   })
 
+  test('tool missing parameters is hard-rejected', () => {
+    expect(() =>
+      OpenResponsesRequestSchema.parse({
+        model: { provider: 'test', modelId: 'm' },
+        input: [{ type: 'message', role: 'user', content: 'Hi' }],
+        tools: [{ name: 'read_file', description: 'Read a file from disk' }],
+      }),
+    ).toThrow()
+  })
+
   test('truncation and instructions parse', () => {
     const result = OpenResponsesRequestSchema.parse({
       model: { provider: 'test', modelId: 'm' },
@@ -391,10 +403,10 @@ describe('stream event scenarios', () => {
     }
   })
 
-  test('function_call arguments deltas assemble correctly', async () => {
+  test('function_call arguments deltas assemble correctly', () => {
     // Validate each event in the scenario
     for (const ev of functionCallEvents) {
-      const result = StreamEventLaxSchema.parse(ev)
+      const result = KnownStreamEventSchema.parse(ev)
       expect(result.type).toBeTypeOf('string')
     }
 
@@ -406,21 +418,22 @@ describe('stream event scenarios', () => {
       }
     }
     // The last item carries the full arguments
-    const lastItem = functionCallEvents.find(
-      (e): e is OpenResponsesStreamEvent & { item: { arguments: string } } =>
-        e.type === 'response.output_item.done' && 'arguments' in e.item,
-    ) as unknown as { item: { arguments: string } } | undefined
-    const fullArgs = lastItem?.item.arguments ?? ''
+    let fullArgs = ''
+    for (const ev of functionCallEvents) {
+      if (ev.type === 'response.output_item.done' && ev.item.type === 'function_call') {
+        fullArgs = ev.item.arguments
+      }
+    }
     expect(assembled).toBe(fullArgs)
     expect(JSON.parse(fullArgs)).toEqual({ location: 'Paris' })
   })
 
   test('failed response consumed without thrown error', async () => {
     const adapter = scriptedAdapter(failedEvents)
-    const gen = adapter({ model: { provider: 'test', modelId: 'm' }, input: [] })
-    const collected: OpenResponsesStreamEvent[] = []
-    for await (const ev of gen) {
-      const parsed = StreamEventLaxSchema.parse(ev)
+    const stream = await adapter({ model: { provider: 'test', modelId: 'm' }, input: [] })
+    const collected: KnownStreamEvent[] = []
+    for await (const ev of stream) {
+      const parsed = KnownStreamEventSchema.parse(ev)
       collected.push(parsed)
     }
     const terminal = collected[collected.length - 1]
@@ -444,16 +457,24 @@ describe('stream event scenarios', () => {
     expect(parsed).toHaveProperty('some_field')
   })
 
+  test('malformed known frame throws instead of passing through', () => {
+    // A response.output_text.delta missing its required `delta` field is a
+    // corrupted known frame — it must fail validation, not masquerade as an
+    // unknown provider extra.
+    const malformed = { type: 'response.output_text.delta', item_id: 'msg_1' }
+    expect(() => StreamEventLaxSchema.parse(malformed)).toThrow()
+  })
+
   test('compaction item round-trips through schema', () => {
     for (const ev of compactionEvents) {
-      const result = StreamEventLaxSchema.parse(ev)
+      const result = KnownStreamEventSchema.parse(ev)
       expect(result.type).toBeTypeOf('string')
     }
   })
 
   test('terminal event with usage parses token counts intact', () => {
     const ev = compactionEvents[1]!
-    const parsed = StreamEventLaxSchema.parse(ev)
+    const parsed = KnownStreamEventSchema.parse(ev)
     expect(parsed.type).toBe('response.completed')
     if (parsed.type === 'response.completed') {
       expect(parsed.usage?.input_tokens).toBe(4500)
@@ -468,13 +489,13 @@ describe('scripted adapter through useResponse', () => {
     const adapter = useResponse({ provider: 'test-double', respond: scriptedAdapter(happyEvents) })
     expect(adapter.provider).toBe('test-double')
 
-    const gen = adapter.respond({
+    const stream = await adapter.respond({
       model: { provider: 'test-double', modelId: 'm' },
       input: [{ type: 'message', role: 'user', content: 'Hi' }],
     })
-    const collected: OpenResponsesStreamEvent[] = []
-    for await (const ev of gen) {
-      const parsed = StreamEventLaxSchema.parse(ev)
+    const collected: KnownStreamEvent[] = []
+    for await (const ev of stream) {
+      const parsed = KnownStreamEventSchema.parse(ev)
       collected.push(parsed)
     }
     expect(collected).toHaveLength(5)

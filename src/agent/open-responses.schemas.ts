@@ -156,7 +156,7 @@ export type InputItem = z.output<typeof InputItemSchema>
 export const FunctionToolSchema = z.object({
   name: z.string(),
   description: z.string().optional(),
-  parameters: z.object({}).catchall(z.unknown()).optional(),
+  parameters: z.record(z.string(), z.unknown()),
 })
 export type FunctionTool = z.output<typeof FunctionToolSchema>
 
@@ -315,15 +315,25 @@ export type KnownStreamEvent = z.output<typeof KnownStreamEventSchema>
 
 // ----------------------------------------------------------------
 // Unknown event passthrough (provider extras, _-prefixed)
-// Tolerates any object with a 'type' field not matching known types.
+// Tolerates any object with a 'type' field NOT matching known types.
+// The refine closes the union fall-through: a malformed known frame
+// (e.g. a text delta missing `delta`) fails the strict schema AND is
+// rejected here, so it throws instead of masquerading as an unknown
+// provider extra.
 // ----------------------------------------------------------------
 
+// Derived from the discriminated union's literal discriminants — the set stays in
+// sync with KnownStreamEventSchema by construction, no hand-maintained duplicate.
+const KNOWN_STREAM_EVENT_TYPES: ReadonlySet<string> = new Set(
+  KnownStreamEventSchema.options.map((option) => option.shape.type.values.values().next().value as string),
+)
+
 /** @public */
-export const UnknownStreamEventSchema = z
-  .object({
-    type: z.string(),
-  })
-  .passthrough()
+export const UnknownStreamEventSchema = z.looseObject({
+  type: z.string().refine((type) => !KNOWN_STREAM_EVENT_TYPES.has(type), {
+    error: 'malformed known stream event — fix the frame instead of passing it through',
+  }),
+})
 export type UnknownStreamEvent = z.output<typeof UnknownStreamEventSchema>
 
 // ----------------------------------------------------------------
