@@ -46,6 +46,22 @@ describe('bash tool', () => {
     expect(inputSchema.safeParse({ command: 'x', timeout: 2_147_483 }).success).toBe(true)
   })
 
+  test('truncated output is spilled to a temp file containing the full output', async () => {
+    const result = await bashTool.run({ command: 'seq 1 3000' })
+    expect(result.truncated).toBe(true)
+    expect(result.fullOutputPath).toBeDefined()
+    // The spill must contain what the tail dropped — the head
+    const spilled = await Bun.file(result.fullOutputPath!).text()
+    expect(spilled.startsWith('1\n2\n3\n')).toBe(true)
+    expect(spilled).toContain('3000')
+  })
+
+  test('no spill when output is under the limits', async () => {
+    const result = await bashTool.run({ command: 'echo small' })
+    expect(result.truncated).toBeUndefined()
+    expect(result.fullOutputPath).toBeUndefined()
+  })
+
   test('cwd is provision-time: model schema strips cwd; composed run pins it', async () => {
     // Model-facing schema stays command/timeout — an extra cwd key from the
     // model is stripped (unknown-key behavior), never forwarded to run.

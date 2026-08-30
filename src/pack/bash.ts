@@ -1,3 +1,6 @@
+import { mkdtemp } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import * as z from 'zod'
 import type { ToolArgs } from './pack.types.ts'
 
@@ -31,6 +34,10 @@ export const outputSchema = z.object({
     .boolean()
     .optional()
     .describe('true when output exceeded the tail-truncation limits (last 2000 lines / 50KB)'),
+  fullOutputPath: z
+    .string()
+    .optional()
+    .describe('absolute path to the untruncated output — present only when truncated'),
 })
 
 export type BashInput = z.output<typeof inputSchema> & {
@@ -107,15 +114,21 @@ const truncateTail = (text: string): { content: string; truncated: boolean } => 
  * (a model that picks its own directories is a sandbox hole — Phase 5 policy
  * guards gate any model-facing escape hatch later).
  *
- * MINIMAL: no full-output spill to a temp file on truncation (upgrade path:
- * write the untruncated output and report the path); no sandbox/policy
- * run-composition hook (Phase 5/7 — policy packs wrap `run`); Windows
- * requires bash (Git Bash) on PATH.
+ * **Full-output spill**: when truncation fires, the complete output is
+ * written to a temp file under an mkdtemp'd `$TMPDIR` directory and its
+ * path is reported as `fullOutputPath` — the model's next `read` retrieves
+ * what the tail dropped. No spill on the happy path.
+ *
+ * MINIMAL: spill files accumulate until OS tmp cleanup (no explicit deletion
+ * — matches pi); no sandbox/policy run-composition hook (Phase 5/7 — policy
+ * packs wrap `run`); Windows requires bash (Git Bash) on PATH.
  */
 export const run = async (input: BashInput): Promise<BashOutput> => {
   const { command, timeout, cwd, env: extraEnv } = input
 
   try {
+    const spillDir = await mkdtemp(join(tmpdir(), 'bash-spill-'))
+
     const proc = Bun.spawn([shell, '-c', command], {
       cwd,
       env: extraEnv ? { ...process.env, ...extraEnv } : undefined,
@@ -131,26 +144,37 @@ export const run = async (input: BashInput): Promise<BashOutput> => {
     ])
     const exitCode = await proc.exited
 
+    /** Tail-truncate; on truncation, spill the full output to the spill dir. */
+    const capture = async (raw: string) => {
+      const tail = truncateTail(sanitize(raw))
+      if (!tail.truncated) return { content: tail.content, truncated: false, fullOutputPath: undefined }
+      const spillPath = join(spillDir, 'output.log')
+      await Bun.write(spillPath, raw)
+      return { ...tail, fullOutputPath: spillPath }
+    }
+
     // Native timeout kills with SIGTERM — surface it as the timeout condition
     if (timeout !== undefined && proc.signalCode !== null) {
-      const out = truncateTail(sanitize(rawStdout))
-      const err = truncateTail(sanitize(rawStderr))
+      const out = await capture(rawStdout)
+      const err = await capture(rawStderr)
       return {
         stdout: out.content,
         stderr: `${err.content}\nCommand timed out after ${timeout} seconds (${proc.signalCode})`.trim(),
         exitCode: -1,
         truncated: out.truncated || err.truncated || undefined,
+        fullOutputPath: out.fullOutputPath ?? err.fullOutputPath,
       }
     }
 
-    const stdoutTail = truncateTail(sanitize(rawStdout))
-    const stderrTail = truncateTail(sanitize(rawStderr))
+    const stdoutTail = await capture(rawStdout)
+    const stderrTail = await capture(rawStderr)
 
     return {
       stdout: stdoutTail.content,
       stderr: stderrTail.content,
       exitCode: exitCode ?? -1,
       truncated: stdoutTail.truncated || stderrTail.truncated || undefined,
+      fullOutputPath: stdoutTail.fullOutputPath ?? stderrTail.fullOutputPath,
     }
   } catch (err) {
     // Catch unexpected spawn errors (command not found, cwd deleted, etc.)
