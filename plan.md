@@ -147,11 +147,13 @@ user-provided adapter seam. pi-ai is at most one future adapter, not a dependenc
   start/delta/done, terminal done/error with stop reason).
 - `src/agent/stream.ts` — `type StreamFn = (req) => AsyncIterable<StreamEvent>`; contract
   documented: never throw, encode failure as a terminal error event.
-- `src/agent/adapters/` seam: an adapter maps a non-conformant provider to the
-  contract. Contract: a factory module with a default export returning
-  `{ provider: string, stream: StreamFn }` — the daemon routes model traffic by
-  `provider` name without a lookup map. IoC: adapters are passed in by the harness.
-  Ship one test double (scripted event sequences), no real provider.
+- `src/agent/` adapter seam: adapters are plain modules (no `adapters/` nesting —
+  with IoC there's no registry to organize). Contract: a factory module with a
+  default export returning `{ provider: string, stream: StreamFn }` — the daemon
+  routes model traffic by `provider` name without a lookup map. The seam is
+  `src/agent/use-adapter.ts` (the factory validating the shape). Scenario data for
+  test doubles stays in tests; when `--seed` needs named scenarios the daemon reads
+  them from the plugin/`.agents` surface.
 
 **Done when:** tests drive a scripted StreamFn through deltas → terminal error → abort;
 `bun --bun tsc --noEmit` clean.
