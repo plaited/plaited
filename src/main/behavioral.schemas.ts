@@ -45,12 +45,30 @@ const JSON_SCHEMA_KEYWORDS = new Set([
   'not',
 ])
 
+/**
+ * A JSON object that must carry at least one JSON Schema keyword.
+ *
+ * The single source of truth for “is this a JSON Schema document?” at every
+ * trust boundary that accepts one:
+ *
+ * - `BPListenerSchema.detailSchema` (optional) — hand-authored by thread authors.
+ * - Phase 2 `useTool` descriptors — machine-derived via `z.toJSONSchema()` for
+ *   both `inputSchema` and `outputSchema` (required).
+ *
+ * The keyword presence distinguishes a real schema from an arbitrary catchall
+ * object (a common mistake is passing a Zod schema instance or a plain detail
+ * object to `detailSchema`).
+ *
+ * @public
+ */
+export const JsonSchemaObjectSchema = JsonObjectSchema.refine(
+  (val) => Object.keys(val).some((key) => JSON_SCHEMA_KEYWORDS.has(key)),
+  { message: 'must be a valid JSON Schema object' },
+)
+
 export const BPListenerSchema = z.object({
   type: z.string(),
-  detailSchema: JsonObjectSchema.optional().refine(
-    (val) => val === undefined || Object.keys(val).some((key) => JSON_SCHEMA_KEYWORDS.has(key)),
-    { message: 'detailSchema must be a valid JSON Schema object' },
-  ),
+  detailSchema: JsonSchemaObjectSchema.optional(),
   detailMatch: z.enum(Object.values(DETAIL_MATCH)).optional(),
 })
 

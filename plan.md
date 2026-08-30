@@ -250,10 +250,13 @@ section supersedes the abandoned engine sketch) and Phase 1's discovered reality
 - `src/agent/use-tool.ts` — external factory taking the partially-applied
   `{ addThread, addHandler, trigger }` (bound capabilities, matching Phase 1's
   `AgentHooks`). `useTool({ name, inputSchema (Zod), outputSchema (Zod), run })`:
-  - derives JSON Schema via `z.toJSONSchema` for listener matching;
-  - tool schemas stay **pure args/result** — no `call_id`. The Ajv2020 check (reuse
-    the engine's Ajv2020 instance pattern) asserts purity — rejects schemas that
-    bake `call_id` into the tool contract. The `call_id` envelope is stamped at
+  - derives JSON Schema via `z.toJSONSchema` for listener matching; shape-validate
+    both derived schemas with `JsonSchemaObjectSchema` (the engine's exported
+    single source of truth for "is this a JSON Schema document?");
+  - tool schemas stay **pure args/result** — no `call_id`. The purity check is
+    structural (no Ajv — Ajv stays in the engine for listener compilation): reject
+    registration when either derived schema has a top-level `properties.call_id` or
+    `call_id` in `required`. The `call_id` envelope is stamped at
     dispatch: the `respond` handler owns `call_id` + `arguments` when lifting a
     `function_call` item into a tool-call event, and results echo it on
     `${name}_result` / `tool.result`. Rationale: `call_id` must stay in `detail`
