@@ -143,19 +143,29 @@ user-provided adapter seam. pi-ai is at most one future adapter, not a dependenc
 
 - `src/agent/open-responses.schemas.ts` — Zod schemas for the minimal request shape
   (`model`, `input` items incl. `function_call`/`function_call_output` with `call_id`,
-  `tools`) and the minimal stream event union (text/thinking deltas, tool-call
-  start/delta/done, terminal done/error with stop reason).
-- `src/agent/stream.ts` — `type StreamFn = (req) => AsyncIterable<StreamEvent>`; contract
-  documented: never throw, encode failure as a terminal error event.
+  `tools`, `truncation: 'auto'|'disabled'`, `instructions`) and the minimal stream
+  event union (`OpenResponsesStreamEvent`) incl. terminal-event `usage`
+  (`input_tokens`/`output_tokens`/`total_tokens`) and the spec-native `compaction`
+  item type (`/v1/responses/compact` returns `{ type: 'compaction',
+  encrypted_content }` — sent back as base input; adapters synthesize it for
+  providers without a compact endpoint).
+- `src/agent/use-response.ts` — `type UseResponse = (req) =>
+  AsyncIterable<OpenResponsesStreamEvent> |
+  Promise<AsyncIterable<OpenResponsesStreamEvent>>` and
+  `type Adapter = { provider, respond: UseResponse }`, plus the `useResponse`
+  factory (validate provider non-empty, freeze). Repo pattern: camelCase function,
+  PascalCase-of-name type (`useTrigger`/`UseTrigger`). Contract documented: never
+  throw, encode failure as a terminal error event. The daemon routes by `provider`
+  name; adapters wire through `useResponse`.
 - `src/agent/` adapter seam: adapters are plain modules (no `adapters/` nesting —
-  with IoC there's no registry to organize). Contract: a factory module with a
-  default export returning `{ provider: string, stream: StreamFn }` — the daemon
-  routes model traffic by `provider` name without a lookup map. The seam is
-  `src/agent/use-adapter.ts` (the factory validating the shape). Scenario data for
-  test doubles stays in tests; when `--seed` needs named scenarios the daemon reads
-  them from the plugin/`.agents` surface.
+  with IoC there's no registry to organize). Contract: adapter modules export a
+  factory wiring `{ provider, respond: UseResponse }` through `useResponse` —
+  the daemon routes model traffic by `provider` name without a lookup map. Scenario
+  data for test doubles stays in tests; when `--seed` needs named scenarios the
+  daemon reads them from the plugin/`.agents` surface.
 
-**Done when:** tests drive a scripted StreamFn through deltas → terminal error → abort;
+**Done when:** tests drive a scripted adapter (a `UseResponse` bound via
+`useResponse`) through deltas → terminal error → abort;
 `bun --bun tsc --noEmit` clean.
 
 ---
@@ -168,7 +178,7 @@ conditions) is expressed as threads, not callbacks.
 **Deliverables:**
 
 - `src/agent/loop.ts` — the turn loop thread (see shape below), plus:
-  - a stream-adapter handler that iterates the `StreamFn` and `trigger`s
+  - a stream-adapter handler that iterates the adapter's `UseResponse` and `trigger`s
     `llm.delta` / `llm.toolCall` / `llm.done` b-events;
   - cancellation is an `interrupt` on the loop thread's rules, not a separate
     thread: the loop carries `interrupt: [{ type: 'cancel' }]` at each step, so
@@ -181,6 +191,14 @@ conditions) is expressed as threads, not callbacks.
   `detailSchema` const on `call_id`) → append items → loop.
   The ingress event is `user.prompt`, triggered into the space by the CLI (Phase 6
   input `{ space, prompt }`).
+- Context management as a b-thread: after each turn's terminal event, a compaction
+  thread reads `usage.input_tokens` and compares against the adapter-declared
+  context limit; below threshold it does nothing; at/above threshold it blocks the
+  loop's next `llm.stream` request until a compaction completes (provider compact
+  endpoint or adapter-synthesized summary producing a `compaction` item, which
+  becomes base input). Use `truncation: 'disabled'` so overflow is a hard,
+  catchable error — never silent degradation. The compaction gate is a plain
+  block/waitFor pattern; no callback.
 
 **Done when:** tests prove — happy path (prompt → stream → tool call → result →
 next stream), cancel mid-turn via interrupt, terminal error stops the turn. All
@@ -388,7 +406,7 @@ controller disposes):
   `skill.proposed` trace, calls an Open Responses judge endpoint — the `judgeJson`
   pattern: one stateless `complete` call `{ model, system, user }` → strict JSON
   verdict (see the DeepSearchQA grader). No external eval harness — the judge is a
-  StreamFn/adapter call like any other. The controller then triggers `skill.scored`
+  UseResponse/adapter call like any other. The controller then triggers `skill.scored`
   back into the worker's space; the worker keeps or discards the variant.
 
 **The reward function** (`computeThreadReward`: `verified`→1, `truncated`→0,
@@ -422,7 +440,8 @@ the CLI is its client.
 - `plaited --no-serve` — one-shot cold-run (restore space context from artifacts →
   trigger prompt → run to turn-end → persist → print JSON). For CI and minimal envs.
 - `plaited --seed <n>` — validation mode: the serve process runs against the Phase 0
-  scripted StreamFn adapter (the Phase 0 test double *is* this adapter — scripted
+  scripted adapter (a `UseResponse` bound via `useResponse`) drives it; the Phase 0
+  test double *is* this adapter — scripted
   responses keyed by seed; one artifact, not two) with a seeded RNG. Deterministic,
   no network — this is the testing/validation mode, wired through the adapter seam,
   not a second process shape. **Scope note:** `--seed` seeds the *generator* (the
