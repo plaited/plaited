@@ -16,8 +16,49 @@ client is pi's `!`/`!!` shell escapes; validation is Bun test.
 - Listeners match on `type` + optional `detailSchema` (JSON Schema, Ajv2020-compiled)
   + `detailMatch: 'valid'|'invalid'`. Handlers match on `type` only (space-scoped via
   partial application).
+- The engine lives in `src/runtime/` after Phase -2; all harness code lands in
+  `src/agent/`; the render/protocol layer (`src/ui/`) is out of the agent's import
+  surface and becomes a pack-wrapped tool later.
 - The sketch in `src/main/behavioral.ts` lines ~400-423 (`useTool` spec) is reference
   material for Phase 2, not gospel — fix its mechanical errors per Phase 2.
+
+---
+
+## Phase -2 — Repo restructure: `src/runtime/`, `src/agent/`, `src/ui/`
+
+**Goal:** the source tree matches the architecture before any agent code lands.
+Today `src/main/` flattens the behavioral engine, frontier analysis, renderer,
+swap-boundary, and css/html/message schemas into one surface (`src/main.ts`
+re-exports all of it). An agent authoring threads needs only the coordination
+kernel — the UI machinery is a future tool, not a library import.
+
+**Deliverables:**
+
+- `git mv` restructure:
+  - `src/runtime/` ← `behavioral.*` (engine, schemas, types, constants, utils) +
+    `frontier-analysis.ts`. The gate needs frontier analysis and it shares types
+    with the engine (`replayToFrontier` imports `PendingBid` etc.) — one unit, not
+    a separate top-level dir.
+  - `src/agent/` ← new home for the harness (Phases 0–6 land here).
+  - `src/ui/` ← `renderer.ts`, `swap-boundary.ts`, `html-rewriter.utils.ts`,
+    `css.*`, `html.*`, `message.*` — the render/protocol layer. Stays importable
+    (`src/controller.ts` consumes the message protocol at SSR time); becomes a
+    `useTool`-wrappable pack later (Phase 7) without another move.
+  - `src/cli/` mostly dissolves: `git-context`, `markdown`, `mcp-client`,
+    `typescript-lsp` become `useTool` units (Phase 3) living in `src/agent/tools/`.
+    What survives is the entry (`bin/plaited.ts`) and the `makeCli` machinery that
+    Phase 6's input parsing / `--schema` surface still uses — relocate that residue
+    to `src/agent/` or a minimal `src/cli.ts`; the directory goes away.
+- `src/main.ts` shrinks to re-exporting `src/runtime/` only — the public surface
+  for thread-authors and pack-authors.
+- `package.json` exports: `"."` → `src/main.ts` (runtime), `"./ui"` →
+  `src/ui.ts` boundary, `"./controller"` and `"./utils"` unchanged.
+- File-naming per AGENTS.md: module-prefixed files keep their prefixes under
+  `runtime/` (`behavioral.schemas.ts` etc.); the directory provides context.
+
+**Done when:** `bun --bun tsc --noEmit` clean; full `bun test` suite passes with only
+import-path changes; `src/main.ts` exports nothing from `ui/`; no file contents
+change beyond import paths.
 
 ---
 
@@ -44,10 +85,11 @@ work in Phase 4.
   `useTrigger(space)`, and later `useTool(space)` — validates the space exists at
   bind time and **throws** on an undeclared space. Root (no space argument) stays
   valid — that's the unscoped channel.
-- **New trace kind `space_error`** (`TRACE_MESSAGE_KINDS`): thrown validation failures
-  are also published as traces — `{ kind, timestamp, space, operation, error }`.
-  The throw is for the caller; the trace is for the system (gate-visible when a
-  generated thread binds against a nonexistent space).
+- **New trace kind `space_error`** (`TRACE_MESSAGE_KINDS`): a scoped hook bound to an
+  undeclared space publishes `{ kind, timestamp, space, operation, error }` on the
+  trace publisher *before* throwing (the throw is for the caller; the trace is for
+  the system — gate-visible when a generated thread binds against a nonexistent
+  space). The trace is emitted by the hook itself, not caught from the throw.
 - `useEject(space)` — new member of the frozen API object. Imperative, unblockable,
   orchestration-level only (called from handlers or harness code downstream of a
   triggered ingress event — the *decision* to eject stays gateable at that ingress;
@@ -119,12 +161,17 @@ conditions) is expressed as threads, not callbacks.
 - `src/agent/loop.ts` — the turn loop thread (see shape below), plus:
   - a stream-adapter handler that iterates the `StreamFn` and `trigger`s
     `llm.delta` / `llm.toolCall` / `llm.done` b-events;
-  - a cancel thread: `interrupt: [sessionCancel]`;
+  - cancellation is an `interrupt` on the loop thread's rules, not a separate
+    thread: the loop carries `interrupt: [{ type: 'cancel' }]` at each step, so
+    triggering `cancel` in the space tears the turn down via the interrupt path;
   - stop-condition as a thread requesting `turn.end`, not a callback.
-- Loop thread shape (looping, no `once`):
-  `waitFor: [userPrompt]` → `request: llm.stream` → `waitFor: [llm.done]`
-  → `request: <tool name>` per parsed function_call → `waitFor: [<name>_result]`
-  matched by `detailSchema` const on `call_id` → append items → loop.
+- Loop thread shape (looping, no `once`), each rule carrying the cancel interrupt:
+  `{ waitFor: [userPrompt], interrupt: [cancel] }` → `request: llm.stream` →
+  `{ waitFor: [llm.done], interrupt: [cancel] }` → `request: <tool name>` per parsed
+  function_call → `{ waitFor: [<name>_result], interrupt: [cancel] }` (matched by
+  `detailSchema` const on `call_id`) → append items → loop.
+  The ingress event is `user.prompt`, triggered into the space by the CLI (Phase 6
+  input `{ space, prompt }`).
 
 **Done when:** tests prove — happy path (prompt → stream → tool call → result →
 next stream), cancel mid-turn via interrupt, terminal error stops the turn. All
@@ -150,13 +197,17 @@ the spec sketch at `src/main/behavioral.ts:400-423` and
     provider-minted `call_id` into the b-event `detail` when lifting a `function_call`
     item into a tool-call event, and the result handler echoes it on `${name}_result`.
     Rationale: `call_id` must stay in `detail` (never `payload`) so listener matching,
-    traces, the frontier gate, and session-log replay can all see the correlation;
+    traces, the frontier gate, and trace-log restore can all see the correlation;
   - registers handler on event type `name`: parses `detail` with `inputSchema`,
     awaits `run`, validates output, `trigger({ type: `${name}_result` })`;
-  - registers the standing guard thread: `{ block: [{ type: name, detailSchema,
-    detailMatch: 'invalid' }] }` + `{ request: { type: 'tool_call_blocked', detail:
-    { name, ... } } }` (fixes sketch: block is an array, detailMatch is the enum,
-    handler registration takes the type).
+  - registers the standing guard thread (two rules, both pending; fixes the sketch's
+    block-is-array / detailMatch-enum / malformed-detail errors):
+    ```
+    rules: [
+      { block: [{ type: name, detailSchema: jsonSchema, detailMatch: 'invalid' }] },
+      { request: { type: 'tool_call_blocked', detail: { name, reason } } },
+    ]
+    ```
   - returns a frozen descriptor `{ name, inputSchema, outputSchema, jsonSchema }`
     for code generation reference.
 - A default handler on `tool_call_blocked` that produces the model-visible error
@@ -192,23 +243,25 @@ same tool at root and in a space works independently (space-scoped result events
 
 ---
 
-## Phase 3 — Convert `src/cli` makeCli units to `useTool` cores
+## Phase 3 — Convert `src/cli` units to `useTool` tools; dissolve `src/cli/`
 
 **Goal:** `git-context`, `markdown`, `mcp-client`, `typescript-lsp` become agent tools
-alongside the defaults; their CLI subcommands become thin aliases over the same cores.
+alongside the defaults. The CLI surface they came from goes away — bare `plaited` is
+the agent (Phase 6); the only surviving CLI machinery is the entry + `makeCli`.
 
 **Deliverables:**
 
 - Per unit: extract the `run(input)` body into a pure async core
-  `(input) => output` (no argv/stdout concerns). Register the core via `useTool`.
-  `makeCli` keeps parse → core → validate → print for direct CLI use.
-- The bare `plaited` command is the agent; `plaited <tool>` subcommands survive as
-  operator conveniences over the same cores.
+  `(input) => output`, register via `useTool`, and move into `src/agent/tools/`.
+- Move the surviving CLI residue (`makeCli`, request parsing, schema printing) out
+  of `src/cli/` — it exists to serve `plaited`'s input/`--schema` surface, not a
+  multi-command tool surface.
 - Envelope: tool input/output details carry `call_id` top-level (stamped by the loop).
 
-**Done when:** existing CLI tests pass unchanged (cores extracted, behavior identical);
-new tests call the cores through the b-program (trigger a call, observe the `_result`);
-the tools provision at root and into a space.
+**Done when:** the four tools pass Phase 2.5-style b-program tests (trigger call →
+`_result`, malformed blocked); they provision at root and into a space; `src/cli/`
+is gone; the four tools' prior behaviors are reachable through the agent (not as
+standalone subcommands).
 
 ---
 
@@ -229,7 +282,7 @@ artifact-based, not a session subsystem.
   - `toHtml(log)` → human-readable rendering of the space's history.
 - Git-backed artifact storage: durable space state (authored thread definitions,
   generated code, trace logs) commits to git — the artifact store, not a bespoke
-  session database.
+  database.
 - **Restore** a space via `replayToFrontier` over its stored trace prefix, then
   re-provision its threads from their stored definitions, then continue live.
   (Use "restore"/"replay" — not "rehydrate", which carries DOM-rendering
@@ -256,10 +309,11 @@ by `interrupt` on approval events.
 - Guard thread per guarded call: `{ block: [callListener],
   interrupt: [approvalFor(call_id)] }`.
 - Permission flow: blocked guarded call → `permission.ask` event → handler emits a
-  JSON `permission_required` output (dev mode: the human's answer arrives as the next
-  invocation's input) → `permission.resolved` trigger → guard interrupted → the pended
-  call becomes selectable. Deny path requests the tool's error result so the model
-  sees the refusal.
+  JSON `permission_required` output → the human's answer arrives as a follow-up
+  `plaited` command carrying `permissionAnswer` (serve mode: next command to the
+  running process; `--no-serve`: next invocation's input) → `permission.resolved`
+  trigger → guard interrupted → the pended call becomes selectable. Deny path
+  requests the tool's error result so the model sees the refusal.
 - Standing policy threads are composable additions (e.g. auto-allow reads under src/).
 - Registration gate: new threads pass `verifyFrontiers` per
   `research/differential-frontier-gate-stable-reward.md` (`verified` admits,
@@ -289,10 +343,11 @@ the CLI is its client.
 - Root provisioning at startup: default tool pack (Phase 2.5) + CLI-derived tools
   (Phase 3) + guard pack (Phase 5) at root; spaces get subsets/variants on creation.
 
-**Done when:** `!plaited '{"space":"s1","prompt":"..."}'` from pi completes a turn via
-the serve process (auto-started if needed); `plaited --seed 42` reproduces a turn
-bit-for-bit twice; `plaited --no-serve` works with no daemon; a guarded action returns
-`permission_required` and a follow-up completes it; a second space stays isolated.
+**Done when:** `!plaited '{"space":"s1","prompt":"..."}'` from pi (positional JSON
+arg is the CLI's input) completes a turn via the serve process (auto-started if
+needed); `plaited --seed 42` reproduces a turn bit-for-bit twice; `plaited --no-serve`
+works with no daemon; a guarded action returns `permission_required` and a follow-up
+`plaited` command completes it; a second space stays isolated.
 
 ---
 
