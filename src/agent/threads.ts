@@ -204,13 +204,14 @@ export const registerAgentThreads = (hooks: AgentHooks, adapter: Adapter): void 
   })
 
   // ----------------------------------------------------------------
-  // Thread: stop condition (once)
+  // Thread: stop condition (looping)
   //   On `response.completed` → request `turn.end` so the harness
-  //   knows the turn is done. Failed / incomplete keep the loop alive.
+  //   knows the turn is done. Loops so every turn's completion emits
+  //   `turn.end`, not just the first. Failed / incomplete keep the
+  //   loop alive.
   // ----------------------------------------------------------------
   useAddThread({
     label: 'stop-condition',
-    once: true,
     rules: [{ waitFor: [{ type: 'response.completed' }] }, { request: { type: 'turn.end' } }],
   })
 

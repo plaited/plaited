@@ -226,6 +226,25 @@ describe('agent loop — happy path', () => {
     expect(events).toContain('turn.end') // stop condition fires
   })
 
+  test('second turn also emits turn.end — stop condition loops', async () => {
+    const adapter = useResponse({
+      provider: 'test-multi-turn',
+      respond: async function* () {
+        yield* textOnlyEvents
+      },
+    })
+
+    const { trigger, settle } = setupTest(adapter)
+    trigger({ type: 'user.prompt', detail: { prompt: 'First' } })
+    await settle()
+    trigger({ type: 'user.prompt', detail: { prompt: 'Second' } })
+
+    const events = await settle()
+
+    const turnEnds = events.filter((t) => t === 'turn.end').length
+    expect(turnEnds).toBe(2)
+  })
+
   test('tool-calling turn cycles through spec events', async () => {
     let callCount = 0
     const adapter = useResponse({

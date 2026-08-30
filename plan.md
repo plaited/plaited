@@ -20,9 +20,8 @@ client is pi's `!`/`!!` shell escapes; validation is Bun test.
 - The engine lives in `src/runtime/` after Phase -2; all harness code lands in
   `src/agent/`; the render/protocol layer (`src/ui/`) is out of the agent's import
   surface and becomes a pack-wrapped tool later.
-- The `useTool` spec sketch lives at `src/main/behavioral.ts` lines ~400-423 today
-  (moves to `src/runtime/behavioral.ts` in Phase -2). It is reference material for
-  Phase 2, not gospel — fix its mechanical errors per Phase 2.
+- The `useTool` spec sketch that lived at `src/main/behavioral.ts` lines ~400-423 was
+  abandoned (reverted) — Phase 2 below is the single, corrected specification.
 
 ---
 
@@ -196,14 +195,26 @@ conditions) is expressed as threads, not callbacks.
   thread: the loop carries `interrupt: [{ type: 'cancel' }]` at each step, so
   triggering `cancel` in the space tears the turn down via the interrupt path.
 - Stop-condition as a thread requesting `turn.end`, not a callback.
+- **Tool dispatch is handler-side (discovered in Phase 1 implementation).** Threads
+  are static data and cannot request dynamically-named events (`<tool name>` varies
+  per response). The `respond` handler collects `function_call` items during stream
+  iteration and dispatches tool events after the stream completes; the loop thread
+  re-awaits `respond` (its first rule waits on `user.prompt` OR `respond`) after
+  tool results append via a generic `tool.result` event (engine handlers match
+  exact-type only; `<tool name>_result` still fires for trace visibility).
 - Loop thread shape (looping, no `once`), each rule carrying the cancel interrupt:
-  `{ waitFor: [user.prompt], interrupt: [cancel] }` → request stream (the handler
-  calls `respond(req)` on the space's adapter) →
-  `{ waitFor: [terminal types], interrupt: [cancel] }` → request `<tool name>` per
-  parsed function_call → `{ waitFor: [<name>_result], interrupt: [cancel] }`
-  (matched by `detailSchema` const on `call_id`) → append items → loop.
+  `{ waitFor: [user.prompt, respond], interrupt: [cancel] }` → request respond →
+  `{ waitFor: [terminal types], interrupt: [cancel] }` → (handler dispatches tools;
+  results re-trigger respond) → loop.
   The ingress event is `user.prompt`, triggered into the space by the CLI (Phase 6
   input `{ space, prompt }`).
+- Stop condition thread **loops** (no `once`): every `response.completed` requests
+  `turn.end` — a once-thread dies after turn one and the harness loses the
+  turn-done signal for subsequent turns.
+- Harness coordination events (`user.prompt`, `respond`, `tool.result`,
+  `context.threshold`, `compaction.start/done`, `turn.end`) are legitimate
+  vocabulary distinct from spec stream event types; stream events appear verbatim
+  as spec types.
 - Context management as a b-thread: after each turn's terminal event, a compaction
   thread reads the terminal event's `usage.input_tokens` and compares against the
   model's context limit, declared on the adapter (`Adapter` gains an optional
@@ -214,6 +225,10 @@ conditions) is expressed as threads, not callbacks.
   becomes base input). Use `truncation: 'disabled'` so overflow is a hard,
   catchable error — never silent degradation. The compaction gate is a plain
   block/waitFor pattern; no callback.
+- **Phase 0 follow-up (schema gap):** `CompactionItem` is output-only —
+  `InputItemSchema` cannot carry a compaction item as base input, so the Phase 1
+  compaction handler wrapped `encrypted_content` in a user message (MINIMAL'd).
+  Add `compaction` to `InputItemSchema` and feed the real item back as base input.
 
 **Done when:** tests prove — happy path (prompt → stream → tool call → result →
 next stream), cancel mid-turn via interrupt, terminal error stops the turn,
@@ -226,8 +241,8 @@ traces are spec event types, not an invented vocabulary.
 ## Phase 2 — `useTool` factory
 
 **Goal:** tools are makeCli-style units wired as handler+guard-thread pairs. Reference:
-the spec sketch in `behavioral.ts` (see conventions) and
-`research/behavioral-agent-harness-proposal.md` §4.
+`research/behavioral-agent-harness-proposal.md` §4 (this section supersedes the
+abandoned engine sketch).
 
 **Deliverables:**
 
@@ -244,8 +259,7 @@ the spec sketch in `behavioral.ts` (see conventions) and
     traces, the frontier gate, and trace-log restore can all see the correlation;
   - registers handler on event type `name`: parses `detail` with `inputSchema`,
     awaits `run`, validates output, `trigger({ type: `${name}_result` })`;
-  - registers the standing guard thread (two rules, both pending; fixes the sketch's
-    block-is-array / detailMatch-enum / malformed-detail errors):
+  - registers the standing guard thread (two rules, both pending):
     ```
     rules: [
       { block: [{ type: name, detailSchema: jsonSchema, detailMatch: 'invalid' }] },
