@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'bun:test'
+import * as z from 'zod'
 import type { Trace } from '../../main/behavioral.schemas.ts'
 import { behavioral } from '../../main/behavioral.ts'
 import type { AddHandler, AddThread, Trigger } from '../../main/behavioral.types.ts'
@@ -6,6 +7,8 @@ import type { KnownStreamEvent, OpenResponsesRequest } from '../open-responses.s
 import { registerAgentThreads } from '../threads.ts'
 import type { Adapter, CompactionResult } from '../use-response.ts'
 import { useResponse } from '../use-response.ts'
+import type { ToolDescriptor } from '../use-tool.ts'
+import { useTool } from '../use-tool.ts'
 
 // ================================================================
 // Test helpers
@@ -20,7 +23,7 @@ const tick = () => new Promise<void>((r) => setTimeout(r, 0))
  * Create a fresh behavioral program, register the agent loop, and return
  * hooks + a trace collector that starts capturing immediately.
  */
-function setupTest(adapter: Adapter) {
+function setupTest(adapter: Adapter, toolDescriptors?: ToolDescriptor[]) {
   const bp = behavioral<never>()
   const { useAddThread, useAddHandler, useTrigger, useTrace } = bp
 
@@ -38,7 +41,7 @@ function setupTest(adapter: Adapter) {
   })
 
   // Register the agent loop
-  registerAgentThreads({ addThread, addHandler, trigger }, adapter)
+  registerAgentThreads({ addThread, addHandler, trigger }, adapter, toolDescriptors)
 
   return {
     addHandler,
@@ -245,7 +248,7 @@ describe('agent loop — happy path', () => {
     expect(turnEnds).toBe(2)
   })
 
-  test('tool-calling turn cycles through spec events', async () => {
+  test('tool-calling turn cycles through spec events via useTool', async () => {
     let callCount = 0
     const adapter = useResponse({
       provider: 'test-tool',
@@ -260,40 +263,60 @@ describe('agent loop — happy path', () => {
       },
     })
 
-    const { addHandler, trigger, settle } = setupTest(adapter)
+    // Create BP + register tools before destructuring to avoid hoisting issues
+    const bp = behavioral<never>()
+    const { useAddThread, useAddHandler, useTrigger, useTrace } = bp
+    const addThread = useAddThread() as AddThread
+    const addHandler = useAddHandler() as AddHandler
+    const trigger = useTrigger() as Trigger
 
-    // Register test tool handler
-    addHandler('get_weather', async ({ detail }) => {
-      const { call_id, arguments: _args } = (detail ?? {}) as { call_id: string; arguments: string }
-      const result = '{"temperature": 72, "conditions": "sunny"}'
-      // Trigger tool.result for items-store integration
-      trigger({ type: 'tool.result', detail: { call_id, output: result } })
-      // Trigger spec-named result for trace visibility
-      trigger({ type: 'get_weather_result', detail: { call_id, output: result } })
+    const selected: string[] = []
+    useTrace((msg: Trace) => {
+      if (msg.kind === 'selection') {
+        selected.push(msg.selected.type)
+      }
     })
+
+    const tools: ToolDescriptor[] = [
+      useTool(
+        { addHandler, trigger },
+        {
+          name: 'get_weather',
+          inputSchema: z.object({ location: z.string() }),
+          outputSchema: z.object({ temperature: z.number(), conditions: z.string() }),
+          run: async (_input) => {
+            return { temperature: 72, conditions: 'sunny' }
+          },
+        },
+      ),
+    ]
+
+    registerAgentThreads({ addThread, addHandler, trigger }, adapter, tools)
 
     // Start the turn
     trigger({ type: 'user.prompt', detail: { prompt: 'What is the weather in Paris?' } })
 
-    const events = await settle(12)
+    for (let i = 0; i < 12; i++) {
+      await tick()
+    }
 
     // Verify the event flow
-    expect(events).toContain('user.prompt')
-    expect(events).toContain('respond')
+    expect(selected).toContain('user.prompt')
+    expect(selected).toContain('respond')
     // Spec events from the stream
-    expect(events).toContain('response.output_item.added')
-    expect(events).toContain('response.function_call_arguments.delta')
-    expect(events).toContain('response.output_item.done')
-    expect(events).toContain('response.completed')
-    // Tool dispatch
-    expect(events).toContain('get_weather')
-    expect(events).toContain('tool.result')
-    expect(events).toContain('get_weather_result')
+    expect(selected).toContain('response.output_item.added')
+    expect(selected).toContain('response.function_call_arguments.delta')
+    expect(selected).toContain('response.output_item.done')
+    expect(selected).toContain('response.completed')
+    // Tool dispatch (via useTool)
+    expect(selected).toContain('get_weather')
+    expect(selected).toContain('tool.result')
+    expect(selected).toContain('get_weather_result')
     // Second respond cycle
-    const respondCount = events.filter((t) => t === 'respond').length
+    const respondCount = selected.filter((t) => t === 'respond').length
     expect(respondCount).toBeGreaterThanOrEqual(2)
     // Final turn end
-    expect(events).toContain('turn.end')
+    expect(selected).toContain('turn.end')
   })
 })
 

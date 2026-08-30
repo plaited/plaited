@@ -7,6 +7,7 @@ import type {
   OpenResponsesStreamEvent,
 } from './open-responses.schemas.ts'
 import type { Adapter } from './use-response.ts'
+import type { ToolDescriptor } from './use-tool.ts'
 
 /**
  * The unscoped behavioral hooks the agent harness receives at registration time.
@@ -35,7 +36,7 @@ export type AgentHooks = {
  * @param hooks - The behavioral program's unscoped hooks.
  * @param adapter - The provider adapter driving the model stream.
  */
-export const registerAgentThreads = (hooks: AgentHooks, adapter: Adapter): void => {
+export const registerAgentThreads = (hooks: AgentHooks, adapter: Adapter, tools?: ToolDescriptor[]): void => {
   const { addThread, addHandler, trigger } = hooks
 
   // ----------------------------------------------------------------
@@ -87,6 +88,16 @@ export const registerAgentThreads = (hooks: AgentHooks, adapter: Adapter): void 
   })
 
   // ----------------------------------------------------------------
+  // Tool descriptor registry — name → descriptor map for dispatch-time validation
+  // ----------------------------------------------------------------
+  const toolMap = new Map<string, ToolDescriptor>()
+  if (tools) {
+    for (const td of tools) {
+      toolMap.set(td.name, td)
+    }
+  }
+
+  // ----------------------------------------------------------------
   // Handler: respond — assemble request, stream events, dispatch tool calls,
   //            detect compaction threshold
   // ----------------------------------------------------------------
@@ -134,11 +145,83 @@ export const registerAgentThreads = (hooks: AgentHooks, adapter: Adapter): void 
       }
     }
 
-    // After stream completion, dispatch each pending function call as a tool event.
+    // After stream completion, dispatch pending function calls with
+    // dispatch-time validation against the tool descriptor registry.
+    //
+    // - Valid call → trigger tool event with parsed args.
+    // - Unknown tool / unparseable JSON / schema mismatch → emit
+    //   `tool_call_blocked` (trace) and an error `tool.result` (model sees
+    //   the refusal, turn continues). Blocked ≠ silent.
+    //
     // MINIMAL: sequential dispatch. Upgrade path: parallel tool dispatch with
     //   a thread that tracks outstanding call_ids.
     for (const call of pendingCalls) {
-      trigger({ type: call.name, detail: { call_id: call.call_id, arguments: call.arguments } })
+      const descriptor = toolMap.get(call.name)
+
+      if (!descriptor) {
+        // Unknown tool name — no descriptor registered
+        trigger({
+          type: 'tool_call_blocked',
+          detail: { call_id: call.call_id, name: call.name, reason: 'unknown tool' },
+        })
+        trigger({
+          type: 'tool.result',
+          detail: {
+            call_id: call.call_id,
+            output: JSON.stringify({ error: `unknown tool: ${call.name}` }),
+            isError: true,
+          },
+        })
+        continue
+      }
+
+      // Parse the JSON string arguments
+      let parsedArgs: unknown
+      try {
+        parsedArgs = JSON.parse(call.arguments)
+      } catch {
+        trigger({
+          type: 'tool_call_blocked',
+          detail: { call_id: call.call_id, name: call.name, reason: 'unparseable JSON arguments' },
+        })
+        trigger({
+          type: 'tool.result',
+          detail: {
+            call_id: call.call_id,
+            output: JSON.stringify({ error: 'unparseable JSON arguments' }),
+            isError: true,
+          },
+        })
+        continue
+      }
+
+      // Validate parsed arguments against the tool's input schema
+      const validation = descriptor.inputSchema.safeParse(parsedArgs)
+      if (!validation.success) {
+        trigger({
+          type: 'tool_call_blocked',
+          detail: {
+            call_id: call.call_id,
+            name: call.name,
+            reason: `arguments failed schema validation: ${validation.error.message}`,
+          },
+        })
+        trigger({
+          type: 'tool.result',
+          detail: {
+            call_id: call.call_id,
+            output: JSON.stringify({ error: 'arguments failed schema validation' }),
+            isError: true,
+          },
+        })
+        continue
+      }
+
+      // Valid — dispatch tool event with parsed (already-validated) arguments
+      trigger({
+        type: call.name,
+        detail: { call_id: call.call_id, arguments: validation.data as JsonObject },
+      })
     }
   })
 
