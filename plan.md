@@ -240,40 +240,53 @@ traces are spec event types, not an invented vocabulary.
 
 ## Phase 2 — `useTool` factory
 
-**Goal:** tools are makeCli-style units wired as handler+guard-thread pairs. Reference:
-`research/behavioral-agent-harness-proposal.md` §4 (this section supersedes the
-abandoned engine sketch).
+**Goal:** tools are makeCli-style units wired as handler + descriptor, validated at
+dispatch time. Reference: `research/behavioral-agent-harness-proposal.md` §4 (this
+section supersedes the abandoned engine sketch) and Phase 1's discovered reality
+(threads are static data — dynamic dispatch lives in handlers).
 
 **Deliverables:**
 
 - `src/agent/use-tool.ts` — external factory taking the partially-applied
-  `{ useAddHandler, useAddThread, useTrigger }`. `useTool({ name, inputSchema (Zod),
-  outputSchema (Zod), run })`:
+  `{ addThread, addHandler, trigger }` (bound capabilities, matching Phase 1's
+  `AgentHooks`). `useTool({ name, inputSchema (Zod), outputSchema (Zod), run })`:
   - derives JSON Schema via `z.toJSONSchema` for listener matching;
-  - tool schemas stay **pure args/result** — no `call_id`. The Ajv2020 check asserts
-    purity (rejects schemas that bake `call_id` into the tool contract). The
-    `call_id` envelope is the loop's job, not the tool's: the loop thread stamps the
-    provider-minted `call_id` into the b-event `detail` when lifting a `function_call`
-    item into a tool-call event, and the result handler echoes it on `${name}_result`.
-    Rationale: `call_id` must stay in `detail` (never `payload`) so listener matching,
-    traces, the frontier gate, and trace-log restore can all see the correlation;
-  - registers handler on event type `name`: parses `detail` with `inputSchema`,
-    awaits `run`, validates output, `trigger({ type: `${name}_result` })`;
-  - registers the standing guard thread (two rules, both pending):
-    ```
-    rules: [
-      { block: [{ type: name, detailSchema: jsonSchema, detailMatch: 'invalid' }] },
-      { request: { type: 'tool_call_blocked', detail: { name, reason } } },
-    ]
-    ```
+  - tool schemas stay **pure args/result** — no `call_id`. The Ajv2020 check (reuse
+    the engine's Ajv2020 instance pattern) asserts purity — rejects schemas that
+    bake `call_id` into the tool contract. The `call_id` envelope is stamped at
+    dispatch: the `respond` handler owns `call_id` + `arguments` when lifting a
+    `function_call` item into a tool-call event, and results echo it on
+    `${name}_result` / `tool.result`. Rationale: `call_id` must stay in `detail`
+    (never `payload`) so listener matching, traces, the frontier gate, and
+    trace-log restore can all see the correlation;
+  - registers the handler on event type `name`: parses `detail.arguments` with
+    `inputSchema`, awaits `run`, validates output with `outputSchema`, then
+    triggers **both** result events — `${name}_result` (trace visibility, echoes
+    `call_id`) and the generic `tool.result` (items-store integration + turn
+    continuation, the Phase 1 bridge);
   - returns a frozen descriptor `{ name, inputSchema, outputSchema, jsonSchema }`
-    for code generation reference.
-- A default handler on `tool_call_blocked` that produces the model-visible error
-  result (the model must see why its call was refused — blocked ≠ silent at runtime).
+    for the dispatch-time registry and code-generation reference.
+- **Validation at dispatch time — no guard thread in Phase 2.** The static-data
+  limitation discovered in Phase 1 applies: a guard thread's
+  `request: { type: 'tool_call_blocked', detail }` cannot echo the dynamic
+  `call_id` of the blocked call, so a blocked malformed call could never produce a
+  correlated error result — and without it the items store lacks the
+  `function_call_output`, the next `respond` sends a function_call with no output,
+  and the provider 400s. Instead: `registerAgentThreads` accepts a tool-descriptor
+  registry (built from `useTool` calls); the `respond` handler validates
+  `JSON.parse(arguments)` against the tool's `inputSchema` **at dispatch time**.
+  Malformed → the dispatch path emits `tool_call_blocked` (trace, detail carries
+  `call_id` + `name` + reason) **and** a correlated error `tool.result` (model
+  sees the refusal, turn continues). Blocked ≠ silent, and the turn survives.
+- The **block-idiom guard thread moves to Phase 5** (policy as threads), where
+  semantic blocking (dangerous-arg patterns) is designed with the correlation
+  problem solved properly.
 
-**Done when:** tests prove valid call → result event; malformed call → blocked,
-`tool_call_blocked` selected, error result produced; two parallel same-tool calls
-correlate by `call_id`.
+**Done when:** tests prove valid call → `${name}_result` + `tool.result` (both
+echo `call_id`); malformed call → `tool_call_blocked` + error `tool.result`, and
+the next `respond` request carries the error `function_call_output`; two parallel
+same-tool calls correlate by `call_id`; a tool schema containing `call_id` is
+rejected at registration.
 
 ---
 
@@ -366,8 +379,10 @@ by `interrupt` on approval events.
 
 **Deliverables:**
 
-- Guard thread per guarded call: `{ block: [callListener],
-  interrupt: [approvalFor(call_id)] }`.
+- Guard threads per guarded call: `{ block: [callListener],
+  interrupt: [approvalFor(call_id)] }` — policy blocking designed with the
+  call_id-correlation problem solved (Phase 2's dispatch-time validation covers
+  malformed inputs; this layer covers semantic policy).
 - Permission flow: blocked guarded call → `permission.ask` event → handler emits a
   JSON `permission_required` output → the human's answer arrives as a follow-up
   `plaited` command carrying `permissionAnswer` (serve mode: next command to the
@@ -502,7 +517,7 @@ the experimental micro-VM row.
   component directories. Space-provisioning code lives in the client-extension
   namespace `dev.plaited/` (e.g. `dev.plaited/provision.ts` exporting
   `(spaceHooks) => Promise<void> | Disconnect`, where `spaceHooks =
-  { useAddThread, useAddHandler, useTrigger, useTool }` are bound to the pack's
+  { addThread, addHandler, trigger, useTool }` are bound to the pack's
   declared space). A pack provisions its space's threads, handlers, and tools as one
   importable unit; `useEject(space)` unwinds it entirely.
 - **Adapter discovery:** a plugin may declare adapters via the client extension
