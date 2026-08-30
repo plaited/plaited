@@ -344,6 +344,62 @@ same tool at root and in a space works independently (space-scoped result events
 
 ---
 
+## Phase 2.75 — Binary tool & multi-modal input
+
+**Goal:** the agent reads binary files, detects image/audio/video MIME types via
+magic bytes, encodes as base64 — so it can feed multi-modal content into model
+requests. The Open Responses input schema carries `input_text`, `image`, `audio`,
+and `video` content part types, matching the spec's multi-modal
+`MessageItemParam.content`.
+
+**Deliverables:**
+
+- `src/pack/binary.ts` — frozen `ToolArgs` object following the Phase 2.5 tool
+  pattern: reads a file via `Bun.file(path).bytes()`, detects MIME type from
+  **offset-aware magic bytes** (RIFF/ftyp containers match the format tag at
+  offset 8, per pi's `image.ts`), encodes as base64, returns
+  `{ mimeType, base64, bytesRead, width?, height?, imageFormat? }`. Detection
+  covers JPEG, PNG, GIF, WebP, BMP (image — BMP needs a structural check, plain
+  text can start with "BM"); MP3, WAV, OGG, FLAC, AAC (audio); MP4, WebM, AVI,
+  QuickTime (video) — WAV/AVI/WebP share the RIFF container, discriminated at
+  offset 8. Error results (isError + message, never thrown) for missing files,
+  directories, and over-ceiling files.
+  **No maxBytes truncation input** — binary truncation produces a corrupt,
+  uninterpretable blob; instead a hard ceiling (conservative default, a few MB
+  binary) errors over the ceiling — **the limit comes from the active adapter's
+  declared capabilities, not a pack constant** (Phase 7: adapters declare what
+  they accept and their limits; error messages name the limit and the declaring
+  adapter). Edge models (Gemma 4 E2B-class, small context windows) and server
+  models get correctly sized guidance from the same pack.
+  (verified API — reads width/height/format without decoding pixels; pass bytes,
+  never path strings — arbitrary-file-read primitive). Graceful absence on
+  exotic/undecodable formats.
+- Input content parts in `src/agent/open-responses.schemas.ts`: `input_text`,
+  `image` (`data:` URI), `audio` (`data:` URI + format), `video` (`data:` URI +
+  format) as a discriminated union distinct from output-side content parts.
+  `MessageItemParamSchema.content` accepts `InputContentPart[]`.
+  The handler converting `binary_result` into the next `respond` request
+  switches on MIME prefix to build the correct content part type (`image`,
+  `audio`, `video`) — this is a ~5-line MIME-to-format mapping, no ffprobe
+  needed because magic-byte detection already identified the format.
+- Wire in `provision-defaults.ts`.
+- Tests: MIME detection unit tests (incl. the RIFF-container disambiguation),
+  `Bun.Image.metadata()` dimension extraction on image formats (absent gracefully
+  on exotic/undecodable files), file-not-found error path, hard-ceiling rejection,
+  input content part schema validation.
+
+**MINIMAL:** no audio duration or video codec extraction. Image dimensions via
+`Bun.Image.metadata()` (bytes input, never path) are included for image MIME
+types; absent gracefully on exotic/undecodable formats — no gate flag.
+
+**Done when:** `bun --bun tsc --noEmit` clean; `bun test` passes for binary tool
+and input-content-part schema tests; `provisionDefaults` wires `binary` at root;
+an integration-style test reads a PNG fixture, feeds the data-URI as an `image`
+content part in a `respond` request, and the adapter sees the base64 image in the
+input.
+
+---
+
 ## Phase 3 — Convert `src/cli` units to `useTool` tools; dissolve `src/cli/`
 
 **Goal:** `git-context`, `markdown`, `mcp-client`, `typescript-lsp` become agent tools
@@ -573,6 +629,14 @@ the experimental micro-VM row.
   whose `run` delegates over IPC/HTTP/SSH is indistinguishable to the engine from a
   local one. Default tool packs ship remote-capable `run` cores; deployment chooses
   the target. (No specific micro-VM endorsement.)
+- **Adapter capabilities are declared, and tools honor them.** An adapter (or its
+  settings entry) declares what the bound model accepts and its limits — e.g.
+  multi-modal content types accepted (`image`/`audio`/`video`), per-part byte/
+  context budgets, context window. Tools and handlers consume that declaration:
+  binary/multi-modal caps are enforced against the *active adapter's* declared
+  limits (not a pack constant), and over-limit tool-call error messages name the
+  limit and the adapter that declared it — so a Gemma-class edge model and a
+  server model get correctly sized guidance from the same pack.
 - **Whole-process container** — run `plaited agent` itself in Docker (pi's plain-Docker
   pattern). Keys and mounts are the operator's call.
 - **Inference gateway** — an Open Responses stream adapter that routes model traffic
