@@ -164,6 +164,7 @@ export const generateRulesFunctions = (rules: Idioms[], topic?: string): RulesFu
         type: request.type,
         topic,
         detail: request.detail,
+        payload: request.payload,
       }
     }
     if (block) {
