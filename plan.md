@@ -46,7 +46,7 @@ kernel — the UI machinery is a future tool, not a library import.
     (`src/controller.ts` consumes the message protocol at SSR time); becomes a
     `useTool`-wrappable pack later (Phase 7) without another move.
   - `src/cli/` mostly dissolves: `git-context`, `markdown`, `mcp-client`,
-    `typescript-lsp` become `useTool` units (Phase 3) living in `src/agent/tools/`.
+    `typescript-lsp` become `useTool` units (Phase 3) living in `src/pack/`.
     What survives is the entry (`bin/plaited.ts`) and the `makeCli` machinery that
     Phase 6's input parsing / `--schema` surface still uses — relocate that residue
     to `src/agent/` or a minimal `src/cli.ts`; the directory goes away.
@@ -301,12 +301,35 @@ guard threads, and space-deployability natively (no callback-shaped pi tools).
 
 **Deliverables:**
 
-- `src/agent/tools/` — one `useTool` unit per tool. Schemas derived from usage (not
-  copied from pi's TypeBox); `run` cores are pure async functions. `bash` runs through
-  `Bun.$`; file tools through `Bun.file`/`Bun.write`.
-- Root provisioning: a `provisionDefaults(rootHooks)` that registers all seven at root.
-- Space-deployable variants: the same units accept space-scoped hooks; a policy pack
-  can substitute a restricted variant (read-only set, remote-executing `bash`).
+- `src/pack/` — one file per tool (`read.ts`, `bash.ts`, `edit.ts`, `write.ts`,
+  `grep.ts`, `find.ts`, `ls.ts`), each exporting a frozen `ToolArgs` object
+  (`{ name, inputSchema, outputSchema, run, description }`) — plain data, no hooks,
+  testable without the engine. Schemas derived from usage (not copied from pi's
+  TypeBox); `run` cores are pure async functions. Bun APIs: `bash` via `Bun.$`;
+  file tools via `Bun.file`/`Bun.write`; `find`/`ls` via `Bun.Glob`; `grep` prefers
+  `rg` (`Bun.which` + `Bun.$`) with a JS line-scanner fallback (`MINIMAL:`).
+- **`edit` constructs its unified patch — no `diff` dependency, no streaming.** The
+  edit location is known (`old_text` → `new_text` at matched line ranges), so the
+  patch is built from the edit range with context lines — ~dozens of lines,
+  deterministic, no Myers/LCS. Port pi's line-ending helpers
+  (`detectLineEnding`/`normalizeToLF`/`restoreLineEndings` pattern from
+  `packages/agent/src/harness/tools/edit-diff.ts`); fuzzy-match normalization is a
+  `MINIMAL:` defer. Enforce match discipline: `old_text` must match exactly once
+  unless `replace_all`.
+- **The bun-runtime skill governs API choices** (`~/.agents/skills/bun-runtime/`):
+  verify Bun APIs via its Mode 1 lookup (`plaited mcp-client` →
+  `https://bun.com/docs/mcp`, `search_bun`) instead of asserting from memory;
+  no `node:fs` (Node `node:path` is fine); no Python/heredocs.
+- pi's harness tools (`packages/agent/src/harness/tools/`) are **behavioral
+  examples only** — fetch via `gh` for semantics (match discipline, truncation,
+  result shapes), never for code (TypeBox, `diff` dep).
+- `src/agent/provision-defaults.ts` — the harness-side provisioner: imports the tool
+  data from `src/pack/` and wires each via `useTool`; `provisionDefaults(rootHooks)`
+  registers all seven at root. Provisioning is harness code (the agent decides what
+  activates where); the pack stays pure data.
+- Space-deployable variants: the same `ToolArgs` data provisions into any space via
+  space-scoped hooks; a policy pack can substitute a restricted variant (read-only
+  set, remote-executing `bash`).
 - These are the critical path to a useful agent — the CLI conversions (Phase 3) are
   additive on top.
 
@@ -326,7 +349,10 @@ the agent (Phase 6); the only surviving CLI machinery is the entry + `makeCli`.
 **Deliverables:**
 
 - Per unit: extract the `run(input)` body into a pure async core
-  `(input) => output`, register via `useTool`, and move into `src/agent/tools/`.
+  `(input) => output`, wrap as a `ToolArgs` object, and add as a tool file in
+  `src/pack/` (`git-context.ts`, `markdown.ts`, `mcp-client.ts`,
+  `typescript-lsp.ts`); `provision-defaults.ts` wires them. `makeCli` keeps
+  parse → core → validate → print for direct CLI use where still needed.
 - Move the surviving CLI residue (`makeCli`, request parsing, schema printing) out
   of `src/cli/` — it exists to serve `plaited`'s input/`--schema` surface, not a
   multi-command tool surface.
