@@ -16,6 +16,9 @@ import type * as z from 'zod'
  */
 export type ProvisionInput = Record<string, unknown>
 
+/** Provision-time cwd scoping shared by every file tool. */
+export type CwdProvision = { cwd?: string }
+
 export type ToolArgs<I extends z.ZodType, O extends z.ZodType, P = unknown> = {
   readonly name: string
   readonly inputSchema: I

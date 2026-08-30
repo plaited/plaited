@@ -1,6 +1,6 @@
 import * as path from 'node:path'
 import * as z from 'zod'
-import type { ToolArgs } from './pack.types.ts'
+import type { CwdProvision, ToolArgs } from './pack.types.ts'
 
 // ----------------------------------------------------------------
 // Helpers borrowed from pi's edit-diff.ts semantics (Bun-native rewrite)
@@ -141,10 +141,7 @@ const buildPatch = (oldLines: string[], ranges: TextRange[], contextLines = 4): 
 // ----------------------------------------------------------------
 
 export const inputSchema = z.object({
-  path: z
-    .string()
-    .min(1)
-    .refine((p) => path.isAbsolute(p), { message: 'path must be absolute' }),
+  path: z.string().min(1).describe("file path — absolute, or relative to the tool's provisioned cwd"),
   old_text: z.string().min(1, 'old_text must not be empty'),
   new_text: z.string(),
   replace_all: z.boolean().optional().describe('when true, replaces ALL occurrences of old_text'),
@@ -164,14 +161,15 @@ export type EditOutput = z.output<typeof outputSchema>
 // Run
 // ----------------------------------------------------------------
 
-export const run = async (input: EditInput): Promise<EditOutput> => {
-  const { path: filePath, old_text, new_text, replace_all } = input
+export const run = async (input: EditInput & CwdProvision): Promise<EditOutput> => {
+  const { path: filePath, old_text, new_text, replace_all, cwd } = input
+  const resolvedPath = path.resolve(cwd ?? process.cwd(), filePath)
 
   // Read file
-  const bunFile = Bun.file(filePath)
+  const bunFile = Bun.file(resolvedPath)
   const exists = await bunFile.exists()
   if (!exists) {
-    return { patch: '', replacements: 0, content: `[Error: file not found: ${filePath}]`, isError: true }
+    return { patch: '', replacements: 0, content: `[Error: file not found: ${resolvedPath}]`, isError: true }
   }
 
   let text: string
@@ -271,7 +269,7 @@ export const run = async (input: EditInput): Promise<EditOutput> => {
 
   // Restore original line endings and write
   const finalContent = restoreLineEndings(newContent, lineEnding)
-  await Bun.write(filePath, finalContent)
+  await Bun.write(resolvedPath, finalContent)
 
   return {
     content: finalContent,
@@ -280,7 +278,7 @@ export const run = async (input: EditInput): Promise<EditOutput> => {
   }
 }
 
-const editTool: ToolArgs<typeof inputSchema, typeof outputSchema> = Object.freeze({
+const editTool: ToolArgs<typeof inputSchema, typeof outputSchema, CwdProvision> = Object.freeze({
   name: 'edit',
   description:
     'Edit a file using exact text replacement. old_text must match exactly once unless replace_all is true. Returns a unified diff patch.',

@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 import * as path from 'node:path'
-import writeTool from '../write.ts'
+import writeTool, { type WriteInput } from '../write.ts'
 import { tempDir } from './helpers.ts'
 
 // ================================================================
@@ -44,6 +44,19 @@ describe('write tool', () => {
       await writeTool.run({ path: filePath, content: 'new content' })
       const readBack = await Bun.file(filePath).text()
       expect(readBack).toBe('new content')
+    } finally {
+      await cleanup()
+    }
+  })
+})
+
+describe('write tool — provisioned cwd', () => {
+  test('relative path writes into the composed cwd', async () => {
+    const { dir, cleanup } = await tempDir({})
+    try {
+      const scoped = { ...writeTool, run: (input: WriteInput) => writeTool.run({ ...input, cwd: dir }) }
+      await scoped.run({ path: 'out/nested.txt', content: 'scoped' })
+      expect(await Bun.file(path.join(dir, 'out/nested.txt')).text()).toBe('scoped')
     } finally {
       await cleanup()
     }

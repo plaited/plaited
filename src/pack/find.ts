@@ -1,9 +1,10 @@
+import * as path from 'node:path'
 import * as z from 'zod'
-import type { ToolArgs } from './pack.types.ts'
+import type { CwdProvision, ToolArgs } from './pack.types.ts'
 
 export const inputSchema = z.object({
   glob: z.string().min(1, 'glob pattern must be non-empty'),
-  path: z.string().optional().describe('root directory to search from (defaults to CWD)'),
+  path: z.string().optional().describe("root directory to search from (defaults to the tool's provisioned cwd)"),
 })
 
 export const outputSchema = z.object({
@@ -18,13 +19,13 @@ export type FindOutput = z.output<typeof outputSchema>
  *
  * Returns relative paths (sorted) matching pi's find semantics.
  */
-export const run = async (input: FindInput): Promise<FindOutput> => {
-  const { glob: globPattern, path: cwd } = input
+export const run = async (input: FindInput & CwdProvision): Promise<FindOutput> => {
+  const { glob: globPattern, path: cwd, cwd: provisionedCwd } = input
 
   const results: string[] = []
   const glob = new Bun.Glob(globPattern)
 
-  for await (const file of glob.scan({ cwd: cwd ?? '.' })) {
+  for await (const file of glob.scan({ cwd: path.resolve(provisionedCwd ?? process.cwd(), cwd ?? '.') })) {
     results.push(file)
   }
 
@@ -34,7 +35,7 @@ export const run = async (input: FindInput): Promise<FindOutput> => {
   return { paths: results }
 }
 
-const findTool: ToolArgs<typeof inputSchema, typeof outputSchema> = Object.freeze({
+const findTool: ToolArgs<typeof inputSchema, typeof outputSchema, CwdProvision> = Object.freeze({
   name: 'find',
   description: 'Find files matching a glob pattern. Returns relative paths, sorted.',
   inputSchema,

@@ -174,3 +174,37 @@ describe('provisionDefaults integration', () => {
     expect(hooks.selected).toContain('turn.end')
   })
 })
+
+describe('provisionDefaults — provisioned cwd scoping', () => {
+  test('cwd option scopes every tool: relative paths resolve there', async () => {
+    const { dir, cleanup } = await tempDir({ 'test.txt': 'scoped read' })
+    try {
+      const hooks = createBP()
+      provisionDefaults(hooks, { cwd: dir })
+
+      const results: string[] = []
+      hooks.addHandler('tool.result', ({ detail }) => {
+        const { output } = (detail ?? {}) as { output: string }
+        results.push(output)
+      })
+
+      // Relative path — no dir prefix. The provisioner must resolve it.
+      hooks.trigger({
+        type: 'read',
+        detail: { call_id: 'call_cwd', arguments: { path: 'test.txt' } },
+      })
+
+      for (let i = 0; i < 8; i++) {
+        await tick()
+      }
+
+      expect(hooks.selected).toContain('read')
+      expect(hooks.selected).toContain('read_result')
+      // The relative path must have resolved into the scoped dir — the result
+      // carries the scoped file's content, not a file-not-found error.
+      expect(results.some((r) => r.includes('scoped read') && !r.includes('Error'))).toBe(true)
+    } finally {
+      await cleanup()
+    }
+  })
+})

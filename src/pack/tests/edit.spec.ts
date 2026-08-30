@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 import * as path from 'node:path'
-import editTool from '../edit.ts'
+import editTool, { type EditInput } from '../edit.ts'
 import { tempDir } from './helpers.ts'
 
 // ================================================================
@@ -201,6 +201,20 @@ describe('edit tool', () => {
       const bytes = await Bun.file(filePath).bytes()
       const raw = new TextDecoder().decode(bytes)
       expect(raw).toBe('line1\r\nmodified\r\nline3')
+    } finally {
+      await cleanup()
+    }
+  })
+})
+
+describe('edit tool — provisioned cwd', () => {
+  test('relative path resolves against the composed cwd', async () => {
+    const { dir, cleanup } = await tempDir({ 'file.txt': 'old text' })
+    try {
+      const scoped = { ...editTool, run: (input: EditInput) => editTool.run({ ...input, cwd: dir }) }
+      const result = await scoped.run({ path: 'file.txt', old_text: 'old', new_text: 'new' })
+      expect(result.replacements).toBe(1)
+      expect(await Bun.file(path.join(dir, 'file.txt')).text()).toBe('new text')
     } finally {
       await cleanup()
     }

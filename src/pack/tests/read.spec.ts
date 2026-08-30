@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 import * as path from 'node:path'
-import readTool from '../read.ts'
+import readTool, { type ReadInput } from '../read.ts'
 import { tempDir } from './helpers.ts'
 
 // ================================================================
@@ -58,6 +58,19 @@ describe('read tool', () => {
       const result = await readTool.run({ path: path.join(dir, 'test.txt'), offset: 10 })
       expect(result.isError).toBe(true)
       expect(result.content).toContain('Error')
+    } finally {
+      await cleanup()
+    }
+  })
+})
+
+describe('read tool — provisioned cwd', () => {
+  test('relative path resolves against the composed cwd', async () => {
+    const { dir, cleanup } = await tempDir({ 'test.txt': 'scoped content' })
+    try {
+      const scoped = { ...readTool, run: (input: ReadInput) => readTool.run({ ...input, cwd: dir }) }
+      const result = await scoped.run({ path: 'test.txt' })
+      expect(result.content).toBe('scoped content')
     } finally {
       await cleanup()
     }

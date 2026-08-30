@@ -1,10 +1,10 @@
 import * as path from 'node:path'
 import * as z from 'zod'
-import type { ToolArgs } from './pack.types.ts'
+import type { CwdProvision, ToolArgs } from './pack.types.ts'
 
 export const inputSchema = z.object({
   pattern: z.string().min(1, 'pattern must be non-empty'),
-  path: z.string().optional().describe('directory to search (defaults to CWD)'),
+  path: z.string().optional().describe("directory to search (defaults to the tool's provisioned cwd)"),
   include: z.string().optional().describe('glob filter for file names (e.g. "*.ts")'),
 })
 
@@ -32,16 +32,17 @@ const MAX_MATCHES = 200
  * 100 files / 1000 lines per file. Upgrade path: walk + glob filter in
  * fallback.
  */
-export const run = async (input: GrepInput): Promise<GrepOutput> => {
-  const { pattern, path: searchPath, include } = input
+export const run = async (input: GrepInput & CwdProvision): Promise<GrepOutput> => {
+  const { pattern, path: searchPath, include, cwd } = input
+  const resolvedSearch = path.resolve(cwd ?? process.cwd(), searchPath ?? '.')
 
   const rgPath = Bun.which('rg')
 
   if (rgPath) {
-    return runWithRg(pattern, searchPath, include, rgPath)
+    return runWithRg(pattern, resolvedSearch, include, rgPath)
   }
 
-  return runFallback(pattern, searchPath, include)
+  return runFallback(pattern, resolvedSearch, include)
 }
 
 const runWithRg = async (
@@ -141,7 +142,7 @@ const runFallback = async (
   return { matches, truncated: matches.length >= MAX_MATCHES }
 }
 
-const grepTool: ToolArgs<typeof inputSchema, typeof outputSchema> = Object.freeze({
+const grepTool: ToolArgs<typeof inputSchema, typeof outputSchema, CwdProvision> = Object.freeze({
   name: 'grep',
   description: 'Search for a pattern in files. Prefers ripgrep (rg) when available; falls back to a JS line scanner.',
   inputSchema,
