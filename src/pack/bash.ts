@@ -1,83 +1,147 @@
 import * as z from 'zod'
 import type { ToolArgs } from './pack.types.ts'
 
+// ================================================================
+// Limits (mirroring pi's bash tool + read tool conventions)
+// ================================================================
+
+/** Spawn timeouts are int32 milliseconds — cap seconds accordingly. */
+const MAX_TIMEOUT_SECONDS = 2_147_483 // ≈ int32 ms / 1000
+const MAX_LINES = 2000
+const MAX_BYTES = 50 * 1024
+
 export const inputSchema = z.object({
   command: z.string().min(1, 'command must be non-empty'),
-  timeout: z.number().int().positive().optional().describe('timeout in seconds (no default timeout)'),
+  timeout: z
+    .number()
+    .int()
+    .positive()
+    .max(MAX_TIMEOUT_SECONDS)
+    .optional()
+    .describe(
+      `timeout in seconds (optional, no default; max ${MAX_TIMEOUT_SECONDS} — spawn timeouts are int32 milliseconds)`,
+    ),
 })
 
 export const outputSchema = z.object({
   stdout: z.string(),
   stderr: z.string(),
   exitCode: z.number().int(),
+  truncated: z
+    .boolean()
+    .optional()
+    .describe('true when output exceeded the tail-truncation limits (last 2000 lines / 50KB)'),
 })
 
 export type BashInput = z.output<typeof inputSchema>
 export type BashOutput = z.output<typeof outputSchema>
 
-/** Signal codes from process termination. */
-const signalName = (code: number): string => {
-  const sig = code - 128
-  // Common signal names
-  const names: Record<number, string> = {
-    1: 'SIGHUP',
-    2: 'SIGINT',
-    3: 'SIGQUIT',
-    6: 'SIGABRT',
-    9: 'SIGKILL',
-    15: 'SIGTERM',
+/**
+ * Resolve the interpreter once. bash is preferred (models emit bash-flavored
+ * syntax); sh is the last-resort fallback — its `-c` bridge semantics are
+ * identical. MINIMAL: no custom-shellPath config; upgrade path is a settings
+ * override like pi's shellPath.
+ */
+const shell = Bun.which('bash') ?? Bun.which('sh') ?? 'bash'
+
+/**
+ * Strip control characters (keeping \t \n \r) and interlinear-annotation
+ * ranges so binary garbage never reaches the model context.
+ */
+const sanitize = (text: string): string =>
+  Array.from(text)
+    .filter((char) => {
+      const code = char.codePointAt(0)
+      if (code === undefined) return false
+      if (code === 0x09 || code === 0x0a || code === 0x0d) return true
+      if (code <= 0x1f) return false
+      if (code >= 0xfff9 && code <= 0xfffb) return false
+      return true
+    })
+    .join('')
+
+/**
+ * Tail-truncate to the last MAX_LINES lines / MAX_BYTES bytes (whichever
+ * bites first), UTF-8-safe — a multibyte character is never split.
+ * Tail-biased: errors surface at the end of output.
+ */
+const truncateTail = (text: string): { content: string; truncated: boolean } => {
+  const endsWithNewline = text.endsWith('\n')
+  let lines = text.split('\n')
+  if (endsWithNewline) lines.pop() // phantom '' from the trailing newline — not a line
+  let truncated = false
+  if (lines.length > MAX_LINES) {
+    lines = lines.slice(-MAX_LINES)
+    truncated = true
   }
-  return names[sig] ?? `SIG${sig}`
+  let content = lines.join('\n')
+  if (endsWithNewline) content += '\n'
+  const bytes = new TextEncoder().encode(content)
+  if (bytes.byteLength > MAX_BYTES) {
+    let start = bytes.byteLength - MAX_BYTES
+    while (start < bytes.byteLength && (bytes[start]! & 0xc0) === 0x80) start++
+    content = new TextDecoder().decode(bytes.subarray(start))
+    truncated = true
+  }
+  return { content, truncated }
 }
 
 /**
- * Execute a shell command via `Bun.spawn` with optional timeout.
+ * Execute a shell command via `Bun.spawn` with an optional native timeout.
  *
- * `Bun.$` does not support AbortSignal or timeout natively, so we use
- * `Bun.spawn` with a shell wrapper for command execution. Non-zero exit
- * codes are returned as data — never thrown.
+ * The input is shell *source code* — pipes, `&&`, redirection, expansion —
+ * so it runs through an interpreter (`shell -c`): `Bun.spawn` takes argv,
+ * not program text. Non-zero exit codes are returned as data — never thrown.
  *
- * When the process is killed by a timeout signal, the exit code is >128
- * (128 + signal number). We detect this and report the timeout condition
- * in stderr.
+ * Bun-native timeout kills the process with SIGTERM; a killed run is
+ * reported with exitCode -1 and a `timed out` marker in stderr.
  *
- * MINIMAL: no CWD config, no env customization. Upgrade path: add `cwd`
- * and `env` fields to inputSchema.
+ * MINIMAL: no cwd/env customization (upgrade path: inputSchema fields);
+ * no full-output spill to a temp file on truncation (upgrade path: write
+ * the untruncated output and report the path); no sandbox/policy
+ * run-composition hook (Phase 5/7 — policy packs wrap `run`); Windows
+ * requires bash (Git Bash) on PATH.
  */
 export const run = async (input: BashInput): Promise<BashOutput> => {
   const { command, timeout } = input
 
-  let signal: AbortSignal | undefined
-  if (timeout !== undefined) {
-    signal = AbortSignal.timeout(timeout * 1000)
-  }
-
   try {
-    const proc = Bun.spawn(['bash', '-c', command], {
-      signal,
-      stdio: ['ignore', 'pipe', 'pipe'],
+    const proc = Bun.spawn([shell, '-c', command], {
+      stdin: 'ignore',
+      stdout: 'pipe',
+      stderr: 'pipe',
+      ...(timeout === undefined ? {} : { timeout: timeout * 1000 }),
     })
 
-    const [stdout, stderr] = await Promise.all([new Response(proc.stdout).text(), new Response(proc.stderr).text()])
-
+    const [rawStdout, rawStderr] = await Promise.all([
+      new Response(proc.stdout).text(),
+      new Response(proc.stderr).text(),
+    ])
     const exitCode = await proc.exited
 
-    // If the process was killed by a signal due to timeout, report it
-    if (signal?.aborted ?? false) {
+    // Native timeout kills with SIGTERM — surface it as the timeout condition
+    if (timeout !== undefined && proc.signalCode !== null) {
+      const out = truncateTail(sanitize(rawStdout))
+      const err = truncateTail(sanitize(rawStderr))
       return {
-        stdout,
-        stderr: stderr || `Command timed out after ${timeout} seconds (killed by ${signalName(exitCode)})`,
+        stdout: out.content,
+        stderr: `${err.content}\nCommand timed out after ${timeout} seconds (${proc.signalCode})`.trim(),
         exitCode: -1,
+        truncated: out.truncated || err.truncated || undefined,
       }
     }
 
+    const stdoutTail = truncateTail(sanitize(rawStdout))
+    const stderrTail = truncateTail(sanitize(rawStderr))
+
     return {
-      stdout,
-      stderr,
-      exitCode,
+      stdout: stdoutTail.content,
+      stderr: stderrTail.content,
+      exitCode: exitCode ?? -1,
+      truncated: stdoutTail.truncated || stderrTail.truncated || undefined,
     }
   } catch (err) {
-    // Catch unexpected spawn errors (command not found, etc.)
+    // Catch unexpected spawn errors (command not found, cwd deleted, etc.)
     return {
       stdout: '',
       stderr: `[Error executing command: ${(err as Error).message}]`,
@@ -88,7 +152,10 @@ export const run = async (input: BashInput): Promise<BashOutput> => {
 
 const bashTool: ToolArgs<typeof inputSchema, typeof outputSchema> = Object.freeze({
   name: 'bash',
-  description: 'Execute a bash command in the current working directory. Returns stdout, stderr, and exit code.',
+  description:
+    'Execute a bash command in the current working directory. Returns stdout, stderr, and exit code. ' +
+    `Output is tail-truncated to the last ${MAX_LINES} lines or ${MAX_BYTES / 1024}KB (whichever is hit first). ` +
+    `Optional timeout in seconds (max ${MAX_TIMEOUT_SECONDS}); a timed-out command reports exitCode -1.`,
   inputSchema,
   outputSchema,
   run,

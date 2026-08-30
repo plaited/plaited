@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import bashTool from '../bash.ts'
+import bashTool, { inputSchema } from '../bash.ts'
 
 // ================================================================
 // bash tool
@@ -22,5 +22,26 @@ describe('bash tool', () => {
     const result = await bashTool.run({ command: 'sleep 10', timeout: 1 })
     expect(result.exitCode).toBe(-1)
     expect(result.stderr).toContain('timed out')
+  })
+
+  test('output exceeding line limit is tail-truncated with truncated flag', async () => {
+    // 3000 numbered lines — head must be dropped, tail preserved
+    const result = await bashTool.run({ command: 'seq 1 3000' })
+    expect(result.truncated).toBe(true)
+    const lines = result.stdout.split('\n')
+    expect(lines.length).toBeLessThanOrEqual(2001) // 2000 lines + trailing ''
+    expect(lines[0]).toBe('1001') // head dropped
+    expect(lines.at(-2)).toBe('3000') // tail preserved
+  })
+
+  test('control characters are sanitized from output', async () => {
+    // bash printf interprets \x01 / \x02 as raw control bytes
+    const result = await bashTool.run({ command: `printf 'a\\x01b\\x02c'` })
+    expect(result.stdout).toBe('abc')
+  })
+
+  test('timeout above the int32-ms ceiling is rejected by the schema', () => {
+    expect(inputSchema.safeParse({ command: 'x', timeout: 2_147_484 }).success).toBe(false)
+    expect(inputSchema.safeParse({ command: 'x', timeout: 2_147_483 }).success).toBe(true)
   })
 })

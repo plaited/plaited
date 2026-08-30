@@ -305,9 +305,13 @@ guard threads, and space-deployability natively (no callback-shaped pi tools).
   `grep.ts`, `find.ts`, `ls.ts`), each exporting a frozen `ToolArgs` object
   (`{ name, inputSchema, outputSchema, run, description }`) — plain data, no hooks,
   testable without the engine. Schemas derived from usage (not copied from pi's
-  TypeBox); `run` cores are pure async functions. Bun APIs: `bash` via `Bun.$`;
+  TypeBox); `run` cores are pure async functions, errors returned as data
+  (`isError`/structured errors — never thrown). Bun APIs: `bash` via `Bun.spawn`
+  (`shell -c` interpreter bridge, native `timeout`/`killSignal`) with
+  tail-truncated (last 2000 lines / 50KB, UTF-8-safe) control-char-sanitized
+  output — the tool `description` carries that contract to the model;
   file tools via `Bun.file`/`Bun.write`; `find`/`ls` via `Bun.Glob`; `grep` prefers
-  `rg` (`Bun.which` + `Bun.$`) with a JS line-scanner fallback (`MINIMAL:`).
+  `rg` (`Bun.which` + `Bun.spawn`) with a JS line-scanner fallback (`MINIMAL:`).
 - **`edit` constructs its unified patch — no `diff` dependency, no streaming.** The
   edit location is known (`old_text` → `new_text` at matched line ranges), so the
   patch is built from the edit range with context lines — ~dozens of lines,
