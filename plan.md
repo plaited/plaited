@@ -168,20 +168,47 @@ correlate by `call_id`.
 
 ---
 
-## Phase 3 — Split `src/cli` makeCli units into pure cores + tool registration
+## Phase 2.5 — Default tool pack (pi-equivalent core tools)
+
+**Goal:** the agent's hands. Reimplement pi's default built-in tools — `read`, `bash`,
+`edit`, `write`, `grep`, `find`, `ls` — as `useTool` units, carrying Zod schemas,
+guard threads, and space-deployability natively (no callback-shaped pi tools).
+
+**Deliverables:**
+
+- `src/agent/tools/` — one `useTool` unit per tool. Schemas derived from usage (not
+  copied from pi's TypeBox); `run` cores are pure async functions. `bash` runs through
+  `Bun.$`; file tools through `Bun.file`/`Bun.write`.
+- Root provisioning: a `provisionDefaults(rootHooks)` that registers all seven at root.
+- Space-deployable variants: the same units accept space-scoped hooks; a policy pack
+  can substitute a restricted variant (read-only set, remote-executing `bash`).
+- These are the critical path to a useful agent — the CLI conversions (Phase 3) are
+  additive on top.
+
+**Done when:** each tool passes schema validation at registration (Phase 2 purity
+checks); tests drive each through a b-program (trigger call → `_result`); the guard
+pair blocks a malformed `bash` call and emits `tool_call_blocked`; provisioning the
+same tool at root and in a space works independently (space-scoped result events).
+
+---
+
+## Phase 3 — Convert `src/cli` makeCli units to `useTool` cores
 
 **Goal:** `git-context`, `markdown`, `mcp-client`, `typescript-lsp` become agent tools
-without losing CLI behavior.
+alongside the defaults; their CLI subcommands become thin aliases over the same cores.
 
 **Deliverables:**
 
 - Per unit: extract the `run(input)` body into a pure async core
-  `(input) => output` (no argv/stdout concerns). `makeCli` keeps
-  parse → core → validate → print. Agent registers the same core via `useTool`.
-- Envelope: tool input/output details carry `call_id` top-level.
+  `(input) => output` (no argv/stdout concerns). Register the core via `useTool`.
+  `makeCli` keeps parse → core → validate → print for direct CLI use.
+- The bare `plaited` command is the agent; `plaited <tool>` subcommands survive as
+  operator conveniences over the same cores.
+- Envelope: tool input/output details carry `call_id` top-level (stamped by the loop).
 
-**Done when:** existing CLI tests pass unchanged; new tests call the cores through the
-b-program (trigger a call, observe the `_result`).
+**Done when:** existing CLI tests pass unchanged (cores extracted, behavior identical);
+new tests call the cores through the b-program (trigger a call, observe the `_result`);
+the tools provision at root and into a space.
 
 ---
 
@@ -244,22 +271,28 @@ deadlocking generated guard is rejected by the gate.
 
 ---
 
-## Phase 6 — CLI entry: `plaited agent`
+## Phase 6 — CLI entry: `plaited` (serve-default)
 
-**Goal:** the agent is invocable as `plaited agent '<json>'` — from pi via `!`, or any
-shell.
+**Goal:** the bare `plaited` command is the agent. The warm process is the product;
+the CLI is its client.
 
 **Deliverables:**
 
-- `makeCli` unit per AGENTS.md operator-surface conventions: input `{ space, prompt,
-  (optional) permissionAnswer }`, `--schema input|output` with `.describe()`.
-- Per invocation: restore the space's context from its artifacts (trace prefix +
-  thread definitions) → trigger prompt → run until turn-end → persist → print JSON
-  output (assistant text, tool summaries, or `permission_required`).
+- `plaited` (no subcommand) talks to the running agent process, starting it if absent.
+  Input `{ space, prompt, (optional) permissionAnswer }`.
+- `plaited --no-serve` — one-shot cold-run (restore space context from artifacts →
+  trigger prompt → run to turn-end → persist → print JSON). For CI and minimal envs.
+- `plaited --seed <n>` — validation mode: the serve process runs against the Phase 0
+  scripted StreamFn adapter with a seeded RNG. Deterministic, no network — this is
+  the testing/validation mode, wired through the adapter seam, not a second process
+  shape.
+- Root provisioning at startup: default tool pack (Phase 2.5) + CLI-derived tools
+  (Phase 3) + guard pack (Phase 5) at root; spaces get subsets/variants on creation.
 
-**Done when:** `!bun run plaited agent '{"space":"s1","prompt":"..."}'` from pi
-completes a turn; a guarded action returns `permission_required` and a follow-up
-invocation carrying the answer completes it; a second space stays isolated.
+**Done when:** `!plaited '{"space":"s1","prompt":"..."}'` from pi completes a turn via
+the serve process (auto-started if needed); `plaited --seed 42` reproduces a turn
+bit-for-bit twice; `plaited --no-serve` works with no daemon; a guarded action returns
+`permission_required` and a follow-up completes it; a second space stays isolated.
 
 ---
 
@@ -296,6 +329,30 @@ from Phase 5 repackaged) demonstrates the contract end-to-end including ejection
 
 ---
 
+## Adoption invariants (not features)
+
+Properties the core must preserve so future directions stay open without the core
+committing to them. These are constraints on how we build the phases above, not new
+work:
+
+- **The engine never imports atproto.** Spaces remain bare string ids; authority,
+  tenancy, and membership are pack-level concerns expressed as threads/handlers.
+- **Trace logs stay append-only and ordered.** No rewrites or reordering — a
+  self-certifying signed-commit sync shape (CAR/MST) requires it later. Phase 4's
+  JSONL is already this; don't break it.
+- **Packs are the only integration seam.** Network, identity, sync, and rendering
+  concerns (atproto spaces, cloud mirrors, GUI lexicons) bind through the Phase 7
+  pack contract. Some packs will run as sidecar processes — the contract already
+  permits this since `run`/handlers are plain async functions.
+- **Artifacts are complete.** Anything durable (trace logs, thread definitions) is
+  sufficient to verify/replay on its own — `replayToFrontier` already demands this.
+  Author identity (signing, DIDs) is attached later by a pack, not baked in.
+
+No deployment topology is prescribed: local-only, cloud, local-with-cloud-mirror are
+all operator choices the design must remain compatible with.
+
+---
+
 ## Explicitly deferred
 
 - ACP adapter (any version) — revisit when a real client (GUI or Zed) is needed.
@@ -304,5 +361,9 @@ from Phase 5 repackaged) demonstrates the contract end-to-end including ejection
 - Long-running hosted agent (REST + WebSocket, per-user spaces) — the spaces
   vocabulary exists to make this possible later; the transport and tenancy layers
   are their own project.
+- atproto identity/sync/lexicon packs (agent DID + user DID, trace commits as
+  signed records, cloud-mirror PDS, behavioral-rendering lexicon for a future GUI) —
+  bind later via the pack seam; no core dependency. Gated on atproto spaces
+  stabilizing out of alpha.
 - No session abstraction, ever: the space is the unit. Session-like behaviors
   (restore, branch, history) are space operations over artifacts.
