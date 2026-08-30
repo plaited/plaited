@@ -57,66 +57,80 @@ const splitLinesPreserving = (content: string): string[] => {
 // ----------------------------------------------------------------
 
 interface TextRange {
-  startLine: number // 0-indexed line in splitLinesPreserving result
-  endLine: number // exclusive
+  startLine: number // 0-indexed, inclusive — first line containing the match
+  endLine: number // 0-indexed, inclusive — last line containing the match
   oldLines: string[]
   newLines: string[]
 }
 
+const stripEol = (line: string): string => (line.endsWith('\n') ? line.slice(0, -1) : line)
+
 /**
  * Build a standard unified diff patch from an old content and a set of
  * known text ranges that changed.
+ *
+ * New-side accounting: each range's `newLines` are constructed from the
+ * replacement itself (prefix + new_text + suffix), and hunk new-start
+ * headers carry the accumulated line-count drift from prior hunks —
+ * a patch must stay truthful when a replacement changes the line count.
+ * Context windows that would overlap are merged into a single hunk
+ * (canonical unified-diff behavior; overlapping hunks break reconstruction).
  */
 const buildPatch = (oldLines: string[], ranges: TextRange[], contextLines = 4): string => {
-  // Sort by startLine
   const sorted = [...ranges].sort((a, b) => a.startLine - b.startLine)
 
-  const hunks: string[] = []
-  let cursor = 0
-
+  // Merge ranges whose context windows would overlap.
+  const merged: Array<{ start: number; end: number; ranges: TextRange[] }> = []
   for (const range of sorted) {
-    const oldLen = range.endLine - range.startLine
-    const newLen = range.newLines.length
+    const last = merged[merged.length - 1]
+    if (last && range.startLine - contextLines <= last.end + 1 + contextLines) {
+      last.end = Math.max(last.end, range.endLine)
+      last.ranges.push(range)
+    } else {
+      merged.push({ start: range.startLine, end: range.endLine, ranges: [range] })
+    }
+  }
 
-    // Gather context before
-    const beforeStart = Math.max(cursor, range.startLine - contextLines)
-    const beforeCtx = oldLines.slice(beforeStart, range.startLine)
+  const hunks: string[] = []
+  let drift = 0 // accumulated new-vs-old line delta from prior hunks
+  let cursor = 0 // first old line not yet covered by a hunk
 
-    // Gather context after
-    const afterEnd = Math.min(oldLines.length, range.endLine + contextLines)
-    const afterCtx = oldLines.slice(range.endLine, afterEnd)
-
-    // Compute hunk header: position accounts for context lines
+  for (const m of merged) {
+    const beforeStart = Math.max(cursor, m.start - contextLines)
+    const afterEnd = Math.min(oldLines.length, m.end + 1 + contextLines)
     const hunkOldStart = beforeStart + 1
-    const hunkOldLen = beforeCtx.length + oldLen + afterCtx.length
-    const hunkNewStart = beforeStart + 1
-    const hunkNewLen = beforeCtx.length + newLen + afterCtx.length
+    const hunkNewStart = hunkOldStart + drift
 
-    const header = `@@ -${hunkOldStart},${hunkOldLen} +${hunkNewStart},${hunkNewLen} @@`
-    const hunkLines: string[] = [header]
-
-    // Context before
-    for (const l of beforeCtx) {
-      hunkLines.push(` ${l.endsWith('\n') ? l.slice(0, -1) : l}`)
+    const body: string[] = []
+    let oldCount = 0
+    let newCount = 0
+    let i = beforeStart
+    let ri = 0
+    while (i < afterEnd) {
+      const range = m.ranges[ri]
+      if (range && i === range.startLine) {
+        for (const l of range.oldLines) {
+          body.push(`-${stripEol(l)}`)
+          oldCount++
+        }
+        for (const l of range.newLines) {
+          body.push(`+${stripEol(l)}`)
+          newCount++
+        }
+        i = range.endLine + 1
+        ri++
+        continue
+      }
+      body.push(` ${stripEol(oldLines[i]!)}`)
+      oldCount++
+      newCount++
+      i++
     }
 
-    // Removed lines
-    for (const l of range.oldLines) {
-      hunkLines.push(`-${l.endsWith('\n') ? l.slice(0, -1) : l}`)
-    }
+    hunks.push([`@@ -${hunkOldStart},${oldCount} +${hunkNewStart},${newCount} @@`, ...body].join('\n'))
 
-    // Added lines
-    for (const l of range.newLines) {
-      hunkLines.push(`+${l.endsWith('\n') ? l.slice(0, -1) : l}`)
-    }
-
-    // Context after
-    for (const l of afterCtx) {
-      hunkLines.push(` ${l.endsWith('\n') ? l.slice(0, -1) : l}`)
-    }
-
-    hunks.push(hunkLines.join('\n'))
-    cursor = afterEnd
+    cursor = m.end + 1
+    drift += newCount - oldCount
   }
 
   return hunks.join('\n')
@@ -217,34 +231,40 @@ export const run = async (input: EditInput): Promise<EditOutput> => {
 
   // Build patch
   const oldLines = splitLinesPreserving(normalized)
-  const newLines = splitLinesPreserving(newContent)
 
-  // Map replacement positions to line ranges
+  // Map replacement positions to line ranges. Each range's `newLines` are
+  // constructed from the replacement itself — prefix (start of the first
+  // matched line) + new_text + suffix (rest of the last matched line) —
+  // because slicing the new content by old coordinates drifts when a
+  // replacement changes the line count.
   const ranges: TextRange[] = []
   const sortedForPatch = [...matchPositions].sort((a, b) => a - b)
   for (const pos of sortedForPatch) {
-    // Find start line (0-indexed)
+    // First line containing the match (0-indexed, inclusive)
     let startLine = 0
     let charPos = 0
     while (startLine < oldLines.length && charPos + oldLines[startLine]!.length <= pos) {
       charPos += oldLines[startLine]!.length
       startLine++
     }
+    const prefix = normalized.slice(charPos, pos)
 
-    // Find end line (exclusive)
+    // Last line containing the match (0-indexed, inclusive)
+    const matchEnd = pos + normOld.length
     let endLine = startLine
-    const endCharPos = pos + normOld.length
-    while (endLine < oldLines.length && charPos < endCharPos) {
-      charPos += oldLines[endLine]!.length
+    let endChar = charPos
+    while (endLine < oldLines.length && endChar + oldLines[endLine]!.length < matchEnd) {
+      endChar += oldLines[endLine]!.length
       endLine++
     }
+    const suffix = normalized.slice(matchEnd, endChar + oldLines[endLine]!.length)
 
-    // The old lines in this range
-    const rangeOld = oldLines.slice(startLine, endLine)
-    // The new lines need to be calculated from the new content
-    const rangeNew = newLines.slice(startLine, startLine + (endLine - startLine))
-
-    ranges.push({ startLine, endLine, oldLines: rangeOld, newLines: rangeNew })
+    ranges.push({
+      startLine,
+      endLine,
+      oldLines: oldLines.slice(startLine, endLine + 1),
+      newLines: splitLinesPreserving(prefix + normNew + suffix),
+    })
   }
 
   const patch = buildPatch(oldLines, ranges)
