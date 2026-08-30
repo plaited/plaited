@@ -1,6 +1,6 @@
 import * as path from 'node:path'
 import * as z from 'zod'
-import type { ToolArgs } from './types.ts'
+import type { ToolArgs } from './pack.types.ts'
 
 // ----------------------------------------------------------------
 // Helpers borrowed from pi's edit-diff.ts semantics (Bun-native rewrite)

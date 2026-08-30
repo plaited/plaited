@@ -1,5 +1,5 @@
 import * as z from 'zod'
-import type { ToolArgs } from './types.ts'
+import type { ToolArgs } from './pack.types.ts'
 
 export const inputSchema = z.object({
   glob: z.string().min(1, 'glob pattern must be non-empty'),

@@ -1,6 +1,6 @@
 import * as path from 'node:path'
 import * as z from 'zod'
-import type { ToolArgs } from './types.ts'
+import type { ToolArgs } from './pack.types.ts'
 
 /**
  * Approximate ceiling for read output — mirrors pi's DEFAULT_MAX_LINES (2000)

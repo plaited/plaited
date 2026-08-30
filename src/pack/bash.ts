@@ -1,5 +1,5 @@
 import * as z from 'zod'
-import type { ToolArgs } from './types.ts'
+import type { ToolArgs } from './pack.types.ts'
 
 export const inputSchema = z.object({
   command: z.string().min(1, 'command must be non-empty'),

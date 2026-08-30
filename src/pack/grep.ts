@@ -1,6 +1,6 @@
 import * as path from 'node:path'
 import * as z from 'zod'
-import type { ToolArgs } from './types.ts'
+import type { ToolArgs } from './pack.types.ts'
 
 export const inputSchema = z.object({
   pattern: z.string().min(1, 'pattern must be non-empty'),
