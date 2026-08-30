@@ -183,7 +183,7 @@ coordination appears as events in traces (assert via `useTrace`).
 
 **Goal:** tools are makeCli-style units wired as handler+guard-thread pairs. Reference:
 the spec sketch at `src/main/behavioral.ts:400-423` and
-`research/pi-behavioral-harness-proposal.md` §4.
+`research/behavioral-agent-harness-proposal.md` §4.
 
 **Deliverables:**
 
