@@ -1,6 +1,7 @@
 # Behavioral Agent Harness — Phased Build Plan
 
-Self-improving agent built on the plaited behavioral runtime (`src/main/behavioral.ts`).
+Self-improving agent built on the plaited behavioral runtime (`src/runtime/behavioral.ts`
+after Phase -2; today `src/main/behavioral.ts`).
 No pi SDK. No TUI. No ACP (deferred). The agent is a `plaited` CLI command; the dev
 client is pi's `!`/`!!` shell escapes; validation is Bun test.
 
@@ -19,8 +20,9 @@ client is pi's `!`/`!!` shell escapes; validation is Bun test.
 - The engine lives in `src/runtime/` after Phase -2; all harness code lands in
   `src/agent/`; the render/protocol layer (`src/ui/`) is out of the agent's import
   surface and becomes a pack-wrapped tool later.
-- The sketch in `src/main/behavioral.ts` lines ~400-423 (`useTool` spec) is reference
-  material for Phase 2, not gospel — fix its mechanical errors per Phase 2.
+- The `useTool` spec sketch lives at `src/main/behavioral.ts` lines ~400-423 today
+  (moves to `src/runtime/behavioral.ts` in Phase -2). It is reference material for
+  Phase 2, not gospel — fix its mechanical errors per Phase 2.
 
 ---
 
@@ -97,8 +99,10 @@ work in Phase 4.
   - Sweep `pending` and `running`: for bids with matching space,
     `generator.return?.()` + delete (reuses the exact `interrupt` teardown path in
     `resumePendingThreadsForSelectedEvent`).
-  - Handlers: `useAddHandler(space)` registers its disconnect into a per-space
-    registry; `useEject` runs them all.
+  - Handlers: `useAddHandler(space)` already returns a per-registration `Disconnect`;
+    additionally each registration is recorded in an engine-side per-space registry,
+    and `useEject` runs all of them (caller-held disconnects remain valid for
+    individual removal — two removal paths, one subscription each).
   - **Eject deletes the declaration.** Post-eject, the space id is undeclared: binds
     against it throw. Re-creating an ejected id via `useCreateSpace` is allowed —
     fresh generation, no zombie state survives the sweep.
@@ -182,7 +186,7 @@ coordination appears as events in traces (assert via `useTrace`).
 ## Phase 2 — `useTool` factory
 
 **Goal:** tools are makeCli-style units wired as handler+guard-thread pairs. Reference:
-the spec sketch at `src/main/behavioral.ts:400-423` and
+the spec sketch in `behavioral.ts` (see conventions) and
 `research/behavioral-agent-harness-proposal.md` §4.
 
 **Deliverables:**
@@ -276,6 +280,8 @@ artifact-based, not a session subsystem.
 - `src/agent/space-trace.ts` — per-space trace capture: subscribe via root
   `useTrace`, partition by the space field already present on candidate/selection
   snapshots, append JSONL per space (plus a whole-program log for the running agent).
+  The log records thread/tool *registrations* as well as selections — restore
+  (below) needs the provisioned set, not just the event stream.
 - Projections from a space's trace log:
   - `toItems(log)` → Open Responses item list (function_call /
     function_call_output by `call_id`) — what the model boundary consumes.
@@ -315,9 +321,11 @@ by `interrupt` on approval events.
   trigger → guard interrupted → the pended call becomes selectable. Deny path
   requests the tool's error result so the model sees the refusal.
 - Standing policy threads are composable additions (e.g. auto-allow reads under src/).
-- Registration gate: new threads pass `verifyFrontiers` per
+- Registration gate: the harness wraps `useAddThread` with a `verifyFrontiers` call
+  on new thread rules *before* admission, per
   `research/differential-frontier-gate-stable-reward.md` (`verified` admits,
   `failed` rejected with `add_thread_error` trace, `truncated` per policy).
+  Full layering in Phase 5.5 Layer 1.
 
 **Done when:** tests prove — guarded call blocked until approval; approval interrupts
 the guard and the call executes; deny produces an error `_result`; a malformed or
@@ -325,19 +333,20 @@ deadlocking generated guard is rejected by the gate.
 
 ---
 
-## Phase 5.5 — Eval loop (autoresearch): gate, tool, observer
+## Phase 5.5 — Eval loop (autoresearch): gate, tool, observer, skill surface
 
 **Goal:** the self-improving loop from
 `research/talk-self-improving-agents-from-behavioral-exhaust.md` — an agent reads its
-own exhaust and iterates. Three *separate* mechanisms, kept distinct to avoid
-meta-regress:
+own exhaust and iterates. Three *separate* gate/observer mechanisms (kept distinct to
+avoid meta-regress) plus the third mutable surface (skill text):
 
-**Layer 1 — Registration gate (harness-side, Phase 5).** The harness wraps
+**Layer 1 — Registration gate (harness-side; owns the definition).** The harness wraps
 `useAddThread` and calls `verifyFrontiers` on the new thread's rules *before*
 admission. `verified` admits; `failed` rejects with `add_thread_error`;
 `truncated` per policy. Lives in `src/agent/` (not the engine — the engine stays
 domain-agnostic and must not pay exploration cost per `useAddThread`). This is the
-gate spec'd in `research/differential-frontier-gate-stable-reward.md`.
+gate spec'd in `research/differential-frontier-gate-stable-reward.md`. Phase 5
+references this layer; this is the single definition.
 
 **Layer 2 — `verify-frontier` tool (agent-callable self-check).** A `useTool` unit
 exposing `verifyFrontiers` inside the b-program:
@@ -362,6 +371,21 @@ loop — so it observes without participating: traces never become selected even
 cannot re-enter a worker's frontier. This is the controller's oversight channel
 (worker deadlocks, errors, progress), distinct from the worker's own gate (Layer 2).
 
+**Layer 4 — Skill surface (third mutable surface).** Threads and tools gate
+symbolically (worker-side, Layer 2); skill text is prose and needs an LLM judge —
+so it judges *controller-side*, matching the neuro-symbolic split (worker proposes,
+controller disposes):
+
+- `skill` tool (`useTool` unit, built on the Phase 3 `markdown` core):
+  `read-skill` / `write-skill` / `validate-skill` (frontmatter + link validation).
+  The agent edits its own skill text through these.
+- Judge callback: a controller-side `useTrace` listener (Layer 3 wiring) that, on a
+  `skill.proposed` trace, calls an Open Responses judge endpoint — the `judgeJson`
+  pattern: one stateless `complete` call `{ model, system, user }` → strict JSON
+  verdict (see the DeepSearchQA grader). No external eval harness — the judge is a
+  StreamFn/adapter call like any other. The controller then triggers `skill.scored`
+  back into the worker's space; the worker keeps or discards the variant.
+
 **The reward function** (`computeThreadReward`: `verified`→1, `truncated`→0,
 `failed`→-1) is a pure function of the Layer 1/2 verdict — lives in `src/agent/`
 with the eval loop, not the engine.
@@ -369,14 +393,15 @@ with the eval loop, not the engine.
 **Candidate sandbox:** one space per rollout — create, register the verified
 candidate, observe in isolation, `useEject`. Reuses Phase -1/4 machinery; no new
 engine work. The generator (the agent authoring variants) runs under `--seed`; the
-gate is a pure function and does not consume the seed; the sandbox is a space. Three
-separation-of-concerns mechanisms, never conflated.
+symbolic gate is a pure function and does not consume the seed; the sandbox is a
+space. Three separation-of-concerns mechanisms, never conflated.
 
 **Done when:** the agent calls `verify-frontier` on a candidate and receives a
 verdict; a `failed` candidate is discarded and a corrected one re-gated; the
 controller observes a worker's deadlock via its `useTrace` callback without the
 worker reacting to it; a candidate executed in its sandbox space leaves the root
-program's frontier identical after eject.
+program's frontier identical after eject; a proposed skill variant is judged by the
+controller callback and the score event lands in the worker's space.
 
 ---
 
@@ -392,12 +417,13 @@ the CLI is its client.
 - `plaited --no-serve` — one-shot cold-run (restore space context from artifacts →
   trigger prompt → run to turn-end → persist → print JSON). For CI and minimal envs.
 - `plaited --seed <n>` — validation mode: the serve process runs against the Phase 0
-  scripted StreamFn adapter with a seeded RNG. Deterministic, no network — this is
-  the testing/validation mode, wired through the adapter seam, not a second process
-  shape. **Scope note:** `--seed` seeds the *generator* (the model stream producing
-  turns/candidates). The frontier gate (`verifyFrontiers`) is a pure function of
-  thread data and is already deterministic — it does not consume the seed. Don't
-  conflate the two determinisms.
+  scripted StreamFn adapter (the Phase 0 test double *is* this adapter — scripted
+  responses keyed by seed; one artifact, not two) with a seeded RNG. Deterministic,
+  no network — this is the testing/validation mode, wired through the adapter seam,
+  not a second process shape. **Scope note:** `--seed` seeds the *generator* (the
+  model stream producing turns/candidates). The frontier gate (`verifyFrontiers`) is
+  a pure function of thread data and is already deterministic — it does not consume
+  the seed. Don't conflate the two determinisms.
 - Root provisioning at startup: default tool pack (Phase 2.5) + CLI-derived tools
   (Phase 3) + guard pack (Phase 5) at root; spaces get subsets/variants on creation.
 
