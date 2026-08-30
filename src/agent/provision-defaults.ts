@@ -30,8 +30,12 @@ export type AgentHooks = {
  * @returns An array of registered tool descriptors.
  */
 export const provisionDefaults = (hooks: AgentHooks): ToolDescriptor[] => {
-  const bindTool = <I extends import('zod').ZodType, O extends import('zod').ZodType>(
-    args: ToolArgs<I, O>,
+  const bindTool = <
+    I extends import('zod').ZodType,
+    O extends import('zod').ZodType,
+    P extends Record<string, unknown>,
+  >(
+    args: ToolArgs<I, O, P>,
   ): ToolDescriptor => useTool({ addHandler: hooks.addHandler, trigger: hooks.trigger }, args)
 
   return [

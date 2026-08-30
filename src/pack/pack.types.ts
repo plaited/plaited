@@ -9,10 +9,18 @@ import type * as z from 'zod'
  * Purity rule: schemas must never contain `call_id` — it is the loop's
  * envelope, stamped at dispatch time.
  */
-export type ToolArgs<I extends z.ZodType, O extends z.ZodType> = {
+/**
+ * Provision-time extensions to a tool's model-facing input. The model-facing
+ * schema stays pure (no `call_id`, no `cwd`); the provisioner composes these
+ * onto `run` — e.g. pinning a tool's working directory per space.
+ */
+export type ProvisionInput = Record<string, unknown>
+
+export type ToolArgs<I extends z.ZodType, O extends z.ZodType, P = unknown> = {
   readonly name: string
   readonly inputSchema: I
   readonly outputSchema: O
-  readonly run: (input: z.output<I>) => Promise<z.output<O>>
+  /** `input` is the model-facing schema output intersected with provision-time `P`. */
+  readonly run: (input: z.output<I> & P) => Promise<z.output<O>>
   readonly description?: string
 }

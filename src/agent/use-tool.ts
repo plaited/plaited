@@ -1,6 +1,7 @@
 import * as z from 'zod'
 import { JsonSchemaObjectSchema } from '../main/behavioral.schemas.ts'
 import type { AddHandler, Trigger } from '../main/behavioral.types.ts'
+import type { ProvisionInput } from '../pack/pack.types.ts'
 
 /**
  * Descriptor for a registered tool, returned frozen by {@link useTool}.
@@ -55,13 +56,18 @@ export type ToolDescriptor = {
  * @param args.description - Optional description for model tool definitions.
  * @returns A frozen {@link ToolDescriptor}.
  */
-export const useTool = <I extends z.ZodType, O extends z.ZodType>(
+/**
+ * Provision-time extensions to a tool's model-facing input (see
+ * `pack.types.ts`): the provisioner composes these onto `run` — the model
+ * never supplies them.
+ */
+export const useTool = <I extends z.ZodType, O extends z.ZodType, P extends ProvisionInput = Record<never, unknown>>(
   hooks: { addHandler: AddHandler; trigger: Trigger },
   args: {
     name: string
     inputSchema: I
     outputSchema: O
-    run: (input: z.output<I>) => Promise<z.output<O>>
+    run: (input: z.output<I> & P) => Promise<z.output<O>>
     description?: string
   },
 ): ToolDescriptor => {
@@ -128,7 +134,7 @@ export const useTool = <I extends z.ZodType, O extends z.ZodType>(
       arguments: unknown
     }
     const parsed = args.inputSchema.parse(rawArgs) as z.output<I>
-    const result = await args.run(parsed)
+    const result = await (args.run as (input: z.output<I>) => Promise<z.output<O>>)(parsed)
     const validatedResult = args.outputSchema.parse(result) as z.output<O>
     const output = JSON.stringify(validatedResult)
 

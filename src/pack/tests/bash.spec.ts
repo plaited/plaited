@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 import bashTool, { inputSchema } from '../bash.ts'
+import { tempDir } from './helpers.ts'
 
 // ================================================================
 // bash tool
@@ -43,5 +44,28 @@ describe('bash tool', () => {
   test('timeout above the int32-ms ceiling is rejected by the schema', () => {
     expect(inputSchema.safeParse({ command: 'x', timeout: 2_147_484 }).success).toBe(false)
     expect(inputSchema.safeParse({ command: 'x', timeout: 2_147_483 }).success).toBe(true)
+  })
+
+  test('cwd is provision-time: model schema strips cwd; composed run pins it', async () => {
+    // Model-facing schema stays command/timeout — an extra cwd key from the
+    // model is stripped (unknown-key behavior), never forwarded to run.
+    const parsed = inputSchema.parse({ command: 'pwd', cwd: '/tmp' })
+    expect(parsed).toEqual({ command: 'pwd' })
+
+    const { dir, cleanup } = await tempDir({})
+    try {
+      // The provisioner pattern: wrap run to inject cwd (tool data stays pure)
+      const pinned: typeof bashTool = {
+        ...bashTool,
+        run: (input) => bashTool.run({ ...input, cwd: dir }),
+      }
+      const result = await pinned.run({ command: 'pwd' })
+      expect(result.exitCode).toBe(0)
+      // macOS /var ↔ /private/var symlink — compare real paths
+      const { realpath } = await import('node:fs/promises')
+      expect(await realpath(result.stdout.trim())).toBe(await realpath(dir))
+    } finally {
+      await cleanup()
+    }
   })
 })

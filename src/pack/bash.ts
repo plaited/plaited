@@ -33,7 +33,12 @@ export const outputSchema = z.object({
     .describe('true when output exceeded the tail-truncation limits (last 2000 lines / 50KB)'),
 })
 
-export type BashInput = z.output<typeof inputSchema>
+export type BashInput = z.output<typeof inputSchema> & {
+  /** Provision-time only — never model-facing (see test: cwd is provision-time). */
+  cwd?: string
+  /** Extra env vars layered over the inherited environment (provision-time). */
+  env?: Record<string, string>
+}
 export type BashOutput = z.output<typeof outputSchema>
 
 /**
@@ -96,17 +101,24 @@ const truncateTail = (text: string): { content: string; truncated: boolean } => 
  * Bun-native timeout kills the process with SIGTERM; a killed run is
  * reported with exitCode -1 and a `timed out` marker in stderr.
  *
- * MINIMAL: no cwd/env customization (upgrade path: inputSchema fields);
- * no full-output spill to a temp file on truncation (upgrade path: write
- * the untruncated output and report the path); no sandbox/policy
+ * **cwd/env are provision-time, not model-facing**: `run` accepts them so the
+ * provisioner can compose a pinned tool (`run: (input) => bashTool.run({
+ * ...input, cwd })`); the model-facing inputSchema deliberately excludes them
+ * (a model that picks its own directories is a sandbox hole — Phase 5 policy
+ * guards gate any model-facing escape hatch later).
+ *
+ * MINIMAL: no full-output spill to a temp file on truncation (upgrade path:
+ * write the untruncated output and report the path); no sandbox/policy
  * run-composition hook (Phase 5/7 — policy packs wrap `run`); Windows
  * requires bash (Git Bash) on PATH.
  */
 export const run = async (input: BashInput): Promise<BashOutput> => {
-  const { command, timeout } = input
+  const { command, timeout, cwd, env: extraEnv } = input
 
   try {
     const proc = Bun.spawn([shell, '-c', command], {
+      cwd,
+      env: extraEnv ? { ...process.env, ...extraEnv } : undefined,
       stdin: 'ignore',
       stdout: 'pipe',
       stderr: 'pipe',
@@ -150,7 +162,7 @@ export const run = async (input: BashInput): Promise<BashOutput> => {
   }
 }
 
-const bashTool: ToolArgs<typeof inputSchema, typeof outputSchema> = Object.freeze({
+const bashTool: ToolArgs<typeof inputSchema, typeof outputSchema, Pick<BashInput, 'cwd' | 'env'>> = Object.freeze({
   name: 'bash',
   description:
     'Execute a bash command in the current working directory. Returns stdout, stderr, and exit code. ' +
