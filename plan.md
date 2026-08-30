@@ -325,6 +325,61 @@ deadlocking generated guard is rejected by the gate.
 
 ---
 
+## Phase 5.5 — Eval loop (autoresearch): gate, tool, observer
+
+**Goal:** the self-improving loop from
+`research/talk-self-improving-agents-from-behavioral-exhaust.md` — an agent reads its
+own exhaust and iterates. Three *separate* mechanisms, kept distinct to avoid
+meta-regress:
+
+**Layer 1 — Registration gate (harness-side, Phase 5).** The harness wraps
+`useAddThread` and calls `verifyFrontiers` on the new thread's rules *before*
+admission. `verified` admits; `failed` rejects with `add_thread_error`;
+`truncated` per policy. Lives in `src/agent/` (not the engine — the engine stays
+domain-agnostic and must not pay exploration cost per `useAddThread`). This is the
+gate spec'd in `research/differential-frontier-gate-stable-reward.md`.
+
+**Layer 2 — `verify-frontier` tool (agent-callable self-check).** A `useTool` unit
+exposing `verifyFrontiers` inside the b-program:
+
+```
+input:  { threads: Thread[] }        (Zod schema; pure candidate data)
+output: { status: 'verified'|'failed'|'truncated', findings, livelocks }
+```
+
+The agent authors a candidate `Thread[]`, requests `verify-frontier`, waits for
+`verify-frontier_result` (correlated by `call_id`), and keeps/discards the candidate
+by verdict. **No regress:** the gate operates on the candidate *data* (its own
+`pending` set per `exploreFrontiers`), never the live program's frontier — so the
+agent verifying a candidate never recurses into verifying itself. The verdict symbol
+(`verified`/`failed`/`truncated`) is the in-context training signal (symbol-tuning):
+prior `(thread-shape → verdict)` pairs feed the next generation.
+
+**Layer 3 — `useTrace` observer callback (controller-side).** When the orchestrator
+(agent A) sets up worker instances (1-n), it passes a `useTrace` listener per worker
+program. `useTrace` subscribes to the trace publisher — *outside* the event/action
+loop — so it observes without participating: traces never become selected events and
+cannot re-enter a worker's frontier. This is the controller's oversight channel
+(worker deadlocks, errors, progress), distinct from the worker's own gate (Layer 2).
+
+**The reward function** (`computeThreadReward`: `verified`→1, `truncated`→0,
+`failed`→-1) is a pure function of the Layer 1/2 verdict — lives in `src/agent/`
+with the eval loop, not the engine.
+
+**Candidate sandbox:** one space per rollout — create, register the verified
+candidate, observe in isolation, `useEject`. Reuses Phase -1/4 machinery; no new
+engine work. The generator (the agent authoring variants) runs under `--seed`; the
+gate is a pure function and does not consume the seed; the sandbox is a space. Three
+separation-of-concerns mechanisms, never conflated.
+
+**Done when:** the agent calls `verify-frontier` on a candidate and receives a
+verdict; a `failed` candidate is discarded and a corrected one re-gated; the
+controller observes a worker's deadlock via its `useTrace` callback without the
+worker reacting to it; a candidate executed in its sandbox space leaves the root
+program's frontier identical after eject.
+
+---
+
 ## Phase 6 — CLI entry: `plaited` (serve-default)
 
 **Goal:** the bare `plaited` command is the agent. The warm process is the product;
@@ -339,7 +394,10 @@ the CLI is its client.
 - `plaited --seed <n>` — validation mode: the serve process runs against the Phase 0
   scripted StreamFn adapter with a seeded RNG. Deterministic, no network — this is
   the testing/validation mode, wired through the adapter seam, not a second process
-  shape.
+  shape. **Scope note:** `--seed` seeds the *generator* (the model stream producing
+  turns/candidates). The frontier gate (`verifyFrontiers`) is a pure function of
+  thread data and is already deterministic — it does not consume the seed. Don't
+  conflate the two determinisms.
 - Root provisioning at startup: default tool pack (Phase 2.5) + CLI-derived tools
   (Phase 3) + guard pack (Phase 5) at root; spaces get subsets/variants on creation.
 
@@ -402,6 +460,11 @@ work:
 - **Artifacts are complete.** Anything durable (trace logs, thread definitions) is
   sufficient to verify/replay on its own — `replayToFrontier` already demands this.
   Author identity (signing, DIDs) is attached later by a pack, not baked in.
+- **The trace log is also the corpus-eval substrate.** Append-only, complete,
+  query-able per space — the same artifact a batch/corpus eval (aggregate analysis
+  over many runs, e.g. tool-budget / read-discipline / param-compliance queries over
+  `trial.trajectory`-style data) consumes. Keep it projection-friendly; don't
+  foreclose a dataset-eval service built on it later.
 
 No deployment topology is prescribed: local-only, cloud, local-with-cloud-mirror are
 all operator choices the design must remain compatible with.
@@ -420,5 +483,9 @@ all operator choices the design must remain compatible with.
   signed records, cloud-mirror PDS, behavioral-rendering lexicon for a future GUI) —
   bind later via the pack seam; no core dependency. Gated on atproto spaces
   stabilizing out of alpha.
+- Dataset/corpus eval service (aggregate analysis over many persisted trace logs —
+  the third leg alongside the per-thread symbolic gate and the iterative
+  autoresearch loop). All three consume the same trace-log artifact; the corpus
+  layer is a pack/service concern, not core.
 - No session abstraction, ever: the space is the unit. Session-like behaviors
   (restore, branch, history) are space operations over artifacts.
