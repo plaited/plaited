@@ -1,10 +1,11 @@
 import type { AddHandler, AddThread, Trigger } from '../main/behavioral.types.ts'
 import bashTool from '../pack/bash.ts'
+import binaryTool from '../pack/binary.ts'
 import editTool from '../pack/edit.ts'
 import findTool from '../pack/find.ts'
 import grepTool from '../pack/grep.ts'
 import lsTool from '../pack/ls.ts'
-import type { CwdProvision, ToolArgs } from '../pack/pack.types.ts'
+import type { BinaryProvision, CwdProvision, ToolArgs } from '../pack/pack.types.ts'
 import readTool from '../pack/read.ts'
 import writeTool from '../pack/write.ts'
 import type { ToolDescriptor } from './use-tool.ts'
@@ -27,7 +28,7 @@ export type AgentHooks = {
  *   to it). Absolute model-supplied paths still win — path sandboxing is a
  *   Phase 5 policy concern (guards / run-composition), not a schema one.
  */
-export type ProvisionOptions = CwdProvision
+export type ProvisionOptions = CwdProvision & BinaryProvision
 
 /**
  * Provision the default tool pack into the given behavioral hooks.
@@ -62,5 +63,27 @@ export const provisionDefaults = (hooks: AgentHooks, options?: ProvisionOptions)
           run: (input) => tool.run({ ...input, cwd: options.cwd }),
         })
 
-  return [bind(readTool), bind(bashTool), bind(editTool), bind(writeTool), bind(grepTool), bind(findTool), bind(lsTool)]
+  const bindBinary = (tool: typeof binaryTool): ToolDescriptor =>
+    options?.cwd === undefined && options?.maxBytes === undefined
+      ? bindTool(tool)
+      : bindTool({
+          ...tool,
+          run: (input) =>
+            tool.run({
+              ...input,
+              ...(options?.cwd !== undefined && { cwd: options.cwd }),
+              ...(options?.maxBytes !== undefined && { maxBytes: options.maxBytes }),
+            }),
+        })
+
+  return [
+    bind(readTool),
+    bind(bashTool),
+    bind(editTool),
+    bind(writeTool),
+    bind(grepTool),
+    bind(findTool),
+    bind(lsTool),
+    bindBinary(binaryTool),
+  ]
 }

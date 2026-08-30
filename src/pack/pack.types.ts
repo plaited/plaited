@@ -19,6 +19,9 @@ export type ProvisionInput = Record<string, unknown>
 /** Provision-time cwd scoping shared by every file tool. */
 export type CwdProvision = { cwd?: string }
 
+/** Provision-time byte ceiling for binary tool. */
+export type BinaryProvision = { maxBytes?: number }
+
 export type ToolArgs<I extends z.ZodType, O extends z.ZodType, P = unknown> = {
   readonly name: string
   readonly inputSchema: I

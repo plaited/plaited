@@ -106,6 +106,52 @@ export const OutputItemSchema = z.discriminatedUnion('type', [
 export type OutputItem = z.output<typeof OutputItemSchema>
 
 // ----------------------------------------------------------------
+// Input-side content parts (message.content entries for user messages)
+// ----------------------------------------------------------------
+
+/** @public */
+export const InputTextContentSchema = z.object({
+  type: z.literal('input_text'),
+  text: z.string(),
+})
+export type InputTextContent = z.output<typeof InputTextContentSchema>
+
+/** @public */
+export const ImageContentSchema = z.object({
+  type: z.literal('image'),
+  image_url: z.object({
+    url: z.string(), // data: URI or URL
+    detail: z.enum(['auto', 'low', 'high']).optional(),
+  }),
+})
+export type ImageContent = z.output<typeof ImageContentSchema>
+
+/** @public */
+export const AudioContentSchema = z.object({
+  type: z.literal('audio'),
+  data: z.string(), // base64-encoded audio bytes OR data: URI
+  format: z.enum(['mp3', 'wav', 'ogg', 'flac', 'aac']).optional(),
+})
+export type AudioContent = z.output<typeof AudioContentSchema>
+
+/** @public */
+export const VideoContentSchema = z.object({
+  type: z.literal('video'),
+  data: z.string(), // base64-encoded video bytes OR data: URI
+  format: z.enum(['mp4', 'webm', 'avi', 'mov', 'quicktime']).optional(),
+})
+export type VideoContent = z.output<typeof VideoContentSchema>
+
+// Extended input content part union (for use in MessageItemParam.content)
+export const InputContentPartSchema = z.discriminatedUnion('type', [
+  InputTextContentSchema,
+  ImageContentSchema,
+  AudioContentSchema,
+  VideoContentSchema,
+])
+export type InputContentPart = z.output<typeof InputContentPartSchema>
+
+// ----------------------------------------------------------------
 // Items — input / request-param side (some fields optional)
 // ----------------------------------------------------------------
 
@@ -115,7 +161,7 @@ export const MessageItemParamSchema = z.object({
   type: z.literal('message'),
   status: ItemStatusSchema.optional(),
   role: MessageRoleSchema,
-  content: z.union([z.string(), z.array(ContentPartSchema)]),
+  content: z.union([z.string(), z.array(InputContentPartSchema)]),
 })
 export type MessageItemParam = z.output<typeof MessageItemParamSchema>
 
