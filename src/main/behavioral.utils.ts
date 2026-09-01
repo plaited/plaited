@@ -33,7 +33,7 @@ export const isBPEvent = (data: unknown): data is BPEvent => {
  * Throws if the schema is un-compilable — caller is responsible for
  * handling the error and surfacing it as a trace.
  */
-const compileValidator = (schema: JsonObject): ((detail: unknown) => boolean) => {
+export const compileValidator = (schema: JsonObject): ((detail: unknown) => boolean) => {
   const validate = ajv.compile(schema)
   return (detail: unknown) => {
     if (!isTypeOf<Record<string, unknown>>(detail, 'object') && detail !== undefined) {
