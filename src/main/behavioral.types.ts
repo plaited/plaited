@@ -154,9 +154,10 @@ export type EventDetails = Record<string, any>
  *
  * @param params.detail - The JSON-serializable event detail.
  * @param params.disconnect - Cleanup function to unsubscribe this handler.
+ * @param params.trigger - Topic-scoped trigger to emit events back into the program.
  * @returns `void` or `Promise<void>`. Thrown errors surface as `feedback_error` traces.
  */
-export type Handler<T> = (params: { detail: T; disconnect: Disconnect }) => void | Promise<void>
+export type Handler<T> = (params: { detail: T; disconnect: Disconnect; trigger: Trigger }) => void | Promise<void>
 
 export type AddHandler = <T extends JsonObject | undefined = undefined>(
   type: string,

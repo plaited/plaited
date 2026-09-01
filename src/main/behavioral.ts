@@ -340,6 +340,7 @@ export const behavioral = () => {
           await handler({
             detail: data.detail as Parameters<typeof handler>[0]['detail'],
             disconnect,
+            trigger: useTrigger(topic),
           })
         } catch (error) {
           const message: FeedbackError = {
