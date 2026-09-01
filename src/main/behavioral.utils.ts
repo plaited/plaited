@@ -9,8 +9,7 @@ import type { CandidateBid, Frontier, PendingBid, RulesFunction, RunningBid, Use
  * Uses draft 2020-12 (current JSON Schema standard), backwards-compatible with
  * the draft-07-common subset used by detailSchema, for parity with a Rust
  * jsonschema consumer. detailSchema is always a JSON object schema over
- * BPEvent.detail; non-JSON values ride BPEvent.payload and never reach this
- * validator. Strict mode is disabled because author-provided JSON Schema may
+ * BPEvent.detail; non-JSON values never reach this validator. Strict mode is disabled because author-provided JSON Schema may
  * include unknown keywords or custom extensions.
  */
 const ajv = new Ajv2020({ strict: false })
@@ -164,7 +163,6 @@ export const generateRulesFunctions = (rules: Idioms[], topic?: string): RulesFu
         type: request.type,
         topic,
         detail: request.detail,
-        payload: request.payload,
       }
     }
     if (block) {

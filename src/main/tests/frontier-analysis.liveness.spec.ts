@@ -46,7 +46,7 @@ const labeledGraph = (nodes: Record<string, Array<{ type: string; to: string }>>
  *
  * `frontierStateKey` collapses a pending set to a stable string that is
  * invariant under reordering and insensitive to non-stateful artifacts
- * (generator closures, compiled validators, opaque payloads). This is the
+ * (generator closures, compiled validators). This is the
  * abstraction that lets `exploreFrontiers` close the state graph for looping
  * programs instead of chasing ever-growing traces.
  *
@@ -114,14 +114,6 @@ describe('frontierStateKey', () => {
     const left = new Set<PendingBid>([bid({ label: 'a', priority: 1, request: { type: 'x', detail: { n: 1 } } })])
     const right = new Set<PendingBid>([bid({ label: 'a', priority: 1, request: { type: 'x', detail: { n: 2 } } })])
     expect(frontierStateKey({ pending: left })).not.toBe(frontierStateKey({ pending: right }))
-  })
-
-  test('drops the opaque payload side-channel', () => {
-    const withPayload = new Set<PendingBid>([
-      bid({ label: 'a', priority: 1, request: { type: 'x', payload: { secret: 'no' } as unknown } }),
-    ])
-    const withoutPayload = new Set<PendingBid>([bid({ label: 'a', priority: 1, request: { type: 'x' } })])
-    expect(frontierStateKey({ pending: withPayload })).toBe(frontierStateKey({ pending: withoutPayload }))
   })
 })
 

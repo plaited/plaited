@@ -1,5 +1,5 @@
 import type { FRONTIER_STATUS } from './behavioral.constants.ts'
-import type { BPEvent, JsonObject, RegisteredIdioms, Thread, Trace, TraceBase } from './behavioral.schemas.ts'
+import type { BPEvent, JsonObject, RegisteredIdioms, Thread, Trace } from './behavioral.schemas.ts'
 
 export type RulesFunction = () => Generator<RegisteredIdioms, void, unknown>
 
@@ -76,8 +76,6 @@ export type CandidateBid = {
   type: string
   /** Optional detail payload of the requested event, contains any data associated with this event. */
   detail?: BPEvent['detail']
-  /** Opaque non-JSON side-channel carried from the triggering event to handlers. Never participates in matching. */
-  payload?: unknown
 
   ingress?: true
   topic?: string
@@ -127,20 +125,14 @@ export type Disconnect = () => void | Promise<void>
  * published to feedback handlers. This allows for real-time monitoring, logging,
  * debugging, and analysis of the behavioral program's execution flow.
  *
- * @typeParam T - Consumer-supplied trace extension kinds (extends {@link TraceBase}).
- *   The listener receives engine-published {@link Trace} variants OR consumer-injected
- *   `T` variants (the latter arrive via {@link SendTrace}). Defaults to `never` — i.e.
- *   a listener for a non-extended program only receives {@link Trace}.
- * @param msg - A trace describing the step (engine {@link Trace}) or an injected
- *   extension event (`T`).
+ * @param msg - A trace describing the step (an engine {@link Trace} variant).
  * @returns `void` for synchronous listeners or `Promise<void>` for asynchronous
  *   processing. The return value is ignored by the behavioral program.
  *
  * @see {@link UseTrace} for registering trace listeners
  * @see {@link Trace} for the engine's trace structure
- * @see {@link SendTrace} for injecting extension events into the same stream
  */
-export type TraceListener<T extends TraceBase = never> = (msg: Trace | T) => void | Promise<void>
+export type TraceListener = (msg: Trace) => void | Promise<void>
 
 /**
  * Represents a generic structure for event detail payloads.
@@ -159,57 +151,25 @@ export type EventDetails = Record<string, any>
  * A feedback handler invoked when a matching event is selected and published.
  *
  * @typeParam T - Detail payload type for the event.
- * @typeParam P - Opaque `payload` type carried alongside `detail` for non-JSON
- * side-channel data (File, Blob, FormData, etc.). Defaults to `unknown`.
  *
  * @param params.detail - The JSON-serializable event detail.
  * @param params.disconnect - Cleanup function to unsubscribe this handler.
- * @param params.payload - Opaque non-JSON side-channel value, if one was supplied on the event.
  * @returns `void` or `Promise<void>`. Thrown errors surface as `feedback_error` traces.
  */
-export type Handler<T, P = unknown> = (params: {
-  detail: T
-  disconnect: Disconnect
-  payload?: P
-}) => void | Promise<void>
+export type Handler<T> = (params: { detail: T; disconnect: Disconnect }) => void | Promise<void>
 
-export type AddHandler = <T extends JsonObject | undefined = undefined, P = unknown>(
+export type AddHandler = <T extends JsonObject | undefined = undefined>(
   type: string,
-  handler: Handler<T, P>,
+  handler: Handler<T>,
   once?: true,
 ) => () => void
 
 export type UseAddHandler = (topic?: string) => AddHandler
-
-/**
- * Inject a consumer-supplied trace event into the program's trace stream.
- *
- * @remarks
- * Used to publish *extension* events — kinds the consumer declared via the
- * `behavioral<T>()` type parameter that are NOT part of the engine's {@link Trace}
- * union (e.g. an agent SDK's lifecycle events: `tool_call`, `agent_message`).
- * Engine {@link Trace} variants are NOT valid arguments — the engine publishes
- * those itself; `sendTrace` is only for the consumer's `T` kinds.
- *
- * When `T` is `never` (the default, no extension declared), `sendTrace` is
- * uncallable — there is nothing to inject.
- *
- * @typeParam T - The consumer's extension trace kinds (extends {@link TraceBase}).
- * @param arg - An extension event of type `T`.
- *
- * @see {@link UseTrace} — listeners receive both {@link Trace} and `T` via this stream
- */
-export type SendTrace<T extends TraceBase = never> = (arg: T) => void
-
 /**
  * Hook for monitoring internal state transitions of the behavioral program.
  * Provides debugging, visualization, and analysis capabilities.
  *
- * @typeParam T - Consumer-supplied trace extension kinds (extends {@link TraceBase}).
- *   The listener receives engine {@link Trace} variants OR consumer `T` variants.
- *   Defaults to `never` — a non-extended program's listener only receives {@link Trace}.
- * @param listener - Callback receiving traces after each event selection (and any
- *   events injected via {@link SendTrace}).
+ * @param listener - Callback receiving traces after each event selection.
  * @returns Disconnect function for cleanup.
  *
  * @remarks
@@ -219,9 +179,8 @@ export type SendTrace<T extends TraceBase = never> = (arg: T) => void
  *
  * @see {@link Trace} for the engine's trace structure
  * @see {@link TraceListener} for listener type
- * @see {@link SendTrace} for injecting extension events
  */
-export type UseTrace<T extends TraceBase = never> = (listener: TraceListener<T>) => Disconnect
+export type UseTrace = (listener: TraceListener) => Disconnect
 
 export type AddThread = (args: Thread) => void
 
@@ -244,3 +203,8 @@ export type UseAddThread = (topic?: string) => AddThread
 export type Trigger = <T extends BPEvent>(args: T) => void
 
 export type UseTrigger = (topic?: string) => Trigger
+
+export type SendTrace<T> = {
+  (value: T): void
+  subscribe(listener: (msg: T) => void | Promise<void>): () => void
+}

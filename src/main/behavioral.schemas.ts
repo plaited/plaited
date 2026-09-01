@@ -17,16 +17,6 @@ export const BPEventSchema = z.object({
   type: z.string(),
   detail: JsonObjectSchema.optional(),
   topic: z.string().optional(),
-  /**
-   * Opaque, non-serializable side-channel for carrying non-JSON values (File,
-   * Blob, FormData, ArrayBuffer, structured-clone values) straight to handlers.
-   *
-   * @remarks
-   * `detail` stays JSON for frontier analysis; `payload` never participates
-   * in event matching and never appears in any {@link Trace} variant.
-   * Frontier analysis traces field-pick `type`/`detail` only.
-   */
-  payload: z.unknown().optional(),
 })
 
 /** @public */
@@ -65,6 +55,8 @@ export const JsonSchemaObjectSchema = JsonObjectSchema.refine(
   (val) => Object.keys(val).some((key) => JSON_SCHEMA_KEYWORDS.has(key)),
   { message: 'must be a valid JSON Schema object' },
 )
+
+export type JsonSchemaObject = z.output<typeof JsonSchemaObjectSchema>
 
 export const BPListenerSchema = z.object({
   type: z.string(),
@@ -167,15 +159,11 @@ export const TraceCandidateSchema = z.object({
  * unified `Trace | T` stream.
  *
  * @see {@link Trace} for the engine's closed trace union
- * @see {@link behavioral} for the `<T extends TraceBase>` type parameter
  */
 export const TraceBaseSchema = z.looseObject({
   kind: z.string(),
   timestamp: z.number(),
 })
-
-/** @public */
-export type TraceBase = z.output<typeof TraceBaseSchema>
 
 /** @public */
 export type TraceCandidate = z.output<typeof TraceCandidateSchema>

@@ -5,7 +5,6 @@ import {
   type RegisteredBPListener,
   ThreadScehama,
   type Trace,
-  type TraceBase,
 } from './behavioral.schemas.ts'
 import type {
   CandidateBid,
@@ -49,8 +48,8 @@ const normalizeListeners = (listener: RegisteredBPListener[]) =>
 const serializePending = (pending: Set<PendingBid>) =>
   Array.from(pending).map(({ waitFor, block, interrupt, request, generator: _gen, ...rest }) => ({
     ...rest,
-    // request is field-picked to { type, detail } so the opaque `payload`
-    // side-channel never enters any SnapshotMessage (frontier-analysis invariant).
+    // request is field-picked to { type, detail } so non-trace fields never
+    // enter any SnapshotMessage (frontier-analysis invariant).
     ...(request && {
       request: {
         type: request.type,
@@ -65,7 +64,7 @@ const serializePending = (pending: Set<PendingBid>) =>
 /**
  * @internal
  * Projects a {@link CandidateBid} to the JSON-only trace shape (`priority`,
- * `type`, `detail`, `ingress`, `topic`), omitting the opaque `payload` side-channel.
+ * `type`, `detail`, `ingress`, `topic`).
  *
  * Frontiers must stay JSON so frontier analysis (trace replay/matching) and the
  * visited-set key never observe non-serializable values.
@@ -81,7 +80,7 @@ const toCandidateSnapshot = ({ priority, type, detail, ingress, topic }: Candida
 /**
  * @internal
  * Projects the selected candidate to the JSON-only {@link SnapshotEvent} shape
- * (`type`, `detail`, `ingress`, `topic`), omitting `payload`.
+ * (`type`, `detail`, `ingress`, `topic`).
  */
 const toSelectedSnapshot = ({ type, detail, ingress, topic }: CandidateBid) => ({
   type,
@@ -90,7 +89,7 @@ const toSelectedSnapshot = ({ type, detail, ingress, topic }: CandidateBid) => (
   ...(topic === undefined ? {} : { topic }),
 })
 
-const createPublisher = <T>() => {
+const createPublisher = <T>(): SendTrace<T> => {
   const listeners = new Set<(value: T) => void | Promise<void>>()
   function publisher(value: T) {
     for (const cb of listeners) {
@@ -147,7 +146,7 @@ const createPublisher = <T>() => {
  * and threads to run. If no events can be selected (either because all requests are blocked
  * or there are no requests), the program will pause until an external event is triggered.
  */
-export const behavioral = <T extends TraceBase = never>() => {
+export const behavioral = () => {
   /**
    * @internal
    * Set of threads that have yielded and are waiting for event selection.
@@ -178,7 +177,7 @@ export const behavioral = <T extends TraceBase = never>() => {
    * Publisher for state traces, consumed by `useTrace`.
    * Always exists — subscribers are added/removed via `useTrace` which delegates to `subscribe`.
    */
-  const tracePublisher = createPublisher<Trace | T>()
+  const sendTrace = createPublisher<Trace>()
   let stepId = 0
 
   const step = () => {
@@ -203,7 +202,7 @@ export const behavioral = <T extends TraceBase = never>() => {
   function selectNextEvent() {
     const step = stepId++
 
-    tracePublisher({
+    sendTrace({
       kind: TRACE_MESSAGE_KINDS.pending_bids,
       timestamp: Date.now(),
       step,
@@ -212,7 +211,7 @@ export const behavioral = <T extends TraceBase = never>() => {
 
     const frontier = computeFrontier({ pending })
     const { enabled, candidates } = frontier
-    tracePublisher({
+    sendTrace({
       kind: TRACE_MESSAGE_KINDS.frontier,
       timestamp: Date.now(),
       step,
@@ -226,7 +225,7 @@ export const behavioral = <T extends TraceBase = never>() => {
       const selected = frontier.enabled.sort(
         ({ priority: priorityA }, { priority: priorityB }) => priorityA - priorityB,
       )[0]!
-      tracePublisher({
+      sendTrace({
         kind: TRACE_MESSAGE_KINDS.selection,
         timestamp: Date.now(),
         step,
@@ -236,7 +235,7 @@ export const behavioral = <T extends TraceBase = never>() => {
       return
     }
     if (frontier.status === FRONTIER_STATUS.deadlock) {
-      tracePublisher({
+      sendTrace({
         kind: TRACE_MESSAGE_KINDS.deadlock,
         timestamp: Date.now(),
         step,
@@ -267,7 +266,6 @@ export const behavioral = <T extends TraceBase = never>() => {
       type: selectedEvent.type,
       detail: selectedEvent.detail,
       topic: selectedEvent.topic,
-      payload: selectedEvent.payload,
     })
 
     /**
@@ -342,7 +340,6 @@ export const behavioral = <T extends TraceBase = never>() => {
           await handler({
             detail: data.detail as Parameters<typeof handler>[0]['detail'],
             disconnect,
-            payload: data.payload as Parameters<typeof handler>[0]['payload'],
           })
         } catch (error) {
           const message: FeedbackError = {
@@ -352,7 +349,7 @@ export const behavioral = <T extends TraceBase = never>() => {
             detail: data.detail,
             error: error instanceof Error ? error.message : String(error),
           }
-          tracePublisher(message)
+          sendTrace(message)
         }
       }
     })
@@ -372,14 +369,14 @@ export const behavioral = <T extends TraceBase = never>() => {
           label,
         })
       } catch (err) {
-        tracePublisher({
+        sendTrace({
           kind: TRACE_MESSAGE_KINDS.add_thread_error,
           timestamp: Date.now(),
           error: err instanceof Error ? err.message : String(err),
         })
       }
     } else {
-      tracePublisher({
+      sendTrace({
         kind: TRACE_MESSAGE_KINDS.add_thread_error,
         timestamp: Date.now(),
         error: result.error.issues,
@@ -391,11 +388,7 @@ export const behavioral = <T extends TraceBase = never>() => {
    * Implementation of the public `useTrace` hook.
    * Delegates directly to the trace publisher's subscribe method.
    */
-  const useTrace: UseTrace<T> = (listener) => tracePublisher.subscribe(listener)
-
-  const sendTrace: SendTrace<T> = (args) => {
-    tracePublisher(args)
-  }
+  const useTrace: UseTrace = (listener) => sendTrace.subscribe(listener)
 
   /**
    * @internal
@@ -414,7 +407,5 @@ export const behavioral = <T extends TraceBase = never>() => {
     useAddHandler,
     /** Hook to subscribe to internal state traces for monitoring/debugging. */
     useTrace,
-
-    sendTrace,
   })
 }
