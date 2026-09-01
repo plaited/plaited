@@ -150,14 +150,20 @@ export type EventDetails = Record<string, any>
 /**
  * A feedback handler invoked when a matching event is selected and published.
  *
+ * Handlers are the side-effect channel only — they never receive a handle to
+ * remove themselves. Coordination (what stays, what goes) belongs to b-threads
+ * (`request`/`waitFor`/`block`/`interrupt`) and the engine-side `useEject`; a
+ * handler's lifetime is owned by its *caller* via the `Disconnect` returned
+ * from `addHandler` (see `plan.md` Phase -1). Self-removal mid-dispatch would
+ * smuggle callback-style coordination back into the side-effect channel.
+ *
  * @typeParam T - Detail payload type for the event.
  *
  * @param params.detail - The JSON-serializable event detail.
- * @param params.disconnect - Cleanup function to unsubscribe this handler.
  * @param params.trigger - Topic-scoped trigger to emit events back into the program.
  * @returns `void` or `Promise<void>`. Thrown errors surface as `feedback_error` traces.
  */
-export type Handler<T> = (params: { detail: T; disconnect: Disconnect; trigger: Trigger }) => void | Promise<void>
+export type Handler<T> = (params: { detail: T; trigger: Trigger }) => void | Promise<void>
 
 export type AddHandler = <T extends JsonObject | undefined = undefined>(
   type: string,

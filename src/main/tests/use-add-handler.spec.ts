@@ -2,6 +2,61 @@ import { describe, expect, test } from 'bun:test'
 import { behavioral } from '../behavioral.ts'
 
 /**
+ * Handler lifecycle.
+ *
+ * The plan (`plan.md` Phase -1) keeps exactly two handler-removal paths:
+ * the engine-side `useEject` sweep, and the *caller-held* `Disconnect` returned
+ * by `addHandler`. The handler itself never receives a self-removal handle —
+ * coordination (what stays, what goes) lives in b-threads, not in side-effect
+ * callbacks. These tests lock down the caller-held path so the param removal
+ * (dropping `disconnect` from `Handler<T>`) cannot regress it.
+ */
+describe('addHandler caller-held disconnect', () => {
+  test('the returned disconnect stops the handler from firing on later events', () => {
+    const received: string[] = []
+    const { useTrigger, useAddHandler } = behavioral()
+    const trigger = useTrigger()
+    const addHandler = useAddHandler()
+
+    const disconnect = addHandler('ping', () => {
+      received.push('ping')
+    })
+
+    trigger({ type: 'ping' })
+    expect(received).toEqual(['ping'])
+
+    // Caller tears the handler down between super-steps — no self-disconnect
+    // from inside the handler is involved.
+    disconnect()
+
+    trigger({ type: 'ping' })
+    expect(received).toEqual(['ping'])
+  })
+
+  test('disconnecting one handler leaves sibling handlers intact', () => {
+    const received: string[] = []
+    const { useTrigger, useAddHandler } = behavioral()
+    const trigger = useTrigger()
+    const addHandler = useAddHandler()
+
+    const disconnectA = addHandler('ping', () => {
+      received.push('a')
+    })
+    addHandler('ping', () => {
+      received.push('b')
+    })
+
+    trigger({ type: 'ping' })
+    expect(received).toEqual(['a', 'b'])
+
+    disconnectA()
+
+    trigger({ type: 'ping' })
+    expect(received).toEqual(['a', 'b', 'b'])
+  })
+})
+
+/**
  * useAddHandler topic-scoping: an optional `topic` argument filters the
  * handler to selected events carrying the same `topic`. Omitting `topic`
  * preserves the legacy type-only match (fires for any topic).

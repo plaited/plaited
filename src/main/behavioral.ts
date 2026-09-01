@@ -339,7 +339,6 @@ export const behavioral = () => {
           if (once) disconnect()
           await handler({
             detail: data.detail as Parameters<typeof handler>[0]['detail'],
-            disconnect,
             trigger: useTrigger(topic),
           })
         } catch (error) {
