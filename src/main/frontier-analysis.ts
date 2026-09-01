@@ -391,8 +391,6 @@ const normalizeListeners = (listener: RegisteredBPListener[]) =>
  * @remarks
  * - Drops instance-identity and non-serializable artifacts: the `generator`
  *   closure and each listener's compiled `validate` function.
- * - Drops the opaque `payload` side-channel (frontier-analysis invariant:
- *   frontiers stay JSON).
  * - `request` is projected to `{ type, detail, topic }`. Bid order and listener
  *   order are canonicalized by sorting on serialized content, yielding a total
  *   order independent of input order.
@@ -415,8 +413,8 @@ export const frontierStateKey = ({ pending }: { pending: Set<PendingBid> }): str
       .map(({ waitFor, block, interrupt, request, generator: _gen, ...rest }) =>
         JSON.stringify({
           ...rest,
-          // request is field-picked to { type, detail } so the opaque `payload`
-          // side-channel never enters any SnapshotMessage (frontier-analysis invariant).
+          // request is field-picked to { type, detail, topic } so non-trace
+          // fields never enter the state key (frontier-analysis invariant).
           ...(request && {
             request: {
               topic: request.topic,
