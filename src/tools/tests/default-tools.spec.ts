@@ -1,20 +1,20 @@
 import { describe, expect, test } from 'bun:test'
 import * as path from 'node:path'
+import type { KnownStreamEvent, OpenResponsesRequest } from '../../agent/open-responses.schemas.ts'
+import { provisionDefaults } from '../../agent/provision-defaults.ts'
+import { registerAgentThreads } from '../../agent/threads.ts'
+import { useResponse } from '../../agent/use-response.ts'
 import type { Trace } from '../../main/behavioral.schemas.ts'
 import { behavioral } from '../../main/behavioral.ts'
 import type { AddHandler, AddThread, Trigger } from '../../main/behavioral.types.ts'
-import bashTool from '../../tools/bash.ts'
-import editTool from '../../tools/edit.ts'
-import findTool from '../../tools/find.ts'
-import grepTool from '../../tools/grep.ts'
-import lsTool from '../../tools/ls.ts'
-// Static imports of tool run functions for unit testing
-import readTool from '../../tools/read.ts'
-import writeTool from '../../tools/write.ts'
-import type { KnownStreamEvent, OpenResponsesRequest } from '../open-responses.schemas.ts'
-import { provisionDefaults } from '../provision-defaults.ts'
-import { registerAgentThreads } from '../threads.ts'
-import { useResponse } from '../use-response.ts'
+import bashTool from '../bash.ts'
+import editTool from '../edit.ts'
+import findTool from '../find.ts'
+import grepTool from '../grep.ts'
+import lsTool from '../ls.ts'
+import readTool from '../read.ts'
+import writeTool from '../write.ts'
+import { tempDir } from './helpers.ts'
 
 // ================================================================
 // Helpers
@@ -22,32 +22,9 @@ import { useResponse } from '../use-response.ts'
 
 const tick = () => new Promise<void>((r) => setTimeout(r, 0))
 
-/**
- * Create a temp directory with the given files.
- * Returns the dir path and a cleanup function.
- */
-const tempDir = async (files: Record<string, string>): Promise<{ dir: string; cleanup: () => Promise<void> }> => {
-  const dir = await Bun.$`mktemp -d`
-    .quiet()
-    .text()
-    .then((s) => s.trim())
-  for (const [name, content] of Object.entries(files)) {
-    const fullPath = path.join(dir, name)
-    const parentDir = path.dirname(fullPath)
-    await Bun.$`mkdir -p ${parentDir}`.quiet().nothrow()
-    await Bun.write(fullPath, content)
-  }
-  return {
-    dir,
-    cleanup: async () => {
-      await Bun.$`rm -rf ${dir}`.quiet().nothrow()
-    },
-  }
-}
-
 /** Create a b-program and return hooks + trace collector. */
 const createBP = () => {
-  const bp = behavioral<never>()
+  const bp = behavioral()
   const { useAddThread, useAddHandler, useTrigger, useTrace } = bp
 
   const addThread = useAddThread() as AddThread
@@ -73,7 +50,8 @@ describe('read tool', () => {
     const { dir, cleanup } = await tempDir({ 'test.txt': 'hello\nworld\nthird line' })
 
     try {
-      const result = await readTool.run({ path: path.join(dir, 'test.txt') })
+      const { output } = await readTool.run({ path: path.join(dir, 'test.txt') })
+      const result = output as { content: string; truncated: boolean; isError?: boolean }
       expect(result.truncated).toBe(false)
       expect(result.content).toBe('hello\nworld\nthird line')
     } finally {
@@ -85,7 +63,8 @@ describe('read tool', () => {
     const { dir, cleanup } = await tempDir({ 'test.txt': 'line1\nline2\nline3\nline4' })
 
     try {
-      const result = await readTool.run({ path: path.join(dir, 'test.txt'), offset: 2 })
+      const { output } = await readTool.run({ path: path.join(dir, 'test.txt'), offset: 2 })
+      const result = output as { content: string; truncated: boolean }
       expect(result.content).toBe('line2\nline3\nline4')
       expect(result.truncated).toBe(false)
     } finally {
@@ -97,7 +76,8 @@ describe('read tool', () => {
     const { dir, cleanup } = await tempDir({ 'test.txt': 'line1\nline2\nline3\nline4\nline5' })
 
     try {
-      const result = await readTool.run({ path: path.join(dir, 'test.txt'), offset: 2, limit: 2 })
+      const { output } = await readTool.run({ path: path.join(dir, 'test.txt'), offset: 2, limit: 2 })
+      const result = output as { content: string; truncated: boolean }
       expect(result.content).toBe('line2\nline3')
       expect(result.truncated).toBe(false)
     } finally {
@@ -106,7 +86,8 @@ describe('read tool', () => {
   })
 
   test('missing file returns error result with isError', async () => {
-    const result = await readTool.run({ path: '/tmp/nonexistent-file-xyz-123' })
+    const { output } = await readTool.run({ path: '/tmp/nonexistent-file-xyz-123' })
+    const result = output as { isError?: boolean; content: string; truncated: boolean }
     expect(result.isError).toBe(true)
     expect(result.content).toContain('Error')
     expect(result.truncated).toBe(false)
@@ -116,7 +97,8 @@ describe('read tool', () => {
     const { dir, cleanup } = await tempDir({ 'test.txt': 'hello' })
 
     try {
-      const result = await readTool.run({ path: path.join(dir, 'test.txt'), offset: 10 })
+      const { output } = await readTool.run({ path: path.join(dir, 'test.txt'), offset: 10 })
+      const result = output as { isError?: boolean; content: string }
       expect(result.isError).toBe(true)
       expect(result.content).toContain('Error')
     } finally {
@@ -135,7 +117,8 @@ describe('write tool', () => {
 
     const filePath = path.join(dir, 'output.txt')
     try {
-      const result = await writeTool.run({ path: filePath, content: 'hello world' })
+      const { output } = await writeTool.run({ path: filePath, content: 'hello world' })
+      const result = output as { bytesWritten: number }
       expect(result.bytesWritten).toBe(11)
 
       const readBack = await Bun.file(filePath).text()
@@ -178,19 +161,22 @@ describe('write tool', () => {
 
 describe('bash tool', () => {
   test('executes a command and returns stdout', async () => {
-    const result = await bashTool.run({ command: 'echo "hello"' })
+    const { output } = await bashTool.run({ command: 'echo "hello"' })
+    const result = output as { exitCode: number; stdout: string }
     expect(result.exitCode).toBe(0)
     expect(result.stdout.trim()).toBe('hello')
   })
 
   test('returns stderr on error', async () => {
-    const result = await bashTool.run({ command: 'echo "err" >&2; exit 1' })
+    const { output } = await bashTool.run({ command: 'echo "err" >&2; exit 1' })
+    const result = output as { exitCode: number; stderr: string }
     expect(result.exitCode).toBe(1)
     expect(result.stderr.trim()).toBe('err')
   })
 
   test('timeout returns error stderr', async () => {
-    const result = await bashTool.run({ command: 'sleep 10', timeout: 1 })
+    const { output } = await bashTool.run({ command: 'sleep 10', timeout: 1 })
+    const result = output as { exitCode: number; stderr: string }
     expect(result.exitCode).toBe(-1)
     expect(result.stderr).toContain('timed out')
   })
@@ -206,11 +192,12 @@ describe('edit tool', () => {
 
     const filePath = path.join(dir, 'file.txt')
     try {
-      const result = await editTool.run({
+      const { output } = await editTool.run({
         path: filePath,
         old_text: 'foo bar',
         new_text: 'FOO BAR',
       })
+      const result = output as { replacements: number; patch: string; content?: string }
 
       expect(result.replacements).toBe(1)
       expect(result.patch).toContain('@@')
@@ -233,11 +220,12 @@ describe('edit tool', () => {
 
     const filePath = path.join(dir, 'file.txt')
     try {
-      const result = await editTool.run({
+      const { output } = await editTool.run({
         path: filePath,
         old_text: 'does not exist',
         new_text: 'replacement',
       })
+      const result = output as { isError?: boolean; replacements: number; content?: string }
 
       expect(result.isError).toBe(true)
       expect(result.replacements).toBe(0)
@@ -252,11 +240,12 @@ describe('edit tool', () => {
 
     const filePath = path.join(dir, 'file.txt')
     try {
-      const result = await editTool.run({
+      const { output } = await editTool.run({
         path: filePath,
         old_text: 'dup',
         new_text: 'replaced',
       })
+      const result = output as { isError?: boolean; replacements: number; content?: string }
 
       expect(result.isError).toBe(true)
       expect(result.replacements).toBe(0)
@@ -271,12 +260,13 @@ describe('edit tool', () => {
 
     const filePath = path.join(dir, 'file.txt')
     try {
-      const result = await editTool.run({
+      const { output } = await editTool.run({
         path: filePath,
         old_text: 'apple',
         new_text: 'orange',
         replace_all: true,
       })
+      const result = output as { replacements: number; patch: string }
 
       expect(result.replacements).toBe(2)
       expect(result.patch).toContain('@@')
@@ -320,7 +310,8 @@ describe('edit tool', () => {
     const { dir, cleanup } = await tempDir({ 'file.txt': before })
     const filePath = path.join(dir, 'file.txt')
     try {
-      const result = await editTool.run({ path: filePath, old_text: 'two', new_text: 'TWO-A\nTWO-B' })
+      const { output } = await editTool.run({ path: filePath, old_text: 'two', new_text: 'TWO-A\nTWO-B' })
+      const result = output as { patch: string }
       const after = await Bun.file(filePath).text()
       expect(applyUnifiedPatch(before, result.patch)).toBe(after)
     } finally {
@@ -333,12 +324,13 @@ describe('edit tool', () => {
     const { dir, cleanup } = await tempDir({ 'file.txt': before })
     const filePath = path.join(dir, 'file.txt')
     try {
-      const result = await editTool.run({
+      const { output } = await editTool.run({
         path: filePath,
         old_text: 'X',
         new_text: 'Y1\nY2',
         replace_all: true,
       })
+      const result = output as { patch: string }
       const after = await Bun.file(filePath).text()
       expect(applyUnifiedPatch(before, result.patch)).toBe(after)
     } finally {
@@ -351,12 +343,13 @@ describe('edit tool', () => {
     const { dir, cleanup } = await tempDir({ 'file.txt': before })
     const filePath = path.join(dir, 'file.txt')
     try {
-      const result = await editTool.run({
+      const { output } = await editTool.run({
         path: filePath,
         old_text: 'apple',
         new_text: 'orange',
         replace_all: true,
       })
+      const result = output as { patch: string }
       const after = await Bun.file(filePath).text()
       expect(applyUnifiedPatch(before, result.patch)).toBe(after)
     } finally {
@@ -369,7 +362,8 @@ describe('edit tool', () => {
     const { dir, cleanup } = await tempDir({ 'file.txt': before })
     const filePath = path.join(dir, 'file.txt')
     try {
-      const result = await editTool.run({ path: filePath, old_text: 'apple', new_text: 'orange' })
+      const { output } = await editTool.run({ path: filePath, old_text: 'apple', new_text: 'orange' })
+      const result = output as { patch: string }
       const after = await Bun.file(filePath).text()
       expect(applyUnifiedPatch(before, result.patch)).toBe(after)
     } finally {
@@ -382,11 +376,12 @@ describe('edit tool', () => {
 
     const filePath = path.join(dir, 'file.txt')
     try {
-      const result = await editTool.run({
+      const { output } = await editTool.run({
         path: filePath,
         old_text: 'line2',
         new_text: 'modified',
       })
+      const result = output as { replacements: number }
 
       expect(result.replacements).toBe(1)
 
@@ -411,7 +406,8 @@ describe('grep tool', () => {
     })
 
     try {
-      const result = await grepTool.run({ pattern: 'hello', path: dir })
+      const { output } = await grepTool.run({ pattern: 'hello', path: dir })
+      const result = output as { matches: Array<{ line: number; text: string }> }
       expect(result.matches.length).toBeGreaterThanOrEqual(1)
       const match = result.matches.find((m) => m.line === 1)
       expect(match).toBeDefined()
@@ -436,7 +432,8 @@ describe('find tool', () => {
     })
 
     try {
-      const result = await findTool.run({ glob: '*.ts', path: dir })
+      const { output } = await findTool.run({ glob: '*.ts', path: dir })
+      const result = output as { paths: string[] }
       expect(result.paths.length).toBe(2)
       expect(result.paths).toContain('a.ts')
       expect(result.paths).toContain('b.ts')
@@ -453,7 +450,8 @@ describe('find tool', () => {
     })
 
     try {
-      const result = await findTool.run({ glob: '**/*.ts', path: dir })
+      const { output } = await findTool.run({ glob: '**/*.ts', path: dir })
+      const result = output as { paths: string[] }
       expect(result.paths.length).toBe(2)
       expect(result.paths).toContain('a.ts')
       expect(result.paths).toContain('sub/b.ts')
@@ -474,7 +472,8 @@ describe('ls tool', () => {
     await Bun.$`mkdir -p ${path.join(dir, 'subdir')}`.quiet().nothrow()
 
     try {
-      const result = await lsTool.run({ path: dir })
+      const { output } = await lsTool.run({ path: dir })
+      const result = output as { entries: Array<{ name: string; type: string }> }
       const names = result.entries.map((e) => e.name)
       expect(names).toContain('file.txt')
       expect(names).toContain('subdir')
@@ -529,7 +528,7 @@ describe('provisionDefaults integration', () => {
     expect(() => provisionDefaults(hooks)).not.toThrow()
   })
 
-  test('read tool dispatched through b-program produces _result', async () => {
+  test('read tool dispatched through b-program produces tool.result', async () => {
     const hooks = createBP()
     const descriptors = provisionDefaults(hooks)
 
@@ -537,10 +536,6 @@ describe('provisionDefaults integration', () => {
     expect(readToolDesc).toBeDefined()
 
     const results: string[] = []
-    hooks.addHandler('read_result', ({ detail }) => {
-      const { output } = (detail ?? {}) as { output: string }
-      results.push(output)
-    })
     hooks.addHandler('tool.result', ({ detail }) => {
       const { output } = (detail ?? {}) as { output: string }
       results.push(output)
