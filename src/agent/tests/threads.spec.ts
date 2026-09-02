@@ -1,14 +1,13 @@
 import { describe, expect, test } from 'bun:test'
-import * as z from 'zod'
 import type { Trace } from '../../main/behavioral.schemas.ts'
 import { behavioral } from '../../main/behavioral.ts'
 import type { AddHandler, AddThread, Trigger } from '../../main/behavioral.types.ts'
+import type { ToolDescriptor } from '../../tools/define-tool.ts'
+import { defineTool } from '../../tools/define-tool.ts'
 import type { KnownStreamEvent, OpenResponsesRequest } from '../open-responses.schemas.ts'
 import { registerAgentThreads } from '../threads.ts'
 import type { Adapter, CompactionResult } from '../use-response.ts'
 import { useResponse } from '../use-response.ts'
-import type { ToolDescriptor } from '../use-tool.ts'
-import { useTool } from '../use-tool.ts'
 
 // ================================================================
 // Test helpers
@@ -24,7 +23,7 @@ const tick = () => new Promise<void>((r) => setTimeout(r, 0))
  * hooks + a trace collector that starts capturing immediately.
  */
 function setupTest(adapter: Adapter, toolDescriptors?: ToolDescriptor[]) {
-  const bp = behavioral<never>()
+  const bp = behavioral()
   const { useAddThread, useAddHandler, useTrigger, useTrace } = bp
 
   // Partially-apply with no topic (root scope)
@@ -248,7 +247,7 @@ describe('agent loop — happy path', () => {
     expect(turnEnds).toBe(2)
   })
 
-  test('tool-calling turn cycles through spec events via useTool', async () => {
+  test('tool-calling turn cycles through spec events via defineTool', async () => {
     let callCount = 0
     const adapter = useResponse({
       provider: 'test-tool',
@@ -264,7 +263,7 @@ describe('agent loop — happy path', () => {
     })
 
     // Create BP + register tools before destructuring to avoid hoisting issues
-    const bp = behavioral<never>()
+    const bp = behavioral()
     const { useAddThread, useAddHandler, useTrigger, useTrace } = bp
     const addThread = useAddThread() as AddThread
     const addHandler = useAddHandler() as AddHandler
@@ -278,17 +277,22 @@ describe('agent loop — happy path', () => {
     })
 
     const tools: ToolDescriptor[] = [
-      useTool(
-        { addHandler, trigger },
-        {
-          name: 'get_weather',
-          inputSchema: z.object({ location: z.string() }),
-          outputSchema: z.object({ temperature: z.number(), conditions: z.string() }),
-          run: async (_input) => {
-            return { temperature: 72, conditions: 'sunny' }
-          },
+      defineTool({
+        name: 'get_weather',
+        inputSchema: {
+          type: 'object',
+          properties: { location: { type: 'string' } },
+          required: ['location'],
+          additionalProperties: false,
         },
-      ),
+        outputSchema: {
+          type: 'object',
+          properties: { temperature: { type: 'number' }, conditions: { type: 'string' } },
+          required: ['temperature', 'conditions'],
+          additionalProperties: false,
+        },
+        run: async () => ({ output: { temperature: 72, conditions: 'sunny' } }),
+      })({ addHandler, trigger, addThread }),
     ]
 
     registerAgentThreads({ addThread, addHandler, trigger }, adapter, tools)
@@ -308,10 +312,9 @@ describe('agent loop — happy path', () => {
     expect(selected).toContain('response.function_call_arguments.delta')
     expect(selected).toContain('response.output_item.done')
     expect(selected).toContain('response.completed')
-    // Tool dispatch (via useTool)
+    // Tool dispatch (via defineTool)
     expect(selected).toContain('get_weather')
     expect(selected).toContain('tool.result')
-    expect(selected).toContain('get_weather_result')
     // Second respond cycle
     const respondCount = selected.filter((t) => t === 'respond').length
     expect(respondCount).toBeGreaterThanOrEqual(2)

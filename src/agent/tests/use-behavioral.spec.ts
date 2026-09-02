@@ -45,10 +45,10 @@ describe('useBehavioral', () => {
     const behavior = useBehavioral(() => {})
     // A pure thread-only behavior has no async work — useBehavioral must not force it.
     const result = behavior({
-      addThread: (() => {}) as AddThread,
-      addHandler: (() => {}) as AddHandler,
-      trigger: (() => {}) as Trigger,
-      useTrace: (() => {}) as UseTrace,
+      addThread: (() => {}) as unknown as AddThread,
+      addHandler: (() => {}) as unknown as AddHandler,
+      trigger: (() => {}) as unknown as Trigger,
+      useTrace: (() => {}) as unknown as UseTrace,
     })
     expect(result).toBeUndefined()
   })
@@ -66,7 +66,7 @@ describe('useBehavioral', () => {
     })
 
     const fired: string[] = []
-    const behavior = useBehavioral(({ addHandler: ah, trigger: t }) => {
+    const behavior = useBehavioral(({ addHandler: ah }) => {
       // The 'log' handler's Disconnect is captured in the shared closure scope.
       const stopLog = ah('log', () => {
         fired.push('log')

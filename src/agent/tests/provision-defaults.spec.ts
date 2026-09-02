@@ -3,7 +3,7 @@ import * as path from 'node:path'
 import type { Trace } from '../../main/behavioral.schemas.ts'
 import { behavioral } from '../../main/behavioral.ts'
 import type { AddHandler, AddThread, Trigger } from '../../main/behavioral.types.ts'
-import { tempDir } from '../../pack/tests/helpers.ts'
+import { tempDir } from '../../tools/tests/helpers.ts'
 import type { KnownStreamEvent, OpenResponsesRequest } from '../open-responses.schemas.ts'
 import { provisionDefaults } from '../provision-defaults.ts'
 import { registerAgentThreads } from '../threads.ts'
@@ -17,7 +17,7 @@ const tick = () => new Promise<void>((r) => setTimeout(r, 0))
 
 /** Create a b-program and return hooks + trace collector. */
 const createBP = () => {
-  const bp = behavioral<never>()
+  const bp = behavioral()
   const { useAddThread, useAddHandler, useTrigger, useTrace } = bp
 
   const addThread = useAddThread() as AddThread
@@ -199,7 +199,7 @@ describe('provisionDefaults — provisioned cwd scoping', () => {
       }
 
       expect(hooks.selected).toContain('read')
-      expect(hooks.selected).toContain('read_result')
+      expect(hooks.selected).toContain('tool.result')
       // The relative path must have resolved into the scoped dir — the result
       // carries the scoped file's content, not a file-not-found error.
       expect(results.some((r) => r.includes('scoped read') && !r.includes('Error'))).toBe(true)

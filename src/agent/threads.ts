@@ -1,5 +1,8 @@
 import type { JsonObject } from '../main/behavioral.schemas.ts'
 import type { AddHandler, AddThread, Trigger } from '../main/behavioral.types.ts'
+import { compileValidator } from '../main/behavioral.utils.ts'
+import type { ToolDescriptor } from '../tools/define-tool.ts'
+import { ueid } from '../utils.ts'
 import type {
   FunctionCallItem,
   InputItem,
@@ -7,7 +10,6 @@ import type {
   OpenResponsesStreamEvent,
 } from './open-responses.schemas.ts'
 import type { Adapter } from './use-response.ts'
-import type { ToolDescriptor } from './use-tool.ts'
 
 /**
  * The unscoped behavioral hooks the agent harness receives at registration time.
@@ -90,10 +92,10 @@ export const registerAgentThreads = (hooks: AgentHooks, adapter: Adapter, tools?
   // ----------------------------------------------------------------
   // Tool descriptor registry — name → descriptor map for dispatch-time validation
   // ----------------------------------------------------------------
-  const toolMap = new Map<string, ToolDescriptor>()
+  const toolMap = new Map<string, ToolDescriptor & { inputValidator: (args: unknown) => boolean }>()
   if (tools) {
     for (const td of tools) {
-      toolMap.set(td.name, td)
+      toolMap.set(td.name, { ...td, inputValidator: compileValidator(td.inputSchema) })
     }
   }
 
@@ -116,7 +118,7 @@ export const registerAgentThreads = (hooks: AgentHooks, adapter: Adapter, tools?
     lastRequest = request
 
     const stream = await adapter.respond(request)
-    const pendingCalls: Array<{ name: string; call_id: string; arguments: string }> = []
+    const pendingCalls: Array<{ name: string; call_id: string; item_id: string; arguments: string }> = []
 
     for await (const event of stream) {
       // Trigger each stream event verbatim — spec event types in traces.
@@ -132,6 +134,7 @@ export const registerAgentThreads = (hooks: AgentHooks, adapter: Adapter, tools?
         pendingCalls.push({
           name: item.name,
           call_id: item.call_id,
+          item_id: item.id,
           arguments: item.arguments,
         })
       }
@@ -195,15 +198,17 @@ export const registerAgentThreads = (hooks: AgentHooks, adapter: Adapter, tools?
         continue
       }
 
-      // Validate parsed arguments against the tool's input schema
-      const validation = descriptor.inputSchema.safeParse(parsedArgs)
-      if (!validation.success) {
+      // Validate parsed arguments against the tool's input schema (JSON Schema,
+      // Ajv-compiled at registration). Invalid → blocked with a model-visible
+      // error result naming the failure, so the turn continues.
+      const valid = descriptor.inputValidator(parsedArgs)
+      if (!valid) {
         trigger({
           type: 'tool_call_blocked',
           detail: {
             call_id: call.call_id,
             name: call.name,
-            reason: `arguments failed schema validation: ${validation.error.message}`,
+            reason: 'arguments failed schema validation',
           },
         })
         trigger({
@@ -217,29 +222,48 @@ export const registerAgentThreads = (hooks: AgentHooks, adapter: Adapter, tools?
         continue
       }
 
-      // Valid — dispatch tool event with parsed (already-validated) arguments
+      // Valid — dispatch tool event with parsed (already-validated) arguments.
+      // The detail is a private harness contract ({ call_id, arguments, item_id }),
+      // not a spec item shape; threads.ts builds the spec-valid
+      // function_call_output from the tool.result the handler triggers.
       trigger({
         type: call.name,
-        detail: { call_id: call.call_id, arguments: validation.data as JsonObject },
+        detail: { call_id: call.call_id, arguments: parsedArgs as JsonObject, item_id: call.item_id },
       })
     }
   })
 
   // ----------------------------------------------------------------
-  // Handler: tool.result — append to items store, continue the turn
+  // Handler: tool.result — build a spec-valid function_call_output, append to
+  //            items store, continue the turn.
   // ----------------------------------------------------------------
   //
-  // Tool harnesses (wired per tool) produce `<tool name>_result` for trace
-  // visibility AND `tool.result` for the items-store integration below.
-  // This avoids the engine's exact-type matching limitation while keeping
-  // spec event types in traces.
-  //
-  // MINIMAL: single generic handler. Upgrade path: per-tool handlers
-  // registered via useTool (Phase 2) that can validate call_id matching
-  // through detailSchema.
+  // threads.ts owns the spec-item shape. A function_call_output is a NEW item
+  // (its `id` ≠ the call's `id`; `call_id` is what correlates them), so a
+  // fresh `id` is generated via `ueid()`. `status` is 'completed' on success
+  // or 'failed' when the tool reported an error. The `item_id` (the
+  // function_call item's id) rides along for traceability but is not the
+  // output item's own id — per the Open Responses spec, call_id correlates,
+  // id addresses.
   addHandler('tool.result', ({ detail }) => {
-    const { call_id, output } = (detail ?? {}) as { call_id: string; output: string }
-    items.push({ type: 'function_call_output', call_id, output })
+    const {
+      call_id,
+      output,
+      isError,
+      item_id: _item_id,
+    } = (detail ?? {}) as {
+      call_id: string
+      output: string
+      isError?: boolean
+      item_id?: string
+    }
+    items.push({
+      id: ueid('fco_'),
+      type: 'function_call_output',
+      status: isError ? 'failed' : 'completed',
+      call_id,
+      output,
+    })
     // Continue the turn by re-triggering respond with the updated items.
     trigger({ type: 'respond' })
   })
