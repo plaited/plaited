@@ -1,9 +1,29 @@
 # Behavioral Agent Harness — Phased Build Plan
 
-Self-improving agent built on the plaited behavioral runtime (`src/runtime/behavioral.ts`
-after Phase -2; today `src/main/behavioral.ts`).
-No pi SDK. No TUI. No ACP (deferred). The agent is a `plaited` CLI command; the dev
-client is pi's `!`/`!!` shell escapes; validation is Bun test.
+A **minimal behavioral kernel meant to be improved.** The agent ships with an
+irreducible coordination floor — the behavioral engine (`behavioral()`) plus the
+agent loop (turn cycle, stop condition, compaction gate, tool dispatch bridge;
+Phase 1) — and almost no policy rules. Improvement happens by composing plugins:
+everything above the kernel is a plugin (`plugin.json`), and the agent grows as
+behaviors (threads + handlers), tools, and skills are added to or removed from a
+space. The self-improving loop (Phase 5.5) is the agent authoring candidate
+behaviors/skills, verifying them, and promoting them into a space — which is
+plugin mutation, observed and gated. This is the neuro-symbolic harness from
+`research/talk-self-improving-agents-from-behavioral-exhaust.md`: neural
+generation proposes, symbolic verification disposes, and the exhaust is the
+teacher.
+
+**Fixed floor vs. improvable surface:** the engine + the Phase 1 agent loop are
+the kernel and are NOT removable plugins — without them there is no turn cycle,
+no spec-event streaming, no tool dispatch. A space that could eject the turn loop
+would brick the agent. The *behavioral policy* layer (guards, conventions,
+space-local behaviors, skills) is minimal and improvable; the *loop machinery*
+is the stable floor beneath it.
+
+Built on the plaited behavioral runtime (`src/runtime/behavioral.ts` after
+Phase -2; today `src/main/behavioral.ts`). No pi SDK. No TUI. No ACP (deferred).
+The agent is a `plaited` CLI command; the dev client is pi's `!`/`!!` shell
+escapes; validation is Bun test.
 
 **Cross-cutting conventions for every phase:**
 
@@ -611,17 +631,24 @@ minus the experimental micro-VM row.
     "extensions": {
       "dev.plaited": {
         "packs": {
-          "$root":   { "behaviors": ["./b/compaction.ts"], "tools": ["read","bash"], "excludeTools": ["bash"] },
-          "research": { "behaviors": ["./b/search.ts"], "tools": ["read","grep","find"] }
+          "$root":   { "behaviors": ["./b/compaction.ts"], "tools": ["read","bash"], "excludeTools": ["bash"], "skills": ["tdd","typescript-lsp"], "excludeSkills": ["grilling"] },
+          "research": { "behaviors": ["./b/search.ts"], "tools": ["read","grep","find"], "skills": ["you","mdn-web-docs"] }
         }
       }
     }
   }
   ```
-  - `$root` is the default key — behaviors and tool config at root scope (no
-    space). Every other key is a space/topic name.
-  - Each space entry has up to four fields: `behaviors` (file paths), `tools`
-    (built-in tool name allowlist), `excludeTools` (built-in tool name blocklist).
+  - `$root` is the default key — behaviors and tool/skill config at root scope
+    (no space). Every other key is a space/topic name.
+  - Each space entry has up to six fields:
+    - `behaviors` (file paths) — `useBehavioral` exports, AST-checked before
+      admission (the self-improving loop's mutable surface, Phase 5.5).
+    - `tools` / `excludeTools` — built-in tool name allow/blocklist (Phase 2).
+    - `skills` / `excludeSkills` — skill name allow/blocklist. Skills are
+      *instructions loaded into context*, not function-call-dispatched tools, so
+      "allowing" a skill means including its SKILL.md content in the agent's
+      context for that space; "excluding" means don't load it. Root skills ship
+      with the plugin; spaces narrow. The governance shape mirrors tools.
 - **The behavior export unit is `useBehavioral(callback)`.** Each file listed in
   `behaviors` is imported; its named exports are all `useBehavioral(...)` results.
   The harness's provisioning handler (harness-side, `src/agent/`) reads the space
