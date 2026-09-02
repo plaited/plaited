@@ -20,8 +20,10 @@ client is pi's `!`/`!!` shell escapes; validation is Bun test.
 - The engine lives in `src/runtime/` after Phase -2; all harness code lands in
   `src/agent/`; the render/protocol layer (`src/ui/`) is out of the agent's import
   surface and becomes a pack-wrapped tool later.
-- The `useTool` spec sketch that lived at `src/main/behavioral.ts` lines ~400-423 was
-  abandoned (reverted) — Phase 2 below is the single, corrected specification.
+- Tools are **built-in only** (wired via `defineTool` in `src/tools/`, Phase 2).
+  Packs never contribute tools — they contribute threads + handlers via the
+  `useBehavioral` consumer interface (Phase 7). The engine sketch that
+  lived at `src/main/behavioral.ts` lines ~400-423 was abandoned (reverted).
 
 ---
 
@@ -44,9 +46,11 @@ kernel — the UI machinery is a future tool, not a library import.
   - `src/ui/` ← `renderer.ts`, `swap-boundary.ts`, `html-rewriter.utils.ts`,
     `css.*`, `html.*`, `message.*` — the render/protocol layer. Stays importable
     (`src/controller.ts` consumes the message protocol at SSR time); becomes a
-    `useTool`-wrappable pack later (Phase 7) without another move.
+    becomes a pack-wrapped tool later (Phase 7) without another move.
+  (`src/tools/define-tool.ts` is the built-in tool wiring utility; the UI layer
+  is not a pack-contributed tool — packs contribute threads + handlers only.)
   - `src/cli/` mostly dissolves: `git-context`, `markdown`, `mcp-client`,
-    `typescript-lsp` become `useTool` units (Phase 3) living in `src/pack/`.
+    `typescript-lsp` become `defineTool` units (Phase 3) living in `src/tools/`.
     What survives is the entry (`bin/plaited.ts`) and the `makeCli` machinery that
     Phase 6's input parsing / `--schema` surface still uses — relocate that residue
     to `src/agent/` or a minimal `src/cli.ts`; the directory goes away.
@@ -78,12 +82,12 @@ work in Phase 4.
   bound to a space (e.g. an atproto pack registering a `space.authority` handler).
   The engine's contract stops at: declare, validate, scope, eject.
 - Rename `topic` → `space` throughout: `UseAddThread`/`UseAddHandler`/`UseTrigger`
-  (and later `useTool`) partial-application params, `RunningBid`/`PendingBid`/
+  (and later `useBehavioral`) partial-application params, `RunningBid`/`PendingBid`/
   `CandidateBid`/listener `topic` fields, trace snapshot fields, `generateRulesFunctions`.
 - **Declared spaces.** `behavioral()` gains `useCreateSpace` (returns
   `(id: string) => void`; naming consistent with the other hooks). Every
   partially-applied hook — `useAddThread(space)`, `useAddHandler(space)`,
-  `useTrigger(space)`, and later `useTool(space)` — validates the space exists at
+  `useTrigger(space)`, and later `useBehavioral(space)` — validates the space exists at
   bind time and **throws** on an undeclared space. Root (no space argument) stays
   valid — that's the unscoped channel.
 - **New trace kind `space_error`** (`TRACE_MESSAGE_KINDS`): a scoped hook bound to an
@@ -238,75 +242,70 @@ traces are spec event types, not an invented vocabulary.
 
 ---
 
-## Phase 2 — `useTool` factory
+## Phase 2 — `defineTool` factory (built-in tools)
 
 **Goal:** tools are makeCli-style units wired as handler + descriptor, validated at
 dispatch time. Reference: `research/behavioral-agent-harness-proposal.md` §4 (this
 section supersedes the abandoned engine sketch) and Phase 1's discovered reality
-(threads are static data — dynamic dispatch lives in handlers).
+(threads are static data — dynamic dispatch lives in handlers). Tools are
+**built-in only** — packs never contribute tools (Phase 7).
 
 **Deliverables:**
 
-- `src/agent/use-tool.ts` — external factory taking the partially-applied
-  `{ addThread, addHandler, trigger }` (bound capabilities, matching Phase 1's
-  `AgentHooks`). `useTool({ name, inputSchema (Zod), outputSchema (Zod), run })`:
-  - derives JSON Schema via `z.toJSONSchema` for listener matching; shape-validate
-    both derived schemas with `JsonSchemaObjectSchema` (the engine's exported
-    single source of truth for "is this a JSON Schema document?");
-  - tool schemas stay **pure args/result** — no `call_id`. The purity check is
-    structural (no Ajv — Ajv stays in the engine for listener compilation): reject
-    registration when either derived schema has a top-level `properties.call_id` or
-    `call_id` in `required`. The `call_id` envelope is stamped at
-    dispatch: the `respond` handler owns `call_id` + `arguments` when lifting a
-    `function_call` item into a tool-call event, and results echo it on
-    `${name}_result` / `tool.result`. Rationale: `call_id` must stay in `detail`
-    (never `payload`) so listener matching, traces, the frontier gate, and
-    trace-log restore can all see the correlation;
-  - registers the handler on event type `name`: parses `detail.arguments` with
-    `inputSchema`, awaits `run`, validates output with `outputSchema`, then
-    triggers **both** result events — `${name}_result` (trace visibility, echoes
-    `call_id`) and the generic `tool.result` (items-store integration + turn
-    continuation, the Phase 1 bridge);
-  - returns a frozen descriptor `{ name, inputSchema, outputSchema, jsonSchema }`
-    for the dispatch-time registry and code-generation reference.
-- **Validation at dispatch time — no guard thread in Phase 2.** The static-data
-  limitation discovered in Phase 1 applies: a guard thread's
-  `request: { type: 'tool_call_blocked', detail }` cannot echo the dynamic
-  `call_id` of the blocked call, so a blocked malformed call could never produce a
-  correlated error result — and without it the items store lacks the
-  `function_call_output`, the next `respond` sends a function_call with no output,
-  and the provider 400s. Instead: `registerAgentThreads` accepts a tool-descriptor
-  registry (built from `useTool` calls); the `respond` handler validates
-  `JSON.parse(arguments)` against the tool's `inputSchema` **at dispatch time**.
-  Malformed → the dispatch path emits `tool_call_blocked` (trace, detail carries
-  `call_id` + `name` + reason) **and** a correlated error `tool.result` (model
-  sees the refusal, turn continues). Blocked ≠ silent, and the turn survives.
-- The **block-idiom guard thread moves to Phase 5** (policy as threads), where
-  semantic blocking (dangerous-arg patterns) is designed with the correlation
-  problem solved properly.
+- `src/tools/define-tool.ts` — internal utility analogous to `useBehavioral`,
+  taking a pure `ToolArgs` data object (no engine imports, testable standalone) and
+  returning a `({ addHandler, addThread, trigger }) => ToolDescriptor` registrar.
+  `defineTool`:
+  - shape-validates `inputSchema` and `outputSchema` (JSON Schema documents) with
+    `JsonSchemaObjectSchema` (the engine's exported single source of truth for "is
+    this a JSON Schema document?");
+  - validates the tool `name` at registration (non-empty, no `_result` suffix, no
+    `tool.result` collision);
+  - compiles `outputSchema` via Ajv to validate the tool's return value;
+  - registers the handler on event type `name`: reads `{ call_id, arguments,
+    item_id }` from the event detail (a private harness contract, not a spec item
+    shape), calls `run(arguments)`, validates the output against `outputSchema`,
+    and triggers `tool.result` with `{ call_id, output, item_id }`. `threads.ts`
+    owns building the spec-valid `function_call_output` (id + status) from that.
+  - returns a frozen `ToolDescriptor { name, inputSchema, outputSchema,
+    description? }` for the dispatch-time registry.
+- **No guard thread.** A block-idiom guard thread here could never fire: dispatch-
+  time validation in `threads.ts` only triggers the tool event with already-
+  validated arguments, so the block listener was dead code. Dispatch-time
+  validation is the sole schema gate. Semantic block-idiom guards are Phase 5.
+- **Spec-valid `function_call_output`.** `threads.ts` captures the `function_call`
+  item's `id` as `item_id`, threads it through the tool event, and builds a
+  spec-valid `function_call_output` in the `tool.result` handler — fresh `id` via
+  `ueid()`, `status: 'completed'|'failed'`, `call_id` correlation. Per the Open
+  Responses spec ("Required item fields"), every item MUST carry `id` + `type` +
+  `status`; the output item is a NEW item (its `id` ≠ the call's `id`; `call_id`
+  is what correlates). This makes the items store a spec-valid, round-trippable
+  trajectory — `previous_response_id` resume and `replayToFrontier` restore
+  (Phase 4) both depend on addressable items.
 
-**Done when:** tests prove valid call → `${name}_result` + `tool.result` (both
-echo `call_id`); malformed call → `tool_call_blocked` + error `tool.result`, and
-the next `respond` request carries the error `function_call_output`; two parallel
-same-tool calls correlate by `call_id`; a tool schema containing `call_id` is
-rejected at registration.
+**Done when:** tests prove valid call → `tool.result` (echoes `call_id`); malformed
+call → `tool_call_blocked` + error `tool.result`; two parallel same-tool calls
+correlate by `call_id`; a tool schema that is not a valid JSON Schema document is
+rejected at registration; the `function_call_output` in the next request carries
+`id` + `status` + `call_id`.
 
 ---
 
 ## Phase 2.5 — Default tool pack (pi-equivalent core tools)
 
 **Goal:** the agent's hands. Reimplement pi's default built-in tools — `read`, `bash`,
-`edit`, `write`, `grep`, `find`, `ls` — as `useTool` units, carrying Zod schemas,
-guard threads, and space-deployability natively (no callback-shaped pi tools).
+`edit`, `write`, `grep`, `find`, `ls` — as `defineTool` units, carrying JSON Schema,
+no guard threads, and space-deployability natively (no callback-shaped pi tools).
 
 **Deliverables:**
 
-- `src/pack/` — one file per tool (`read.ts`, `bash.ts`, `edit.ts`, `write.ts`,
+- `src/tools/` — one file per tool (`read.ts`, `bash.ts`, `edit.ts`, `write.ts`,
   `grep.ts`, `find.ts`, `ls.ts`), each exporting a frozen `ToolArgs` object
   (`{ name, inputSchema, outputSchema, run, description }`) — plain data, no hooks,
-  testable without the engine. Schemas derived from usage (not copied from pi's
-  TypeBox); `run` cores are pure async functions, errors returned as data
-  (`isError`/structured errors — never thrown). Bun APIs: `bash` via `Bun.spawn`
+  testable without the engine. Schemas are JSON Schema documents (validated by
+  `JsonSchemaObjectSchema` at registration); `run` cores are pure async functions,
+  errors returned as data (`isError`/structured errors — never thrown). Bun APIs:
+  `bash` via `Bun.spawn`
   (`shell -c` interpreter bridge, native `timeout`/`killSignal`) with
   tail-truncated (last 2000 lines / 50KB, UTF-8-safe) control-char-sanitized
   output — the tool `description` carries that contract to the model;
@@ -328,19 +327,20 @@ guard threads, and space-deployability natively (no callback-shaped pi tools).
   examples only** — fetch via `gh` for semantics (match discipline, truncation,
   result shapes), never for code (TypeBox, `diff` dep).
 - `src/agent/provision-defaults.ts` — the harness-side provisioner: imports the tool
-  data from `src/pack/` and wires each via `useTool`; `provisionDefaults(rootHooks)`
-  registers all seven at root. Provisioning is harness code (the agent decides what
-  activates where); the pack stays pure data.
-- Space-deployable variants: the same `ToolArgs` data provisions into any space via
-  space-scoped hooks; a policy pack can substitute a restricted variant (read-only
-  set, remote-executing `bash`).
+  data from `src/tools/` and wires each via `defineTool`;
+  `provisionDefaults(rootHooks)` registers all seven at root. Provisioning is
+  harness code (the agent decides what activates where); the tool data stays pure.
+- Space-deployable variants: the same `ToolArgs` data provisions into any space
+  via space-scoped hooks; a policy pack can substitute a restricted variant
+  (read-only set, remote-executing `bash`).
 - These are the critical path to a useful agent — the CLI conversions (Phase 3) are
   additive on top.
 
-**Done when:** each tool passes schema validation at registration (Phase 2 purity
-checks); tests drive each through a b-program (trigger call → `_result`); the guard
-pair blocks a malformed `bash` call and emits `tool_call_blocked`; provisioning the
-same tool at root and in a space works independently (space-scoped result events).
+**Done when:** each tool passes schema validation at registration (Phase 2); tests
+drive each through a b-program (trigger call → `tool.result`); dispatch-time
+validation blocks a malformed `bash` call and emits `tool_call_blocked`; provisioning
+the same tool at root and in a space works independently (space-scoped result
+events).
 
 ---
 
@@ -354,7 +354,7 @@ and `video` content part types, matching the spec's multi-modal
 
 **Deliverables:**
 
-- `src/pack/binary.ts` — frozen `ToolArgs` object following the Phase 2.5 tool
+- `src/tools/binary.ts` — frozen `ToolArgs` object following the Phase 2.5 tool
   pattern: reads a file via `Bun.file(path).bytes()`, detects MIME type from
   **offset-aware magic bytes** (RIFF/ftyp containers match the format tag at
   offset 8, per pi's `image.ts`), encodes as base64, returns
@@ -378,11 +378,11 @@ and `video` content part types, matching the spec's multi-modal
   `image` (`data:` URI), `audio` (`data:` URI + format), `video` (`data:` URI +
   format) as a discriminated union distinct from output-side content parts.
   `MessageItemParamSchema.content` accepts `InputContentPart[]`.
-  The handler converting `binary_result` into the next `respond` request
+  The handler converting `tool.result` into the next `respond` request
   switches on MIME prefix to build the correct content part type (`image`,
   `audio`, `video`) — this is a ~5-line MIME-to-format mapping, no ffprobe
   needed because magic-byte detection already identified the format.
-- Wire in `provision-defaults.ts`.
+- Wire in `provision-defaults.ts` via `defineTool`.
 - Tests: MIME detection unit tests (incl. the RIFF-container disambiguation),
   `Bun.Image.metadata()` dimension extraction on image formats (absent gracefully
   on exotic/undecodable files), file-not-found error path, hard-ceiling rejection,
@@ -400,7 +400,7 @@ input.
 
 ---
 
-## Phase 3 — Convert `src/cli` units to `useTool` tools; dissolve `src/cli/`
+## Phase 3 — Convert `src/cli` units to `defineTool` tools; dissolve `src/cli/`
 
 **Goal:** `git-context`, `markdown`, `mcp-client`, `typescript-lsp` become agent tools
 alongside the defaults. The CLI surface they came from goes away — bare `plaited` is
@@ -410,18 +410,18 @@ the agent (Phase 6); the only surviving CLI machinery is the entry + `makeCli`.
 
 - Per unit: extract the `run(input)` body into a pure async core
   `(input) => output`, wrap as a `ToolArgs` object, and add as a tool file in
-  `src/pack/` (`git-context.ts`, `markdown.ts`, `mcp-client.ts`,
-  `typescript-lsp.ts`); `provision-defaults.ts` wires them. `makeCli` keeps
-  parse → core → validate → print for direct CLI use where still needed.
+  `src/tools/` (`git-context.ts`, `markdown.ts`, `mcp-client.ts`,
+  `typescript-lsp.ts`); `provision-defaults.ts` wires them via `defineTool`. `makeCli`
+  keeps parse → core → validate → print for direct CLI use where still needed.
 - Move the surviving CLI residue (`makeCli`, request parsing, schema printing) out
   of `src/cli/` — it exists to serve `plaited`'s input/`--schema` surface, not a
   multi-command tool surface.
 - Envelope: tool input/output details carry `call_id` top-level (stamped by the loop).
 
 **Done when:** the four tools pass Phase 2.5-style b-program tests (trigger call →
-`_result`, malformed blocked); they provision at root and into a space; `src/cli/`
-is gone; the four tools' prior behaviors are reachable through the agent (not as
-standalone subcommands).
+`tool.result`, malformed blocked); they provision at root and into a space;
+`src/cli/` is gone; the four tools' prior behaviors are reachable through the agent
+(not as standalone subcommands).
 
 ---
 
@@ -506,7 +506,7 @@ domain-agnostic and must not pay exploration cost per `useAddThread`). This is t
 gate spec'd in `research/differential-frontier-gate-stable-reward.md`. Phase 5
 references this layer; this is the single definition.
 
-**Layer 2 — `verify-frontier` tool (agent-callable self-check).** A `useTool` unit
+**Layer 2 — `verify-frontier` tool (agent-callable self-check).** A `defineTool` unit
 exposing `verifyFrontiers` inside the b-program:
 
 ```
@@ -534,7 +534,7 @@ symbolically (worker-side, Layer 2); skill text is prose and needs an LLM judge 
 so it judges *controller-side*, matching the neuro-symbolic split (worker proposes,
 controller disposes):
 
-- `skill` tool (`useTool` unit, built on the Phase 3 `markdown` core):
+- `skill` tool (`defineTool` unit, built on the Phase 3 `markdown` core):
   `read-skill` / `write-skill` / `validate-skill` (frontmatter + link validation).
   The agent edits its own skill text through these.
 - Judge callback: a controller-side `useTrace` listener (Layer 3 wiring) that, on a
@@ -596,19 +596,50 @@ works with no daemon; a guarded action returns `permission_required` and a follo
 
 ## Phase 7 — Extension packs & deployment patterns (pattern surface)
 
-**Goal:** document and enable — not yet build — the pack ecosystem. Aligned with pi's
-containerization doc structure (a menu of deployment patterns, not a feature), minus
-the experimental micro-VM row.
+**Goal:** document and enable the pack ecosystem. Aligned with pi's
+containerization doc structure (a menu of deployment patterns, not a feature),
+minus the experimental micro-VM row.
 
 **Pack contract:**
 
 - A pack is a plugin directory in Agent Plugins format: `plugin.json` manifest plus
-  component directories. Space-provisioning code lives in the client-extension
-  namespace `dev.plaited/` (e.g. `dev.plaited/provision.ts` exporting
-  `(spaceHooks) => Promise<void> | Disconnect`, where `spaceHooks =
-  { addThread, addHandler, trigger, useTool }` are bound to the pack's
-  declared space). A pack provisions its space's threads, handlers, and tools as one
-  importable unit; `useEject(space)` unwinds it entirely.
+  component directories. A pack contributes **threads + handlers** (behavioral
+  units), never tools — tools are built-in only (Phase 2). The client-extension
+  namespace `dev.plaited/` declares a `packs` object in `plugin.json`:
+  ```json
+  {
+    "extensions": {
+      "dev.plaited": {
+        "packs": {
+          "$root":   { "behaviors": ["./b/compaction.ts"], "tools": ["read","bash"], "excludeTools": ["bash"] },
+          "research": { "behaviors": ["./b/search.ts"], "tools": ["read","grep","find"] }
+        }
+      }
+    }
+  }
+  ```
+  - `$root` is the default key — behaviors and tool config at root scope (no
+    space). Every other key is a space/topic name.
+  - Each space entry has up to four fields: `behaviors` (file paths), `tools`
+    (built-in tool name allowlist), `excludeTools` (built-in tool name blocklist).
+- **The behavior export unit is `useBehavioral(callback)`.** Each file listed in
+  `behaviors` is imported; its named exports are all `useBehavioral(...)` results.
+  The harness's provisioning handler (harness-side, `src/agent/`) reads the space
+  key from `plugin.json`, curries `useTrigger(space)` / `useAddHandler(space)` /
+  `useAddThread(space)` into scoped variants, and invokes each export with those
+  scoped hooks. Because the files are agent-generated, each export is AST-checked
+  before admission — this is the foundation for the self-improving loop
+  (Phase 5.5): behavior files are a mutable, agent-editable surface, and writes to
+  them are observable events that trigger the verify-then-register cycle.
+- `useBehavioral` (consumer-side, `src/agent/use-behavioral.ts`) is a pure identity
+  wrapper — its only jobs are to guarantee the export's shape and fix the param
+  shape. The callback receives `{ addThread, addHandler, trigger, useTrace }`
+  (pre-scoped). The callback's own scope is where co-designed handlers/threads share
+  state and `Disconnect` handles — a sibling handler can remove another via the
+  caller-held `Disconnect` that `addHandler` returns (Phase -1). `useTrace` is
+  included so a self-improving agent can observe its own behavioral exhaust
+  (`research/talk-self-improving-agents-from-behavioral-exhaust.md`).
+- `useEject(space)` unwinds a pack's space entirely (threads + handlers).
 - **Adapter discovery:** a plugin may declare adapters via the client extension
   field in `plugin.json`:
   ```json
@@ -625,10 +656,10 @@ the experimental micro-VM row.
 **Deployment patterns (operator concerns, documented not enforced):**
 
 - **Remote tool execution (default posture).** Tool execution is never co-resident
-  with the agent runtime. `useTool`'s `run` is the only execution point, so a pack
-  whose `run` delegates over IPC/HTTP/SSH is indistinguishable to the engine from a
-  local one. Default tool packs ship remote-capable `run` cores; deployment chooses
-  the target. (No specific micro-VM endorsement.)
+  with the agent runtime. `defineTool`'s `run` is the only execution point, so a
+  built-in tool whose `run` delegates over IPC/HTTP/SSH is indistinguishable to the
+  engine from a local one. Default tool packs ship remote-capable `run` cores;
+  deployment chooses the target. (No specific micro-VM endorsement.)
 - **Adapter capabilities are declared, and tools honor them.** An adapter (or its
   settings entry) declares what the bound model accepts and its limits — e.g.
   multi-modal content types accepted (`image`/`audio`/`video`), per-part byte/
