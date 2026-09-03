@@ -4,9 +4,9 @@ import type { Trace } from '../../main/behavioral.schemas.ts'
 import { behavioral } from '../../main/behavioral.ts'
 import type { AddHandler, AddThread, Trigger } from '../../main/behavioral.types.ts'
 import { tempDir } from '../../tools/tests/helpers.ts'
+import { registerKernel } from '../kernel.ts'
 import type { KnownStreamEvent, OpenResponsesRequest } from '../open-responses.schemas.ts'
 import { provisionDefaults } from '../provision-defaults.ts'
-import { registerAgentThreads } from '../threads.ts'
 import { useResponse } from '../use-response.ts'
 
 // ================================================================
@@ -145,7 +145,7 @@ describe('provisionDefaults integration', () => {
     }
   })
 
-  test('full dispatch flow: provision + registerAgentThreads with tools', async () => {
+  test('full dispatch flow: provision + registerKernel with tools', async () => {
     const callCount = { count: 0 }
     const adapter = useResponse({
       provider: 'test-provision',
@@ -159,7 +159,7 @@ describe('provisionDefaults integration', () => {
 
     const hooks = createBP()
     const toolDescriptors = provisionDefaults(hooks)
-    registerAgentThreads(
+    registerKernel(
       { addThread: hooks.addThread, addHandler: hooks.addHandler, trigger: hooks.trigger },
       adapter,
       toolDescriptors,

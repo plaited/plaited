@@ -1,13 +1,13 @@
 import { type JsonObject, type JsonSchemaObject, JsonSchemaObjectSchema } from '../main/behavioral.schemas.ts'
 import type { AddHandler, AddThread, Trigger } from '../main/behavioral.types.ts'
 import { compileValidator } from '../main/behavioral.utils.ts'
-import type { ToolArgs } from './pack.types.ts'
+import type { ToolArgs } from '../tools/tool.types.ts'
 
 /**
  * Descriptor for a registered tool, returned frozen by {@link defineTool}.
  *
  * Used as a registry entry at dispatch time: the `respond` handler in
- * `threads.ts` looks up by `name`, validates arguments against `inputSchema`,
+ * `kernel.ts` looks up by `name`, validates arguments against `inputSchema`,
  * and dispatches only when validation passes.
  */
 export type ToolDescriptor = {
@@ -48,10 +48,10 @@ const isReservedSuffix = (name: string) => name.endsWith('_result')
  *    item_id }` from the event detail (a private harness contract, not a
  *    spec item shape), calls `run(arguments)`, validates the output against
  *    `outputSchema`, and triggers `tool.result` with
- *    `{ call_id, output, isError?, item_id }`. `threads.ts` owns building the
+ *    `{ call_id, output, isError?, item_id }`. `kernel.ts` owns building the
  *    spec-valid `function_call_output` item (id + status) from that.
  *
- * **No guard thread.** Dispatch-time validation in `threads.ts` is the sole
+ * **No guard thread.** Dispatch-time validation in `kernel.ts` is the sole
  * schema gate — a block-idiom guard thread here could never fire because the
  * dispatcher only triggers the tool event with already-validated arguments.
  * Semantic block-idiom guards (policy) are Phase 5, designed with the
@@ -100,7 +100,7 @@ export const defineTool = (args: ToolArgs) => {
       const outputString = JSON.stringify(output)
 
       // Items-store integration + turn continuation — the Phase 1 bridge.
-      // threads.ts builds the spec-valid function_call_output (id + status)
+      // kernel.ts builds the spec-valid function_call_output (id + status)
       // from this detail; defineTool stays free of spec-item shape.
       trigger({
         type: 'tool.result',

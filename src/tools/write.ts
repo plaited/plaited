@@ -1,5 +1,5 @@
 import * as path from 'node:path'
-import type { CwdProvision, JsonObject, ToolArgs } from './pack.types.ts'
+import type { CwdProvision, JsonObject, ToolArgs } from './tool.types.ts'
 
 export const inputSchema = {
   type: 'object',

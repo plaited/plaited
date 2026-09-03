@@ -1,8 +1,8 @@
 import { describe, expect, test } from 'bun:test'
 import * as path from 'node:path'
+import { registerKernel } from '../../agent/kernel.ts'
 import type { KnownStreamEvent, OpenResponsesRequest } from '../../agent/open-responses.schemas.ts'
 import { provisionDefaults } from '../../agent/provision-defaults.ts'
-import { registerAgentThreads } from '../../agent/threads.ts'
 import { useResponse } from '../../agent/use-response.ts'
 import type { Trace } from '../../main/behavioral.schemas.ts'
 import { behavioral } from '../../main/behavioral.ts'
@@ -596,7 +596,7 @@ describe('provisionDefaults integration', () => {
     }
   })
 
-  test('full dispatch flow: provision + registerAgentThreads with tools', async () => {
+  test('full dispatch flow: provision + registerKernel with tools', async () => {
     const callCount = { count: 0 }
     const adapter = useResponse({
       provider: 'test-provision',
@@ -610,7 +610,7 @@ describe('provisionDefaults integration', () => {
 
     const hooks = createBP()
     const toolDescriptors = provisionDefaults(hooks)
-    registerAgentThreads(
+    registerKernel(
       { addThread: hooks.addThread, addHandler: hooks.addHandler, trigger: hooks.trigger },
       adapter,
       toolDescriptors,

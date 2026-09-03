@@ -1,25 +1,16 @@
-import type { AddHandler, AddThread, Trigger } from '../main/behavioral.types.ts'
 import bashTool from '../tools/bash.ts'
 import type { BinaryProvision } from '../tools/binary.ts'
 import binaryTool from '../tools/binary.ts'
-import type { ToolDescriptor } from '../tools/define-tool.ts'
-import { defineTool } from '../tools/define-tool.ts'
 import editTool from '../tools/edit.ts'
 import findTool from '../tools/find.ts'
 import grepTool from '../tools/grep.ts'
 import lsTool from '../tools/ls.ts'
-import type { CwdProvision, JsonObject, ToolArgs } from '../tools/pack.types.ts'
 import readTool from '../tools/read.ts'
+import type { CwdProvision, JsonObject, ToolArgs } from '../tools/tool.types.ts'
 import writeTool from '../tools/write.ts'
-
-/**
- * The unscoped behavioral hooks the agent harness receives at registration time.
- */
-export type AgentHooks = {
-  addThread: AddThread
-  addHandler: AddHandler
-  trigger: Trigger
-}
+import type { ToolDescriptor } from './define-tool.ts'
+import { defineTool } from './define-tool.ts'
+import type { AgentHooks } from './kernel.ts'
 
 /**
  * Provision-time scoping applied to every tool in the pack.

@@ -1,8 +1,8 @@
 import type { JsonObject } from '../main/behavioral.schemas.ts'
 import type { AddHandler, AddThread, Trigger } from '../main/behavioral.types.ts'
 import { compileValidator } from '../main/behavioral.utils.ts'
-import type { ToolDescriptor } from '../tools/define-tool.ts'
 import { ueid } from '../utils.ts'
+import type { ToolDescriptor } from './define-tool.ts'
 import type {
   FunctionCallItem,
   InputItem,
@@ -38,7 +38,7 @@ export type AgentHooks = {
  * @param hooks - The behavioral program's unscoped hooks.
  * @param adapter - The provider adapter driving the model stream.
  */
-export const registerAgentThreads = (hooks: AgentHooks, adapter: Adapter, tools?: ToolDescriptor[]): void => {
+export const registerKernel = (hooks: AgentHooks, adapter: Adapter, tools?: ToolDescriptor[]): void => {
   const { addThread, addHandler, trigger } = hooks
 
   // ----------------------------------------------------------------
@@ -224,7 +224,7 @@ export const registerAgentThreads = (hooks: AgentHooks, adapter: Adapter, tools?
 
       // Valid — dispatch tool event with parsed (already-validated) arguments.
       // The detail is a private harness contract ({ call_id, arguments, item_id }),
-      // not a spec item shape; threads.ts builds the spec-valid
+      // not a spec item shape; kernel.ts builds the spec-valid
       // function_call_output from the tool.result the handler triggers.
       trigger({
         type: call.name,
@@ -238,7 +238,7 @@ export const registerAgentThreads = (hooks: AgentHooks, adapter: Adapter, tools?
   //            items store, continue the turn.
   // ----------------------------------------------------------------
   //
-  // threads.ts owns the spec-item shape. A function_call_output is a NEW item
+  // kernel.ts owns the spec-item shape. A function_call_output is a NEW item
   // (its `id` ≠ the call's `id`; `call_id` is what correlates them), so a
   // fresh `id` is generated via `ueid()`. `status` is 'completed' on success
   // or 'failed' when the tool reported an error. The `item_id` (the

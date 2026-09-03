@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 import { behavioral } from '../../main/behavioral.ts'
-import { defineTool } from '../../tools/define-tool.ts'
+import { defineTool } from '../define-tool.ts'
 
 const schema = { type: 'object' as const }
 const baseRun = async () => ({ output: {} })

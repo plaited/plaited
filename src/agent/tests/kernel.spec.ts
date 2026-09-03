@@ -2,10 +2,10 @@ import { describe, expect, test } from 'bun:test'
 import type { Trace } from '../../main/behavioral.schemas.ts'
 import { behavioral } from '../../main/behavioral.ts'
 import type { AddHandler, AddThread, Trigger } from '../../main/behavioral.types.ts'
-import type { ToolDescriptor } from '../../tools/define-tool.ts'
-import { defineTool } from '../../tools/define-tool.ts'
+import type { ToolDescriptor } from '../define-tool.ts'
+import { defineTool } from '../define-tool.ts'
+import { registerKernel } from '../kernel.ts'
 import type { KnownStreamEvent, OpenResponsesRequest } from '../open-responses.schemas.ts'
-import { registerAgentThreads } from '../threads.ts'
 import type { Adapter, CompactionResult } from '../use-response.ts'
 import { useResponse } from '../use-response.ts'
 
@@ -40,7 +40,7 @@ function setupTest(adapter: Adapter, toolDescriptors?: ToolDescriptor[]) {
   })
 
   // Register the agent loop
-  registerAgentThreads({ addThread, addHandler, trigger }, adapter, toolDescriptors)
+  registerKernel({ addThread, addHandler, trigger }, adapter, toolDescriptors)
 
   return {
     addHandler,
@@ -295,7 +295,7 @@ describe('agent loop — happy path', () => {
       })({ addHandler, trigger, addThread }),
     ]
 
-    registerAgentThreads({ addThread, addHandler, trigger }, adapter, tools)
+    registerKernel({ addThread, addHandler, trigger }, adapter, tools)
 
     // Start the turn
     trigger({ type: 'user.prompt', detail: { prompt: 'What is the weather in Paris?' } })

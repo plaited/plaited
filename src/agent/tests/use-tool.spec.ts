@@ -2,11 +2,11 @@ import { describe, expect, test } from 'bun:test'
 import type { Trace } from '../../main/behavioral.schemas.ts'
 import { behavioral } from '../../main/behavioral.ts'
 import type { AddHandler, AddThread, Trigger } from '../../main/behavioral.types.ts'
-import type { ToolDescriptor } from '../../tools/define-tool.ts'
-import { defineTool } from '../../tools/define-tool.ts'
-import type { ToolArgs } from '../../tools/pack.types.ts'
+import type { ToolArgs } from '../../tools/tool.types.ts'
+import type { ToolDescriptor } from '../define-tool.ts'
+import { defineTool } from '../define-tool.ts'
+import { registerKernel } from '../kernel.ts'
 import type { KnownStreamEvent, OpenResponsesRequest } from '../open-responses.schemas.ts'
-import { registerAgentThreads } from '../threads.ts'
 import { useResponse } from '../use-response.ts'
 
 // ================================================================
@@ -265,11 +265,7 @@ describe('defineTool dispatch — valid tool call', () => {
 
     const hooks = createBP()
     const tools: ToolDescriptor[] = [register(hooks)]
-    registerAgentThreads(
-      { addThread: hooks.addThread, addHandler: hooks.addHandler, trigger: hooks.trigger },
-      adapter,
-      tools,
-    )
+    registerKernel({ addThread: hooks.addThread, addHandler: hooks.addHandler, trigger: hooks.trigger }, adapter, tools)
 
     hooks.trigger({ type: 'user.prompt', detail: { prompt: 'What is the weather in Paris?' } })
 
@@ -294,11 +290,7 @@ describe('defineTool dispatch — parallel same-tool calls', () => {
     const results: Array<{ call_id: string; output: string }> = []
 
     const tools: ToolDescriptor[] = [register(hooks)]
-    registerAgentThreads(
-      { addThread: hooks.addThread, addHandler: hooks.addHandler, trigger: hooks.trigger },
-      adapter,
-      tools,
-    )
+    registerKernel({ addThread: hooks.addThread, addHandler: hooks.addHandler, trigger: hooks.trigger }, adapter, tools)
 
     hooks.addHandler('tool.result', ({ detail }) => {
       const { call_id, output } = (detail ?? {}) as { call_id: string; output: string }
@@ -331,11 +323,7 @@ describe('defineTool dispatch — malformed call blocking', () => {
 
     const hooks = createBP()
     const tools: ToolDescriptor[] = [register(hooks)]
-    registerAgentThreads(
-      { addThread: hooks.addThread, addHandler: hooks.addHandler, trigger: hooks.trigger },
-      adapter,
-      tools,
-    )
+    registerKernel({ addThread: hooks.addThread, addHandler: hooks.addHandler, trigger: hooks.trigger }, adapter, tools)
 
     hooks.trigger({ type: 'user.prompt', detail: { prompt: 'Weather?' } })
 
@@ -357,11 +345,7 @@ describe('defineTool dispatch — malformed call blocking', () => {
 
     const hooks = createBP()
     const tools: ToolDescriptor[] = [register(hooks)]
-    registerAgentThreads(
-      { addThread: hooks.addThread, addHandler: hooks.addHandler, trigger: hooks.trigger },
-      adapter,
-      tools,
-    )
+    registerKernel({ addThread: hooks.addThread, addHandler: hooks.addHandler, trigger: hooks.trigger }, adapter, tools)
 
     hooks.trigger({ type: 'user.prompt', detail: { prompt: 'Weather?' } })
 

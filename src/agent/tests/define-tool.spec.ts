@@ -2,8 +2,8 @@ import { describe, expect, test } from 'bun:test'
 import type { Trace } from '../../main/behavioral.schemas.ts'
 import { behavioral } from '../../main/behavioral.ts'
 import type { AddHandler, AddThread, Trigger } from '../../main/behavioral.types.ts'
+import type { ToolArgs } from '../../tools/tool.types.ts'
 import { defineTool } from '../define-tool.ts'
-import type { ToolArgs } from '../pack.types.ts'
 
 const tick = () => new Promise<void>((r) => setTimeout(r, 0))
 
@@ -134,7 +134,7 @@ describe('defineTool — no guard thread registered', () => {
 
     defineTool(echoTool)({ addHandler, trigger, addThread })
 
-    // Dispatch-time validation (threads.ts) is the sole schema gate; defineTool
+    // Dispatch-time validation (kernel.ts) is the sole schema gate; defineTool
     // adds no block listener and calls addThread zero times, so no
     // add_thread_error trace can appear regardless of arg shape.
     trigger({ type: 'echo', detail: { call_id: 'c', arguments: {}, item_id: 'i' } })

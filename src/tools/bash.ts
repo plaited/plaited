@@ -1,7 +1,7 @@
 import { mkdtemp } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import type { CwdProvision, JsonObject, ToolArgs } from './pack.types.ts'
+import type { CwdProvision, JsonObject, ToolArgs } from './tool.types.ts'
 
 // ================================================================
 // Limits (mirroring pi's bash tool + read tool conventions)

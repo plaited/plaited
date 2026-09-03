@@ -1,5 +1,5 @@
 import * as path from 'node:path'
-import type { CwdProvision, JsonObject, ToolArgs } from './pack.types.ts'
+import type { CwdProvision, JsonObject, ToolArgs } from './tool.types.ts'
 
 /**
  * Approximate ceiling for read output — mirrors pi's DEFAULT_MAX_LINES (2000)
