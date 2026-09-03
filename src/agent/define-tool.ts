@@ -79,7 +79,7 @@ export const defineTool = (args: ToolArgs) => {
   }
   const outputValidator = compileValidator(args.outputSchema)
 
-  return ({ addHandler, trigger }: ToolHooks): ToolDescriptor => {
+  return ({ addHandler, addThread, trigger }: ToolHooks): ToolDescriptor => {
     addHandler(args.name, async ({ detail }) => {
       const {
         call_id,
