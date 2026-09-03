@@ -1,4 +1,4 @@
-# Behavioral Agent Harness — Phased Build Plan
+# Behavioral Agent Harness
 
 A **minimal behavioral kernel meant to be improved.** The agent ships with an
 irreducible coordination floor — the behavioral engine (`behavioral()`) plus the
@@ -24,6 +24,74 @@ Built on the plaited behavioral runtime (`src/runtime/behavioral.ts` after
 Phase -2; today `src/main/behavioral.ts`). No pi SDK. No TUI. No ACP (deferred).
 The agent is a `plaited` CLI command; the dev client is pi's `!`/`!!` shell
 escapes; validation is Bun test.
+
+## Current State
+
+- **Landed:** `defineTool` factory (`src/agent/define-tool.ts`) wires tool
+  handler + structural guard thread (full-envelope block on invalid detail).
+  `registerKernel` (`src/agent/kernel.ts`) owns the turn loop, dispatch bridge,
+  spec-valid `function_call_output` (id + status via `ueid()`), items store.
+  `useBehavioral` consumer interface (`src/agent/use-behavioral.ts`) for
+  pack-contributed behaviors. `Handler<T>` has no self-removal `disconnect`
+  (caller-held `Disconnect` only). Tool pack data in `src/tools/` (read, bash,
+  edit, write, grep, find, ls, binary) with JSON Schema + pure `run`.
+- **In-flight:** tool spec files (`bash.spec.ts`, `edit.spec.ts`,
+  `find.spec.ts`, `binary.spec.ts`) have pre-existing `result: unknown`
+  type-narrowing issues — follow-up fix needed.
+- **Active area:** provisioning handler design — moving tool provisioning
+  inside the kernel as an event-driven handler (not imperative boot function).
+
+## Decision Log
+
+### 2024-09-02 — Handler lifecycle
+
+- `disconnect` removed from `Handler<T>` params. Side-effect channel must not
+  mutate the listener registry mid-dispatch. Caller-held `Disconnect` is the
+  sole removal path (`plan.md` Phase -1).
+
+### 2024-09-02 — defineTool + kernel + spec-valid items
+
+- `useTool` → `defineTool`. Factory is an internal utility in `src/agent/`,
+  takes JSON Schema (not Zod), wires only the handler. `ToolDescriptor` type
+  lives alongside it.
+- `BLOCK_INVALID_TOOL_CALL_THREAD` guard thread removed then **restored**.
+  Dispatch-time validation in `kernel.ts` is the sole *schema* gate; the guard
+  is defense-in-depth at the tool's own trust boundary (full-envelope block on
+  `{ call_id, arguments: inputSchema }` with `detailMatch: 'invalid'`).
+- `function_call_output` is now spec-valid: fresh `id` via `ueid()`, `status`
+  `'completed'|'failed'`, `call_id` correlation. Per the Open Responses spec
+  "Required item fields."
+- Tool event detail is a private harness contract `{ call_id, arguments,
+  item_id }`, not a spec item shape. `kernel.ts` owns spec-item construction.
+- `threads.ts` → `kernel.ts`, `registerAgentThreads` → `registerKernel`.
+  The file is the agent kernel, not just "a file of threads."
+
+### 2024-09-02 — Packs + useBehavioral + skills
+
+- Tools are built-in only. Packs never contribute tools — they contribute
+  threads + handlers via `useBehavioral`.
+- The `packs` object in `plugin.json` maps scopes (`$root` + spaces) to
+  behavior-file paths + built-in tool allow/exclude lists + skills
+  allow/exclude lists.
+- `useBehavioral` is a pure identity wrapper (consumer-side). The harness
+  provisioning handler curries scoped hooks and AST-checks agent-generated
+  behavior files. Foundation for the self-improving loop (Phase 5.5).
+- `provisionDefaults` to dissolve into the kernel's provisioning handler
+  (event-driven, not imperative boot). Built-in tools become imports the
+  handler iterates for `$root`. **Pending: not yet implemented.**
+
+## Open Questions
+
+- **Where does the `ToolDescriptor` dispatch registry live when provisioning
+  moves inside the kernel?** Likely the `registerKernel` closure, populated by
+  the provisioning handler, read by the `respond` handler — same as today, just
+  populated differently. Needs confirmation.
+- **How does the provisioning handler get triggered?** `space.created`?
+  `plugin.loaded`? Both? What's the ingress event, and who emits it?
+- **Does the provisioning handler also handle the `tools`/`excludeTools`
+  filtering, or does that happen before the tool list reaches the handler?**
+
+## Phases
 
 **Cross-cutting conventions for every phase:**
 
