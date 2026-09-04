@@ -1,0 +1,582 @@
+/**
+ * Markdown MCP tools for agent use.
+ *
+ * Registers three tools: `markdown_extract_links`, `markdown_validate_links`,
+ * and `markdown_frontmatter`. Extracts local file references, validates link
+ * resolution, and parses YAML frontmatter from markdown text.
+ */
+
+import { normalize, resolve } from 'node:path'
+import { YAML } from 'bun'
+import * as z from 'zod'
+import { useMCPServer } from './use-mcp-server.ts'
+
+type ParsedFrontmatterBlock = {
+  frontmatter: string
+  bodyStartIndex: number
+}
+
+const isLineBreakCharacter = (character: string | undefined): boolean => character === '\n' || character === '\r'
+
+const isWhitespaceCharacter = (character: string): boolean => {
+  const charCode = character.charCodeAt(0)
+  if (
+    charCode === 0x20 ||
+    charCode === 0x09 ||
+    charCode === 0x0a ||
+    charCode === 0x0b ||
+    charCode === 0x0c ||
+    charCode === 0x0d
+  ) {
+    return true
+  }
+
+  return character.trim().length === 0
+}
+
+const isWhitespaceAt = (value: string, index: number): boolean => {
+  const character = value[index]
+  return character !== undefined && isWhitespaceCharacter(character)
+}
+
+const parseFrontmatterBlock = (markdown: string): ParsedFrontmatterBlock | null => {
+  if (!markdown.startsWith('---')) return null
+
+  let openingDelimiterScanIndex = 3
+  let lastOpeningLineBreakIndex = -1
+  while (openingDelimiterScanIndex < markdown.length && isWhitespaceAt(markdown, openingDelimiterScanIndex)) {
+    if (isLineBreakCharacter(markdown[openingDelimiterScanIndex])) {
+      lastOpeningLineBreakIndex = openingDelimiterScanIndex
+    }
+    openingDelimiterScanIndex += 1
+  }
+
+  if (lastOpeningLineBreakIndex === -1) {
+    return null
+  }
+
+  const frontmatterStartIndex = lastOpeningLineBreakIndex + 1
+  let frontmatterEndIndex = -1
+
+  for (let index = frontmatterStartIndex; index < markdown.length - 3; index++) {
+    if (!isLineBreakCharacter(markdown[index])) continue
+    if (!markdown.startsWith('---', index + 1)) continue
+    frontmatterEndIndex = index
+    break
+  }
+
+  if (frontmatterEndIndex === -1) return null
+
+  let bodyStartIndex = frontmatterEndIndex + 4
+  while (bodyStartIndex < markdown.length && isWhitespaceAt(markdown, bodyStartIndex)) {
+    bodyStartIndex += 1
+  }
+
+  return {
+    frontmatter: markdown.slice(frontmatterStartIndex, frontmatterEndIndex),
+    bodyStartIndex,
+  }
+}
+
+/**
+ * Consumes an `HTMLRewriter` result so link extraction side effects are applied.
+ *
+ * @param result - Rewriter output in any supported body format.
+ * @returns Promise that resolves after the transformed body has been fully consumed.
+ *
+ * @public
+ */
+const consumeHtmlRewriteResult = async (result: string | Response | Blob | ArrayBufferLike): Promise<void> => {
+  if (typeof result === 'string') return
+  if (result instanceof Response) {
+    await result.text()
+    return
+  }
+  if (result instanceof Blob) {
+    await result.text()
+    return
+  }
+  void new TextDecoder().decode(new Uint8Array(result))
+}
+
+/**
+ * Parses YAML frontmatter from a markdown document and validates it with Zod.
+ *
+ * @template TSchema - Schema used to validate the frontmatter object.
+ * @param markdown - Markdown source containing YAML frontmatter.
+ * @param schema - Zod schema used to parse the frontmatter block.
+ * @param options - Optional parsing controls.
+ * @returns Parsed frontmatter plus the remaining markdown body.
+ *
+ * @public
+ */
+/**
+ * Normalizes a markdown link target when it points to a local workspace path.
+ *
+ * @param value - Raw markdown link target.
+ * @returns Normalized local path, or `null` for external and fragment-only links.
+ *
+ * @public
+ */
+const normalizeMarkdownLink = (value: string): string | null => {
+  if (
+    !value ||
+    value.startsWith('http://') ||
+    value.startsWith('https://') ||
+    value.startsWith('mailto:') ||
+    value.startsWith('#')
+  ) {
+    return null
+  }
+
+  const [path] = value.split('#')
+  if (!path) return null
+  return normalize(path)
+}
+
+/**
+ * Local markdown link with its normalized target and display text.
+ *
+ * @public
+ */
+type LocalMarkdownLink = {
+  value: string
+  text: string
+}
+
+/**
+ * Set-based local markdown link validation result.
+ *
+ * @public
+ */
+type MarkdownLocalLinksValidationResult = {
+  present: Set<LocalMarkdownLink>
+  missing: Set<LocalMarkdownLink>
+}
+
+const sortLocalMarkdownLinks = (left: LocalMarkdownLink, right: LocalMarkdownLink): number => {
+  const valueComparison = left.value.localeCompare(right.value)
+  if (valueComparison !== 0) return valueComparison
+  return left.text.localeCompare(right.text)
+}
+
+const extractMarkdownLinkDestination = (value: string): string => {
+  const trimmedValue = value.trim()
+  if (!trimmedValue) return trimmedValue
+
+  if (trimmedValue.startsWith('<')) {
+    const closingBracketIndex = trimmedValue.indexOf('>')
+    if (closingBracketIndex > 0) {
+      return trimmedValue.slice(1, closingBracketIndex)
+    }
+  }
+
+  const firstWhitespaceIndex = trimmedValue.search(/\s/)
+  if (firstWhitespaceIndex === -1) return trimmedValue
+  return trimmedValue.slice(0, firstWhitespaceIndex)
+}
+
+const stripHtmlTags = (value: string): string => {
+  const textParts: string[] = []
+  let pendingTag: string[] | null = null
+
+  for (const character of value) {
+    if (pendingTag) {
+      pendingTag.push(character)
+      if (character === '>') {
+        pendingTag = null
+      }
+      continue
+    }
+
+    if (character === '<') {
+      pendingTag = ['<']
+      continue
+    }
+
+    textParts.push(character)
+  }
+
+  if (pendingTag) {
+    textParts.push(...pendingTag)
+  }
+
+  return textParts.join('')
+}
+
+const setLinkTextIfMissing = ({
+  linkTextByTarget,
+  target,
+  text,
+}: {
+  linkTextByTarget: Map<string, string>
+  target: string | null
+  text: string
+}): void => {
+  if (!target || linkTextByTarget.has(target)) return
+  linkTextByTarget.set(target, text.trim() || target)
+}
+
+type InlineMarkdownLink = {
+  text: string
+  destination: string
+}
+
+const isEscapedCharacter = (value: string, index: number): boolean => {
+  let slashCount = 0
+  for (let currentIndex = index - 1; currentIndex >= 0 && value[currentIndex] === '\\'; currentIndex -= 1) {
+    slashCount += 1
+  }
+  return slashCount % 2 === 1
+}
+
+const findInlineDestinationEnd = (value: string, startIndex: number): number => {
+  for (let index = startIndex; index < value.length; index += 1) {
+    const character = value[index]
+    if (character === '\n' || character === '\r') return -1
+    if (value[index] !== ')' || isEscapedCharacter(value, index)) continue
+    return index
+  }
+  return -1
+}
+
+const extractInlineMarkdownLinks = (markdownBody: string): InlineMarkdownLink[] => {
+  const links: InlineMarkdownLink[] = []
+
+  for (let index = 0; index < markdownBody.length; index += 1) {
+    const character = markdownBody[index]
+    if (character === undefined) continue
+
+    const startsImageLink =
+      character === '!' && markdownBody[index + 1] === '[' && !isEscapedCharacter(markdownBody, index)
+    const startsTextLink = character === '[' && !isEscapedCharacter(markdownBody, index)
+    if (!startsImageLink && !startsTextLink) continue
+
+    const openBracketIndex = startsImageLink ? index + 1 : index
+    let scanIndex = openBracketIndex + 1
+    let bracketDepth = 1
+    let closeBracketIndex = -1
+
+    while (scanIndex < markdownBody.length) {
+      const scanCharacter = markdownBody[scanIndex]
+      if (scanCharacter === undefined) break
+
+      if (scanCharacter === '[' && !isEscapedCharacter(markdownBody, scanIndex)) {
+        bracketDepth += 1
+      } else if (scanCharacter === ']' && !isEscapedCharacter(markdownBody, scanIndex)) {
+        bracketDepth -= 1
+        if (bracketDepth === 0) {
+          closeBracketIndex = scanIndex
+          break
+        }
+      }
+
+      scanIndex += 1
+    }
+
+    if (closeBracketIndex === -1) {
+      index = openBracketIndex
+      continue
+    }
+
+    const openParenIndex = closeBracketIndex + 1
+    if (markdownBody[openParenIndex] !== '(') {
+      index = closeBracketIndex
+      continue
+    }
+
+    const destinationStartIndex = openParenIndex + 1
+    const destinationEndIndex = findInlineDestinationEnd(markdownBody, destinationStartIndex)
+    if (destinationEndIndex === -1) {
+      index = openParenIndex
+      continue
+    }
+
+    const destination = markdownBody.slice(destinationStartIndex, destinationEndIndex)
+    if (destination.trim().length > 0) {
+      links.push({
+        text: markdownBody.slice(openBracketIndex + 1, closeBracketIndex),
+        destination,
+      })
+    }
+
+    index = destinationEndIndex
+  }
+
+  return links
+}
+
+const extractLocalLinkTextByTarget = (markdownBody: string): Map<string, string> => {
+  const linkTextByTarget = new Map<string, string>()
+  const htmlAnchorPattern = /<a\b[^>]*\bhref=(['"])(.*?)\1[^>]*>([\s\S]*?)<\/a>/gi
+  const htmlImagePattern = /<img\b[^>]*>/gi
+
+  for (const link of extractInlineMarkdownLinks(markdownBody)) {
+    const text = link.text
+    const destination = link.destination
+    const normalizedTarget = normalizeMarkdownLink(extractMarkdownLinkDestination(destination))
+    setLinkTextIfMissing({
+      linkTextByTarget,
+      target: normalizedTarget,
+      text,
+    })
+  }
+
+  for (const match of markdownBody.matchAll(htmlAnchorPattern)) {
+    const destination = match[2] ?? ''
+    const text = stripHtmlTags(match[3] ?? '')
+    const normalizedTarget = normalizeMarkdownLink(destination)
+    setLinkTextIfMissing({
+      linkTextByTarget,
+      target: normalizedTarget,
+      text,
+    })
+  }
+
+  for (const match of markdownBody.matchAll(htmlImagePattern)) {
+    const imageTag = match[0] ?? ''
+    const sourceMatch = imageTag.match(/\bsrc=(['"])(.*?)\1/i)
+    const altMatch = imageTag.match(/\balt=(['"])(.*?)\1/i)
+    const source = sourceMatch?.[2]
+    const text = altMatch?.[2] ?? ''
+    const normalizedTarget = source ? normalizeMarkdownLink(source) : null
+    setLinkTextIfMissing({
+      linkTextByTarget,
+      target: normalizedTarget,
+      text,
+    })
+  }
+
+  return linkTextByTarget
+}
+
+/**
+ * Extracts normalized local links from a markdown document body.
+ *
+ * @param markdownBody - Markdown body to inspect.
+ * @returns Sorted list of unique local link targets with display text.
+ *
+ * @public
+ */
+const extractLocalLinksFromMarkdown = async (markdownBody: string): Promise<LocalMarkdownLink[]> => {
+  const links = new Set<string>()
+  const html = Bun.markdown.html(markdownBody)
+  const rewriter = new HTMLRewriter()
+  const linkTextByTarget = extractLocalLinkTextByTarget(markdownBody)
+
+  for (const selector of ['a', 'img']) {
+    rewriter.on(selector, {
+      element(element) {
+        const attribute = selector === 'a' ? 'href' : 'src'
+        const value = element.getAttribute(attribute)
+        const normalizedLink = value ? normalizeMarkdownLink(value) : null
+        if (normalizedLink) {
+          links.add(normalizedLink)
+        }
+      },
+    })
+  }
+
+  await consumeHtmlRewriteResult(rewriter.transform(html))
+  return [...links].sort().map((value) => ({
+    value,
+    text: linkTextByTarget.get(value) ?? value,
+  }))
+}
+
+/**
+ * Validates local markdown links by resolving each link target relative to a base directory.
+ *
+ * @param options - Base directory and markdown body to validate.
+ * @returns Present and missing local link sets with deterministic ordering.
+ *
+ * @public
+ */
+const validateMarkdownLocalLinks = async ({
+  baseDir,
+  markdownBody,
+  rootRelative = false,
+}: {
+  baseDir: string
+  markdownBody: string
+  rootRelative?: boolean
+}): Promise<MarkdownLocalLinksValidationResult> => {
+  const present = new Map<string, LocalMarkdownLink>()
+  const missing = new Map<string, LocalMarkdownLink>()
+  const links = await extractLocalLinksFromMarkdown(markdownBody)
+
+  for (const link of links) {
+    // When rootRelative, a leading '/' marks a root-relative path (e.g. an OKF
+    // bundle-relative link), resolved against baseDir rather than the filesystem root.
+    const linkPath = rootRelative && link.value.startsWith('/') ? link.value.slice(1) : link.value
+    const absolutePath = resolve(baseDir, linkPath)
+    const file = Bun.file(absolutePath)
+    const key = `${link.value}\u0000${link.text}`
+    if (await file.exists()) {
+      present.set(key, {
+        value: link.value,
+        text: link.text || link.value,
+      })
+      continue
+    }
+
+    missing.set(key, {
+      value: link.value,
+      text: link.text || link.value,
+    })
+  }
+
+  return {
+    present: new Set([...present.values()].sort(sortLocalMarkdownLinks)),
+    missing: new Set([...missing.values()].sort(sortLocalMarkdownLinks)),
+  }
+}
+
+export const MARKDOWN_EXTRACT_LINKS_TOOL_NAME = 'markdown_extract_links'
+export const markdownExtractLinks = useMCPServer((server) => {
+  server.registerTool(
+    MARKDOWN_EXTRACT_LINKS_TOOL_NAME,
+    {
+      description: 'Extract local file references from markdown text.',
+      inputSchema: z.object({
+        markdown: z.string().min(1).describe('markdown text to extract links from'),
+      }),
+      outputSchema: z.object({
+        links: z
+          .array(
+            z.object({
+              value: z.string(),
+              text: z.string(),
+            }),
+          )
+          .describe('sorted list of unique local link targets with display text'),
+        message: z.string().optional().describe('error detail when isError'),
+        isError: z.boolean().optional().describe('true when the operation failed'),
+      }),
+    },
+    async ({ markdown }) => {
+      try {
+        const raw = await extractLocalLinksFromMarkdown(markdown)
+        const output = { links: raw }
+        return {
+          content: [{ type: 'text' as const, text: JSON.stringify(output) }],
+          structuredContent: output,
+        }
+      } catch (err) {
+        const output = { message: `[Error: link extraction failed: ${(err as Error).message}]`, isError: true }
+        return {
+          content: [{ type: 'text' as const, text: JSON.stringify(output) }],
+          structuredContent: output,
+        }
+      }
+    },
+  )
+})
+
+export const MARKDOWN_VALIDATE_LINKS_TOOL_NAME = 'markdown_validate_links'
+export const markdownValidateLinks = useMCPServer((server) => {
+  server.registerTool(
+    MARKDOWN_VALIDATE_LINKS_TOOL_NAME,
+    {
+      description: 'Check that local markdown links resolve to files.',
+      inputSchema: z.object({
+        directory: z.string().min(1).describe('base directory to resolve links against'),
+        markdownBody: z.string().min(1).describe('markdown text to validate links in'),
+        rootRelative: z.boolean().optional().describe('treat leading-slash links as relative to directory'),
+      }),
+      outputSchema: z.object({
+        present: z.array(z.object({ value: z.string(), text: z.string() })),
+        missing: z.array(z.object({ value: z.string(), text: z.string() })),
+        message: z.string().optional().describe('error detail when isError'),
+        isError: z.boolean().optional().describe('true when the operation failed'),
+      }),
+    },
+    async ({ directory, markdownBody, rootRelative }) => {
+      try {
+        const raw = await validateMarkdownLocalLinks({
+          baseDir: directory,
+          markdownBody,
+          rootRelative: rootRelative ?? false,
+        })
+        const output = {
+          present: [...raw.present],
+          missing: [...raw.missing],
+        }
+        return {
+          content: [{ type: 'text' as const, text: JSON.stringify(output) }],
+          structuredContent: output,
+        }
+      } catch (err) {
+        const output = {
+          present: [],
+          missing: [],
+          message: `[Error: link validation failed: ${(err as Error).message}]`,
+          isError: true,
+        }
+        return {
+          content: [{ type: 'text' as const, text: JSON.stringify(output) }],
+          structuredContent: output,
+        }
+      }
+    },
+  )
+})
+
+export const MARKDOWN_FRONTMATTER_TOOL_NAME = 'markdown_frontmatter'
+export const markdownFrontmatter = useMCPServer((server) => {
+  server.registerTool(
+    MARKDOWN_FRONTMATTER_TOOL_NAME,
+    {
+      description: 'Parse YAML frontmatter from markdown text.',
+      inputSchema: z.object({
+        markdown: z.string().min(1).describe('markdown text with YAML frontmatter'),
+        requireBody: z.boolean().optional().describe('when true, body must be non-empty'),
+      }),
+      outputSchema: z.object({
+        frontmatter: z.record(z.string(), z.unknown()).nullable(),
+        body: z.string().nullable(),
+        message: z.string().optional().describe('error detail when isError'),
+        isError: z.boolean().optional().describe('true when the operation failed'),
+      }),
+    },
+    async ({ markdown, requireBody }) => {
+      try {
+        const parsed = parseFrontmatterBlock(markdown)
+        if (!parsed) {
+          // No frontmatter block — echo raw body, no error (matches CLI behavior)
+          const output = { frontmatter: null, body: markdown.trim() }
+          return {
+            content: [{ type: 'text' as const, text: JSON.stringify(output) }],
+            structuredContent: output,
+          }
+        }
+        const body = markdown.slice(parsed.bodyStartIndex).trim()
+        if (requireBody === true && !body) {
+          const output = {
+            frontmatter: null,
+            body: null,
+            message: '[Error: markdown body must not be empty]',
+            isError: true,
+          }
+          return {
+            content: [{ type: 'text' as const, text: JSON.stringify(output) }],
+            structuredContent: output,
+          }
+        }
+        const frontmatter = YAML.parse(parsed.frontmatter) as Record<string, unknown>
+        const output = { frontmatter, body }
+        return {
+          content: [{ type: 'text' as const, text: JSON.stringify(output) }],
+          structuredContent: output,
+        }
+      } catch (_err) {
+        // YAML parse error — echo raw body, no error (matches CLI behavior)
+        const output = { frontmatter: null, body: markdown.trim() }
+        return {
+          content: [{ type: 'text' as const, text: JSON.stringify(output) }],
+          structuredContent: output,
+        }
+      }
+    },
+  )
+})
