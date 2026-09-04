@@ -1,7 +1,8 @@
 import { mkdtemp } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import type { CwdProvision, JsonObject, ToolArgs } from './tool.types.ts'
+import * as z from 'zod'
+import { useMCPServer } from './use-mcp-server.ts'
 
 // ================================================================
 // Limits (mirroring pi's bash tool + read tool conventions)
@@ -11,56 +12,6 @@ import type { CwdProvision, JsonObject, ToolArgs } from './tool.types.ts'
 const MAX_TIMEOUT_SECONDS = 2_147_483 // ≈ int32 ms / 1000
 const MAX_LINES = 2000
 const MAX_BYTES = 50 * 1024
-
-export const inputSchema = {
-  type: 'object',
-  properties: {
-    command: { type: 'string', minLength: 1, description: 'bash command to execute' },
-    timeout: {
-      type: 'integer',
-      minimum: 1,
-      maximum: MAX_TIMEOUT_SECONDS,
-      description: `timeout in seconds (optional, no default; max ${MAX_TIMEOUT_SECONDS} — spawn timeouts are int32 milliseconds)`,
-    },
-  },
-  required: ['command'],
-  additionalProperties: false,
-}
-
-export const outputSchema = {
-  type: 'object',
-  properties: {
-    stdout: { type: 'string' },
-    stderr: { type: 'string' },
-    exitCode: { type: 'integer' },
-    truncated: {
-      type: 'boolean',
-      description: 'true when output exceeded the tail-truncation limits (last 2000 lines / 50KB)',
-    },
-    fullOutputPath: {
-      type: 'string',
-      description: 'absolute path to the untruncated output — present only when truncated',
-    },
-  },
-  required: ['stdout', 'stderr', 'exitCode'],
-  additionalProperties: false,
-}
-
-type BashInput = {
-  command: string
-  timeout?: number
-  /** Provision-time only — never model-facing. */
-  cwd?: string
-  /** Extra env vars layered over the inherited environment (provision-time). */
-  env?: Record<string, string>
-}
-export type BashOutput = {
-  stdout: string
-  stderr: string
-  exitCode: number
-  truncated?: boolean
-  fullOutputPath?: string
-}
 
 /**
  * Resolve the interpreter once. bash is preferred (models emit bash-flavored
@@ -122,11 +73,8 @@ const truncateTail = (text: string): { content: string; truncated: boolean } => 
  * Bun-native timeout kills the process with SIGTERM; a killed run is
  * reported with exitCode -1 and a `timed out` marker in stderr.
  *
- * **cwd/env are provision-time, not model-facing**: `run` accepts them so the
- * provisioner can compose a pinned tool (`run: (input) => bashTool.run({
- * ...input, cwd })`); the model-facing inputSchema deliberately excludes them
- * (a model that picks its own directories is a sandbox hole — Phase 5 policy
- * guards gate any model-facing escape hatch later).
+ * Registered via `useMCPServer` as the `bash` MCP tool. `cwd` is a required
+ * input field — always provided by the provisioner, never model-chosen.
  *
  * **Full-output spill**: when truncation fires, the complete output is
  * written to a temp file under an mkdtemp'd `$TMPDIR` directory and its
@@ -137,86 +85,112 @@ const truncateTail = (text: string): { content: string; truncated: boolean } => 
  * — matches pi); no sandbox/policy run-composition hook (Phase 5/7 — policy
  * packs wrap `run`); Windows requires bash (Git Bash) on PATH.
  */
-export const run = async (input: JsonObject & CwdProvision): Promise<{ output: BashOutput }> => {
-  // Args are Ajv-validated at dispatch and guard-blocked at selection before
-  // this runs — the cast is the documented trust boundary.
-  const { command, timeout, cwd, env: extraEnv } = input as BashInput & CwdProvision
 
-  try {
-    const spillDir = await mkdtemp(join(tmpdir(), 'bash-spill-'))
+export const BASH_NAME = 'bash'
+export const bash = useMCPServer((server) => {
+  server.registerTool(
+    BASH_NAME,
+    {
+      description:
+        'Execute a bash command in the current working directory. Returns stdout, stderr, and exit code. ' +
+        `Output is tail-truncated to the last ${MAX_LINES} lines or ${MAX_BYTES / 1024}KB (whichever is hit first). ` +
+        `Optional timeout in seconds (max ${MAX_TIMEOUT_SECONDS}); a timed-out command reports exitCode -1.`,
+      inputSchema: z.object({
+        command: z.string().min(1).describe('bash command to execute'),
+        cwd: z.string().describe("the tool's provisioned cwd"),
+        env: z.record(z.string(), z.string()).optional(),
+        timeout: z
+          .number()
+          .int()
+          .min(1)
+          .max(MAX_TIMEOUT_SECONDS)
+          .optional()
+          .describe(`timeout in seconds (optional, no default; max ${MAX_TIMEOUT_SECONDS})`),
+      }),
+      outputSchema: z.object({
+        stdout: z.string(),
+        stderr: z.string(),
+        exitCode: z.number().int(),
+        truncated: z
+          .boolean()
+          .optional()
+          .describe('true when output exceeded the tail-truncation limits (last 2000 lines / 50KB)'),
+        fullOutputPath: z
+          .string()
+          .optional()
+          .describe('absolute path to the untruncated output — present only when truncated'),
+      }),
+    },
+    async ({ command, timeout, cwd, env: extraEnv }) => {
+      try {
+        const spillDir = await mkdtemp(join(tmpdir(), 'bash-spill-'))
 
-    const proc = Bun.spawn([shell, '-c', command], {
-      cwd,
-      env: extraEnv ? { ...process.env, ...extraEnv } : undefined,
-      stdin: 'ignore',
-      stdout: 'pipe',
-      stderr: 'pipe',
-      ...(timeout === undefined ? {} : { timeout: timeout * 1000 }),
-    })
+        const proc = Bun.spawn([shell, '-c', command], {
+          cwd,
+          env: extraEnv ? { ...process.env, ...extraEnv } : undefined,
+          stdin: 'ignore',
+          stdout: 'pipe',
+          stderr: 'pipe',
+          ...(timeout === undefined ? {} : { timeout: timeout * 1000 }),
+        })
 
-    const [rawStdout, rawStderr] = await Promise.all([
-      new Response(proc.stdout).text(),
-      new Response(proc.stderr).text(),
-    ])
-    const exitCode = await proc.exited
+        const [rawStdout, rawStderr] = await Promise.all([
+          new Response(proc.stdout).text(),
+          new Response(proc.stderr).text(),
+        ])
+        const exitCode = await proc.exited
 
-    /** Tail-truncate; on truncation, spill the full output to the spill dir. */
-    const capture = async (raw: string) => {
-      const tail = truncateTail(sanitize(raw))
-      if (!tail.truncated) return { content: tail.content, truncated: false, fullOutputPath: undefined }
-      const spillPath = join(spillDir, 'output.log')
-      await Bun.write(spillPath, raw)
-      return { ...tail, fullOutputPath: spillPath }
-    }
+        /** Tail-truncate; on truncation, spill the full output to the spill dir. */
+        const capture = async (raw: string) => {
+          const tail = truncateTail(sanitize(raw))
+          if (!tail.truncated) return { content: tail.content, truncated: false, fullOutputPath: undefined }
+          const spillPath = join(spillDir, 'output.log')
+          await Bun.write(spillPath, raw)
+          return { ...tail, fullOutputPath: spillPath }
+        }
 
-    // Native timeout kills with SIGTERM — surface it as the timeout condition
-    if (timeout !== undefined && proc.signalCode !== null) {
-      const out = await capture(rawStdout)
-      const err = await capture(rawStderr)
-      return {
-        output: {
-          stdout: out.content,
-          stderr: `${err.content}\nCommand timed out after ${timeout} seconds (${proc.signalCode})`.trim(),
+        // Native timeout kills with SIGTERM — surface it as the timeout condition
+        if (timeout !== undefined && proc.signalCode !== null) {
+          const out = await capture(rawStdout)
+          const err = await capture(rawStderr)
+          const output = {
+            stdout: out.content,
+            stderr: `${err.content}\nCommand timed out after ${timeout} seconds (${proc.signalCode})`.trim(),
+            exitCode: -1,
+            truncated: out.truncated || err.truncated || undefined,
+            fullOutputPath: out.fullOutputPath ?? err.fullOutputPath,
+          }
+          return {
+            content: [{ type: 'text', text: JSON.stringify(output) }],
+            structuredContent: output,
+          }
+        }
+
+        const stdoutTail = await capture(rawStdout)
+        const stderrTail = await capture(rawStderr)
+        const output = {
+          stdout: stdoutTail.content,
+          stderr: stderrTail.content,
+          exitCode: exitCode ?? -1,
+          truncated: stdoutTail.truncated || stderrTail.truncated || undefined,
+          fullOutputPath: stdoutTail.fullOutputPath ?? stderrTail.fullOutputPath,
+        }
+        return {
+          content: [{ type: 'text', text: JSON.stringify(output) }],
+          structuredContent: output,
+        }
+      } catch (err) {
+        // Catch unexpected spawn errors (command not found, cwd deleted, etc.)
+        const output = {
+          stdout: '',
+          stderr: `[Error executing command: ${(err as Error).message}]`,
           exitCode: -1,
-          truncated: out.truncated || err.truncated || undefined,
-          fullOutputPath: out.fullOutputPath ?? err.fullOutputPath,
-        },
+        }
+        return {
+          content: [{ type: 'text', text: JSON.stringify(output) }],
+          structuredContent: output,
+        }
       }
-    }
-
-    const stdoutTail = await capture(rawStdout)
-    const stderrTail = await capture(rawStderr)
-
-    return {
-      output: {
-        stdout: stdoutTail.content,
-        stderr: stderrTail.content,
-        exitCode: exitCode ?? -1,
-        truncated: stdoutTail.truncated || stderrTail.truncated || undefined,
-        fullOutputPath: stdoutTail.fullOutputPath ?? stderrTail.fullOutputPath,
-      },
-    }
-  } catch (err) {
-    // Catch unexpected spawn errors (command not found, cwd deleted, etc.)
-    return {
-      output: {
-        stdout: '',
-        stderr: `[Error executing command: ${(err as Error).message}]`,
-        exitCode: -1,
-      },
-    }
-  }
-}
-
-const bashTool: ToolArgs = Object.freeze({
-  name: 'bash',
-  description:
-    'Execute a bash command in the current working directory. Returns stdout, stderr, and exit code. ' +
-    `Output is tail-truncated to the last ${MAX_LINES} lines or ${MAX_BYTES / 1024}KB (whichever is hit first). ` +
-    `Optional timeout in seconds (max ${MAX_TIMEOUT_SECONDS}); a timed-out command reports exitCode -1.`,
-  inputSchema,
-  outputSchema,
-  run,
+    },
+  )
 })
-
-export default bashTool

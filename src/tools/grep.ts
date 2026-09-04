@@ -1,14 +1,16 @@
 import * as path from 'node:path'
-import type { CwdProvision, JsonObject, ToolArgs } from './tool.types.ts'
+import * as z from 'zod'
+import { useMCPServer } from './use-mcp-server.ts'
 
 export const inputSchema = {
   type: 'object',
   properties: {
+    cwd: { type: 'string', minLength: 1, description: "the tool's provisioned cwd" },
     pattern: { type: 'string', minLength: 1, description: 'pattern to search for' },
-    path: { type: 'string', description: "directory to search (defaults to the tool's provisioned cwd)" },
+    dir: { type: 'string', description: "directory to search (defaults to the tool's provisioned cwd)" },
     include: { type: 'string', description: 'glob filter for file names (e.g. "*.ts")' },
   },
-  required: ['pattern'],
+  required: ['pattern', 'cwd'],
   additionalProperties: false,
 }
 
@@ -29,7 +31,6 @@ export const outputSchema = {
   additionalProperties: false,
 }
 
-type GrepInput = { pattern: string; path?: string; include?: string }
 type GrepOutput = {
   matches: Array<{ path: string; line: number; text: string }>
   truncated: boolean
@@ -45,26 +46,20 @@ const MAX_MATCHES = 200
  * 100 files / 1000 lines per file. Upgrade path: walk + glob filter in
  * fallback.
  */
-export const run = async (input: JsonObject & CwdProvision): Promise<{ output: GrepOutput }> => {
-  // Args are Ajv-validated at dispatch and guard-blocked at selection.
-  const { pattern, path: searchPath, include, cwd } = input as GrepInput & CwdProvision
-  const resolvedSearch = path.resolve(cwd ?? process.cwd(), searchPath ?? '.')
 
-  const rgPath = Bun.which('rg')
+export const GREP_TOOL_NAME = 'grep'
 
-  if (rgPath) {
-    return { output: await runWithRg(pattern, resolvedSearch, include, rgPath) }
-  }
-
-  return { output: await runFallback(pattern, resolvedSearch, include) }
-}
-
-const runWithRg = async (
-  pattern: string,
-  searchPath: string,
-  include: string | undefined,
-  rgPath: string,
-): Promise<GrepOutput> => {
+const runWithRg = async ({
+  pattern,
+  searchPath,
+  include,
+  rgPath,
+}: {
+  pattern: string
+  searchPath: string
+  include: string | undefined
+  rgPath: string
+}): Promise<GrepOutput> => {
   const args = ['-n', '--no-heading', '--color', 'never']
   if (include) {
     args.push('-g', include)
@@ -103,7 +98,15 @@ const runWithRg = async (
   }
 }
 
-const runFallback = async (pattern: string, searchPath: string, include: string | undefined): Promise<GrepOutput> => {
+const runFallback = async ({
+  pattern,
+  searchPath,
+  include,
+}: {
+  pattern: string
+  searchPath: string
+  include: string | undefined
+}): Promise<GrepOutput> => {
   const dir = searchPath
 
   // rg's -g matches files recursively throughout the tree. Bun.Glob
@@ -150,12 +153,73 @@ const runFallback = async (pattern: string, searchPath: string, include: string 
   return { matches, truncated: matches.length >= MAX_MATCHES }
 }
 
-const grepTool: ToolArgs = Object.freeze({
-  name: 'grep',
-  description: 'Search for a pattern in files. Prefers ripgrep (rg) when available; falls back to a JS line scanner.',
-  inputSchema,
-  outputSchema,
-  run,
-})
+/**
+ * Search for a pattern in files using ripgrep (rg) when available, with a JS
+ * line-scanner fallback. Returns matching lines with file path, line number,
+ * and text.
+ *
+ * Registered via `useMCPServer` as the `grep` MCP tool. `cwd` is a required
+ * input field — provided by the provisioner. Returns an info message when no
+ * matches are found, and an error result on failure.
+ */
+export const grep = useMCPServer((server) => {
+  server.registerTool(
+    GREP_TOOL_NAME,
+    {
+      description:
+        'Search for a pattern in files. Prefers ripgrep (rg) when available; falls back to a JS line scanner.',
+      inputSchema: z.object({
+        pattern: z.string().min(1).describe('pattern to search for'),
+        cwd: z.string().describe("the tool's provisioned cwd"),
+        dir: z.string().optional().describe("directory to search (defaults to the tool's provisioned cwd)"),
+        include: z.string().optional().describe('glob filter for file names (e.g. "*.ts")'),
+      }),
+      outputSchema: z.object({
+        matches: z.array(
+          z.object({
+            path: z.string(),
+            line: z.number().int(),
+            text: z.string(),
+          }),
+        ),
+        truncated: z.boolean(),
+        message: z.string().optional().describe('error detail when isError — states what failed'),
+        isError: z.boolean().optional().describe('true when the operation failed'),
+      }),
+    },
+    async ({ pattern, dir, include, cwd }) => {
+      try {
+        const resolvedSearch = path.resolve(cwd, dir ?? '.')
+        const rgPath = Bun.which('rg')
 
-export default grepTool
+        let output: GrepOutput & { message?: string; isError?: boolean }
+
+        if (rgPath) {
+          output = await runWithRg({ pattern, searchPath: resolvedSearch, include, rgPath })
+        } else {
+          output = await runFallback({ pattern, searchPath: resolvedSearch, include })
+        }
+
+        if (output.matches.length === 0) {
+          output.message = `[Info: no matches found for pattern "${pattern}" in ${resolvedSearch}]`
+        }
+
+        return {
+          content: [{ type: 'text' as const, text: JSON.stringify(output) }],
+          structuredContent: output,
+        }
+      } catch (err) {
+        const output = {
+          matches: [],
+          truncated: false,
+          message: `[Error: failed to search: ${(err as Error).message}]`,
+          isError: true,
+        }
+        return {
+          content: [{ type: 'text' as const, text: JSON.stringify(output) }],
+          structuredContent: output,
+        }
+      }
+    },
+  )
+})

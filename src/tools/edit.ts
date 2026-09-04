@@ -1,5 +1,6 @@
 import * as path from 'node:path'
-import type { CwdProvision, JsonObject, ToolArgs } from './tool.types.ts'
+import * as z from 'zod'
+import { useMCPServer } from './use-mcp-server.ts'
 
 // ----------------------------------------------------------------
 // Helpers borrowed from pi's edit-diff.ts semantics (Bun-native rewrite)
@@ -163,147 +164,171 @@ export const outputSchema = {
   additionalProperties: false,
 }
 
-type EditInput = { path: string; old_text: string; new_text: string; replace_all?: boolean }
-type EditOutput = {
-  content?: string
-  patch: string
-  replacements: number
-  isError?: boolean
-}
-
-// ----------------------------------------------------------------
-// Run
-// ----------------------------------------------------------------
-
-export const run = async (input: JsonObject & CwdProvision): Promise<{ output: EditOutput }> => {
-  // Args are Ajv-validated at dispatch and guard-blocked at selection — the
-  // cast is the documented trust boundary.
-  const { path: filePath, old_text, new_text, replace_all, cwd } = input as EditInput & CwdProvision
-  const resolvedPath = path.resolve(cwd ?? process.cwd(), filePath)
-
-  // Read file
-  const bunFile = Bun.file(resolvedPath)
-  const exists = await bunFile.exists()
-  if (!exists) {
-    return {
-      output: { patch: '', replacements: 0, content: `[Error: file not found: ${resolvedPath}]`, isError: true },
-    }
-  }
-
-  let text: string
-  try {
-    text = await bunFile.text()
-  } catch {
-    return {
-      output: { patch: '', replacements: 0, content: `[Error: could not read file: ${resolvedPath}]`, isError: true },
-    }
-  }
-
-  // Detect and normalize line endings
-  const lineEnding = detectLineEnding(text)
-  const normalized = normalizeToLF(text)
-
-  // Normalize old_text / new_text too
-  const normOld = normalizeToLF(old_text)
-  const normNew = normalizeToLF(new_text)
-
-  // Count occurrences
-  let searchFrom = 0
-  const matchPositions: number[] = []
-  while (true) {
-    const idx = normalized.indexOf(normOld, searchFrom)
-    if (idx === -1) break
-    matchPositions.push(idx)
-    searchFrom = idx + normOld.length
-  }
-
-  if (matchPositions.length === 0) {
-    return {
-      output: {
-        patch: '',
-        replacements: 0,
-        content: `[Error: could not find the exact text in ${resolvedPath}. The old_text must match exactly.]`,
-        isError: true,
-      },
-    }
-  }
-
-  if (!replace_all && matchPositions.length > 1) {
-    return {
-      output: {
-        patch: '',
-        replacements: 0,
-        content: `[Error: found ${matchPositions.length} occurrences of the text in ${resolvedPath}. The text must be unique. Use replace_all for multiple matches.]`,
-        isError: true,
-      },
-    }
-  }
-
-  // Build the new content by applying substitutions (right-to-left to
-  // keep offsets stable)
-  let newContent = normalized
-
-  const sortedPositions = [...matchPositions].sort((a, b) => b - a)
-  for (const pos of sortedPositions) {
-    newContent = newContent.slice(0, pos) + normNew + newContent.slice(pos + normOld.length)
-  }
-
-  // Build patch
-  const oldLines = splitLinesPreserving(normalized)
-
-  // Map replacement positions to line ranges
-  const ranges: TextRange[] = []
-  const sortedForPatch = [...matchPositions].sort((a, b) => a - b)
-  for (const pos of sortedForPatch) {
-    // First line containing the match (0-indexed, inclusive)
-    let startLine = 0
-    let charPos = 0
-    while (startLine < oldLines.length && charPos + oldLines[startLine]!.length <= pos) {
-      charPos += oldLines[startLine]!.length
-      startLine++
-    }
-    const prefix = normalized.slice(charPos, pos)
-
-    // Last line containing the match (0-indexed, inclusive)
-    const matchEnd = pos + normOld.length
-    let endLine = startLine
-    let endChar = charPos
-    while (endLine < oldLines.length && endChar + oldLines[endLine]!.length < matchEnd) {
-      endChar += oldLines[endLine]!.length
-      endLine++
-    }
-    const suffix = normalized.slice(matchEnd, endChar + oldLines[endLine]!.length)
-
-    ranges.push({
-      startLine,
-      endLine,
-      oldLines: oldLines.slice(startLine, endLine + 1),
-      newLines: splitLinesPreserving(prefix + normNew + suffix),
-    })
-  }
-
-  const patch = buildPatch(oldLines, ranges)
-
-  // Restore original line endings and write
-  const finalContent = restoreLineEndings(newContent, lineEnding)
-  await Bun.write(resolvedPath, finalContent)
-
-  return {
-    output: {
-      content: finalContent,
-      patch,
-      replacements: matchPositions.length,
+export const EDIT_TOOL_NAME = 'edit'
+/**
+ * Edit a file using exact text replacement. old_text must match exactly once
+ * unless replace_all is true. Returns a unified diff patch and writes the
+ * result to disk.
+ *
+ * Registered via `useMCPServer` as the `edit` MCP tool. `cwd` is a required
+ * input field — provided by the provisioner.
+ */
+export const binary = useMCPServer((server) => {
+  server.registerTool(
+    EDIT_TOOL_NAME,
+    {
+      description:
+        'Edit a file using exact text replacement. old_text must match exactly once unless replace_all is true. Returns a unified diff patch.',
+      inputSchema: z.object({
+        path: z.string().describe("file path — absolute, or relative to the tool's provisioned cwd"),
+        old_text: z.string().min(1).describe('exact text to replace'),
+        new_text: z.string().describe('replacement text'),
+        replace_all: z.boolean().optional().describe('when true, replaces ALL occurrences of old_text'),
+        cwd: z.string().describe("the tool's provisioned cwd"),
+      }),
+      outputSchema: z.object({
+        content: z.string().optional().describe('the new file content'),
+        patch: z.string().describe('unified diff patch of the change'),
+        replacements: z.number().int().describe('number of replacements made'),
+        isError: z.boolean().optional().describe('true when the result is an error rather than a successful edit'),
+      }),
     },
-  }
-}
+    async ({ path: filePath, old_text, new_text, replace_all, cwd }) => {
+      const resolvedPath = path.resolve(cwd, filePath)
 
-const editTool: ToolArgs = Object.freeze({
-  name: 'edit',
-  description:
-    'Edit a file using exact text replacement. old_text must match exactly once unless replace_all is true. Returns a unified diff patch.',
-  inputSchema,
-  outputSchema,
-  run,
+      // Read file
+      const bunFile = Bun.file(resolvedPath)
+      const exists = await bunFile.exists()
+      if (!exists) {
+        const output = {
+          patch: '',
+          replacements: 0,
+          content: `[Error: file not found: ${resolvedPath}]`,
+          isError: true,
+        }
+        return {
+          content: [{ type: 'text' as const, text: JSON.stringify(output) }],
+          structuredContent: output,
+        }
+      }
+
+      let text: string
+      try {
+        text = await bunFile.text()
+      } catch {
+        const output = {
+          patch: '',
+          replacements: 0,
+          content: `[Error: could not read file: ${resolvedPath}]`,
+          isError: true,
+        }
+        return {
+          content: [{ type: 'text' as const, text: JSON.stringify(output) }],
+          structuredContent: output,
+        }
+      }
+
+      // Detect and normalize line endings
+      const lineEnding = detectLineEnding(text)
+      const normalized = normalizeToLF(text)
+
+      // Normalize old_text / new_text too
+      const normOld = normalizeToLF(old_text)
+      const normNew = normalizeToLF(new_text)
+
+      // Count occurrences
+      let searchFrom = 0
+      const matchPositions: number[] = []
+      while (true) {
+        const idx = normalized.indexOf(normOld, searchFrom)
+        if (idx === -1) break
+        matchPositions.push(idx)
+        searchFrom = idx + normOld.length
+      }
+
+      if (matchPositions.length === 0) {
+        const output = {
+          patch: '',
+          replacements: 0,
+          content: `[Error: could not find the exact text in ${resolvedPath}. The old_text must match exactly.]`,
+          isError: true,
+        }
+        return {
+          content: [{ type: 'text' as const, text: JSON.stringify(output) }],
+          structuredContent: output,
+        }
+      }
+
+      if (!replace_all && matchPositions.length > 1) {
+        const output = {
+          patch: '',
+          replacements: 0,
+          content: `[Error: found ${matchPositions.length} occurrences of the text in ${resolvedPath}. The text must be unique. Use replace_all for multiple matches.]`,
+          isError: true,
+        }
+        return {
+          content: [{ type: 'text' as const, text: JSON.stringify(output) }],
+          structuredContent: output,
+        }
+      }
+
+      // Build the new content by applying substitutions (right-to-left to
+      // keep offsets stable)
+      let newContent = normalized
+
+      const sortedPositions = [...matchPositions].sort((a, b) => b - a)
+      for (const pos of sortedPositions) {
+        newContent = newContent.slice(0, pos) + normNew + newContent.slice(pos + normOld.length)
+      }
+
+      // Build patch
+      const oldLines = splitLinesPreserving(normalized)
+
+      // Map replacement positions to line ranges
+      const ranges: TextRange[] = []
+      const sortedForPatch = [...matchPositions].sort((a, b) => a - b)
+      for (const pos of sortedForPatch) {
+        // First line containing the match (0-indexed, inclusive)
+        let startLine = 0
+        let charPos = 0
+        while (startLine < oldLines.length && charPos + oldLines[startLine]!.length <= pos) {
+          charPos += oldLines[startLine]!.length
+          startLine++
+        }
+        const prefix = normalized.slice(charPos, pos)
+
+        // Last line containing the match (0-indexed, inclusive)
+        const matchEnd = pos + normOld.length
+        let endLine = startLine
+        let endChar = charPos
+        while (endLine < oldLines.length && endChar + oldLines[endLine]!.length < matchEnd) {
+          endChar += oldLines[endLine]!.length
+          endLine++
+        }
+        const suffix = normalized.slice(matchEnd, endChar + oldLines[endLine]!.length)
+
+        ranges.push({
+          startLine,
+          endLine,
+          oldLines: oldLines.slice(startLine, endLine + 1),
+          newLines: splitLinesPreserving(prefix + normNew + suffix),
+        })
+      }
+
+      const patch = buildPatch(oldLines, ranges)
+
+      // Restore original line endings and write
+      const finalContent = restoreLineEndings(newContent, lineEnding)
+      await Bun.write(resolvedPath, finalContent)
+      const output = {
+        content: finalContent,
+        patch,
+        replacements: matchPositions.length,
+      }
+      return {
+        content: [{ type: 'text' as const, text: JSON.stringify(output) }],
+        structuredContent: output,
+      }
+    },
+  )
 })
-
-export default editTool

@@ -1,29 +1,12 @@
-import { describe, expect, test } from 'bun:test'
+import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
 import * as path from 'node:path'
-import { ImageContentSchema, MessageItemParamSchema } from '../../agent/open-responses.schemas.ts'
-import { compileValidator } from '../../main/behavioral.utils.ts'
-import binaryTool, { DEFAULT_MAX_BINARY_BYTES, detectMimeType } from '../binary.ts'
+import { Client } from '@modelcontextprotocol/client'
+import { InMemoryTransport, McpServer } from '@modelcontextprotocol/server'
+import { BINARY_TOOL_NAME, binary, DEFAULT_MAX_BINARY_BYTES, detectMimeType } from '../binary.ts'
 import { tempDir } from './helpers.ts'
 
-type BinaryOutput = {
-  mimeType: string
-  base64: string
-  width?: number
-  height?: number
-  imageFormat?: string
-  bytesRead: number
-  message?: string
-  isError?: boolean
-}
-
-/** Run the binary tool and unwrap its { output } envelope. */
-const runBinary = async (input: Record<string, unknown>): Promise<BinaryOutput> => {
-  const { output } = await binaryTool.run(input)
-  return output as BinaryOutput
-}
-
 // ================================================================
-// MIME detection — offset-aware magic bytes
+// MIME detection — offset-aware magic bytes (pure function tests)
 // ================================================================
 
 describe('detectMimeType', () => {
@@ -44,7 +27,6 @@ describe('detectMimeType', () => {
   })
 
   test('detects WebP from RIFF+WEBP at offset 8', () => {
-    // RIFF header + WEBP tag at offset 8
     const bytes = new Uint8Array(20)
     bytes[0] = 0x52 // R
     bytes[1] = 0x49 // I
@@ -58,8 +40,6 @@ describe('detectMimeType', () => {
   })
 
   test('detects BMP with structural prefix check', () => {
-    // BMP starts with "BM" and bytes 2-4 are the file size — plain text "BM" at
-    // start is excluded by requiring a reasonable size (≥14 bytes for header)
     const bytes = new Uint8Array(30)
     bytes[0] = 0x42 // B
     bytes[1] = 0x4d // M
@@ -116,7 +96,6 @@ describe('detectMimeType', () => {
 
   // --- Video formats ---
   test('detects MP4 from ftyp at offset 4', () => {
-    // ftyp box: length 24 (0x18), 'ftyp' at offset 4
     const bytes = new Uint8Array(16)
     bytes[0] = 0x00
     bytes[1] = 0x00
@@ -230,46 +209,88 @@ describe('detectMimeType', () => {
 })
 
 // ================================================================
-// Binary tool — run function
+// Binary tool — exercised through an in-process MCP client/server
 // ================================================================
 
-describe('binary tool', () => {
-  test('reads a real small JPEG file correctly', async () => {
-    // Minimal valid JPEG (65 bytes) — SOI + APP0 + DQT + SOF0 + SOS + EOI
-    const jpegBytes = new Uint8Array([
-      0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10, 0x4a, 0x46, 0x49, 0x46, 0x00, 0x01, 0x01, 0x00, 0x00, 0x01, 0x00, 0x01, 0x00,
-      0x00, 0xff, 0xdb, 0x00, 0x43, 0x00, 0x08, 0x06, 0x06, 0x07, 0x06, 0x05, 0x08, 0x07, 0x07, 0x07, 0x09, 0x09, 0x08,
-      0x0a, 0x0c, 0x14, 0x0d, 0x0c, 0x0b, 0x0b, 0x0c, 0x19, 0x12, 0x13, 0x0f, 0x14, 0x1d, 0x1a, 0x1f, 0x1e, 0x1d, 0x1a,
-      0x1c, 0x1c, 0x20, 0x24, 0x2e, 0x27, 0x20, 0x22, 0x2c, 0x23, 0x1c, 0x1c, 0x28, 0x37, 0x29, 0x2c, 0x30, 0x31, 0x34,
-      0x34, 0x34, 0x1f, 0x27, 0x39, 0x3d, 0x38, 0x32, 0x3c, 0x2e, 0x33, 0x34, 0x32, 0xff, 0xc0, 0x00, 0x0b, 0x08, 0x00,
-      0x01, 0x00, 0x01, 0x01, 0x11, 0x00, 0x03, 0x00, 0x00, 0x00, 0x00, 0xff, 0xc4, 0x00, 0x1f, 0x00, 0x00, 0x01, 0x05,
-      0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06,
-      0x07, 0x08, 0x09, 0x0a, 0x0b, 0xff, 0xda, 0x00, 0x08, 0x01, 0x01, 0x00, 0x00, 0x3f, 0x00, 0xfe, 0x00, 0x00,
-    ])
+let server: McpServer
+let client: Client
+let cleanupClosable: (() => Promise<void>) | undefined
 
+const setupServer = async () => {
+  server = new McpServer({ name: 'test', version: '0.0.0' })
+  binary(server)
+
+  const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair()
+  await server.connect(serverTransport)
+
+  client = new Client({ name: 'test-client', version: '0.0.0' }, { capabilities: {} })
+  await client.connect(clientTransport)
+
+  cleanupClosable = async () => {
+    await client.close()
+  }
+}
+
+const callBinary = async (args: Record<string, unknown>) => {
+  const result = await client.callTool({ name: BINARY_TOOL_NAME, arguments: args })
+  return result
+}
+
+type BinaryToolOutput = {
+  mimeType: string
+  base64: string
+  width?: number
+  height?: number
+  imageFormat?: string
+  bytesRead: number
+  message?: string
+  isError?: boolean
+}
+
+describe('binary tool', () => {
+  beforeEach(async () => {
+    await setupServer()
+  })
+
+  afterEach(async () => {
+    await cleanupClosable?.()
+  })
+
+  test('listTools includes binary', async () => {
+    const { tools } = await client.listTools()
+    const tool = tools.find((t) => t.name === BINARY_TOOL_NAME)
+    expect(tool).toBeDefined()
+    expect(tool!.description).toContain('Read a binary file')
+  })
+
+  test('reads a real small JPEG file correctly', async () => {
+    const fixturePath = path.join(import.meta.dir, 'fixtures', '1x1.jpg')
+    const jpegBytes = await Bun.file(fixturePath).bytes()
     const { dir, cleanup } = await tempDir({})
     const filePath = path.join(dir, 'test.jpg')
     await Bun.write(filePath, jpegBytes)
 
     try {
-      const result = await runBinary({ path: filePath })
+      const result = await callBinary({ path: filePath, cwd: process.cwd() })
+      const data = result.structuredContent as BinaryToolOutput
 
-      expect(result.isError).toBeUndefined()
-      expect(result.mimeType).toBe('image/jpeg')
-      expect(typeof result.base64).toBe('string')
-      expect(result.base64.length).toBeGreaterThan(0)
-      expect(result.bytesRead).toBe(jpegBytes.length)
+      expect(data.isError).toBeUndefined()
+      expect(data.mimeType).toBe('image/jpeg')
+      expect(typeof data.base64).toBe('string')
+      expect(data.base64.length).toBeGreaterThan(0)
+      expect(data.bytesRead).toBe(jpegBytes.length)
 
-      // Data-URI readiness: base64 should be the plain encoded value
       const expectedBase64 = Buffer.from(jpegBytes).toString('base64')
-      expect(result.base64).toBe(expectedBase64)
+      expect(data.base64).toBe(expectedBase64)
+      expect(data.width).toBe(1)
+      expect(data.height).toBe(1)
+      expect(data.imageFormat).toBe('jpeg')
     } finally {
       await cleanup()
     }
   })
 
   test('reads a PNG file and returns image dimensions', async () => {
-    // Minimal 1x1 PNG (67 bytes)
     const pngBytes = new Uint8Array([
       0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x00, 0x00, 0x0d, 0x49, 0x48, 0x44, 0x52, 0x00, 0x00, 0x00,
       0x01, 0x00, 0x00, 0x00, 0x01, 0x08, 0x02, 0x00, 0x00, 0x00, 0x90, 0x77, 0x53, 0xde, 0x00, 0x00, 0x00, 0x0c, 0x49,
@@ -282,57 +303,55 @@ describe('binary tool', () => {
     await Bun.write(filePath, pngBytes)
 
     try {
-      const result = await runBinary({ path: filePath })
+      const result = await callBinary({ path: filePath, cwd: process.cwd() })
+      const data = result.structuredContent as BinaryToolOutput
 
-      expect(result.isError).toBeUndefined()
-      expect(result.mimeType).toBe('image/png')
-      expect(typeof result.base64).toBe('string')
-      expect(result.bytesRead).toBe(pngBytes.length)
-
-      // Image dimensions should be present for a valid PNG
-      expect(result.width).toBe(1)
-      expect(result.height).toBe(1)
-      expect(result.imageFormat).toBe('png')
+      expect(data.isError).toBeUndefined()
+      expect(data.mimeType).toBe('image/png')
+      expect(typeof data.base64).toBe('string')
+      expect(data.bytesRead).toBe(pngBytes.length)
+      expect(data.width).toBe(1)
+      expect(data.height).toBe(1)
+      expect(data.imageFormat).toBe('png')
     } finally {
       await cleanup()
     }
   })
 
   test('file not found returns isError with message', async () => {
-    const result = await runBinary({ path: '/tmp/nonexistent-binary-xyz-123' })
-    expect(result.isError).toBe(true)
-    expect(result.message).toContain('not found')
-    expect(result.mimeType).toBe('application/octet-stream')
-    expect(result.bytesRead).toBe(0)
-    expect(result.base64).toBe('')
+    const result = await callBinary({ path: '/tmp/nonexistent-binary-xyz-123', cwd: process.cwd() })
+    const data = result.structuredContent as BinaryToolOutput
+    expect(data.isError).toBe(true)
+    expect(data.message).toContain('not found')
+    expect(data.mimeType).toBe('application/octet-stream')
+    expect(data.bytesRead).toBe(0)
+    expect(data.base64).toBe('')
   })
 
   test('directory path returns isError with message', async () => {
-    // Use process cwd as a directory fixture
-    const result = await runBinary({ path: process.cwd() })
-    expect(result.isError).toBe(true)
-    expect(result.message).toContain('directory')
-    expect(result.bytesRead).toBe(0)
-    expect(result.base64).toBe('')
+    const result = await callBinary({ path: process.cwd(), cwd: process.cwd() })
+    const data = result.structuredContent as BinaryToolOutput
+    expect(data.isError).toBe(true)
+    expect(data.message).toContain('directory')
+    expect(data.bytesRead).toBe(0)
+    expect(data.base64).toBe('')
   })
 
   test('file over default ceiling returns isError', async () => {
-    // Write a file larger than DEFAULT_MAX_BINARY_BYTES
     const { dir, cleanup } = await tempDir({})
     const filePath = path.join(dir, 'large.bin')
     const largeBytes = new Uint8Array(DEFAULT_MAX_BINARY_BYTES + 1)
     largeBytes.fill(0x00)
-    // Make it look like octet-stream
     await Bun.write(filePath, largeBytes)
 
     try {
-      const result = await runBinary({ path: filePath })
-      expect(result.isError).toBe(true)
-      expect(result.mimeType).toBe('application/octet-stream')
-      expect(result.bytesRead).toBe(0)
-      expect(result.base64).toBe('')
-      // Error message must name the limit (Phase 7 declared-capabilities principle)
-      expect(result.message).toContain(String(DEFAULT_MAX_BINARY_BYTES))
+      const result = await callBinary({ path: filePath, cwd: process.cwd() })
+      const data = result.structuredContent as BinaryToolOutput
+      expect(data.isError).toBe(true)
+      expect(data.mimeType).toBe('application/octet-stream')
+      expect(data.bytesRead).toBe(0)
+      expect(data.base64).toBe('')
+      expect(data.message).toContain(String(DEFAULT_MAX_BINARY_BYTES))
     } finally {
       await cleanup()
     }
@@ -346,10 +365,11 @@ describe('binary tool', () => {
     await Bun.write(filePath, smallBytes)
 
     try {
-      const result = await runBinary({ path: filePath })
-      expect(result.isError).toBeUndefined()
-      expect(result.bytesRead).toBe(128)
-      expect(result.base64).toBe(Buffer.from(smallBytes).toString('base64'))
+      const result = await callBinary({ path: filePath, cwd: process.cwd() })
+      const data = result.structuredContent as BinaryToolOutput
+      expect(data.isError).toBeUndefined()
+      expect(data.bytesRead).toBe(128)
+      expect(data.base64).toBe(Buffer.from(smallBytes).toString('base64'))
     } finally {
       await cleanup()
     }
@@ -363,10 +383,10 @@ describe('binary tool', () => {
     await Bun.write(filePath, mediumBytes)
 
     try {
-      // Pass provision-time maxBytes of 256 — file is 512 bytes, should be rejected
-      const result = await runBinary({ path: filePath, maxBytes: 256 })
-      expect(result.isError).toBe(true)
-      expect(result.bytesRead).toBe(0)
+      const result = await callBinary({ path: filePath, maxBytes: 256, cwd: process.cwd() })
+      const data = result.structuredContent as BinaryToolOutput
+      expect(data.isError).toBe(true)
+      expect(data.bytesRead).toBe(0)
     } finally {
       await cleanup()
     }
@@ -380,117 +400,18 @@ describe('binary tool', () => {
     await Bun.write(filePath, smallBytes)
 
     try {
-      const result = await runBinary({ path: filePath, maxBytes: 256 })
-      expect(result.isError).toBeUndefined()
-      expect(result.bytesRead).toBe(100)
+      const result = await callBinary({ path: filePath, maxBytes: 256, cwd: process.cwd() })
+      const data = result.structuredContent as BinaryToolOutput
+      expect(data.isError).toBeUndefined()
+      expect(data.bytesRead).toBe(100)
     } finally {
       await cleanup()
     }
   })
 
   test('rejects empty string path with isError', async () => {
-    const result = await runBinary({ path: '' })
-    expect(result.isError).toBe(true)
-  })
-})
-
-// ================================================================
-// Input/Output schema validation
-// ================================================================
-
-describe('binary tool schema (JSON Schema, Ajv-validated)', () => {
-  const validateInput = compileValidator(inputSchema as never)
-  const validateOutput = compileValidator(outputSchema as never)
-
-  test('inputSchema accepts a valid path', () => {
-    expect(validateInput({ path: '/path/to/file.jpg' })).toBe(true)
-  })
-
-  test('inputSchema rejects an empty path and missing path', () => {
-    expect(validateInput({ path: '' })).toBe(false)
-    expect(validateInput({})).toBe(false)
-  })
-
-  test('outputSchema validates the result shape', () => {
-    expect(validateOutput({ mimeType: 'image/jpeg', base64: 'AAAA', bytesRead: 4 })).toBe(true)
-  })
-
-  test('outputSchema validates result with dimensions', () => {
-    expect(
-      validateOutput({
-        mimeType: 'image/png',
-        base64: 'AAAA',
-        bytesRead: 67,
-        width: 1,
-        height: 1,
-        imageFormat: 'png',
-      }),
-    ).toBe(true)
-  })
-
-  test('outputSchema validates error result', () => {
-    expect(
-      validateOutput({
-        mimeType: 'application/octet-stream',
-        base64: '',
-        bytesRead: 0,
-        isError: true,
-      }),
-    ).toBe(true)
-  })
-})
-
-// ================================================================
-// Integration: binary tool output → image content part
-// ================================================================
-
-describe('binary tool → image content part integration', () => {
-  test('reads a PNG and constructs an ImageContent data-URI that schema accepts', async () => {
-    // Minimal 1x1 PNG
-    const pngBytes = new Uint8Array([
-      0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x00, 0x00, 0x0d, 0x49, 0x48, 0x44, 0x52, 0x00, 0x00, 0x00,
-      0x01, 0x00, 0x00, 0x00, 0x01, 0x08, 0x02, 0x00, 0x00, 0x00, 0x90, 0x77, 0x53, 0xde, 0x00, 0x00, 0x00, 0x0c, 0x49,
-      0x44, 0x41, 0x54, 0x08, 0xd7, 0x63, 0x60, 0x60, 0x60, 0x00, 0x00, 0x00, 0x04, 0x00, 0x01, 0x27, 0x83, 0x30, 0x5e,
-      0x00, 0x00, 0x00, 0x00, 0x49, 0x45, 0x4e, 0x44, 0xae, 0x42, 0x60, 0x82,
-    ])
-    const { dir, cleanup } = await tempDir({})
-    const filePath = path.join(dir, 'test.png')
-    await Bun.write(filePath, pngBytes)
-
-    try {
-      // 1. Read binary file via binary tool
-      const { output } = await binaryTool.run({ path: filePath })
-      const { mimeType, base64, width, height, imageFormat } = output as BinaryOutput
-
-      expect(mimeType).toBe('image/png')
-      expect(typeof base64).toBe('string')
-      expect(base64.length).toBeGreaterThan(0)
-      expect(width).toBe(1)
-      expect(height).toBe(1)
-      expect(imageFormat).toBe('png')
-
-      // 2. Construct data-URI from binary tool output
-      const dataUri = `data:${mimeType};base64,${base64}`
-
-      // 3. Build the image content part — this is the handler pattern
-      //    that switches on mimeType.startsWith('image/')
-      const imagePart = ImageContentSchema.parse({
-        type: 'image',
-        image_url: { url: dataUri },
-      })
-      expect(imagePart.type).toBe('image')
-      expect(imagePart.image_url.url).toBe(dataUri)
-
-      // 4. Create a full message item param with the image content
-      const msg = MessageItemParamSchema.parse({
-        type: 'message',
-        role: 'user',
-        content: [imagePart],
-      })
-      expect(Array.isArray(msg.content)).toBe(true)
-      expect(msg.content).toHaveLength(1)
-    } finally {
-      await cleanup()
-    }
+    const result = await callBinary({ path: '', cwd: process.cwd() })
+    const data = result.structuredContent as BinaryToolOutput
+    expect(data.isError).toBe(true)
   })
 })

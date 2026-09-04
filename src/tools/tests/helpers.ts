@@ -4,7 +4,9 @@ import * as path from 'node:path'
  * Create a temp directory with the given files.
  * Returns the dir path and a cleanup function.
  */
-const tempDir = async (files: Record<string, string>): Promise<{ dir: string; cleanup: () => Promise<void> }> => {
+export const tempDir = async (
+  files: Record<string, string>,
+): Promise<{ dir: string; cleanup: () => Promise<void> }> => {
   const dir = await Bun.$`mktemp -d`
     .quiet()
     .text()
@@ -22,5 +24,3 @@ const tempDir = async (files: Record<string, string>): Promise<{ dir: string; cl
     },
   }
 }
-
-export { tempDir }

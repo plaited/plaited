@@ -1,5 +1,6 @@
 import * as path from 'node:path'
-import type { CwdProvision, JsonObject, ToolArgs } from './tool.types.ts'
+import * as z from 'zod'
+import { useMCPServer } from './use-mcp-server.ts'
 
 /**
  * Approximate ceiling for read output — mirrors pi's DEFAULT_MAX_LINES (2000)
@@ -11,11 +12,12 @@ const MAX_BYTES = 50 * 1024
 export const inputSchema = {
   type: 'object',
   properties: {
+    cwd: { type: 'string', minLength: 1, description: "the tool's provisioned cwd" },
     path: { type: 'string', description: "file path — absolute, or relative to the tool's provisioned cwd" },
     offset: { type: 'integer', description: '1-indexed line to start reading from' },
     limit: { type: 'integer', description: 'maximum number of lines to read' },
   },
-  required: ['path'],
+  required: ['path', 'cwd'],
   additionalProperties: false,
 }
 
@@ -30,73 +32,85 @@ export const outputSchema = {
   additionalProperties: false,
 }
 
-type ReadInput = { path: string; offset?: number; limit?: number }
-type ReadOutput = { content: string; truncated: boolean; isError?: boolean }
-
 /**
  * Read a file with optional offset/limit line windowing.
  *
- * Reads via `Bun.file.text()`. Paths resolve against the provisioned cwd
- * (absolute paths win). When the file is missing or unreadable, returns a
- * structured error result rather than throwing — the StreamFn contract applies
- * to tools too.
+ * Reads via `Bun.file.text()`. Registered via `useMCPServer` as the `read`
+ * MCP tool. `cwd` is a required input field — provided by the provisioner.
+ * When the file is missing or unreadable, returns a structured error result
+ * rather than throwing — the StreamFn contract applies to tools too.
  */
-export const run = async (input: JsonObject & CwdProvision): Promise<{ output: ReadOutput }> => {
-  const { path: filePath, offset, limit, cwd } = input as ReadInput & CwdProvision
-  const resolved = path.resolve(cwd ?? process.cwd(), filePath)
 
-  const bunFile = Bun.file(resolved)
-  const exists = await bunFile.exists()
-  if (!exists) {
-    return { output: { content: `[Error: file not found: ${resolved}]`, truncated: false, isError: true } }
-  }
+export const READ_TOOL_NAME = 'read'
+export const read = useMCPServer((server) => {
+  server.registerTool(
+    READ_TOOL_NAME,
+    {
+      description:
+        'Read the contents of a file. Output is truncated to 2000 lines or 50KB (whichever is hit first). Use offset/limit for large files.',
+      inputSchema: z.object({
+        cwd: z.string().describe("the tool's provisioned cwd"),
+        path: z.string().describe("file path — absolute, or relative to the tool's provisioned cwd"),
+        offset: z.number().int().optional().describe('1-indexed line to start reading from'),
+        limit: z.number().int().optional().describe('maximum number of lines to read'),
+      }),
+      outputSchema: z.object({
+        content: z.string(),
+        truncated: z.boolean(),
+        isError: z.boolean().optional().describe('true when the result is an error message rather than file content'),
+        message: z.string().optional().describe('error detail when isError — states what failed'),
+      }),
+    },
+    async ({ path: filePath, offset, limit, cwd }) => {
+      const resolved = path.resolve(cwd, filePath)
 
-  let text: string
-  try {
-    text = await bunFile.text()
-  } catch {
-    return { output: { content: `[Error: could not read file: ${resolved}]`, truncated: false, isError: true } }
-  }
+      const bunFile = Bun.file(resolved)
+      const exists = await bunFile.exists()
+      if (!exists) {
+        const output = { content: `[Error: file not found: ${resolved}]`, truncated: false, isError: true }
+        return { content: [{ type: 'text' as const, text: JSON.stringify(output) }], structuredContent: output }
+      }
 
-  const allLines = text.split('\n')
-  const totalLines = allLines.length
+      let text: string
+      try {
+        text = await bunFile.text()
+      } catch {
+        const output = { content: `[Error: could not read file: ${resolved}]`, truncated: false, isError: true }
+        return { content: [{ type: 'text' as const, text: JSON.stringify(output) }], structuredContent: output }
+      }
 
-  // Apply offset (1-indexed)
-  const startLine = offset ? Math.max(0, offset - 1) : 0
-  if (startLine >= totalLines) {
-    return {
-      output: {
-        content: `[Error: offset ${offset} is beyond end of file (${totalLines} lines total)]`,
-        truncated: false,
-        isError: true,
-      },
-    }
-  }
+      const allLines = text.split('\n')
+      const totalLines = allLines.length
 
-  const endLine = limit ? Math.min(startLine + limit, totalLines) : totalLines
-  const windowed = allLines.slice(startLine, endLine).join('\n')
+      // Apply offset (1-indexed)
+      const startLine = offset ? Math.max(0, offset - 1) : 0
+      if (startLine >= totalLines) {
+        const output = {
+          content: `[Error: offset ${offset} is beyond end of file (${totalLines} lines total)]`,
+          truncated: false,
+          isError: true,
+        }
+        return { content: [{ type: 'text' as const, text: JSON.stringify(output) }], structuredContent: output }
+      }
 
-  // Check truncation ceiling
-  const bytes = new TextEncoder().encode(windowed).byteLength
-  const windowLines = endLine - startLine
+      const endLine = limit ? Math.min(startLine + limit, totalLines) : totalLines
+      const windowed = allLines.slice(startLine, endLine).join('\n')
 
-  if (bytes > MAX_BYTES) {
-    return { output: { content: windowed.slice(0, MAX_BYTES), truncated: true } }
-  }
-  if (windowLines > MAX_LINES) {
-    return { output: { content: allLines.slice(startLine, startLine + MAX_LINES).join('\n'), truncated: true } }
-  }
+      // Check truncation ceiling
+      const bytes = new TextEncoder().encode(windowed).byteLength
+      const windowLines = endLine - startLine
 
-  return { output: { content: windowed, truncated: false } }
-}
+      if (bytes > MAX_BYTES) {
+        const output = { content: windowed.slice(0, MAX_BYTES), truncated: true }
+        return { content: [{ type: 'text' as const, text: JSON.stringify(output) }], structuredContent: output }
+      }
+      if (windowLines > MAX_LINES) {
+        const output = { content: allLines.slice(startLine, startLine + MAX_LINES).join('\n'), truncated: true }
+        return { content: [{ type: 'text' as const, text: JSON.stringify(output) }], structuredContent: output }
+      }
 
-const readTool: ToolArgs = Object.freeze({
-  name: 'read',
-  description:
-    'Read the contents of a file. Output is truncated to 2000 lines or 50KB (whichever is hit first). Use offset/limit for large files.',
-  inputSchema,
-  outputSchema,
-  run,
+      const output = { content: windowed, truncated: false }
+      return { content: [{ type: 'text' as const, text: JSON.stringify(output) }], structuredContent: output }
+    },
+  )
 })
-
-export default readTool

@@ -1,7 +1,7 @@
 import { stat } from 'node:fs/promises'
 import * as path from 'node:path'
-import type { CwdProvision, JsonObject, ToolArgs } from './tool.types.ts'
-
+import * as z from 'zod'
+import { useMCPServer } from './use-mcp-server.ts'
 // ----------------------------------------------------------------
 // Constants
 // ----------------------------------------------------------------
@@ -19,15 +19,6 @@ export const DEFAULT_MAX_BINARY_BYTES = 20 * 1024 * 1024
 // ----------------------------------------------------------------
 // Schemas
 // ----------------------------------------------------------------
-
-export const inputSchema = {
-  type: 'object',
-  properties: {
-    path: { type: 'string', description: "file path — absolute, or relative to the tool's provisioned cwd" },
-  },
-  required: ['path'],
-  additionalProperties: false,
-}
 
 export const outputSchema = {
   type: 'object',
@@ -49,18 +40,6 @@ export const outputSchema = {
   },
   required: ['mimeType', 'base64', 'bytesRead'],
   additionalProperties: false,
-}
-
-type BinaryInput = { path: string }
-type BinaryOutput = {
-  mimeType: string
-  base64: string
-  width?: number
-  height?: number
-  imageFormat?: string
-  bytesRead: number
-  message?: string
-  isError?: boolean
 }
 
 /**
@@ -339,123 +318,165 @@ export const mimeTypeToVideoFormat = (mimeType: string): string | undefined => {
 /**
  * Read a binary file, detect its MIME type from magic bytes, encode as base64.
  *
- * Paths resolve against the provisioned cwd (absolute paths win). Files larger
- * than the ceiling (default or provision-time `maxBytes`) return `isError: true`
- * with a descriptive message — never a partial/corrupt blob.
+ * Registered via `useMCPServer` as the `binary` MCP tool. `cwd` is a required
+ * input field — always provided by the provisioner. Paths resolve against the
+ * provisioned cwd (absolute paths win). Files larger than the ceiling (default
+ * or provision-time `maxBytes`) return `isError: true` with a descriptive
+ * message — never a partial/corrupt blob.
  *
  * Image files trigger `Bun.Image.metadata()` (passing bytes, never path) to
  * extract dimensions without decoding pixel data. Dimensions are absent gracefully
  * on exotic/undecodable formats — no crash path.
  */
-export const run = async (input: JsonObject & CwdProvision & BinaryProvision): Promise<{ output: BinaryOutput }> => {
-  const { path: filePath, cwd, maxBytes } = input as BinaryInput & CwdProvision & BinaryProvision
-  const resolved = path.resolve(cwd ?? process.cwd(), filePath)
-  const notFound = (p: string) => ({
-    output: {
-      mimeType: 'application/octet-stream',
-      base64: '',
-      bytesRead: 0,
-      message: `[Error: file not found: ${p}]`,
-      isError: true,
+
+export const BINARY_TOOL_NAME = 'binary'
+export const binary = useMCPServer((server) => {
+  server.registerTool(
+    BINARY_TOOL_NAME,
+    {
+      description:
+        'Read a binary file (image, audio, video) — detects MIME type from magic bytes, ' +
+        'encodes as base64 for multi-modal model consumption. Returns image dimensions via ' +
+        'Bun.Image.metadata() when applicable. Files over the size ceiling return an error ' +
+        '— never a corrupt partial blob.',
+      inputSchema: z.object({
+        cwd: z.string().describe("the tool's provisioned cwd"),
+        path: z.string().describe("file path — absolute, or relative to the tool's provisioned cwd"),
+        maxBytes: z.number().optional().describe('This caps the binary read size — over the ceiling returns isError.'),
+      }),
+      outputSchema: z.object({
+        mimeType: z.string().describe('detected MIME type, e.g. "image/jpeg", "audio/mpeg", "video/mp4"'),
+        base64: z.string().describe('base64-encoded file content — data-URI ready'),
+        bytesRead: z.number().int().describe('actual bytes encoded'),
+        width: z
+          .number()
+          .int()
+          .optional()
+          .describe('image width — present when image MIME and Bun.Image.metadata() succeeds'),
+        height: z.number().int().optional().describe('image height in pixels, same conditions as width'),
+        imageFormat: z
+          .string()
+          .optional()
+          .describe("Bun.Image's own format sniff (jpeg/png/webp...) — corroborates magic bytes when present"),
+        message: z
+          .string()
+          .optional()
+          .describe('error detail when isError — states what failed and, for size ceilings, the limit'),
+        isError: z.boolean().optional().describe('true when the operation failed — the message field explains why'),
+      }),
     },
-  })
+    async ({ path: filePath, cwd, maxBytes }) => {
+      const resolved = path.resolve(cwd, filePath)
 
-  // Directory/existence check via stat (node:fs — no Bun equivalent for dirs;
-  // Bun.file.exists() returns false for directories). Avoids spawning a
-  // subprocess for what is a stat call.
-  const stats = await stat(resolved).catch(() => undefined)
-  if (!stats) return notFound(resolved)
-  if (stats.isDirectory()) {
-    return {
-      output: {
-        mimeType: 'application/octet-stream',
-        base64: '',
-        bytesRead: 0,
-        message: `[Error: path is a directory: ${resolved}]`,
-        isError: true,
-      },
-    }
-  }
+      // Directory/existence check via stat (node:fs — no Bun equivalent for dirs;
+      // Bun.file.exists() returns false for directories). Avoids spawning a
+      // subprocess for what is a stat call.
+      const stats = await stat(resolved).catch(() => undefined)
+      if (!stats) {
+        const output = {
+          mimeType: 'application/octet-stream',
+          base64: '',
+          bytesRead: 0,
+          message: `[Error: file not found: ${resolved}]`,
+          isError: true,
+        }
+        return {
+          content: [{ type: 'text' as const, text: JSON.stringify(output) }],
+          structuredContent: output,
+        }
+      }
+      if (stats.isDirectory()) {
+        const output = {
+          mimeType: 'application/octet-stream',
+          base64: '',
+          bytesRead: 0,
+          message: `[Error: path is a directory: ${resolved}]`,
+          isError: true,
+        }
+        return {
+          content: [{ type: 'text', text: JSON.stringify(output) }],
+          structuredContent: output,
+        }
+      }
 
-  // Read file bytes
-  const bunFile = Bun.file(resolved)
-  let bytes: Uint8Array
-  try {
-    bytes = await bunFile.bytes()
-  } catch {
-    return {
-      output: {
-        mimeType: 'application/octet-stream',
-        base64: '',
-        bytesRead: 0,
-        message: `[Error: could not read file: ${resolved}]`,
-        isError: true,
-      },
-    }
-  }
+      // Read file bytes
+      const bunFile = Bun.file(resolved)
+      let bytes: Uint8Array
+      try {
+        bytes = await bunFile.bytes()
+      } catch {
+        const output = {
+          mimeType: 'application/octet-stream',
+          base64: '',
+          bytesRead: 0,
+          message: `[Error: could not read file: ${resolved}]`,
+          isError: true,
+        }
+        return {
+          content: [{ type: 'text', text: JSON.stringify(output) }],
+          structuredContent: output,
+        }
+      }
 
-  // Size ceiling check (provision-time maxBytes or default) — the error names
-  // the limit so the model can self-correct (Phase 7 declared capabilities)
-  const ceiling = maxBytes ?? DEFAULT_MAX_BINARY_BYTES
-  if (bytes.length > ceiling) {
-    return {
-      output: {
-        mimeType: 'application/octet-stream',
-        base64: '',
-        bytesRead: 0,
-        message: `[Error: file exceeds maximum size: ${bytes.length} bytes > ${ceiling} limit]`,
-        isError: true,
-      },
-    }
-  }
+      // Size ceiling check (provision-time maxBytes or default) — the error names
+      // the limit so the model can self-correct (Phase 7 declared capabilities)
+      const ceiling = maxBytes ?? DEFAULT_MAX_BINARY_BYTES
+      if (bytes.length > ceiling) {
+        const output = {
+          mimeType: 'application/octet-stream',
+          base64: '',
+          bytesRead: 0,
+          message: `[Error: file exceeds maximum size: ${bytes.length} bytes > ${ceiling} limit]`,
+          isError: true,
+        }
+        return {
+          content: [{ type: 'text', text: JSON.stringify(output) }],
+          structuredContent: output,
+        }
+      }
 
-  const mimeType = detectMimeType(bytes)
-  const base64 = Buffer.from(bytes).toString('base64')
-  const bytesRead = bytes.length
+      const mimeType = detectMimeType(bytes)
+      const base64 = Buffer.from(bytes).toString('base64')
+      const bytesRead = bytes.length
 
-  // Image dimensions via Bun.Image.metadata() (bytes input only)
-  let width: number | undefined
-  let height: number | undefined
-  let imageFormat: string | undefined
+      // Image dimensions via Bun.Image.metadata() (bytes input only)
+      let width: number | undefined
+      let height: number | undefined
+      let imageFormat: string | undefined
 
-  if (mimeType.startsWith('image/')) {
-    try {
-      const image = new Bun.Image(bytes)
-      const metadata = await image.metadata()
-      if (metadata.width !== undefined) width = metadata.width
-      if (metadata.height !== undefined) height = metadata.height
-      if (metadata.format !== undefined) imageFormat = metadata.format
-    } catch {
-      // Exotic/undecodable image formats — dimensions simply absent, no crash
-    }
-  }
-
-  return {
-    output: {
-      mimeType,
-      base64,
-      width,
-      height,
-      imageFormat,
-      bytesRead,
+      if (mimeType.startsWith('image/')) {
+        try {
+          const image = new Bun.Image(bytes)
+          const metadata = await image.metadata()
+          if (metadata.width !== undefined) width = metadata.width
+          if (metadata.height !== undefined) height = metadata.height
+          if (metadata.format !== undefined) imageFormat = metadata.format
+        } catch {
+          const output = {
+            mimeType,
+            base64,
+            bytesRead,
+            message: `[Error: file exceeds maximum size: ${bytes.length} bytes > ${ceiling} limit]`,
+            isError: true,
+          }
+          return {
+            content: [{ type: 'text', text: JSON.stringify(output) }],
+            structuredContent: output,
+          }
+        }
+      }
+      const output = {
+        mimeType,
+        base64,
+        width,
+        height,
+        imageFormat,
+        bytesRead,
+      }
+      return {
+        content: [{ type: 'text', text: JSON.stringify(output) }],
+        structuredContent: output,
+      }
     },
-  }
-}
-
-// ----------------------------------------------------------------
-// Tool descriptor (frozen ToolArgs)
-// ----------------------------------------------------------------
-
-const binaryTool: ToolArgs = Object.freeze({
-  name: 'binary',
-  description:
-    'Read a binary file (image, audio, video) — detects MIME type from magic bytes, ' +
-    'encodes as base64 for multi-modal model consumption. Returns image dimensions via ' +
-    'Bun.Image.metadata() when applicable. Files over the size ceiling return an error ' +
-    '— never a corrupt partial blob.',
-  inputSchema,
-  outputSchema,
-  run,
+  )
 })
-
-export default binaryTool

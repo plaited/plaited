@@ -1,13 +1,15 @@
 import * as path from 'node:path'
-import type { CwdProvision, JsonObject, ToolArgs } from './tool.types.ts'
+import * as z from 'zod'
+import { useMCPServer } from './use-mcp-server.ts'
 
 export const inputSchema = {
   type: 'object',
   properties: {
+    cwd: { type: 'string', minLength: 1, description: "the tool's provisioned cwd" },
     path: { type: 'string', description: "file path — absolute, or relative to the tool's provisioned cwd" },
     content: { type: 'string' },
   },
-  required: ['path', 'content'],
+  required: ['path', 'content', 'cwd'],
   additionalProperties: false,
 }
 
@@ -20,35 +22,43 @@ export const outputSchema = {
   additionalProperties: false,
 }
 
-type WriteInput = { path: string; content: string }
-type WriteOutput = { bytesWritten: number }
-
 /**
  * Write content to a file via `Bun.write`. Creates parent directories
- * automatically. Paths resolve against the provisioned cwd.
+ * automatically. Registered via `useMCPServer` as the `write` MCP tool.
+ * `cwd` is a required input field — provided by the provisioner. Paths
+ * resolve against the provisioned cwd.
  */
-export const run = async (input: JsonObject & CwdProvision): Promise<{ output: WriteOutput }> => {
-  // Args are Ajv-validated at dispatch and guard-blocked at selection — the
-  // cast is the documented trust boundary.
-  const { path: filePath, content, cwd } = input as WriteInput & CwdProvision
-  const resolved = path.resolve(cwd ?? process.cwd(), filePath)
 
-  // Ensure parent directory exists
-  const parentDir = path.dirname(resolved)
-  await Bun.$`mkdir -p ${parentDir}`.quiet().nothrow()
+export const WRITE_TOOL_NAME = 'write'
+export const write = useMCPServer((server) => {
+  server.registerTool(
+    WRITE_TOOL_NAME,
+    {
+      description:
+        'Write content to a file. Creates the file if it does not exist, overwrites if it does. Automatically creates parent directories.',
+      inputSchema: z.object({
+        cwd: z.string().describe("the tool's provisioned cwd"),
+        path: z.string().describe("file path — absolute, or relative to the tool's provisioned cwd"),
+        content: z.string(),
+      }),
+      outputSchema: z.object({
+        bytesWritten: z.number().int().describe('number of bytes written to disk'),
+      }),
+    },
+    async ({ path: filePath, content, cwd }) => {
+      const resolved = path.resolve(cwd, filePath)
 
-  await Bun.write(resolved, content)
+      // Ensure parent directory exists
+      const parentDir = path.dirname(resolved)
+      await Bun.$`mkdir -p ${parentDir}`.quiet().nothrow()
 
-  return { output: { bytesWritten: content.length } }
-}
+      await Bun.write(resolved, content)
 
-const writeTool: ToolArgs = Object.freeze({
-  name: 'write',
-  description:
-    'Write content to a file. Creates the file if it does not exist, overwrites if it does. Automatically creates parent directories.',
-  inputSchema,
-  outputSchema,
-  run,
+      const output = { bytesWritten: content.length }
+      return {
+        content: [{ type: 'text' as const, text: JSON.stringify(output) }],
+        structuredContent: output,
+      }
+    },
+  )
 })
-
-export default writeTool
