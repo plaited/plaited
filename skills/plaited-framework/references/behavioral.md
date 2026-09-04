@@ -109,8 +109,8 @@ stays JSON.
 ```ts
 const disconnect = useTrace((msg) => {
   // msg is inferred as the engine's Trace union: pending_bids | frontier |
-  // selection | deadlock | feedback_error | add_thread_error | runtime_error
-  // (narrow by `kind`)
+  // selection | deadlock | trigger_error | add_thread_error | interrupt |
+  // transform (narrow by `kind`)
 })
 ```
 

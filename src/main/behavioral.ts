@@ -1,17 +1,11 @@
+import { ueid } from '../utils.ts'
 import { FRONTIER_STATUS, TRACE_MESSAGE_KINDS } from './behavioral.constants.ts'
-import {
-  type BPEvent,
-  type FeedbackError,
-  type RegisteredBPListener,
-  ThreadScehama,
-  type Trace,
-} from './behavioral.schemas.ts'
+import { BPEventSchema, type RegisteredBPListener, ThreadScehama, type Trace } from './behavioral.schemas.ts'
 import type {
   CandidateBid,
   PendingBid,
   RunningBid,
   SendTrace,
-  UseAddHandler,
   UseAddThread,
   UseTrace,
   UseTrigger,
@@ -89,14 +83,23 @@ const toSelectedSnapshot = ({ type, detail, ingress, topic }: CandidateBid) => (
   ...(topic === undefined ? {} : { topic }),
 })
 
-const createPublisher = <T>(): SendTrace<T> => {
-  const listeners = new Set<(value: T) => void | Promise<void>>()
-  function publisher(value: T) {
+const createSubject = (): SendTrace => {
+  const listeners = new Set<(value: Trace) => void | Promise<void>>()
+  function publisher(value: Trace) {
     for (const cb of listeners) {
-      void cb(value)
+      try {
+        // Promise.resolve passes native promises through unchanged and absorbs
+        // non-native thenables, so every listener return value gets a rejection
+        // handler without awaiting or yielding the event loop.
+        void Promise.resolve(cb(value)).catch((error) =>
+          console.error('[behavioral] trace listener rejected:', value.kind, error),
+        )
+      } catch (error) {
+        console.error('[behavioral] trace listener threw:', value.kind, error)
+      }
     }
   }
-  publisher.subscribe = (listener: (msg: T) => void | Promise<void>) => {
+  publisher.subscribe = (listener: (msg: Trace) => void | Promise<void>) => {
     listeners.add(listener)
     return () => {
       listeners.delete(listener)
@@ -146,7 +149,8 @@ const createPublisher = <T>(): SendTrace<T> => {
  * and threads to run. If no events can be selected (either because all requests are blocked
  * or there are no requests), the program will pause until an external event is triggered.
  */
-export const behavioral = () => {
+export const behavioral = (options?: { instanceId?: string }) => {
+  const instanceId = options?.instanceId ?? ueid('bp_')
   /**
    * @internal
    * Set of threads that have yielded and are waiting for event selection.
@@ -167,17 +171,10 @@ export const behavioral = () => {
 
   /**
    * @internal
-   * Publisher for selected events, consumed by `useFeedback`.
-   * This is the mechanism by which selected events are delivered to external handlers.
-   */
-  const actionPublisher = createPublisher<BPEvent>()
-
-  /**
-   * @internal
    * Publisher for state traces, consumed by `useTrace`.
    * Always exists — subscribers are added/removed via `useTrace` which delegates to `subscribe`.
    */
-  const sendTrace = createPublisher<Trace>()
+  const sendTrace = createSubject()
   let stepId = 0
 
   const step = () => {
@@ -206,6 +203,7 @@ export const behavioral = () => {
       kind: TRACE_MESSAGE_KINDS.pending_bids,
       timestamp: Date.now(),
       step,
+      instanceId,
       threads: serializePending(pending),
     })
 
@@ -215,6 +213,7 @@ export const behavioral = () => {
       kind: TRACE_MESSAGE_KINDS.frontier,
       timestamp: Date.now(),
       step,
+      instanceId,
       status: frontier.status,
       candidates: candidates.map(toCandidateSnapshot),
       enabled: enabled.map(toCandidateSnapshot),
@@ -225,13 +224,7 @@ export const behavioral = () => {
       const selected = frontier.enabled.sort(
         ({ priority: priorityA }, { priority: priorityB }) => priorityA - priorityB,
       )[0]!
-      sendTrace({
-        kind: TRACE_MESSAGE_KINDS.selection,
-        timestamp: Date.now(),
-        step,
-        selected: toSelectedSnapshot(selected),
-      })
-      nextStep(selected)
+      nextStep(selected, step)
       return
     }
     if (frontier.status === FRONTIER_STATUS.deadlock) {
@@ -239,6 +232,7 @@ export const behavioral = () => {
         kind: TRACE_MESSAGE_KINDS.deadlock,
         timestamp: Date.now(),
         step,
+        instanceId,
       })
     }
   }
@@ -256,18 +250,22 @@ export const behavioral = () => {
    *
    * @param selectedEvent - Event candidate selected for this step.
    */
-  function nextStep(selectedEvent: CandidateBid) {
+  function nextStep(selectedEvent: CandidateBid, stepId: number) {
     resumePendingThreadsForSelectedEvent({
       selectedEvent,
       running,
       pending,
+      sendTrace,
+      instanceId,
+      step: stepId,
     })
-    actionPublisher({
-      type: selectedEvent.type,
-      detail: selectedEvent.detail,
-      topic: selectedEvent.topic,
+    sendTrace({
+      kind: TRACE_MESSAGE_KINDS.selection,
+      timestamp: Date.now(),
+      step: stepId,
+      instanceId,
+      selected: toSelectedSnapshot(selectedEvent),
     })
-
     /**
      * @internal
      * Executes one part of the super-step: advancing running threads to their next yield.
@@ -287,9 +285,19 @@ export const behavioral = () => {
    * Implementation of the public `trigger` function.
    */
   const useTrigger: UseTrigger = (topic) => (event) => {
+    const result = BPEventSchema.safeParse(event)
+    if (result.error) {
+      return sendTrace({
+        kind: TRACE_MESSAGE_KINDS.trigger_error,
+        timestamp: Date.now(),
+        instanceId,
+        error: result.error.issues,
+        topic,
+      })
+    }
     const thread = function* () {
       yield {
-        request: event,
+        request: result.data,
       }
     }
     running.add({
@@ -314,48 +322,6 @@ export const behavioral = () => {
     step()
   }
 
-  /**
-   * @internal
-   * Implementation of the public `useFeedback` hook.
-   *
-   * Subscribes the provided handlers to the action publisher, invoking the
-   * appropriate handler whenever a matching event is selected.
-   * Returns a disconnect function that removes the subscription when called.
-   *
-   * @remarks
-   * The subscriber is async so both sync and async handlers are caught by
-   * the try/catch. Errors are published as `feedback_error` trace messages
-   * and logged to console. The publisher still fire-and-forgets the returned
-   * promise via `void cb(value)`, so the BP engine loop is never blocked.
-   *
-   * The generic type parameter `Details` enables type-safe handler mapping,
-   * where each handler receives its correctly-typed detail payload.
-   */
-  const useAddHandler: UseAddHandler = (topic) => (type, handler, once) => {
-    const disconnect = actionPublisher.subscribe(async (data: BPEvent) => {
-      const match = topic ? topic === data.topic && type === data.type : type === data.type
-      if (match) {
-        try {
-          if (once) disconnect()
-          await handler({
-            detail: data.detail as Parameters<typeof handler>[0]['detail'],
-            trigger: useTrigger(topic),
-          })
-        } catch (error) {
-          const message: FeedbackError = {
-            kind: TRACE_MESSAGE_KINDS.feedback_error,
-            timestamp: Date.now(),
-            type,
-            detail: data.detail,
-            error: error instanceof Error ? error.message : String(error),
-          }
-          sendTrace(message)
-        }
-      }
-    })
-    return disconnect
-  }
-
   const useAddThread: UseAddThread = (topic) => (args) => {
     const result = ThreadScehama.safeParse(args)
     if (result.success) {
@@ -372,14 +338,18 @@ export const behavioral = () => {
         sendTrace({
           kind: TRACE_MESSAGE_KINDS.add_thread_error,
           timestamp: Date.now(),
+          instanceId,
           error: err instanceof Error ? err.message : String(err),
+          topic,
         })
       }
     } else {
       sendTrace({
         kind: TRACE_MESSAGE_KINDS.add_thread_error,
         timestamp: Date.now(),
+        instanceId,
         error: result.error.issues,
+        topic,
       })
     }
   }
@@ -403,8 +373,6 @@ export const behavioral = () => {
     useAddThread,
     /** Function to inject external events into the program. */
     useTrigger,
-
-    useAddHandler,
     /** Hook to subscribe to internal state traces for monitoring/debugging. */
     useTrace,
   })

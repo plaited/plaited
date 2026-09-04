@@ -27,8 +27,8 @@ API object), not imported directly. The type aliases above are re-exported so
 consumers can type their own listeners and extension events.
 
 `Trace` is the engine's closed discriminated union of trace kinds
-(`selection`, `frontier`, `pending_bids`, `deadlock`, `runtime_error`,
-`feedback_error`, `add_thread_error`). It is not directly importable from
+(`selection`, `frontier`, `pending_bids`, `deadlock`, `trigger_error`,
+`add_thread_error`, `interrupt`, `transform`). It is not directly importable from
 `'plaited'` — use `useTrace((msg) => ...)` with inference, and let the
 listener parameter type narrow by `msg.kind`.
 

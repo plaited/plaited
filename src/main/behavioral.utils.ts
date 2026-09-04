@@ -1,8 +1,16 @@
 import Ajv2020 from 'ajv/dist/2020'
 import { isTypeOf } from '../utils.ts'
-import { FRONTIER_STATUS, IDIOMS } from './behavioral.constants.ts'
+import { FRONTIER_STATUS, IDIOMS, TRACE_MESSAGE_KINDS } from './behavioral.constants.ts'
 import type { BPEvent, Idioms, JsonObject, RegisteredBPListener, RegisteredIdioms } from './behavioral.schemas.ts'
-import type { CandidateBid, Frontier, PendingBid, RulesFunction, RunningBid, UseThread } from './behavioral.types.ts'
+import type {
+  CandidateBid,
+  Frontier,
+  PendingBid,
+  RulesFunction,
+  RunningBid,
+  SendTrace,
+  UseThread,
+} from './behavioral.types.ts'
 
 /**
  * Shared Ajv instance for compiling JSON Schema validators.
@@ -124,24 +132,50 @@ export const resumePendingThreadsForSelectedEvent = ({
   running,
   pending,
   selectedEvent,
+  sendTrace,
+  instanceId,
+  step,
 }: {
   running: Set<RunningBid>
   pending: Set<PendingBid>
   selectedEvent: CandidateBid
+  sendTrace: SendTrace
+  instanceId: string
+  step: number
 }) => {
   for (const bid of pending) {
-    const { waitFor, request, generator, interrupt } = bid
+    const { waitFor, request, generator, interrupt, transform, label } = bid
     const isInterrupted = interrupt?.some(isListeningFor(selectedEvent))
     const isWaitedFor = waitFor?.some(isListeningFor(selectedEvent))
+    const isTransform = transform?.filter(isListeningFor(selectedEvent))
     const hasPendingRequest = request && eventMatchesCandidate(request, selectedEvent)
     if (isInterrupted) {
       generator.return?.()
       pending.delete(bid)
+      sendTrace({
+        kind: TRACE_MESSAGE_KINDS.interrupt,
+        timestamp: Date.now(),
+        step,
+        instanceId,
+        selected: selectedEvent,
+        threadLabel: label,
+      })
       continue
     }
-    if (hasPendingRequest || isWaitedFor) {
+    if (hasPendingRequest || isWaitedFor || isTransform?.length) {
       running.add({ ...bid })
       pending.delete(bid)
+    }
+    if (isTransform?.length) {
+      sendTrace({
+        kind: TRACE_MESSAGE_KINDS.transform,
+        timestamp: Date.now(),
+        step,
+        instanceId,
+        transform: isTransform,
+        selected: selectedEvent,
+        threadLabel: label,
+      })
     }
   }
 }
@@ -156,7 +190,7 @@ const compileValidators = <T extends { detailSchema?: JsonObject }>(
 
 export const generateRulesFunctions = (rules: Idioms[], topic?: string): RulesFunction[] => {
   const syncs: RulesFunction[] = []
-  for (const { request, waitFor, block, interrupt } of rules) {
+  for (const { request, waitFor, block, interrupt, transform } of rules) {
     const registeredIdioms: RegisteredIdioms = {}
     if (request) {
       registeredIdioms[IDIOMS.request] = {
@@ -184,6 +218,14 @@ export const generateRulesFunctions = (rules: Idioms[], topic?: string): RulesFu
     if (interrupt) {
       registeredIdioms[IDIOMS.interrupt] = compileValidators(
         interrupt.map((listener) => ({
+          ...listener,
+          topic,
+        })),
+      )
+    }
+    if (transform) {
+      registeredIdioms[IDIOMS.transform] = compileValidators(
+        transform.map((listener) => ({
           ...listener,
           topic,
         })),

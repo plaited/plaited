@@ -1,5 +1,5 @@
 import type { FRONTIER_STATUS } from './behavioral.constants.ts'
-import type { BPEvent, JsonObject, RegisteredIdioms, Thread, Trace } from './behavioral.schemas.ts'
+import type { BPEvent, RegisteredIdioms, Thread, Trace } from './behavioral.schemas.ts'
 
 export type RulesFunction = () => Generator<RegisteredIdioms, void, unknown>
 
@@ -148,31 +148,6 @@ export type TraceListener = (msg: Trace) => void | Promise<void>
 export type EventDetails = Record<string, any>
 
 /**
- * A feedback handler invoked when a matching event is selected and published.
- *
- * Handlers are the side-effect channel only — they never receive a handle to
- * remove themselves. Coordination (what stays, what goes) belongs to b-threads
- * (`request`/`waitFor`/`block`/`interrupt`) and the engine-side `useEject`; a
- * handler's lifetime is owned by its *caller* via the `Disconnect` returned
- * from `addHandler` (see `plan.md` Phase -1). Self-removal mid-dispatch would
- * smuggle callback-style coordination back into the side-effect channel.
- *
- * @typeParam T - Detail payload type for the event.
- *
- * @param params.detail - The JSON-serializable event detail.
- * @param params.trigger - Topic-scoped trigger to emit events back into the program.
- * @returns `void` or `Promise<void>`. Thrown errors surface as `feedback_error` traces.
- */
-export type Handler<T> = (params: { detail: T; trigger: Trigger }) => void | Promise<void>
-
-export type AddHandler = <T extends JsonObject | undefined = undefined>(
-  type: string,
-  handler: Handler<T>,
-  once?: true,
-) => () => void
-
-export type UseAddHandler = (topic?: string) => AddHandler
-/**
  * Hook for monitoring internal state transitions of the behavioral program.
  * Provides debugging, visualization, and analysis capabilities.
  *
@@ -211,7 +186,7 @@ export type Trigger = <T extends BPEvent>(args: T) => void
 
 export type UseTrigger = (topic?: string) => Trigger
 
-export type SendTrace<T> = {
-  (value: T): void
-  subscribe(listener: (msg: T) => void | Promise<void>): () => void
+export type SendTrace = {
+  (value: Trace): void
+  subscribe(listener: (msg: Trace) => void | Promise<void>): () => void
 }

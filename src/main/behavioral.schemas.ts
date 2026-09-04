@@ -66,6 +66,19 @@ export const BPListenerSchema = z.object({
 
 export type BPListener = z.output<typeof BPListenerSchema>
 
+export const TransformListenerSchema = z.object({
+  ...BPListenerSchema.shape,
+  query: z.string(),
+  target: z.string(),
+})
+
+export type TransformListener = z.output<typeof TransformListenerSchema>
+
+type RegisteredBase = {
+  topic?: string
+  validate: (detail: unknown) => boolean
+}
+
 /**
  * Registered listener with topic stamping and compiled detail validator.
  *
@@ -73,10 +86,13 @@ export type BPListener = z.output<typeof BPListenerSchema>
  * time in {@link generateRulesFunctions}. Returns `true` when the candidate
  * event's `detail` conforms to the listener's `detailSchema`.
  */
-export type RegisteredBPListener = BPListener & {
-  topic?: string
-  validate: (detail: unknown) => boolean
-}
+export type RegisteredBPListener = BPListener & RegisteredBase
+
+/**
+ * Registered transform listener — {@link TransformListener} with topic
+ * stamping and the compiled detail validator shared by all registered idioms.
+ */
+export type RegisteredTransformListener = TransformListener & RegisteredBase
 
 /**
  * Represents a synchronization statement yielded by a behavioral rule step.
@@ -101,6 +117,7 @@ export const IdiomSchema = z.object({
   [IDIOMS.interrupt]: z.array(BPListenerSchema).min(1).optional(),
   [IDIOMS.block]: z.array(BPListenerSchema).min(1).optional(),
   [IDIOMS.request]: BPEventSchema.optional(),
+  [IDIOMS.transform]: z.array(TransformListenerSchema).min(1).optional(),
 })
 
 export type Idioms = z.output<typeof IdiomSchema>
@@ -118,6 +135,7 @@ export type RegisteredIdioms = {
   [IDIOMS.interrupt]?: RegisteredBPListener[]
   [IDIOMS.block]?: RegisteredBPListener[]
   [IDIOMS.request]?: z.output<typeof BPEventSchema>
+  [IDIOMS.transform]?: RegisteredTransformListener[]
 }
 
 export const ThreadScehama = z.object({
@@ -163,6 +181,7 @@ export const TraceCandidateSchema = z.object({
 export const TraceBaseSchema = z.looseObject({
   kind: z.string(),
   timestamp: z.number(),
+  instanceId: z.string(),
 })
 
 /** @public */
@@ -222,30 +241,6 @@ export const DeadlockTraceSchema = z.object({
 export type DeadlockTrace = z.output<typeof DeadlockTraceSchema>
 
 /**
- * Schema for feedback handler errors published by the BP engine.
- *
- * @remarks
- * Emitted when a `useFeedback` handler throws during side-effect execution.
- * Published after the selection trace for the current super-step.
- * Consumers narrow by `kind === 'feedback_error'`.
- *
- * @see {@link TraceSchema} for the full discriminated union
- *
- * @public
- */
-export const FeedbackErrorSchema = z.object({
-  ...TraceBaseSchema.shape,
-  kind: z.literal(TRACE_MESSAGE_KINDS.feedback_error),
-  type: z.string(),
-  topic: z.string().optional(),
-  detail: JsonObjectSchema.optional(),
-  error: z.string(),
-})
-
-/** @public */
-export type FeedbackError = z.output<typeof FeedbackErrorSchema>
-
-/**
  * Schema for errors emitted when `useAddThread` receives arguments that fail
  * `ThreadScehama` validation or contain an un-compilable JSON Schema.
  *
@@ -264,6 +259,7 @@ export const AddThreadErrorSchema = z.object({
   ...TraceBaseSchema.shape,
   kind: z.literal(TRACE_MESSAGE_KINDS.add_thread_error),
   error: z.union([z.array(z.unknown()), z.string()]),
+  topic: z.string().optional(),
 })
 
 /** @public */
@@ -332,14 +328,47 @@ export const PendingBidsTraceSchema = z.object({
 /** @public */
 export type PendingBidsTrace = z.output<typeof PendingBidsTraceSchema>
 
-export const RuntimeErrorSchema = z.object({
+export const TriggerErrorSchema = z.object({
   ...TraceBaseSchema.shape,
-  kind: z.literal(TRACE_MESSAGE_KINDS.runtime_error),
-  error: z.string(),
+  kind: z.literal(TRACE_MESSAGE_KINDS.trigger_error),
+  error: z.union([z.array(z.unknown()), z.string()]),
+  topic: z.string().optional(),
 })
 
 /** @public */
-export type RuntimeError = z.infer<typeof RuntimeErrorSchema>
+export type TriggerError = z.infer<typeof TriggerErrorSchema>
+
+export const InterruptTraceSchema = z.object({
+  ...TraceBaseSchema.shape,
+  kind: z.literal(TRACE_MESSAGE_KINDS.interrupt),
+  selected: BPEventSchema,
+  threadLabel: z.string(),
+  step: z.number().int().nonnegative(),
+})
+
+/** @public */
+export type InterruptTrace = z.infer<typeof InterruptTraceSchema>
+
+export const TransformTraceSchema = z.object({
+  ...TraceBaseSchema.shape,
+  kind: z.literal(TRACE_MESSAGE_KINDS.transform),
+  selected: BPEventSchema,
+  threadLabel: z.string(),
+  step: z.number().int().nonnegative(),
+  transform: z.array(
+    z.object({
+      type: z.string(),
+      topic: z.string().optional(),
+      detailMatch: z.enum(Object.values(DETAIL_MATCH)).optional(),
+      detailSchema: JsonObjectSchema.optional(),
+      query: z.string(),
+      target: z.string(),
+    }),
+  ),
+})
+
+/** @public */
+export type TransformTrace = z.infer<typeof TransformTraceSchema>
 
 /**
  * Discriminated union schema for all observable moments from the BP engine.
@@ -347,19 +376,19 @@ export type RuntimeError = z.infer<typeof RuntimeErrorSchema>
  *
  * @see {@link SelectionTraceSchema} for event selection observations
  * @see {@link DeadlockTraceSchema} for blocked-candidate deadlock observations
- * @see {@link FeedbackErrorSchema} for feedback handler errors
  * @see {@link ExtensionErrorSchema} for host/runtime module diagnostics
  *
  * @public
  */
 export const TraceSchema = z.discriminatedUnion('kind', [
-  RuntimeErrorSchema,
+  TriggerErrorSchema,
   FrontieTraceSchema,
   DeadlockTraceSchema,
-  FeedbackErrorSchema,
   SelectionTraceSchema,
   AddThreadErrorSchema,
   PendingBidsTraceSchema,
+  InterruptTraceSchema,
+  TransformTraceSchema,
 ])
 
 /** @public */
