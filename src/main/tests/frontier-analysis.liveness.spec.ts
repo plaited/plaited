@@ -102,6 +102,16 @@ describe('frontierStateKey', () => {
     expect(frontierStateKey({ pending: loose })).not.toBe(frontierStateKey({ pending: strict }))
   })
 
+  test('distinguishes transform listeners from interrupt listeners on the same event', () => {
+    const asTransform = new Set<PendingBid>([
+      bid({ label: 'w', priority: 1, transform: [{ type: 'x', query: '.', target: 'y' }] }),
+    ])
+    const asInterrupt = new Set<PendingBid>([bid({ label: 'w', priority: 1, interrupt: [{ type: 'x' }] })])
+    // A transform state waits on external reshaping; an interrupt state dies on
+    // selection. Collapsing them into one key would close the graph wrongly.
+    expect(frontierStateKey({ pending: asTransform })).not.toBe(frontierStateKey({ pending: asInterrupt }))
+  })
+
   test('distinguishes request type', () => {
     const left = new Set<PendingBid>([bid({ label: 'a', priority: 1, request: { type: 'x' } })])
     const right = new Set<PendingBid>([bid({ label: 'a', priority: 1, request: { type: 'y' } })])

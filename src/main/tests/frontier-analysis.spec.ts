@@ -43,6 +43,24 @@ describe('replayToFrontier', () => {
 })
 
 describe('exploreFrontiers', () => {
+  test('wakes transform-parked threads via matching triggers', () => {
+    const transformThreads: Thread[] = [
+      { label: 'shaper', rules: [{ transform: [{ type: 'raw', query: '.', target: 'shaped' }] }] },
+    ]
+    const result = exploreFrontiers({ threads: transformThreads, triggers: [{ type: 'raw' }] })
+    const root = [...result.stateGraph.values()][0]!
+    expect(root.successors.length).toBeGreaterThan(0)
+    expect(root.successors[0]!.selection.type).toBe('raw')
+  })
+
+  test('leaves transform-parked threads parked for non-matching triggers', () => {
+    const transformThreads: Thread[] = [
+      { label: 'shaper', rules: [{ transform: [{ type: 'raw', query: '.', target: 'shaped' }] }] },
+    ]
+    const result = exploreFrontiers({ threads: transformThreads, triggers: [{ type: 'unrelated' }] })
+    const root = [...result.stateGraph.values()][0]!
+    expect(root.successors).toHaveLength(0)
+  })
   test('bfs explores reachable histories', () => {
     const result = exploreFrontiers({ threads, strategy: 'bfs', maxDepth: 3 })
     expect(result.report.visitedCount).toBeGreaterThan(0)
