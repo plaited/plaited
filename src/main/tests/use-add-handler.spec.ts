@@ -57,24 +57,24 @@ describe('addHandler caller-held disconnect', () => {
 })
 
 /**
- * useAddHandler topic-scoping: an optional `topic` argument filters the
- * handler to selected events carrying the same `topic`. Omitting `topic`
- * preserves the legacy type-only match (fires for any topic).
+ * useAddHandler space-scoping: an optional `space` argument filters the
+ * handler to selected events carrying the same `space`. Omitting `space`
+ * preserves the legacy type-only match (fires for any space).
  *
- * A selected event's topic is stamped by `useTrigger(topic)` (on injected
- * events) and by `useAddThread(topic)` (on thread-requested events).
+ * A selected event's space is stamped by `useTrigger(space)` (on injected
+ * events) and by `useAddThread(space)` (on thread-requested events).
  */
-describe('useAddHandler topic scoping', () => {
-  test('scoped handler fires for a same-topic triggered event and skips other topics', () => {
+describe('useAddHandler space scoping', () => {
+  test('scoped handler fires for a same-space triggered event and skips other spaces', () => {
     const received: string[] = []
     const { useTrigger, useAddHandler } = behavioral()
-    const triggerA = useTrigger('topicA')
+    const triggerA = useTrigger('spaceA')
 
-    useAddHandler('topicA')('event', () => {
-      received.push('topicA')
+    useAddHandler('spaceA')('event', () => {
+      received.push('spaceA')
     })
-    useAddHandler('topicB')('event', () => {
-      received.push('topicB')
+    useAddHandler('spaceB')('event', () => {
+      received.push('spaceB')
     })
     // Unscoped handler still fires (back-compat type-only match).
     useAddHandler()('event', () => {
@@ -83,16 +83,16 @@ describe('useAddHandler topic scoping', () => {
 
     triggerA({ type: 'event' })
 
-    expect(received).toEqual(['topicA', 'unscoped'])
+    expect(received).toEqual(['spaceA', 'unscoped'])
   })
 
-  test('scoped handler ignores triggered events that carry no topic', () => {
+  test('scoped handler ignores triggered events that carry no space', () => {
     const received: string[] = []
     const { useTrigger, useAddHandler } = behavioral()
     const trigger = useTrigger()
 
-    useAddHandler('topicA')('event', () => {
-      received.push('topicA')
+    useAddHandler('spaceA')('event', () => {
+      received.push('spaceA')
     })
     useAddHandler()('event', () => {
       received.push('unscoped')
@@ -103,29 +103,29 @@ describe('useAddHandler topic scoping', () => {
     expect(received).toEqual(['unscoped'])
   })
 
-  test('topic propagates from useAddThread to a requested event and gates scoped handlers', () => {
+  test('space propagates from useAddThread to a requested event and gates scoped handlers', () => {
     const received: string[] = []
     const { useAddThread, useTrigger, useAddHandler } = behavioral()
-    const addThread = useAddThread('topicA')
+    const addThread = useAddThread('spaceA')
     const trigger = useTrigger()
 
-    // Producer under topicA requests 'event' — the selected event carries topicA.
+    // Producer under spaceA requests 'event' — the selected event carries spaceA.
     addThread({ label: 'producer', rules: [{ request: { type: 'event' } }], once: true })
 
-    useAddHandler('topicA')('event', () => {
-      received.push('topicA')
+    useAddHandler('spaceA')('event', () => {
+      received.push('spaceA')
     })
-    useAddHandler('topicB')('event', () => {
-      received.push('topicB')
+    useAddHandler('spaceB')('event', () => {
+      received.push('spaceB')
     })
     useAddHandler()('event', () => {
       received.push('unscoped')
     })
 
     // Catalyst kick: 'go' is ingress (priority 0), selected first and unhandled;
-    // the next super-step selects the producer's topicA 'event' request.
+    // the next super-step selects the producer's spaceA 'event' request.
     trigger({ type: 'go' })
 
-    expect(received).toEqual(['topicA', 'unscoped'])
+    expect(received).toEqual(['spaceA', 'unscoped'])
   })
 })

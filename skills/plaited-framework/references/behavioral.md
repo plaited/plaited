@@ -47,9 +47,8 @@ Schema, compiled at registration.
 
 | Hook | Returns | Use when |
 |------|---------|----------|
-| `useAddThread(topic?)` | `(args: Thread) => void` | Register a b-thread (`{ label, rules, once? }`). Optional `topic` stamps all the thread's idioms. |
-| `useTrigger(topic?)` | `(event: BPEvent) => void` | Inject an external event. Triggered events have highest priority (0) and can be blocked. Initiates a new super-step. |
-| `useAddHandler(topic?)` | `AddHandler` | Subscribe a side-effect handler to selected events. Returns a `Disconnect`. |
+| `useAddThread(space?)` | `(args: Thread) => void` | Register a b-thread (`{ label, rules, once? }`). Optional `space` stamps all the thread's idioms. |
+| `useTrigger(space?)` | `(event: BPEvent) => void` | Inject an external event. Triggered events have highest priority (0) and can be blocked. Initiates a new super-step. |
 | `useTrace(listener)` | `Disconnect` | Observe internal state traces emitted after each event selection. Does not affect execution. |
 | `sendTrace(arg)` | `void` | Publish a custom trace to all `useTrace` listeners (for host/extension integration). |
 

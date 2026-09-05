@@ -98,14 +98,14 @@ const createFrontierTrace = ({
     type: candidate.type,
     ...(candidate.detail === undefined ? {} : { detail: candidate.detail }),
     ...(candidate.ingress === undefined ? {} : { ingress: candidate.ingress }),
-    ...(candidate.topic === undefined ? {} : { topic: candidate.topic }),
+    ...(candidate.space === undefined ? {} : { space: candidate.space }),
   })),
   enabled: frontier.enabled.map((candidate) => ({
     priority: candidate.priority,
     type: candidate.type,
     ...(candidate.detail === undefined ? {} : { detail: candidate.detail }),
     ...(candidate.ingress === undefined ? {} : { ingress: candidate.ingress }),
-    ...(candidate.topic === undefined ? {} : { topic: candidate.topic }),
+    ...(candidate.space === undefined ? {} : { space: candidate.space }),
   })),
 })
 
@@ -126,7 +126,7 @@ const createSelectionTrace = ({
     type: event.type,
     ...(event.detail === undefined ? {} : { detail: event.detail }),
     ...(event.ingress === undefined ? {} : { ingress: event.ingress }),
-    ...(event.topic === undefined ? {} : { topic: event.topic }),
+    ...(event.space === undefined ? {} : { space: event.space }),
   },
 })
 
@@ -139,7 +139,7 @@ const createDeadlockTrace = ({ step, instanceId }: { step: number; instanceId: s
 
 const matchesSelectedEvent = ({ candidate, selected }: { candidate: CandidateBid; selected: TraceEvent }) =>
   candidate.type === selected.type &&
-  candidate.topic === selected.topic &&
+  candidate.space === selected.space &&
   Bun.deepEquals(candidate.detail, selected.detail)
 
 const addIngressTriggerToPending = ({ pending, selected }: { pending: Set<PendingBid>; selected: TraceEvent }) => {
@@ -148,7 +148,7 @@ const addIngressTriggerToPending = ({ pending, selected }: { pending: Set<Pendin
       request: {
         type: selected.type,
         ...(selected.detail === undefined ? {} : { detail: selected.detail }),
-        ...(selected.topic === undefined ? {} : { topic: selected.topic }),
+        ...(selected.space === undefined ? {} : { space: selected.space }),
       },
     }
   }
@@ -174,16 +174,16 @@ const getSelectedEvents = ({ messages }: { messages: Trace[] }) =>
  * needed by the frontier engine.
  *
  * @param threads - Thread tuples authored as `['label', { rules, once? }]`.
- * @param topic - Optional topic stamp to pass into {@link generateRulesFunctions}.
+ * @param space - Optional space stamp to pass into {@link generateRulesFunctions}.
  * @returns Compiled entries each with the authored `label` and a started generator.
  */
 const compileThreads = (
   threads: Thread[],
-  topic?: string,
+  space?: string,
 ): Array<{ label: string; generator: IterableIterator<RegisteredIdioms> }> =>
   threads.map(({ label, rules, once }) => ({
     label,
-    generator: useThread(generateRulesFunctions(rules, topic), once)(),
+    generator: useThread(generateRulesFunctions(rules, space), once)(),
   }))
 
 /**
@@ -212,7 +212,7 @@ export type DeadlockFinding = {
  * @param args.threads - Thread tuples to replay.
  * @param args.messages - Selection trace to replay. Each selection is
  *   checked for enablement at the corresponding step.
- * @param args.topic - Optional topic stamp applied to all thread rules.
+ * @param args.space - Optional space stamp applied to all thread rules.
  * @param args.instanceId - Instance id stamped on synthetic interrupt/transform
  *   traces emitted during resumption. Defaults to a minted `ueid('bp_')`.
  * @returns The replay result containing the pending set and final frontier.
@@ -224,18 +224,18 @@ export type DeadlockFinding = {
 export const replayToFrontier = ({
   threads,
   messages = [],
-  topic,
+  space,
   instanceId = ueid('bp_'),
 }: {
   threads: Thread[]
   messages?: Trace[]
-  topic?: string
+  space?: string
   instanceId?: string
 }): ReplayToFrontierResult => {
   const pending = new Set<PendingBid>()
   const running = new Set<RunningBid>()
 
-  const entries = compileThreads(threads, topic)
+  const entries = compileThreads(threads, space)
   for (let i = 0; i < entries.length; i++) {
     const entry = entries[i]!
     running.add({
@@ -286,14 +286,14 @@ const triggerAffectsPendingBid = ({ pendingBid, trigger }: { pendingBid: Pending
     priority: 0,
     type: trigger.type,
     ...(trigger.detail === undefined ? {} : { detail: trigger.detail }),
-    ...(trigger.topic === undefined ? {} : { topic: trigger.topic }),
+    ...(trigger.space === undefined ? {} : { space: trigger.space }),
     ingress: true as const,
   }
 
   return (
     (pendingBid.request !== undefined &&
       pendingBid.request.type === trigger.type &&
-      pendingBid.request.topic === trigger.topic &&
+      pendingBid.request.space === trigger.space &&
       Bun.deepEquals(pendingBid.request.detail, trigger.detail)) ||
     pendingBid.waitFor?.some(isListeningFor(candidate)) ||
     pendingBid.interrupt?.some(isListeningFor(candidate)) ||
@@ -329,7 +329,7 @@ const getRequestSuccessors = ({
         type: candidate.type,
         ...(candidate.detail === undefined ? {} : { detail: candidate.detail }),
         ...(candidate.ingress === undefined ? {} : { ingress: candidate.ingress }),
-        ...(candidate.topic === undefined ? {} : { topic: candidate.topic }),
+        ...(candidate.space === undefined ? {} : { space: candidate.space }),
       },
     }),
   )
@@ -341,7 +341,7 @@ const getTriggerSuccessors = ({
   threads,
   step,
   triggers,
-  topic,
+  space,
   instanceId,
 }: {
   pending: Set<PendingBid>
@@ -349,7 +349,7 @@ const getTriggerSuccessors = ({
   threads: Thread[]
   step: number
   triggers: BPEvent[]
-  topic?: string
+  space?: string
   instanceId: string
 }) => {
   const successors: SelectionTrace[] = []
@@ -365,7 +365,7 @@ const getTriggerSuccessors = ({
       event: {
         type: trigger.type,
         ...(trigger.detail === undefined ? {} : { detail: trigger.detail }),
-        ...(trigger.topic === undefined ? {} : { topic: trigger.topic }),
+        ...(trigger.space === undefined ? {} : { space: trigger.space }),
         ingress: true,
       },
     })
@@ -374,7 +374,7 @@ const getTriggerSuccessors = ({
       replayToFrontier({
         threads,
         messages: [...messages, selection],
-        topic,
+        space,
         instanceId,
       })
       successors.push(selection)
@@ -419,7 +419,7 @@ const normalizeListeners = (listener: RegisteredBPListener[] | RegisteredTransfo
  * - Drops instance-identity and non-serializable artifacts: the `generator`
  *   closure and each listener's zod `detailSchema` instance (serialized to
  *   JSON Schema in its place).
- * - `request` is projected to `{ type, detail, topic }`. Bid order and listener
+ * - `request` is projected to `{ type, detail, space }`. Bid order and listener
  *   order are canonicalized by sorting on serialized content, yielding a total
  *   order independent of input order.
  *
@@ -441,11 +441,11 @@ export const frontierStateKey = ({ pending }: { pending: Set<PendingBid> }): str
       .map(({ waitFor, block, interrupt, request, transform, generator: _gen, ...rest }) =>
         JSON.stringify({
           ...rest,
-          // request is field-picked to { type, detail, topic } so non-trace
+          // request is field-picked to { type, detail, space } so non-trace
           // fields never enter the state key (frontier-analysis invariant).
           ...(request && {
             request: {
-              topic: request.topic,
+              space: request.space,
               type: request.type,
               ...(request.detail === undefined ? {} : { detail: request.detail }),
             },
@@ -668,8 +668,8 @@ export type ExploreFrontiersArgs = {
   selectionPolicy?: 'all-enabled' | 'scheduler'
   /** Maximum selection depth before truncating exploration. */
   maxDepth?: number
-  /** Topic stamp applied to all thread rules. */
-  topic?: string
+  /** Space stamp applied to all thread rules. */
+  space?: string
   /** Instance id stamped on synthetic traces. Defaults to a minted `ueid('bp_')` — pass the analyzed kernel's id to make joins natural. */
   instanceId?: string
 }
@@ -715,7 +715,7 @@ export const exploreFrontiers = ({
   strategy = 'bfs',
   selectionPolicy = 'all-enabled',
   maxDepth,
-  topic,
+  space,
   instanceId = ueid('bp_'),
 }: ExploreFrontiersArgs): ExploreFrontiersResult => {
   if (strategy !== 'bfs' && strategy !== 'dfs') {
@@ -734,7 +734,7 @@ export const exploreFrontiers = ({
     const { frontier, pending: currentPending } = replayToFrontier({
       threads,
       messages: current.messages,
-      topic,
+      space,
       instanceId,
     })
 
@@ -776,7 +776,7 @@ export const exploreFrontiers = ({
       threads,
       step,
       triggers,
-      topic,
+      space,
       instanceId,
     })
     const successors = [...requestSuccessors, ...triggerSuccessors]

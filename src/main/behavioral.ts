@@ -44,29 +44,29 @@ const serializePending = (pending: Set<PendingBid>) =>
 /**
  * @internal
  * Projects a {@link CandidateBid} to the JSON-only trace shape (`priority`,
- * `type`, `detail`, `ingress`, `topic`).
+ * `type`, `detail`, `ingress`, `space`).
  *
  * Frontiers must stay JSON so frontier analysis (trace replay/matching) and the
  * visited-set key never observe non-serializable values.
  */
-const toCandidateSnapshot = ({ priority, type, detail, ingress, topic }: CandidateBid) => ({
+const toCandidateSnapshot = ({ priority, type, detail, ingress, space }: CandidateBid) => ({
   priority,
   type,
   ...(detail === undefined ? {} : { detail }),
   ...(ingress === undefined ? {} : { ingress }),
-  ...(topic === undefined ? {} : { topic }),
+  ...(space === undefined ? {} : { space }),
 })
 
 /**
  * @internal
  * Projects the selected candidate to the JSON-only {@link SnapshotEvent} shape
- * (`type`, `detail`, `ingress`, `topic`).
+ * (`type`, `detail`, `ingress`, `space`).
  */
-const toSelectedSnapshot = ({ type, detail, ingress, topic }: CandidateBid) => ({
+const toSelectedSnapshot = ({ type, detail, ingress, space }: CandidateBid) => ({
   type,
   ...(detail === undefined ? {} : { detail }),
   ...(ingress === undefined ? {} : { ingress }),
-  ...(topic === undefined ? {} : { topic }),
+  ...(space === undefined ? {} : { space }),
 })
 
 const createSubject = (): SendTrace => {
@@ -270,7 +270,7 @@ export const behavioral = (options?: { instanceId?: string }) => {
    * @internal
    * Implementation of the public `trigger` function.
    */
-  const useTrigger: UseTrigger = (topic) => (event) => {
+  const useTrigger: UseTrigger = (space) => (event) => {
     const result = BPEventSchema.safeParse(event)
     if (result.error) {
       return sendTrace({
@@ -278,7 +278,7 @@ export const behavioral = (options?: { instanceId?: string }) => {
         timestamp: Date.now(),
         instanceId,
         error: result.error.issues,
-        topic,
+        space,
       })
     }
     const thread = function* () {
@@ -287,7 +287,7 @@ export const behavioral = (options?: { instanceId?: string }) => {
       }
     }
     running.add({
-      topic,
+      space,
       priority: 0,
       generator: thread(),
       ingress: true,
@@ -308,12 +308,12 @@ export const behavioral = (options?: { instanceId?: string }) => {
     step()
   }
 
-  const useAddThread: UseAddThread = (topic) => (args) => {
+  const useAddThread: UseAddThread = (space) => (args) => {
     const result = ThreadScehama.safeParse(args)
     if (result.success) {
       const { label, rules, once } = args
       try {
-        const syncPoints = generateRulesFunctions(rules, topic)
+        const syncPoints = generateRulesFunctions(rules, space)
         const thread = useThread(syncPoints, once)
         running.add({
           priority: running.size + 1,
@@ -326,7 +326,7 @@ export const behavioral = (options?: { instanceId?: string }) => {
           timestamp: Date.now(),
           instanceId,
           error: err instanceof Error ? err.message : String(err),
-          topic,
+          space,
         })
       }
     } else {
@@ -335,7 +335,7 @@ export const behavioral = (options?: { instanceId?: string }) => {
         timestamp: Date.now(),
         instanceId,
         error: result.error.issues,
-        topic,
+        space,
       })
     }
   }

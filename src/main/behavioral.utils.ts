@@ -36,12 +36,12 @@ export const isBPEvent = (data: unknown): data is BPEvent => {
  * @internal
  * Creates a checker function to determine if a given BPListener matches a CandidateBid.
  */
-export const isListeningFor = ({ type, detail, topic }: CandidateBid) => {
+export const isListeningFor = ({ type, detail, space }: CandidateBid) => {
   return (listener: RegisteredBPListener | RegisteredTransformListener): boolean => {
-    const topicMatches = listener.topic ? topic === listener.topic : true
+    const spaceMatches = listener.space ? space === listener.space : true
     const schemaMatches = listener.detailSchema ? listener.detailSchema.safeParse(detail).success : true
     const detailMatches = listener.detailMatch === 'invalid' ? !schemaMatches : schemaMatches
-    return listener.type === type && topicMatches && detailMatches
+    return listener.type === type && spaceMatches && detailMatches
   }
 }
 
@@ -93,13 +93,13 @@ export const computeFrontier = ({ pending }: { pending: Set<PendingBid> }): Fron
   const blocked: RegisteredBPListener[] = []
   const candidates: CandidateBid[] = []
 
-  for (const { request, priority, block, ingress, topic } of pending) {
+  for (const { request, priority, block, ingress, space } of pending) {
     block && blocked.push(...block)
     request &&
       candidates.push({
         priority,
         ingress,
-        topic,
+        space,
         ...request,
       })
   }
@@ -124,7 +124,7 @@ export const computeFrontier = ({ pending }: { pending: Set<PendingBid> }): Fron
 
 export const advanceRunningToPending = (running: Set<RunningBid>, pending: Set<PendingBid>) => {
   for (const bid of running) {
-    const { generator, priority, label, ingress, topic } = bid
+    const { generator, priority, label, ingress, space } = bid
     const { value, done } = generator.next()
     !done &&
       pending.add({
@@ -132,7 +132,7 @@ export const advanceRunningToPending = (running: Set<RunningBid>, pending: Set<P
         ingress,
         label,
         generator,
-        topic,
+        space,
         ...value,
       })
     running.delete(bid)
@@ -141,7 +141,7 @@ export const advanceRunningToPending = (running: Set<RunningBid>, pending: Set<P
 
 const eventMatchesCandidate = (request: BPEvent, selectedEvent: CandidateBid) => {
   if (selectedEvent.type !== request.type) return false
-  if (selectedEvent.topic && selectedEvent.topic !== request.topic) return false
+  if (selectedEvent.space && selectedEvent.space !== request.space) return false
   return Bun.deepEquals(request.detail, selectedEvent.detail)
 }
 
@@ -198,7 +198,7 @@ export const resumePendingThreadsForSelectedEvent = ({
   }
 }
 
-export const generateRulesFunctions = (rules: Idioms[], topic?: string): RulesFunction[] => {
+export const generateRulesFunctions = (rules: Idioms[], space?: string): RulesFunction[] => {
   // Fail fast on unrepresentable detailSchemas: z.toJSONSchema throws here, so
   // useAddThread's try/catch surfaces it as add_thread_error — never at trace
   // time inside the engine loop.
@@ -213,32 +213,32 @@ export const generateRulesFunctions = (rules: Idioms[], topic?: string): RulesFu
     if (request) {
       registeredIdioms[IDIOMS.request] = {
         type: request.type,
-        topic,
+        space,
         detail: request.detail,
       }
     }
     if (block) {
       registeredIdioms[IDIOMS.block] = block.map((listener) => ({
         ...listener,
-        topic,
+        space,
       }))
     }
     if (waitFor) {
       registeredIdioms[IDIOMS.waitFor] = waitFor.map((listener) => ({
         ...listener,
-        topic,
+        space,
       }))
     }
     if (interrupt) {
       registeredIdioms[IDIOMS.interrupt] = interrupt.map((listener) => ({
         ...listener,
-        topic,
+        space,
       }))
     }
     if (transform) {
       registeredIdioms[IDIOMS.transform] = transform.map((listener) => ({
         ...listener,
-        topic,
+        space,
       }))
     }
     syncs.push(function* () {

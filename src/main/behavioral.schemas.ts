@@ -32,7 +32,7 @@ export type JsonObject = z.output<typeof JsonObjectSchema>
 export const BPEventSchema = z.object({
   type: z.string(),
   detail: JsonObjectSchema.optional(),
-  topic: z.string().optional(),
+  space: z.string().optional(),
 })
 
 /** @public */
@@ -75,15 +75,15 @@ export const TransformListenerSchema = z.object({
 export type TransformListener = z.output<typeof TransformListenerSchema>
 
 const RegisteredBaseSchema = z.object({
-  topic: z.string().optional(),
+  space: z.string().optional(),
 })
 
 /**
- * Registered listener with topic stamping and compiled detail validator.
+ * Registered listener with space stamping and compiled detail validator.
  *
- * The `validate` function is a compiled Ajv validator created at registration
- * time in {@link generateRulesFunctions}. Returns `true` when the candidate
- * event's `detail` conforms to the listener's `detailSchema`.
+ * The listener's `detailSchema` is a zod object schema authored by the thread;
+ * matching validates candidate event details against it at match time via
+ * `safeParse`.
  */
 export const RegisteredBPListenerSchema = z.object({
   ...RegisteredBaseSchema.shape,
@@ -92,7 +92,7 @@ export const RegisteredBPListenerSchema = z.object({
 
 export type RegisteredBPListener = z.output<typeof RegisteredBPListenerSchema>
 /**
- * Registered transform listener — {@link TransformListener} with topic
+ * Registered transform listener — {@link TransformListener} with space
  * stamping and the compiled detail validator shared by all registered idioms.
  */
 export const RegisteredTransformListenerSchema = z.object({
@@ -109,7 +109,7 @@ export type RegisteredTransformListener = z.output<typeof RegisteredTransformLis
  */
 export const SerializedListenerSchema = z.object({
   type: z.string(),
-  topic: z.string().optional(),
+  space: z.string().optional(),
   detailMatch: z.enum(Object.values(DETAIL_MATCH)).optional(),
   // JSON Schema emitted by z.toJSONSchema() — structurally a JSON object.
   detailSchema: z.record(z.string(), z.unknown()).optional(),
@@ -193,7 +193,7 @@ export const TraceCandidateSchema = z.object({
   type: z.string(),
   detail: JsonObjectSchema.optional(),
   ingress: z.literal(true).optional(),
-  topic: z.string().optional(),
+  space: z.string().optional(),
   priority: z.number(),
 })
 
@@ -292,7 +292,7 @@ export const AddThreadErrorSchema = z.object({
   ...TraceBaseSchema.shape,
   kind: z.literal(TRACE_MESSAGE_KINDS.add_thread_error),
   error: z.union([z.array(z.unknown()), z.string()]),
-  topic: z.string().optional(),
+  space: z.string().optional(),
 })
 
 /** @public */
@@ -322,7 +322,7 @@ export const PendingBidsTraceSchema = z.object({
       label: z.string(),
       priority: z.number().int(),
       ingress: z.literal(true).optional(),
-      topic: z.string().optional(),
+      space: z.string().optional(),
       request: BPEventSchema.pick({ type: true, detail: true }).optional(),
       waitFor: z.array(SerializedListenerSchema).optional(),
       block: z.array(SerializedListenerSchema).optional(),
@@ -339,7 +339,7 @@ export const TriggerErrorSchema = z.object({
   ...TraceBaseSchema.shape,
   kind: z.literal(TRACE_MESSAGE_KINDS.trigger_error),
   error: z.union([z.array(z.unknown()), z.string()]),
-  topic: z.string().optional(),
+  space: z.string().optional(),
 })
 
 /** @public */

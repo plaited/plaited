@@ -7,13 +7,13 @@ export type UseThread = (rules: RulesFunction[], once?: true) => RulesFunction
 
 /**
  * A factory type for a single synchronization step that yields one `RegisteredIdioms`
- * object (the engine's internal, topic-stamped idiom shape) and completes.
+ * object (the engine's internal, space-stamped idiom shape) and completes.
  *
  * @param arg - The registered idioms to yield at this synchronization point.
  * @returns A rule generator yielding the provided idioms once.
  *
  * @see {@link generateRulesFunctions} in `behavioral.utils.ts`, which builds
- * `RegisteredIdioms` (with topic stamping) from author-facing `Idioms`.
+ * `RegisteredIdioms` (with space stamping) from author-facing `Idioms`.
  */
 export type Sync = (arg: RegisteredIdioms) => RulesFunction
 
@@ -49,7 +49,7 @@ export type RunningBid = {
   /** Internal iterator representing the thread's execution state. Holds the current position in the rule sequence. */
   generator: IterableIterator<RegisteredIdioms>
   ingress?: true
-  topic?: string
+  space?: string
 }
 
 /**
@@ -78,7 +78,7 @@ export type CandidateBid = {
   detail?: BPEvent['detail']
 
   ingress?: true
-  topic?: string
+  space?: string
 }
 
 /**
@@ -166,7 +166,7 @@ export type UseTrace = (listener: TraceListener) => Disconnect
 
 export type AddThread = (args: Thread) => void
 
-export type UseAddThread = (topic?: string) => AddThread
+export type UseAddThread = (space?: string) => AddThread
 
 /**
  * Injects external events into the behavioral program.
@@ -184,7 +184,7 @@ export type UseAddThread = (topic?: string) => AddThread
  */
 export type Trigger = <T extends BPEvent>(args: T) => void
 
-export type UseTrigger = (topic?: string) => Trigger
+export type UseTrigger = (space?: string) => Trigger
 
 export type SendTrace = {
   (value: Trace): void
