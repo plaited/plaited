@@ -214,28 +214,32 @@ export const generateRulesFunctions = (rules: Idioms[], space?: string): RulesFu
       }
     }
     if (block) {
-      registeredIdioms[IDIOMS.block] = block.map((listener) => ({
-        ...listener,
-        space,
-      }))
+      registeredIdioms[IDIOMS.block] = block.map((listener) => {
+        const registered = { ...listener, space }
+        compileListenerValidator(registered)
+        return registered
+      })
     }
     if (waitFor) {
-      registeredIdioms[IDIOMS.waitFor] = waitFor.map((listener) => ({
-        ...listener,
-        space,
-      }))
+      registeredIdioms[IDIOMS.waitFor] = waitFor.map((listener) => {
+        const registered = { ...listener, space }
+        compileListenerValidator(registered)
+        return registered
+      })
     }
     if (interrupt) {
-      registeredIdioms[IDIOMS.interrupt] = interrupt.map((listener) => ({
-        ...listener,
-        space,
-      }))
+      registeredIdioms[IDIOMS.interrupt] = interrupt.map((listener) => {
+        const registered = { ...listener, space }
+        compileListenerValidator(registered)
+        return registered
+      })
     }
     if (transform) {
-      registeredIdioms[IDIOMS.transform] = transform.map((listener) => ({
-        ...listener,
-        space,
-      }))
+      registeredIdioms[IDIOMS.transform] = transform.map((listener) => {
+        const registered = { ...listener, space }
+        compileListenerValidator(registered)
+        return registered
+      })
     }
     syncs.push(function* () {
       yield registeredIdioms

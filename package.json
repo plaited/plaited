@@ -56,22 +56,22 @@
     "@modelcontextprotocol/client": "^2.0.0",
     "@modelcontextprotocol/sdk": "^1.29.0",
     "@modelcontextprotocol/server": "^2.0.0",
-    "ajv": "8.20.0",
-    "zod": "4.4.3"
+    "zod": "4.5.4",
+    "ajv": "8.20.0"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.5.6",
-    "@commitlint/cli": "21.2.1",
-    "@commitlint/config-conventional": "21.2.0",
+    "@biomejs/biome": "2.5.12",
+    "@commitlint/cli": "21.2.2",
+    "@commitlint/config-conventional": "21.2.2",
     "@earendil-works/pi-coding-agent": "0.82.1",
     "@playwright/cli": "^0.1.17",
-    "@types/bun": "^1.3.14",
-    "@webref/css": "^8.7.1",
-    "commitlint": "21.2.1",
+    "@types/bun": "^1.4.1",
+    "@webref/css": "^8.7.4",
+    "commitlint": "21.2.2",
     "css-tree": "^3.2.1",
     "cz-conventional-changelog": "3.3.0",
     "format-package": "8.0.0",
-    "lint-staged": "17.2.0",
+    "lint-staged": "17.4.1",
     "typescript": "7.0.2"
   }
 }
