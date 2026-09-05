@@ -1,6 +1,6 @@
 import { readdir } from 'node:fs/promises'
 import * as path from 'node:path'
-import * as z from 'zod'
+import { fromJsonSchema } from './schema-adapter.ts'
 import { useMCPServer } from './use-mcp-server.ts'
 
 export const inputSchema = {
@@ -11,7 +11,7 @@ export const inputSchema = {
   },
   required: ['dir', 'cwd'],
   additionalProperties: false,
-}
+} as const
 
 export const outputSchema = {
   type: 'object',
@@ -30,7 +30,7 @@ export const outputSchema = {
   },
   required: ['entries'],
   additionalProperties: false,
-}
+} as const
 
 type LsOutput = { entries: Array<{ name: string; type: 'file' | 'directory' | 'symlink' | 'unknown' }> }
 
@@ -38,8 +38,8 @@ type LsOutput = { entries: Array<{ name: string; type: 'file' | 'directory' | 's
  * List directory entries with their types via `readdir`.
  *
  * Registered via `useMCPServer` as the `ls` MCP tool. `cwd` is a required
- * input field — provided by the provisioner. Returns an error result when the
- * directory cannot be read.
+ * input field — provided by the provisioner. Returns an error result when
+ * the directory cannot be read.
  *
  * MINIMAL: no symlink resolution, no sorting beyond filesystem order.
  * Upgrade path: add `sort` option, symlink target info.
@@ -51,22 +51,11 @@ export const ls = useMCPServer((server) => {
     LS_TOOL_NAME,
     {
       description: 'List entries in a directory with their types.',
-      inputSchema: z.object({
-        cwd: z.string().describe("the tool's provisioned cwd"),
-        dir: z.string().describe("directory path — absolute, or relative to the tool's provisioned cwd"),
-      }),
-      outputSchema: z.object({
-        entries: z.array(
-          z.object({
-            name: z.string(),
-            type: z.enum(['file', 'directory', 'symlink', 'unknown']),
-          }),
-        ),
-        message: z.string().optional().describe('error detail when isError — states what failed'),
-        isError: z.boolean().optional().describe('true when the operation failed'),
-      }),
+      inputSchema: fromJsonSchema(inputSchema),
+      outputSchema: fromJsonSchema(outputSchema),
     },
-    async ({ dir, cwd }) => {
+    // biome-ignore lint/suspicious/noExplicitAny: schema is data, type safety via JSON Schema validation
+    async ({ dir, cwd }: any) => {
       const resolved = path.resolve(cwd, dir)
 
       let entries: { name: string; type: LsOutput['entries'][number]['type'] }[]

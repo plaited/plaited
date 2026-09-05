@@ -1,5 +1,5 @@
 import * as path from 'node:path'
-import * as z from 'zod'
+import { fromJsonSchema } from './schema-adapter.ts'
 import { useMCPServer } from './use-mcp-server.ts'
 
 /**
@@ -48,20 +48,11 @@ export const read = useMCPServer((server) => {
     {
       description:
         'Read the contents of a file. Output is truncated to 2000 lines or 50KB (whichever is hit first). Use offset/limit for large files.',
-      inputSchema: z.object({
-        cwd: z.string().describe("the tool's provisioned cwd"),
-        path: z.string().describe("file path — absolute, or relative to the tool's provisioned cwd"),
-        offset: z.number().int().optional().describe('1-indexed line to start reading from'),
-        limit: z.number().int().optional().describe('maximum number of lines to read'),
-      }),
-      outputSchema: z.object({
-        content: z.string(),
-        truncated: z.boolean(),
-        isError: z.boolean().optional().describe('true when the result is an error message rather than file content'),
-        message: z.string().optional().describe('error detail when isError — states what failed'),
-      }),
+      inputSchema: fromJsonSchema(inputSchema),
+      outputSchema: fromJsonSchema(outputSchema),
     },
-    async ({ path: filePath, offset, limit, cwd }) => {
+    // biome-ignore lint/suspicious/noExplicitAny: schema is data, type safety via JSON Schema validation
+    async ({ path: filePath, offset, limit, cwd }: any) => {
       const resolved = path.resolve(cwd, filePath)
 
       const bunFile = Bun.file(resolved)

@@ -1,5 +1,5 @@
 import * as path from 'node:path'
-import * as z from 'zod'
+import { fromJsonSchema } from './schema-adapter.ts'
 import { useMCPServer } from './use-mcp-server.ts'
 
 export const inputSchema = {
@@ -36,16 +36,11 @@ export const write = useMCPServer((server) => {
     {
       description:
         'Write content to a file. Creates the file if it does not exist, overwrites if it does. Automatically creates parent directories.',
-      inputSchema: z.object({
-        cwd: z.string().describe("the tool's provisioned cwd"),
-        path: z.string().describe("file path — absolute, or relative to the tool's provisioned cwd"),
-        content: z.string(),
-      }),
-      outputSchema: z.object({
-        bytesWritten: z.number().int().describe('number of bytes written to disk'),
-      }),
+      inputSchema: fromJsonSchema(inputSchema),
+      outputSchema: fromJsonSchema(outputSchema),
     },
-    async ({ path: filePath, content, cwd }) => {
+    // biome-ignore lint/suspicious/noExplicitAny: schema is data, type safety via JSON Schema validation
+    async ({ path: filePath, content, cwd }: any) => {
       const resolved = path.resolve(cwd, filePath)
 
       // Ensure parent directory exists
