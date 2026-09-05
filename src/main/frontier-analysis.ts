@@ -21,7 +21,6 @@
  * @packageDocumentation
  */
 
-import * as z from 'zod'
 import { ueid } from '../utils.ts'
 import { FRONTIER_STATUS, TRACE_MESSAGE_KINDS } from './behavioral.constants.ts'
 import type {
@@ -41,7 +40,10 @@ import {
   computeFrontier,
   generateRulesFunctions,
   isListeningFor,
+  isTransformListener,
   resumePendingThreadsForSelectedEvent,
+  serializeRegisteredListener,
+  serializeTransformListener,
   useThread,
 } from './behavioral.utils.ts'
 
@@ -401,14 +403,7 @@ const getTriggerSuccessors = ({
  */
 const normalizeListeners = (listener: RegisteredBPListener[] | RegisteredTransformListener[]) =>
   listener
-    .map(({ type, detailSchema, ...rest }) =>
-      JSON.stringify({
-        type,
-        // Zod schema → JSON Schema so the visited-set key stays JSON-only.
-        ...(detailSchema && { detailSchema: z.toJSONSchema(detailSchema) }),
-        ...rest,
-      }),
-    )
+    .map((l) => JSON.stringify(isTransformListener(l) ? serializeTransformListener(l) : serializeRegisteredListener(l)))
     .sort()
 
 /**
@@ -737,7 +732,12 @@ export const exploreFrontiers = ({
 
   while (pending.length > 0) {
     const current = strategy === 'bfs' ? pending.shift()! : pending.pop()!
-    const { frontier, pending: currentPending } = replayToFrontier({ threads, messages: current.messages, topic })
+    const { frontier, pending: currentPending } = replayToFrontier({
+      threads,
+      messages: current.messages,
+      topic,
+      instanceId,
+    })
 
     const stateKey = frontierStateKey({ pending: currentPending })
 

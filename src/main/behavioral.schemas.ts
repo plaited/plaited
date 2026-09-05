@@ -123,6 +123,13 @@ export const SerializedTransformListenerSchema = z.object({
   query: z.string(),
   target: z.string(),
 })
+
+/** @public */
+export type SerializedListener = z.output<typeof SerializedListenerSchema>
+
+/** @public */
+export type SerializedTransformListener = z.output<typeof SerializedTransformListenerSchema>
+
 /**
  * Represents a synchronization statement yielded by a behavioral rule step.
  * This is the core mechanism through which b-threads communicate their behavioral intentions

@@ -7,6 +7,8 @@ import type {
   RegisteredBPListener,
   RegisteredIdioms,
   RegisteredTransformListener,
+  SerializedListener,
+  SerializedTransformListener,
 } from './behavioral.schemas.ts'
 import type {
   CandidateBid,
@@ -40,6 +42,50 @@ export const isListeningFor = ({ type, detail, topic }: CandidateBid) => {
     const schemaMatches = listener.detailSchema ? listener.detailSchema.safeParse(detail).success : true
     const detailMatches = listener.detailMatch === 'invalid' ? !schemaMatches : schemaMatches
     return listener.type === type && topicMatches && detailMatches
+  }
+}
+
+/**
+ * Projects a registered listener (BP or transform) to its JSON-only serialized
+ * form: the zod `detailSchema` instance becomes a JSON Schema document, so the
+ * result is safe for trace messages and canonical state keys.
+ */
+/**
+ * Type guard: transform listeners are exactly the registered listeners that
+ * carry a `target` (`RegisteredBPListener` declares `target?: never`, so it
+ * can never hold one at runtime).
+ */
+export const isTransformListener = (
+  listener: RegisteredBPListener | RegisteredTransformListener,
+): listener is RegisteredTransformListener => 'target' in listener
+
+/**
+ * Projects a registered BP listener (`waitFor`/`block`/`interrupt`) to its
+ * JSON-only serialized form: the zod `detailSchema` instance becomes a JSON
+ * Schema document, so the result is safe for trace messages and canonical
+ * state keys.
+ */
+export const serializeRegisteredListener = (listener: RegisteredBPListener): SerializedListener => {
+  const { type, detailSchema, ...rest } = listener
+  return {
+    type,
+    // Zod schema → JSON Schema at the serialization boundary; output stays JSON-only.
+    ...(detailSchema && { detailSchema: z.toJSONSchema(detailSchema) }),
+    ...rest,
+  }
+}
+
+/**
+ * Projects a registered transform listener to its JSON-only serialized form.
+ * Same projection as {@link serializeRegisteredListener}, kept separate so
+ * `query`/`target` stay required in the serialized shape.
+ */
+export const serializeTransformListener = (listener: RegisteredTransformListener): SerializedTransformListener => {
+  const { type, detailSchema, ...rest } = listener
+  return {
+    type,
+    ...(detailSchema && { detailSchema: z.toJSONSchema(detailSchema) }),
+    ...rest,
   }
 }
 
@@ -153,10 +199,7 @@ export const resumePendingThreadsForSelectedEvent = ({
         step,
         instanceId,
         // Zod schema → JSON Schema at the trace boundary; traces stay JSON-only.
-        transform: isTransform.map(({ detailSchema, ...rest }) => ({
-          ...rest,
-          ...(detailSchema && { detailSchema: z.toJSONSchema(detailSchema) }),
-        })),
+        transform: isTransform.map(serializeTransformListener),
         selected: selectedEvent,
         threadLabel: label,
       })

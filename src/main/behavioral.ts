@@ -1,13 +1,6 @@
-import * as z from 'zod'
 import { ueid } from '../utils.ts'
 import { FRONTIER_STATUS, TRACE_MESSAGE_KINDS } from './behavioral.constants.ts'
-import {
-  BPEventSchema,
-  type RegisteredBPListener,
-  type RegisteredTransformListener,
-  ThreadScehama,
-  type Trace,
-} from './behavioral.schemas.ts'
+import { BPEventSchema, ThreadScehama, type Trace } from './behavioral.schemas.ts'
 import type {
   CandidateBid,
   PendingBid,
@@ -22,33 +15,10 @@ import {
   computeFrontier,
   generateRulesFunctions,
   resumePendingThreadsForSelectedEvent,
+  serializeRegisteredListener,
+  serializeTransformListener,
   useThread,
 } from './behavioral.utils.ts'
-
-/**
- * @internal
- * Creates a simple publish-subscribe mechanism for event distribution.
- *
- * This function creates a publisher that maintains a set of listeners and provides methods
- * to publish values to all listeners and to subscribe/unsubscribe listeners.
- *
- * @template T - Type of values published through this mechanism.
- * @returns A publisher function with a `subscribe` method attached.
- */
-const normalizeBPListeners = (listener: RegisteredBPListener[]) =>
-  listener.map(({ type, detailSchema, ...rest }) => ({
-    type,
-    // Zod schema → JSON Schema at the trace boundary; traces stay JSON-only.
-    ...(detailSchema && { detailSchema: z.toJSONSchema(detailSchema) }),
-    ...rest,
-  }))
-
-const normalizeTransformListeners = (listener: RegisteredTransformListener[]) =>
-  listener.map(({ type, detailSchema, ...rest }) => ({
-    type,
-    ...(detailSchema && { detailSchema: z.toJSONSchema(detailSchema) }),
-    ...rest,
-  }))
 
 /**
  * @internal
@@ -65,10 +35,10 @@ const serializePending = (pending: Set<PendingBid>) =>
         ...(request.detail === undefined ? {} : { detail: request.detail }),
       },
     }),
-    ...(waitFor && { waitFor: normalizeBPListeners(waitFor) }),
-    ...(block && { block: normalizeBPListeners(block) }),
-    ...(interrupt && { interrupt: normalizeBPListeners(interrupt) }),
-    ...(transform && { transform: normalizeTransformListeners(transform) }),
+    ...(waitFor && { waitFor: waitFor.map(serializeRegisteredListener) }),
+    ...(block && { block: block.map(serializeRegisteredListener) }),
+    ...(interrupt && { interrupt: interrupt.map(serializeRegisteredListener) }),
+    ...(transform && { transform: transform.map(serializeTransformListener) }),
   }))
 
 /**
