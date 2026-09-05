@@ -38,15 +38,11 @@ describe('pending_bids trace', () => {
 
     addThread({ label: 'req', rules: [{ request: { type: 'ping' } }], once: true })
 
-    // Step 0: pending_bids + frontier (since there's no external trigger yet,
-    // the first addThread only sets up running but doesn't trigger a step)
-    // Step 1: after trigger, we get: pending_bids → frontier → selection
     trigger({ type: 'start' })
 
     const pendingIdx = seen.findIndex((s) => s.kind === 'pending_bids')
     const frontierIdx = seen.findIndex((s) => s.kind === 'frontier')
 
-    // Both must be present and pending_bids must come before frontier
     expect(pendingIdx).not.toBe(-1)
     expect(frontierIdx).not.toBe(-1)
     expect(pendingIdx).toBeLessThan(frontierIdx)
@@ -82,15 +78,13 @@ describe('pending_bids trace', () => {
     expect(pending).toBeDefined()
     expect(pending!.threads.length).toBeGreaterThanOrEqual(2)
 
-    // Find the blocker thread's block listener detailSchema
     const blocker = pending!.threads.find((t) => t.label === 'blocker')
     expect(blocker).toBeDefined()
     const block = blocker!.block
     expect(block).toBeDefined()
     const listener = block![0]!
-    // The detailSchema in the trace must be deep-equal to the input, not a conversion
+    // Raw JSON Schema `detailSchema` passes through without conversion
     expect(listener.detailSchema).toEqual(jsonSchema)
-    // Specifically assert that additionalProperties: false survives (z.toJSONSchema drops it)
     expect(listener.detailSchema).toHaveProperty('additionalProperties', false)
   })
 })

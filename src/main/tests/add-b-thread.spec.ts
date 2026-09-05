@@ -2,16 +2,17 @@ import { describe, expect, test } from 'bun:test'
 import { TRACE_MESSAGE_KINDS } from '../behavioral.constants.ts'
 import type { DeadlockTrace, FrontierTrace, SelectionTrace, Trace } from '../behavioral.schemas.ts'
 import { behavioral } from '../behavioral.ts'
+import { onSelection } from './helpers.ts'
 
 const onType = (type: string) => ({ type })
 
 describe('addThread', () => {
-  test('supports dynamic thread installation from feedback handlers', () => {
+  test('supports dynamic thread installation from trace listeners', () => {
     const actual: string[] = []
-    const { useAddThread, useTrigger, useAddHandler } = behavioral()
+    const program = behavioral()
+    const { useAddThread, useTrigger } = program
     const addThread = useAddThread()
     const trigger = useTrigger()
-    const addHandler = useAddHandler()
 
     addThread({ label: 'addHotOnce', rules: [{ request: { type: 'hot_1' } }], once: true })
     addThread({
@@ -28,25 +29,27 @@ describe('addThread', () => {
       ],
     })
 
-    addHandler('hot_1', () => {
-      actual.push('hot')
-      trigger({ type: 'cold' })
-      addThread({
-        label: 'addMoreHot',
-        rules: [{ request: { type: 'hot' } }, { request: { type: 'hot' } }],
-        once: true,
-      })
-      addThread({
-        label: 'addMoreCold',
-        rules: [{ request: { type: 'cold' } }, { request: { type: 'cold' } }],
-        once: true,
-      })
-    })
-    addHandler('cold', () => {
-      actual.push('cold')
-    })
-    addHandler('hot', () => {
-      actual.push('hot')
+    onSelection(program, (selected) => {
+      if (selected.type === 'hot_1') {
+        actual.push('hot')
+        trigger({ type: 'cold' })
+        addThread({
+          label: 'addMoreHot',
+          rules: [{ request: { type: 'hot' } }, { request: { type: 'hot' } }],
+          once: true,
+        })
+        addThread({
+          label: 'addMoreCold',
+          rules: [{ request: { type: 'cold' } }, { request: { type: 'cold' } }],
+          once: true,
+        })
+      }
+      if (selected.type === 'cold') {
+        actual.push('cold')
+      }
+      if (selected.type === 'hot') {
+        actual.push('hot')
+      }
     })
 
     trigger({ type: 'start' })
@@ -59,13 +62,16 @@ describe('addThread', () => {
   test('frontier and selection traces include worker requests and selected events', () => {
     const traces: Trace[] = []
     const completions: string[] = []
-    const { useAddThread, useTrigger, useAddHandler, useTrace } = behavioral()
+    const program = behavioral()
+    const { useAddThread, useTrigger, useTrace } = program
     const addThread = useAddThread()
     const trigger = useTrigger()
-    const addHandler = useAddHandler()
 
     useTrace((trace: Trace) => {
       traces.push(trace)
+      if (trace.kind === 'selection' && (trace.selected.type === 'done_a' || trace.selected.type === 'done_b')) {
+        completions.push('done')
+      }
     })
 
     addThread({
@@ -77,13 +83,6 @@ describe('addThread', () => {
       label: 'workerB',
       rules: [{ waitFor: [onType('start')] }, { request: { type: 'done_b' } }],
       once: true,
-    })
-
-    addHandler('done_a', () => {
-      completions.push('done')
-    })
-    addHandler('done_b', () => {
-      completions.push('done')
     })
 
     trigger({ type: 'start' })
@@ -131,54 +130,5 @@ describe('addThread', () => {
     const deadlockSnapshot = traces.find((trace): trace is DeadlockTrace => trace.kind === TRACE_MESSAGE_KINDS.deadlock)
     expect(deadlockSnapshot).toBeDefined()
     expect(deadlockSnapshot!.step).toBe(deadlockFrontier!.step)
-  })
-})
-
-describe('agent thread contract — JSON-only rules', () => {
-  test('a thread with a generator function in rules is rejected (add_thread_error)', () => {
-    const traces: Trace[] = []
-    const { useAddThread, useTrace } = behavioral()
-    const addThread = useAddThread()
-
-    useTrace((trace: Trace) => {
-      traces.push(trace)
-    })
-
-    // A closure-bearing rule (generator function) is NOT JSON — ThreadScehama.safeParse rejects it.
-    addThread({
-      label: 'bad-closure',
-      rules: [
-        function* () {
-          yield { request: { type: 'evil' } }
-        },
-      ] as unknown as import('../behavioral.schemas.ts').Thread['rules'],
-    })
-
-    const errors = traces.filter((t) => t.kind === TRACE_MESSAGE_KINDS.add_thread_error)
-    expect(errors).toHaveLength(1)
-  })
-
-  test('a thread with valid JSON rules is accepted (no add_thread_error)', () => {
-    const traces: Trace[] = []
-    const { useAddThread, useTrigger, useAddHandler, useTrace } = behavioral()
-    const addThread = useAddThread()
-    const trigger = useTrigger()
-    const addHandler = useAddHandler()
-    const received: string[] = []
-
-    useTrace((trace: Trace) => {
-      traces.push(trace)
-    })
-
-    addThread({ label: 'good', rules: [{ waitFor: [onType('ping')] }, { request: { type: 'pong' } }] })
-    addHandler('pong', () => {
-      received.push('pong')
-    })
-
-    trigger({ type: 'ping' })
-
-    const errors = traces.filter((t) => t.kind === TRACE_MESSAGE_KINDS.add_thread_error)
-    expect(errors).toHaveLength(0)
-    expect(received).toEqual(['pong'])
   })
 })

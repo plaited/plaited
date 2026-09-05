@@ -1,33 +1,31 @@
 import { describe, expect, test } from 'bun:test'
 import type { Trace } from '../behavioral.schemas.ts'
 import { behavioral } from '../behavioral.ts'
+import { onSelection, traceCollector } from './helpers.ts'
 
 const onType = (type: string) => ({ type })
 
 describe('useTrace', () => {
   test('does not alter event selection order', () => {
     const events: string[] = []
-    const { useAddThread, useTrigger, useAddHandler, useTrace } = behavioral()
+    const program = behavioral()
+    const { useAddThread, useTrigger } = program
     const addThread = useAddThread()
     const trigger = useTrigger()
-    const addHandler = useAddHandler()
 
-    // Subscribe to traces — this should not affect event ordering
-    useTrace(() => {})
+    const { disconnect } = traceCollector(program)
 
     addThread({ label: 'producer', rules: [{ request: { type: 'task' } }], once: true })
     addThread({ label: 'consumer', rules: [{ waitFor: [onType('task')] }, { request: { type: 'ack' } }], once: true })
 
-    addHandler('task', () => {
-      events.push('task')
-    })
-    addHandler('ack', () => {
-      events.push('ack')
+    onSelection(program, (selected) => {
+      if (selected.type === 'task' || selected.type === 'ack') events.push(selected.type)
     })
 
     trigger({ type: 'kickoff' })
 
     expect(events).toEqual(['task', 'ack'])
+    disconnect()
   })
 
   test('second listener still receives after first disconnects', () => {
@@ -46,7 +44,6 @@ describe('useTrace', () => {
 
     addThread({ label: 'req', rules: [{ request: { type: 'ping' } }], once: true })
 
-    // Both listeners receive the first selection trace
     trigger({ type: 'start' })
     expect(tracesA.length).toBeGreaterThan(0)
     expect(tracesB.length).toBeGreaterThan(0)
@@ -54,16 +51,12 @@ describe('useTrace', () => {
     const countA = tracesA.length
     const countB = tracesB.length
 
-    // Disconnect listener A
     disconnectA()
 
-    // Set up a new thread and trigger again
     addThread({ label: 'req2', rules: [{ request: { type: 'pong' } }], once: true })
     trigger({ type: 'go' })
 
-    // A should not have received any new messages
     expect(tracesA.length).toBe(countA)
-    // B should still be receiving
     expect(tracesB.length).toBeGreaterThan(countB)
   })
 
@@ -84,15 +77,12 @@ describe('useTrace', () => {
     addThread({ label: 'req', rules: [{ request: { type: 'ping' } }], once: true })
     trigger({ type: 'start' })
 
-    // Both received
     expect(tracesA.length).toBeGreaterThan(0)
     expect(tracesB.length).toBeGreaterThan(0)
 
-    // Disconnect both
     disconnectA()
     disconnectB()
 
-    // Re-subscribe — publisher is always available
     const tracesC: Trace[] = []
     useTrace((msg: Trace) => {
       tracesC.push(msg)

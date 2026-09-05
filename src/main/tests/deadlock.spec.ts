@@ -65,20 +65,13 @@ describe(TRACE_MESSAGE_KINDS.deadlock, () => {
   test('publishes selection trace when enabled candidates exist and keeps priority selection behavior', () => {
     const traces: Trace[] = []
     const selected: string[] = []
-    const { useAddThread, useTrigger, useAddHandler, useTrace } = behavioral()
+    const { useAddThread, useTrigger, useTrace } = behavioral()
     const addThread = useAddThread()
     const trigger = useTrigger()
-    const addHandler = useAddHandler()
 
     useTrace((trace: Trace) => {
       traces.push(trace)
-    })
-
-    addHandler('low', () => {
-      selected.push('low')
-    })
-    addHandler('high', () => {
-      selected.push('high')
+      if (trace.kind === 'selection') selected.push(trace.selected.type)
     })
 
     addThread({ label: 'low', rules: [{ request: { type: 'low' } }], once: true })
@@ -86,7 +79,7 @@ describe(TRACE_MESSAGE_KINDS.deadlock, () => {
 
     trigger({ type: 'tick' })
 
-    expect(selected[0]).toBe('low')
+    expect(selected.filter((t) => t !== 'tick')[0]).toBe('low')
     const deadlocks = traces.filter((s): s is DeadlockTrace => s.kind === TRACE_MESSAGE_KINDS.deadlock)
     expect(deadlocks).toHaveLength(0)
     const frontiers = traces.filter((s): s is FrontierTrace => s.kind === TRACE_MESSAGE_KINDS.frontier)

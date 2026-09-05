@@ -1,5 +1,6 @@
 import { expect, test } from 'bun:test'
 import { behavioral } from '../behavioral.ts'
+import { onSelection } from './helpers.ts'
 
 const stringIdSchema = {
   type: 'object' as const,
@@ -10,10 +11,10 @@ const stringIdSchema = {
 
 test('match listener: waitFor resumes thread when type and detail schema match', () => {
   const log: string[] = []
-  const { useAddThread, useTrigger, useAddHandler } = behavioral()
+  const program = behavioral()
+  const { useAddThread, useTrigger } = program
   const addThread = useAddThread()
   const trigger = useTrigger()
-  const addHandler = useAddHandler()
 
   addThread({ label: 'producer', rules: [{ request: { type: 'task', detail: { id: 'job-1' } } }], once: true })
   addThread({
@@ -32,11 +33,11 @@ test('match listener: waitFor resumes thread when type and detail schema match',
     once: true,
   })
 
-  addHandler('task', () => {
-    log.push('task')
+  onSelection(program, (selected) => {
+    if (selected.type === 'task') log.push('task')
   })
-  addHandler('ack', () => {
-    log.push('ack')
+  onSelection(program, (selected) => {
+    if (selected.type === 'ack') log.push('ack')
   })
 
   trigger({ type: 'kickoff' })
@@ -46,10 +47,10 @@ test('match listener: waitFor resumes thread when type and detail schema match',
 
 test('match listener: waitFor does not resume when detail schema fails', () => {
   const log: string[] = []
-  const { useAddThread, useTrigger, useAddHandler } = behavioral()
+  const program = behavioral()
+  const { useAddThread, useTrigger } = program
   const addThread = useAddThread()
   const trigger = useTrigger()
-  const addHandler = useAddHandler()
 
   addThread({ label: 'producer', rules: [{ request: { type: 'task', detail: { id: 101 } } }], once: true })
   addThread({
@@ -68,11 +69,11 @@ test('match listener: waitFor does not resume when detail schema fails', () => {
     once: true,
   })
 
-  addHandler('task', () => {
-    log.push('task')
+  onSelection(program, (selected) => {
+    if (selected.type === 'task') log.push('task')
   })
-  addHandler('ack', () => {
-    log.push('ack')
+  onSelection(program, (selected) => {
+    if (selected.type === 'ack') log.push('ack')
   })
 
   trigger({ type: 'kickoff' })
@@ -82,10 +83,10 @@ test('match listener: waitFor does not resume when detail schema fails', () => {
 
 test('match listener: detailMatch invalid resumes thread when detail schema fails', () => {
   const log: string[] = []
-  const { useAddThread, useTrigger, useAddHandler } = behavioral()
+  const program = behavioral()
+  const { useAddThread, useTrigger } = program
   const addThread = useAddThread()
   const trigger = useTrigger()
-  const addHandler = useAddHandler()
 
   addThread({ label: 'producer', rules: [{ request: { type: 'task', detail: { id: 101 } } }], once: true })
   addThread({
@@ -105,11 +106,11 @@ test('match listener: detailMatch invalid resumes thread when detail schema fail
     once: true,
   })
 
-  addHandler('task', () => {
-    log.push('task')
+  onSelection(program, (selected) => {
+    if (selected.type === 'task') log.push('task')
   })
-  addHandler('ack', () => {
-    log.push('ack')
+  onSelection(program, (selected) => {
+    if (selected.type === 'ack') log.push('ack')
   })
 
   trigger({ type: 'kickoff' })
@@ -119,10 +120,10 @@ test('match listener: detailMatch invalid resumes thread when detail schema fail
 
 test('match listener: detailMatch invalid does not resume thread when detail schema passes', () => {
   const log: string[] = []
-  const { useAddThread, useTrigger, useAddHandler } = behavioral()
+  const program = behavioral()
+  const { useAddThread, useTrigger } = program
   const addThread = useAddThread()
   const trigger = useTrigger()
-  const addHandler = useAddHandler()
 
   addThread({ label: 'producer', rules: [{ request: { type: 'task', detail: { id: 'job-1' } } }], once: true })
   addThread({
@@ -142,11 +143,11 @@ test('match listener: detailMatch invalid does not resume thread when detail sch
     once: true,
   })
 
-  addHandler('task', () => {
-    log.push('task')
+  onSelection(program, (selected) => {
+    if (selected.type === 'task') log.push('task')
   })
-  addHandler('ack', () => {
-    log.push('ack')
+  onSelection(program, (selected) => {
+    if (selected.type === 'ack') log.push('ack')
   })
 
   trigger({ type: 'kickoff' })
@@ -156,10 +157,10 @@ test('match listener: detailMatch invalid does not resume thread when detail sch
 
 test('match listener: type mismatch prevents match when source and detail would pass', () => {
   const log: string[] = []
-  const { useAddThread, useTrigger, useAddHandler } = behavioral()
+  const program = behavioral()
+  const { useAddThread, useTrigger } = program
   const addThread = useAddThread()
   const trigger = useTrigger()
-  const addHandler = useAddHandler()
 
   addThread({ label: 'producer', rules: [{ request: { type: 'other', detail: { id: 'job-1' } } }], once: true })
   addThread({
@@ -178,11 +179,11 @@ test('match listener: type mismatch prevents match when source and detail would 
     once: true,
   })
 
-  addHandler('other', () => {
-    log.push('other')
+  onSelection(program, (selected) => {
+    if (selected.type === 'other') log.push('other')
   })
-  addHandler('ack', () => {
-    log.push('ack')
+  onSelection(program, (selected) => {
+    if (selected.type === 'ack') log.push('ack')
   })
 
   trigger({ type: 'kickoff' })
@@ -192,10 +193,10 @@ test('match listener: type mismatch prevents match when source and detail would 
 
 test('match listener: sourceSchema request accepts only requested events', () => {
   const log: string[] = []
-  const { useAddThread, useTrigger, useAddHandler } = behavioral()
+  const program = behavioral()
+  const { useAddThread, useTrigger } = program
   const addThread = useAddThread()
   const trigger = useTrigger()
-  const addHandler = useAddHandler()
 
   addThread({ label: 'producer', rules: [{ request: { type: 'task', detail: { id: 'job-1' } } }], once: true })
   addThread({
@@ -214,11 +215,11 @@ test('match listener: sourceSchema request accepts only requested events', () =>
     once: true,
   })
 
-  addHandler('task', () => {
-    log.push('task')
+  onSelection(program, (selected) => {
+    if (selected.type === 'task') log.push('task')
   })
-  addHandler('ack', () => {
-    log.push('ack')
+  onSelection(program, (selected) => {
+    if (selected.type === 'ack') log.push('ack')
   })
 
   trigger({ type: 'kickoff' })
@@ -228,10 +229,10 @@ test('match listener: sourceSchema request accepts only requested events', () =>
 
 test('match listener: trigger and requested events both satisfy matching listeners', () => {
   const log: string[] = []
-  const { useAddThread, useTrigger, useAddHandler } = behavioral()
+  const program = behavioral()
+  const { useAddThread, useTrigger } = program
   const addThread = useAddThread()
   const trigger = useTrigger()
-  const addHandler = useAddHandler()
 
   addThread({ label: 'producer', rules: [{ request: { type: 'task', detail: { id: 'job-1' } } }], once: true })
   addThread({
@@ -250,11 +251,11 @@ test('match listener: trigger and requested events both satisfy matching listene
     once: true,
   })
 
-  addHandler('task', () => {
-    log.push('task')
+  onSelection(program, (selected) => {
+    if (selected.type === 'task') log.push('task')
   })
-  addHandler('ack', () => {
-    log.push('ack')
+  onSelection(program, (selected) => {
+    if (selected.type === 'ack') log.push('ack')
   })
 
   trigger({ type: 'kickoff' })
@@ -265,10 +266,10 @@ test('match listener: trigger and requested events both satisfy matching listene
 
 test('match listener: sourceSchema can accept trigger and request', () => {
   const log: string[] = []
-  const { useAddThread, useTrigger, useAddHandler } = behavioral()
+  const program = behavioral()
+  const { useAddThread, useTrigger } = program
   const addThread = useAddThread()
   const trigger = useTrigger()
-  const addHandler = useAddHandler()
 
   addThread({ label: 'producer', rules: [{ request: { type: 'task', detail: { id: 'job-1' } } }], once: true })
   addThread({
@@ -287,11 +288,11 @@ test('match listener: sourceSchema can accept trigger and request', () => {
     once: true,
   })
 
-  addHandler('task', () => {
-    log.push('task')
+  onSelection(program, (selected) => {
+    if (selected.type === 'task') log.push('task')
   })
-  addHandler('ack', () => {
-    log.push('ack')
+  onSelection(program, (selected) => {
+    if (selected.type === 'ack') log.push('ack')
   })
 
   trigger({ type: 'kickoff' })
@@ -301,10 +302,10 @@ test('match listener: sourceSchema can accept trigger and request', () => {
 
 test('match listener: sourceSchema request matches request-origin events only', () => {
   const log: string[] = []
-  const { useAddThread, useTrigger, useAddHandler } = behavioral()
+  const program = behavioral()
+  const { useAddThread, useTrigger } = program
   const addThread = useAddThread()
   const trigger = useTrigger()
-  const addHandler = useAddHandler()
 
   addThread({ label: 'producer', rules: [{ request: { type: 'task', detail: { id: 'job-1' } } }], once: true })
   addThread({
@@ -323,11 +324,11 @@ test('match listener: sourceSchema request matches request-origin events only', 
     once: true,
   })
 
-  addHandler('task', () => {
-    log.push('task')
+  onSelection(program, (selected) => {
+    if (selected.type === 'task') log.push('task')
   })
-  addHandler('ack', () => {
-    log.push('ack')
+  onSelection(program, (selected) => {
+    if (selected.type === 'ack') log.push('ack')
   })
 
   trigger({ type: 'kickoff' })
@@ -341,10 +342,10 @@ test('match listener: sourceSchema request matches request-origin events only', 
 
 test('match listener: block prevents matching requested event from being selected', () => {
   const log: string[] = []
-  const { useAddThread, useTrigger, useAddHandler } = behavioral()
+  const program = behavioral()
+  const { useAddThread, useTrigger } = program
   const addThread = useAddThread()
   const trigger = useTrigger()
-  const addHandler = useAddHandler()
 
   addThread({
     label: 'blocker',
@@ -373,17 +374,17 @@ test('match listener: block prevents matching requested event from being selecte
     once: true,
   })
 
-  addHandler('task', () => {
-    log.push('task')
+  onSelection(program, (selected) => {
+    if (selected.type === 'task') log.push('task')
   })
-  addHandler('safe', () => {
-    log.push('safe')
+  onSelection(program, (selected) => {
+    if (selected.type === 'safe') log.push('safe')
   })
-  addHandler('safe_ack', () => {
-    log.push('safe_ack')
+  onSelection(program, (selected) => {
+    if (selected.type === 'safe_ack') log.push('safe_ack')
   })
-  addHandler('task_ack', () => {
-    log.push('task_ack')
+  onSelection(program, (selected) => {
+    if (selected.type === 'task_ack') log.push('task_ack')
   })
 
   trigger({ type: 'kickoff' })
@@ -393,10 +394,10 @@ test('match listener: block prevents matching requested event from being selecte
 
 test('match listener: interrupt terminates thread when matching event is selected', () => {
   const log: string[] = []
-  const { useAddThread, useTrigger, useAddHandler } = behavioral()
+  const program = behavioral()
+  const { useAddThread, useTrigger } = program
   const addThread = useAddThread()
   const trigger = useTrigger()
-  const addHandler = useAddHandler()
 
   addThread({
     label: 'interruptedThread',
@@ -425,11 +426,11 @@ test('match listener: interrupt terminates thread when matching event is selecte
     once: true,
   })
 
-  addHandler('kill', () => {
-    log.push('kill')
+  onSelection(program, (selected) => {
+    if (selected.type === 'kill') log.push('kill')
   })
-  addHandler('after_start', () => {
-    log.push('after_start')
+  onSelection(program, (selected) => {
+    if (selected.type === 'after_start') log.push('after_start')
   })
 
   trigger({ type: 'kickoff' })
@@ -440,10 +441,10 @@ test('match listener: interrupt terminates thread when matching event is selecte
 
 test('match listener: detail-schema listeners can express conditional matching', () => {
   const log: string[] = []
-  const { useAddThread, useTrigger, useAddHandler } = behavioral()
+  const program = behavioral()
+  const { useAddThread, useTrigger } = program
   const addThread = useAddThread()
   const trigger = useTrigger()
-  const addHandler = useAddHandler()
 
   addThread({ label: 'producer', rules: [{ request: { type: 'task', detail: { ok: true } } }], once: true })
   addThread({
@@ -467,11 +468,11 @@ test('match listener: detail-schema listeners can express conditional matching',
     once: true,
   })
 
-  addHandler('task', () => {
-    log.push('task')
+  onSelection(program, (selected) => {
+    if (selected.type === 'task') log.push('task')
   })
-  addHandler('ack', () => {
-    log.push('ack')
+  onSelection(program, (selected) => {
+    if (selected.type === 'ack') log.push('ack')
   })
 
   trigger({ type: 'kickoff' })
@@ -481,10 +482,10 @@ test('match listener: detail-schema listeners can express conditional matching',
 
 test('match listener: non-selected same-type requesters remain pending until their own request is selected', () => {
   const log: string[] = []
-  const { useAddThread, useTrigger, useAddHandler } = behavioral()
+  const program = behavioral()
+  const { useAddThread, useTrigger } = program
   const addThread = useAddThread()
   const trigger = useTrigger()
-  const addHandler = useAddHandler()
 
   addThread({
     label: 'first',
@@ -497,14 +498,17 @@ test('match listener: non-selected same-type requesters remain pending until the
     once: true,
   })
 
-  addHandler('same', ({ detail }: { detail: { n: number } }) => {
-    log.push(`same:${detail.n}`)
+  onSelection(program, (selected) => {
+    if (selected.type === 'same') {
+      const detail = selected.detail as { n: number }
+      log.push(`same:${detail.n}`)
+    }
   })
-  addHandler('first_done', () => {
-    log.push('first_done')
+  onSelection(program, (selected) => {
+    if (selected.type === 'first_done') log.push('first_done')
   })
-  addHandler('second_done', () => {
-    log.push('second_done')
+  onSelection(program, (selected) => {
+    if (selected.type === 'second_done') log.push('second_done')
   })
 
   trigger({ type: 'kickoff' })
@@ -514,10 +518,10 @@ test('match listener: non-selected same-type requesters remain pending until the
 
 test('match listener: detail schema with valid detail passes', () => {
   const log: string[] = []
-  const { useAddThread, useTrigger, useAddHandler } = behavioral()
+  const program = behavioral()
+  const { useAddThread, useTrigger } = program
   const addThread = useAddThread()
   const trigger = useTrigger()
-  const addHandler = useAddHandler()
 
   addThread({ label: 'producer', rules: [{ request: { type: 'task', detail: { id: 'job-1' } } }], once: true })
   addThread({
@@ -541,11 +545,11 @@ test('match listener: detail schema with valid detail passes', () => {
     once: true,
   })
 
-  addHandler('task', () => {
-    log.push('task')
+  onSelection(program, (selected) => {
+    if (selected.type === 'task') log.push('task')
   })
-  addHandler('ack', () => {
-    log.push('ack')
+  onSelection(program, (selected) => {
+    if (selected.type === 'ack') log.push('ack')
   })
 
   trigger({ type: 'kickoff' })
@@ -555,10 +559,10 @@ test('match listener: detail schema with valid detail passes', () => {
 
 test('match listener: detail schema with invalid detail fails', () => {
   const log: string[] = []
-  const { useAddThread, useTrigger, useAddHandler } = behavioral()
+  const program = behavioral()
+  const { useAddThread, useTrigger } = program
   const addThread = useAddThread()
   const trigger = useTrigger()
-  const addHandler = useAddHandler()
 
   addThread({ label: 'producer', rules: [{ request: { type: 'task', detail: { id: 101 } } }], once: true })
   addThread({
@@ -577,11 +581,11 @@ test('match listener: detail schema with invalid detail fails', () => {
     once: true,
   })
 
-  addHandler('task', () => {
-    log.push('task')
+  onSelection(program, (selected) => {
+    if (selected.type === 'task') log.push('task')
   })
-  addHandler('ack', () => {
-    log.push('ack')
+  onSelection(program, (selected) => {
+    if (selected.type === 'ack') log.push('ack')
   })
 
   trigger({ type: 'kickoff' })
@@ -591,10 +595,10 @@ test('match listener: detail schema with invalid detail fails', () => {
 
 test('match listener: 2020-12 prefixItems keyword compiles and matches', () => {
   const log: string[] = []
-  const { useAddThread, useTrigger, useAddHandler } = behavioral()
+  const program = behavioral()
+  const { useAddThread, useTrigger } = program
   const addThread = useAddThread()
   const trigger = useTrigger()
-  const addHandler = useAddHandler()
 
   addThread({ label: 'producer', rules: [{ request: { type: 'task', detail: { items: [42, 'hello'] } } }], once: true })
   addThread({
@@ -623,11 +627,11 @@ test('match listener: 2020-12 prefixItems keyword compiles and matches', () => {
     once: true,
   })
 
-  addHandler('task', () => {
-    log.push('task')
+  onSelection(program, (selected) => {
+    if (selected.type === 'task') log.push('task')
   })
-  addHandler('ack', () => {
-    log.push('ack')
+  onSelection(program, (selected) => {
+    if (selected.type === 'ack') log.push('ack')
   })
 
   trigger({ type: 'kickoff' })
@@ -637,10 +641,10 @@ test('match listener: 2020-12 prefixItems keyword compiles and matches', () => {
 
 test('match listener: 2020-12 prefixItems enforces tuple ordering', () => {
   const log: string[] = []
-  const { useAddThread, useTrigger, useAddHandler } = behavioral()
+  const program = behavioral()
+  const { useAddThread, useTrigger } = program
   const addThread = useAddThread()
   const trigger = useTrigger()
-  const addHandler = useAddHandler()
 
   // Producer emits tuple [42, 'hello']; consumer expects [number, string]
   addThread({ label: 'producer', rules: [{ request: { type: 'task', detail: { items: ['x', 1] } } }], once: true })
@@ -670,11 +674,11 @@ test('match listener: 2020-12 prefixItems enforces tuple ordering', () => {
     once: true,
   })
 
-  addHandler('task', () => {
-    log.push('task')
+  onSelection(program, (selected) => {
+    if (selected.type === 'task') log.push('task')
   })
-  addHandler('ack', () => {
-    log.push('ack')
+  onSelection(program, (selected) => {
+    if (selected.type === 'ack') log.push('ack')
   })
 
   trigger({ type: 'kickoff' })
@@ -714,10 +718,10 @@ test('match listener: malformed detailSchema publishes add_thread_error', () => 
 
 test('match listener: malformed detailSchema in one listener rejects the whole thread', () => {
   const seen: import('../behavioral.schemas.ts').Trace[] = []
-  const { useAddThread, useTrigger, useAddHandler, useTrace } = behavioral()
+  const { useAddThread, useTrigger, useTrace } = behavioral()
   const addThread = useAddThread()
   const trigger = useTrigger()
-  const addHandler = useAddHandler()
+
   useTrace((msg) => {
     seen.push(msg)
   })
@@ -744,9 +748,6 @@ test('match listener: malformed detailSchema in one listener rejects the whole t
   expect(errors).toHaveLength(1)
 
   // The thread should not have registered — no running thread means triggering does nothing
-  addHandler('good', () => {
-    log.push('good')
-  })
   trigger({ type: 'kickoff' })
   expect(log).toEqual([])
 })

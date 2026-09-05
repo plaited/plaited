@@ -2,6 +2,7 @@ import { expect, test } from 'bun:test'
 import { TRACE_MESSAGE_KINDS } from '../behavioral.constants.ts'
 import type { Trace } from '../behavioral.schemas.ts'
 import { behavioral } from '../behavioral.ts'
+import { onSelection } from './helpers.ts'
 
 const addHotRules = [{ request: { type: 'hot' } }, { request: { type: 'hot' } }, { request: { type: 'hot' } }]
 const addColdRules = [{ request: { type: 'cold' } }, { request: { type: 'cold' } }, { request: { type: 'cold' } }]
@@ -28,13 +29,14 @@ const mixHotColdRules = [
  */
 test('Add hot water 3 times', () => {
   const actual: string[] = []
-  const { useAddThread, useTrigger, useAddHandler } = behavioral()
+  const program = behavioral()
+  const { useAddThread, useTrigger } = program
   const addThread = useAddThread()
   const trigger = useTrigger()
-  const addHandler = useAddHandler()
+
   addThread({ label: 'addHot', rules: addHotRules, once: true })
-  addHandler('hot', () => {
-    actual.push('hot')
+  onSelection(program, (selected) => {
+    if (selected.type === 'hot') actual.push('hot')
   })
   trigger({ type: 'start' })
   expect(actual).toEqual(['hot', 'hot', 'hot'])
@@ -56,17 +58,18 @@ test('Add hot water 3 times', () => {
  */
 test('Add hot/cold water 3 times', () => {
   const actual: string[] = []
-  const { useAddThread, useTrigger, useAddHandler } = behavioral()
+  const program = behavioral()
+  const { useAddThread, useTrigger } = program
   const addThread = useAddThread()
   const trigger = useTrigger()
-  const addHandler = useAddHandler()
+
   addThread({ label: 'addHot', rules: addHotRules, once: true })
   addThread({ label: 'addCold', rules: addColdRules, once: true })
-  addHandler('hot', () => {
-    actual.push('hot')
+  onSelection(program, (selected) => {
+    if (selected.type === 'hot') actual.push('hot')
   })
-  addHandler('cold', () => {
-    actual.push('cold')
+  onSelection(program, (selected) => {
+    if (selected.type === 'cold') actual.push('cold')
   })
   trigger({ type: 'start' })
   expect(actual).toEqual(['hot', 'hot', 'hot', 'cold', 'cold', 'cold'])
@@ -80,18 +83,19 @@ test('Add hot/cold water 3 times', () => {
  */
 test('interleave', () => {
   const actual: string[] = []
-  const { useAddThread, useTrigger, useAddHandler } = behavioral()
+  const program = behavioral()
+  const { useAddThread, useTrigger } = program
   const addThread = useAddThread()
   const trigger = useTrigger()
-  const addHandler = useAddHandler()
+
   addThread({ label: 'addHot', rules: addHotRules, once: true })
   addThread({ label: 'addCold', rules: addColdRules, once: true })
   addThread({ label: 'mixHotCold', rules: mixHotColdRules })
-  addHandler('hot', () => {
-    actual.push('hot')
+  onSelection(program, (selected) => {
+    if (selected.type === 'hot') actual.push('hot')
   })
-  addHandler('cold', () => {
-    actual.push('cold')
+  onSelection(program, (selected) => {
+    if (selected.type === 'cold') actual.push('cold')
   })
   trigger({ type: 'start' })
   expect(actual).toHaveLength(6)
