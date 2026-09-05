@@ -15,8 +15,9 @@ import type {
   NavigateMessage,
   RenderMessage,
   ScaleCheckMessage,
+  ServerMessage,
 } from '../main/message.schemas.ts'
-import { ServerMessageSchema } from '../main/message.schemas.ts'
+import { validateServerMessage } from '../main/message.schemas.ts'
 import { swapBoundary } from '../main/swap-boundary.ts'
 import { UI_CORE_MAX_RETRIES, UI_CORE_RETRY_STATUS_CODES } from './controller.constants.ts'
 import {
@@ -55,6 +56,16 @@ const updateAttributes = ({
 }
 
 const isPageShow = (event: Event): event is PageTransitionEvent => event.type === PAGE_EVENTS.pageshow
+
+/** Formats Ajv validation errors for the websocket error report path. */
+const ajvErrorsToMessage = (errors: unknown): string =>
+  Array.isArray(errors)
+    ? errors
+        .map((e) =>
+          `${(e as { instancePath?: string }).instancePath ?? ''} ${(e as { message?: string }).message ?? ''}`.trim(),
+        )
+        .join('; ')
+    : 'unknown validation failure'
 const isPageHide = (event: Event): event is PageTransitionEvent => event.type === PAGE_EVENTS.pagehide
 const isPageReveal = (event: Event): event is PageRevealEvent => event instanceof PageRevealEvent
 const isPageSwap = (event: Event): event is PageSwapEvent => event instanceof PageSwapEvent
@@ -414,11 +425,15 @@ export class Controller {
       detail: { id, target, effectiveScale, timeStamp: Date.now() },
     })
   }
-  #webSocketListener(message: MessageEvent) {
+  #webSocketListener(event: MessageEvent) {
     let id: string | undefined
     try {
-      const raw = JSON.parse(String(message.data))
-      const { type, detail } = ServerMessageSchema.parse(raw)
+      const raw: unknown = JSON.parse(String(event.data))
+      if (!validateServerMessage(raw)) {
+        throw new Error(`invalid server message: ${ajvErrorsToMessage(validateServerMessage.errors)}`)
+      }
+      // oneOf validates type + detail shape; narrow via the tag.
+      const { type, detail } = raw as ServerMessage
       id = detail.id
       switch (type) {
         case CONTROLLER_INCOMING_MESSAGE_TYPES.render: {

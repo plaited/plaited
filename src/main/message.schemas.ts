@@ -1,5 +1,5 @@
-import * as z from 'zod'
-import { BPEventZodSchema } from './behavioral.schemas.ts'
+import Ajv2020 from 'ajv/dist/2020'
+import type { BPEvent } from './behavioral.schemas.ts'
 import { SCALE } from './html.constants.ts'
 import {
   CONTROLLER_INCOMING_MESSAGE_TYPES,
@@ -9,40 +9,90 @@ import {
 } from './message.constants.ts'
 
 /**
+ * Shared Ajv instance for controller message validation.
+ * `useDefaults` assigns schema defaults during validation (mirroring zod's
+ * `.default()`); `validateSchema` rejects structurally-broken schemas early.
+ */
+const ajv = new Ajv2020({ strict: false, validateSchema: true, useDefaults: true })
+
+/** SWAP_MODES value union, shared by render and scale-check messages. */
+const swapModeSchema = { type: 'string', enum: Object.values(SWAP_MODES) } as const
+
+/** CSS attribute selector operators, shared by render/attrs/scale-check messages. */
+const selectorMatchSchema = {
+  type: 'string',
+  enum: ['=', '~=', '|=', '^=', '$=', '*='],
+} as const
+
+// ---------------------------------------------------------------------------
+// Client → server messages
+// ---------------------------------------------------------------------------
+
+/**
  * Schema for BP events sent from a controller island to the server.
  *
  * @public
  */
-export const UiEventMessageSchema = z.object({
-  type: z.literal(CONTROLLER_OUTGOING_MESSAGE_TYPES.ui_event),
-  detail: z.object({
-    event: BPEventZodSchema,
-    timeStamp: z.number(),
-  }),
-})
+export type UiEventMessage = {
+  type: typeof CONTROLLER_OUTGOING_MESSAGE_TYPES.ui_event
+  detail: { event: BPEvent; timeStamp: number }
+}
 
-/** @public */
-export type UiEventMessage = z.output<typeof UiEventMessageSchema>
-
-const FormSubmitFieldValueSchema = z.union([z.string(), z.array(z.string())])
+export const UiEventMessageSchema = {
+  type: 'object',
+  properties: {
+    type: { type: 'string', const: CONTROLLER_OUTGOING_MESSAGE_TYPES.ui_event },
+    detail: {
+      type: 'object',
+      properties: {
+        event: { type: 'object', properties: { type: { type: 'string' } }, required: ['type'] },
+        timeStamp: { type: 'number' },
+      },
+      required: ['event', 'timeStamp'],
+      additionalProperties: false,
+    },
+  },
+  required: ['type', 'detail'],
+  additionalProperties: false,
+}
 
 /**
  * Schema for form submissions emitted directly by controller islands.
  *
  * @public
  */
-export const FormSubmitMessageSchema = z.object({
-  type: z.literal(CONTROLLER_OUTGOING_MESSAGE_TYPES.form_submit),
-  detail: z.object({
-    name: z.string().nullable(),
-    timeStamp: z.number(),
-    action: z.string().nullable(),
-    data: z.record(z.string(), FormSubmitFieldValueSchema),
-  }),
-})
+export type FormSubmitMessage = {
+  type: typeof CONTROLLER_OUTGOING_MESSAGE_TYPES.form_submit
+  detail: {
+    name: string | null
+    timeStamp: number
+    action: string | null
+    data: Record<string, string | string[]>
+  }
+}
 
-/** @public */
-export type FormSubmitMessage = z.output<typeof FormSubmitMessageSchema>
+export const FormSubmitMessageSchema = {
+  type: 'object',
+  properties: {
+    type: { type: 'string', const: CONTROLLER_OUTGOING_MESSAGE_TYPES.form_submit },
+    detail: {
+      type: 'object',
+      properties: {
+        name: { type: ['string', 'null'] },
+        timeStamp: { type: 'number' },
+        action: { type: ['string', 'null'] },
+        data: {
+          type: 'object',
+          additionalProperties: { anyOf: [{ type: 'string' }, { type: 'array', items: { type: 'string' } }] },
+        },
+      },
+      required: ['name', 'timeStamp', 'action', 'data'],
+      additionalProperties: false,
+    },
+  },
+  required: ['type', 'detail'],
+  additionalProperties: false,
+}
 
 /**
  * Schema for controller runtime errors sent from a controller island to the server.
@@ -55,19 +105,31 @@ export type FormSubmitMessage = z.output<typeof FormSubmitMessageSchema>
  *
  * @public
  */
-export const ErrorMessageSchema = z.object({
-  type: z.literal(CONTROLLER_OUTGOING_MESSAGE_TYPES.error),
-  detail: z.object({
-    timeStamp: z.number(),
-    id: z.string().optional(),
-    name: z.string(),
-    error: z.string().optional(),
-    stack: z.string().optional(),
-  }),
-})
+export type ErrorMessage = {
+  type: typeof CONTROLLER_OUTGOING_MESSAGE_TYPES.error
+  detail: { timeStamp: number; id?: string; name: string; error?: string; stack?: string }
+}
 
-/** @public */
-export type ErrorMessage = z.output<typeof ErrorMessageSchema>
+export const ErrorMessageSchema = {
+  type: 'object',
+  properties: {
+    type: { type: 'string', const: CONTROLLER_OUTGOING_MESSAGE_TYPES.error },
+    detail: {
+      type: 'object',
+      properties: {
+        timeStamp: { type: 'number' },
+        id: { type: 'string', nullable: true },
+        name: { type: 'string' },
+        error: { type: 'string', nullable: true },
+        stack: { type: 'string', nullable: true },
+      },
+      required: ['timeStamp', 'name'],
+      additionalProperties: false,
+    },
+  },
+  required: ['type', 'detail'],
+  additionalProperties: false,
+}
 
 /**
  * Schema for success acknowledgements sent from a controller island to the
@@ -75,16 +137,25 @@ export type ErrorMessage = z.output<typeof ErrorMessageSchema>
  *
  * @public
  */
-export const SuccessMessageSchema = z.object({
-  type: z.literal(CONTROLLER_OUTGOING_MESSAGE_TYPES.success),
-  detail: z.object({
-    id: z.string(),
-    timeStamp: z.number(),
-  }),
-})
+export type SuccessMessage = {
+  type: typeof CONTROLLER_OUTGOING_MESSAGE_TYPES.success
+  detail: { id: string; timeStamp: number }
+}
 
-/** @public */
-export type SuccessMessage = z.output<typeof SuccessMessageSchema>
+export const SuccessMessageSchema = {
+  type: 'object',
+  properties: {
+    type: { type: 'string', const: CONTROLLER_OUTGOING_MESSAGE_TYPES.success },
+    detail: {
+      type: 'object',
+      properties: { id: { type: 'string' }, timeStamp: { type: 'number' } },
+      required: ['id', 'timeStamp'],
+      additionalProperties: false,
+    },
+  },
+  required: ['type', 'detail'],
+  additionalProperties: false,
+}
 
 /**
  * Schema for page snapshots sent from the controller to the server, capturing
@@ -92,17 +163,29 @@ export type SuccessMessage = z.output<typeof SuccessMessageSchema>
  *
  * @public
  */
-export const PageSnapshotSchema = z.object({
-  type: z.literal(CONTROLLER_OUTGOING_MESSAGE_TYPES.snapshot),
-  detail: z.object({
-    timeStamp: z.number(),
-    type: z.enum(Object.values(PAGE_EVENTS)),
-    serializedHTML: z.string(),
-  }),
-})
+export type PageSnapshot = {
+  type: typeof CONTROLLER_OUTGOING_MESSAGE_TYPES.snapshot
+  detail: { timeStamp: number; type: (typeof PAGE_EVENTS)[keyof typeof PAGE_EVENTS]; serializedHTML: string }
+}
 
-/** @public */
-export type PageSnapshot = z.output<typeof PageSnapshotSchema>
+export const PageSnapshotSchema = {
+  type: 'object',
+  properties: {
+    type: { type: 'string', const: CONTROLLER_OUTGOING_MESSAGE_TYPES.snapshot },
+    detail: {
+      type: 'object',
+      properties: {
+        timeStamp: { type: 'number' },
+        type: { type: 'string', enum: Object.values(PAGE_EVENTS) },
+        serializedHTML: { type: 'string' },
+      },
+      required: ['timeStamp', 'type', 'serializedHTML'],
+      additionalProperties: false,
+    },
+  },
+  required: ['type', 'detail'],
+  additionalProperties: false,
+}
 
 /**
  * Schema for scale-check results sent from the controller/renderer back to the
@@ -110,35 +193,65 @@ export type PageSnapshot = z.output<typeof PageSnapshotSchema>
  *
  * @public
  */
-export const ScaleCheckResultMessageSchema = z.object({
-  type: z.literal(CONTROLLER_OUTGOING_MESSAGE_TYPES.scale_check_result),
-  detail: z.object({
-    id: z.string(),
-    target: z.string(),
-    effectiveScale: z.enum(Object.values(SCALE)),
-    timeStamp: z.number(),
-  }),
-})
+export type ScaleCheckResultMessage = {
+  type: typeof CONTROLLER_OUTGOING_MESSAGE_TYPES.scale_check_result
+  detail: { id: string; target: string; effectiveScale: (typeof SCALE)[keyof typeof SCALE]; timeStamp: number }
+}
 
-/** @public */
-export type ScaleCheckResultMessage = z.output<typeof ScaleCheckResultMessageSchema>
+export const ScaleCheckResultMessageSchema = {
+  type: 'object',
+  properties: {
+    type: { type: 'string', const: CONTROLLER_OUTGOING_MESSAGE_TYPES.scale_check_result },
+    detail: {
+      type: 'object',
+      properties: {
+        id: { type: 'string' },
+        target: { type: 'string' },
+        effectiveScale: { type: 'string', enum: Object.values(SCALE) },
+        timeStamp: { type: 'number' },
+      },
+      required: ['id', 'target', 'effectiveScale', 'timeStamp'],
+      additionalProperties: false,
+    },
+  },
+  required: ['type', 'detail'],
+  additionalProperties: false,
+}
 
 /**
- * Discriminated union schema for all controller-to-server messages.
+ * Discriminated union of all controller-to-server message kinds.
+ * Consumers narrow by the `type` field.
  *
  * @public
  */
-export const ClientMessageSchema = z.discriminatedUnion('type', [
-  UiEventMessageSchema,
-  FormSubmitMessageSchema,
-  ErrorMessageSchema,
-  SuccessMessageSchema,
-  PageSnapshotSchema,
-  ScaleCheckResultMessageSchema,
-])
+export type ClientMessage =
+  | UiEventMessage
+  | FormSubmitMessage
+  | ErrorMessage
+  | SuccessMessage
+  | PageSnapshot
+  | ScaleCheckResultMessage
 
-/** @public */
-export type ClientMessage = z.output<typeof ClientMessageSchema>
+/** @internal */
+export const validateClientMessage = ajv.compile({
+  oneOf: [
+    UiEventMessageSchema,
+    FormSubmitMessageSchema,
+    ErrorMessageSchema,
+    SuccessMessageSchema,
+    PageSnapshotSchema,
+    ScaleCheckResultMessageSchema,
+  ],
+})
+
+/** Optional selector-match subschema (shared by several message kinds). */
+function selectorModeOptional() {
+  return { ...selectorMatchSchema, nullable: true }
+}
+
+// ---------------------------------------------------------------------------
+// Server → controller messages
+// ---------------------------------------------------------------------------
 
 /**
  * Type for element matching strategies in attribute selectors.
@@ -152,54 +265,82 @@ export type ClientMessage = z.output<typeof ClientMessageSchema>
  * - '$=': Ends with
  * - '*=': Contains
  */
-
-export const SelectorMatchScehama = z.enum(['=', '~=', '|=', '^=', '$=', '*='])
-
-export type SelectorMatch = z.output<typeof SelectorMatchScehama>
+export type SelectorMatch = '=' | '~=' | '|=' | '^=' | '$=' | '*='
 
 /**
  * Schema for render messages that insert or replace DOM content.
  *
  * @public
  */
-export const RenderMessageSchema = z.object({
-  type: z.literal(CONTROLLER_INCOMING_MESSAGE_TYPES.render),
-  detail: z.object({
-    id: z.string(),
-    target: z.string(),
-    html: z.string(),
-    match: SelectorMatchScehama.optional(),
-    swap: z.enum([
-      SWAP_MODES.afterbegin,
-      SWAP_MODES.afterend,
-      SWAP_MODES.beforebegin,
-      SWAP_MODES.beforeend,
-      SWAP_MODES.innerHTML,
-      SWAP_MODES.outerHTML,
-    ]),
-  }),
-})
+export type RenderMessage = {
+  type: typeof CONTROLLER_INCOMING_MESSAGE_TYPES.render
+  detail: {
+    id: string
+    target: string
+    html: string
+    match?: SelectorMatch
+    swap: (typeof SWAP_MODES)[keyof typeof SWAP_MODES]
+  }
+}
 
-/** @public */
-export type RenderMessage = z.output<typeof RenderMessageSchema>
+export const RenderMessageSchema = {
+  type: 'object',
+  properties: {
+    type: { type: 'string', const: CONTROLLER_INCOMING_MESSAGE_TYPES.render },
+    detail: {
+      type: 'object',
+      properties: {
+        id: { type: 'string' },
+        target: { type: 'string' },
+        html: { type: 'string' },
+        match: selectorModeOptional(),
+        swap: swapModeSchema,
+      },
+      required: ['id', 'target', 'html', 'swap'],
+      additionalProperties: false,
+    },
+  },
+  required: ['type', 'detail'],
+  additionalProperties: false,
+}
 
 /**
  * Schema for attrs messages that update element attributes.
  *
  * @public
  */
-export const AttrsMessageSchema = z.object({
-  type: z.literal(CONTROLLER_INCOMING_MESSAGE_TYPES.attrs),
-  detail: z.object({
-    id: z.string(),
-    target: z.string(),
-    match: SelectorMatchScehama.optional(),
-    attr: z.record(z.string(), z.union([z.string(), z.number(), z.boolean()]).nullable()),
-  }),
-})
+export type AttrsMessage = {
+  type: typeof CONTROLLER_INCOMING_MESSAGE_TYPES.attrs
+  detail: {
+    id: string
+    target: string
+    match?: SelectorMatch
+    attr: Record<string, string | number | boolean | null>
+  }
+}
 
-/** @public */
-export type AttrsMessage = z.output<typeof AttrsMessageSchema>
+export const AttrsMessageSchema = {
+  type: 'object',
+  properties: {
+    type: { type: 'string', const: CONTROLLER_INCOMING_MESSAGE_TYPES.attrs },
+    detail: {
+      type: 'object',
+      properties: {
+        id: { type: 'string' },
+        target: { type: 'string' },
+        match: selectorModeOptional(),
+        attr: {
+          type: 'object',
+          additionalProperties: { type: ['string', 'number', 'boolean', 'null'] },
+        },
+      },
+      required: ['id', 'target', 'attr'],
+      additionalProperties: false,
+    },
+  },
+  required: ['type', 'detail'],
+  additionalProperties: false,
+}
 
 /**
  * Schema for dispatch-custom-event messages that instruct the controller to
@@ -207,20 +348,39 @@ export type AttrsMessage = z.output<typeof AttrsMessageSchema>
  *
  * @public
  */
-export const DispatchCustomEventMessageSchema = z.object({
-  type: z.literal(CONTROLLER_INCOMING_MESSAGE_TYPES.dispatch_custom_event),
-  detail: z.object({
-    id: z.string(),
-    target: z.string(),
-    event: BPEventZodSchema,
-    bubbles: z.boolean().default(false),
-    cancelable: z.boolean().default(true),
-    composed: z.boolean().default(true),
-  }),
-})
+export type DispatchCustomEventMessage = {
+  type: typeof CONTROLLER_INCOMING_MESSAGE_TYPES.dispatch_custom_event
+  detail: {
+    id: string
+    target: string
+    event: BPEvent
+    bubbles?: boolean
+    cancelable?: boolean
+    composed?: boolean
+  }
+}
 
-/** @public */
-export type DispatchCustomEventMessage = z.output<typeof DispatchCustomEventMessageSchema>
+export const DispatchCustomEventMessageSchema = {
+  type: 'object',
+  properties: {
+    type: { type: 'string', const: CONTROLLER_INCOMING_MESSAGE_TYPES.dispatch_custom_event },
+    detail: {
+      type: 'object',
+      properties: {
+        id: { type: 'string' },
+        target: { type: 'string' },
+        event: { type: 'object', properties: { type: { type: 'string' } }, required: ['type'] },
+        bubbles: { type: 'boolean', default: false, nullable: true },
+        cancelable: { type: 'boolean', default: true, nullable: true },
+        composed: { type: 'boolean', default: true, nullable: true },
+      },
+      required: ['id', 'target', 'event', 'bubbles', 'cancelable', 'composed'],
+      additionalProperties: false,
+    },
+  },
+  required: ['type', 'detail'],
+  additionalProperties: false,
+}
 
 /**
  * Schema for navigate messages that instruct the controller to navigate to a
@@ -232,17 +392,29 @@ export type DispatchCustomEventMessage = z.output<typeof DispatchCustomEventMess
  *
  * @public
  */
-export const NavigateMessageSchema = z.object({
-  type: z.literal(CONTROLLER_INCOMING_MESSAGE_TYPES.navigate),
-  detail: z.object({
-    id: z.string(),
-    url: z.string(),
-    replace: z.boolean().default(false),
-  }),
-})
+export type NavigateMessage = {
+  type: typeof CONTROLLER_INCOMING_MESSAGE_TYPES.navigate
+  detail: { id: string; url: string; replace?: boolean }
+}
 
-/** @public */
-export type NavigateMessage = z.output<typeof NavigateMessageSchema>
+export const NavigateMessageSchema = {
+  type: 'object',
+  properties: {
+    type: { type: 'string', const: CONTROLLER_INCOMING_MESSAGE_TYPES.navigate },
+    detail: {
+      type: 'object',
+      properties: {
+        id: { type: 'string' },
+        url: { type: 'string' },
+        replace: { type: 'boolean', default: false, nullable: true },
+      },
+      required: ['id', 'url', 'replace'],
+      additionalProperties: false,
+    },
+  },
+  required: ['type', 'detail'],
+  additionalProperties: false,
+}
 
 /**
  * Schema for scale-check messages that pre-flight a `render` to learn the
@@ -252,42 +424,55 @@ export type NavigateMessage = z.output<typeof NavigateMessageSchema>
  * Advisory only — does not enforce nesting. The agent sends this before
  * `render` to learn the `p-scale` boundary. The Controller/Renderer walk the
  * matched target's `p-scale` (or nearest ancestor's) and reply with a
- * {@link ScaleCheckResultMessageSchema}.
+ * {@link ScaleCheckResultMessage}.
  *
  * @public
  */
-export const ScaleCheckMessageSchema = z.object({
-  type: z.literal(CONTROLLER_INCOMING_MESSAGE_TYPES.scale_check),
-  detail: z.object({
-    id: z.string(),
-    target: z.string(),
-    swap: z.enum([
-      SWAP_MODES.afterbegin,
-      SWAP_MODES.afterend,
-      SWAP_MODES.beforebegin,
-      SWAP_MODES.beforeend,
-      SWAP_MODES.innerHTML,
-      SWAP_MODES.outerHTML,
-    ]),
-    match: SelectorMatchScehama.optional(),
-  }),
-})
+export type ScaleCheckMessage = {
+  type: typeof CONTROLLER_INCOMING_MESSAGE_TYPES.scale_check
+  detail: { id: string; target: string; swap: (typeof SWAP_MODES)[keyof typeof SWAP_MODES]; match?: SelectorMatch }
+}
 
-/** @public */
-export type ScaleCheckMessage = z.output<typeof ScaleCheckMessageSchema>
+export const ScaleCheckMessageSchema = {
+  type: 'object',
+  properties: {
+    type: { type: 'string', const: CONTROLLER_INCOMING_MESSAGE_TYPES.scale_check },
+    detail: {
+      type: 'object',
+      properties: {
+        id: { type: 'string' },
+        target: { type: 'string' },
+        swap: swapModeSchema,
+        match: selectorModeOptional(),
+      },
+      required: ['id', 'target', 'swap'],
+      additionalProperties: false,
+    },
+  },
+  required: ['type', 'detail'],
+  additionalProperties: false,
+}
 
 /**
- * Discriminated union schema for all server-to-controller messages.
+ * Discriminated union of all server-to-controller message kinds.
+ * Consumers narrow by the `type` field.
  *
  * @public
  */
-export const ServerMessageSchema = z.discriminatedUnion('type', [
-  RenderMessageSchema,
-  AttrsMessageSchema,
-  DispatchCustomEventMessageSchema,
-  NavigateMessageSchema,
-  ScaleCheckMessageSchema,
-])
+export type ServerMessage =
+  | RenderMessage
+  | AttrsMessage
+  | DispatchCustomEventMessage
+  | NavigateMessage
+  | ScaleCheckMessage
 
-/** @public */
-export type ServerMessage = z.output<typeof ServerMessageSchema>
+/** @internal */
+export const validateServerMessage = ajv.compile({
+  oneOf: [
+    RenderMessageSchema,
+    AttrsMessageSchema,
+    DispatchCustomEventMessageSchema,
+    NavigateMessageSchema,
+    ScaleCheckMessageSchema,
+  ],
+})
