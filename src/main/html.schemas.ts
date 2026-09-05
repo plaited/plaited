@@ -15,7 +15,7 @@
 
 import * as z from 'zod'
 import { CUSTOM_PROPERTY_REF_PATTERN } from './css.constants.ts'
-import { CSSPropertiesSchema } from './css.schemas.ts'
+import { CSSPropertiesSchema, validateCSSValue } from './css.schemas.ts'
 import {
   CLASS,
   CUSTOM_ELEMENT_TAG_PATTERN,
@@ -288,11 +288,9 @@ export const PlaitedAttributesSchema = z.object({
           // Custom properties (--*) are always valid
           if (propertyName.startsWith('--')) continue
 
-          if (propertyName in CSSPropertiesSchema.shape) {
+          if (propertyName in (CSSPropertiesSchema.properties as Record<string, unknown>)) {
             // Known CSS property — validate against its schema; allow var() refs
-            const result =
-              CSSPropertiesSchema.shape[propertyName as keyof typeof CSSPropertiesSchema.shape].safeParse(value)
-            if (!result.success) {
+            if (!validateCSSValue(propertyName, value)) {
               if (CUSTOM_PROPERTY_REF_PATTERN.test(value)) continue
               return false
             }

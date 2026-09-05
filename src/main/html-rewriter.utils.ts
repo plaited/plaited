@@ -1,7 +1,7 @@
 /// <reference path="../../scripts/types/css-tree.d.ts" />
 import { parse, walk } from 'css-tree'
 import { CUSTOM_PROPERTY_REF_PATTERN } from './css.constants.ts'
-import { CSSPropertiesSchema } from './css.schemas.ts'
+import { CSSPropertiesSchema, validateCSSValue } from './css.schemas.ts'
 import { getNodeSchema } from './html.schemas.ts'
 import { type CssError, type HtmlError, ValidationError } from './render.errors.ts'
 
@@ -114,9 +114,8 @@ export const validateAndEscapeHtml = (html: string): string => {
           if (!valueLoc) return
           const value = block.slice(valueLoc.start.offset, valueLoc.end.offset).trim()
           if (property.startsWith('--')) return
-          if (!(property in CSSPropertiesSchema.shape)) return
-          const result = CSSPropertiesSchema.shape[property as keyof typeof CSSPropertiesSchema.shape].safeParse(value)
-          if (!result.success && !CUSTOM_PROPERTY_REF_PATTERN.test(value)) {
+          if (!(property in (CSSPropertiesSchema.properties as Record<string, unknown>))) return
+          if (!validateCSSValue(property, value) && !CUSTOM_PROPERTY_REF_PATTERN.test(value)) {
             const declLine = node.loc?.start.line ?? 1
             cssErrors.push({
               line: blockLine + declLine - 1,

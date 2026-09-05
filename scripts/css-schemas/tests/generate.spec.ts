@@ -90,24 +90,23 @@ test('hardcoded vendor entries appear in output', () => {
   expect(result.propertyCount).toBe(HARDCODED_ENTRY_COUNT)
 })
 
-test('generated output uses z.object with catchall and property name/type exports', async () => {
+test('generated output uses JSON Schema with additionalProperties and validateCSSValue', async () => {
   const cssDataPath = Bun.resolveSync('@webref/css/css.json', import.meta.dir)
   const cssFile = Bun.file(cssDataPath)
   const cssJson = await cssFile.json()
 
   const result = generateCssSchemas(cssJson)
 
-  // Uses z.object with catchall
-  expect(result.code).toContain('export const CSSPropertiesSchema = z.object({')
-  expect(result.code).toContain('.catchall(z.union([z.string(), z.number()]))')
+  // Uses plain JSON Schema object with additionalProperties passthrough
+  expect(result.code).toContain('export const CSSPropertiesSchema = {')
+  expect(result.code).toContain("additionalProperties: { type: ['string', 'number'] },")
 
   // No switch function
   expect(result.code).not.toContain('switch (prop)')
 
-  // Types exported
-  expect(result.code).toContain('export const CSSPropertyNameSchema = CSSPropertiesSchema.keyof()')
-  expect(result.code).toContain('export type CSSProperties = z.output<typeof CSSPropertiesSchema>')
-  expect(result.code).toContain('export type CSSPropertyName = z.output<typeof CSSPropertyNameSchema>')
+  // Types + runtime validator exported
+  expect(result.code).toContain('export type CSSProperties = Record<string, string | number>')
+  expect(result.code).toContain('export const validateCSSValue = (property: string, value: unknown): boolean => {')
 
   const lines = result.code.split('\n')
   const header = lines.slice(0, 12).join('\n')
@@ -115,17 +114,19 @@ test('generated output uses z.object with catchall and property name/type export
   expect({ header, typeTail }).toMatchSnapshot()
 })
 
-test('all properties are optional in the generated schema', async () => {
+test('all properties use generated JSON Schema value schemas', async () => {
   const cssDataPath = Bun.resolveSync('@webref/css/css.json', import.meta.dir)
   const cssFile = Bun.file(cssDataPath)
   const cssJson = await cssFile.json()
 
   const result = generateCssSchemas(cssJson)
 
-  // Every property should have .optional() appended
-  expect(result.code).toContain('"color": z.union([z.string(), z.number()]).optional()')
-  expect(result.code).toContain('"accent-color": z.union([z.string(), z.number()]).optional()')
+  // Known properties carry their generated value schemas
+  expect(result.code).toContain("\"color\": { type: ['string', 'number'] },")
+  expect(result.code).toContain("\"accent-color\": { type: ['string', 'number'] },")
 
-  // Hardcoded vendor entries also optional
-  expect(result.code).toContain('"-webkit-line-clamp": z.enum([\'none\']).or(z.number()).optional()')
+  // Hardcoded vendor entries emit anyOf enums
+  expect(result.code).toContain(
+    "\"-webkit-line-clamp\": { anyOf: [{ type: 'string', enum: ['none'] }, { type: 'number' }] },",
+  )
 })
