@@ -38,42 +38,6 @@ export const BPEventSchema = z.object({
 /** @public */
 export type BPEvent = z.output<typeof BPEventSchema>
 
-const JSON_SCHEMA_KEYWORDS = new Set([
-  'type',
-  '$ref',
-  '$schema',
-  'enum',
-  'const',
-  'properties',
-  'allOf',
-  'anyOf',
-  'oneOf',
-  'not',
-])
-
-/**
- * A JSON object that must carry at least one JSON Schema keyword.
- *
- * The single source of truth for “is this a JSON Schema document?” at every
- * trust boundary that accepts one:
- *
- * - `BPListenerSchema.detailSchema` (optional) — hand-authored by thread authors.
- * - Phase 2 `useTool` descriptors — machine-derived via `z.toJSONSchema()` for
- *   both `inputSchema` and `outputSchema` (required).
- *
- * The keyword presence distinguishes a real schema from an arbitrary catchall
- * object (a common mistake is passing a Zod schema instance or a plain detail
- * object to `detailSchema`).
- *
- * @public
- */
-export const JsonSchemaObjectSchema = JsonObjectSchema.refine(
-  (val) => Object.keys(val).some((key) => JSON_SCHEMA_KEYWORDS.has(key)),
-  { message: 'must be a valid JSON Schema object' },
-)
-
-export type JsonSchemaObject = z.output<typeof JsonSchemaObjectSchema>
-
 /**
  * A valid detail schema accepts only JSON-serializable payloads — kernel
  * detail payloads are JSON values. `z.toJSONSchema` in input mode is the

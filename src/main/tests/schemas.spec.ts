@@ -7,7 +7,6 @@ import {
   BPListenerSchema,
   DeadlockTraceSchema,
   FrontieTraceSchema,
-  JsonSchemaObjectSchema,
   SelectionTraceSchema,
   TraceCandidateSchema,
   TraceEventSchema,
@@ -163,27 +162,5 @@ describe('behavioral schemas', () => {
         error: [{ code: 'invalid_type', path: [], message: 'Expected string, received number' }],
       }).success,
     ).toBe(true)
-  })
-
-  test('JsonSchemaObjectSchema rejects non-JSON-schema objects and accepts valid ones', () => {
-    // Plain object with no JSON Schema keywords — rejected
-    expect(JsonSchemaObjectSchema.safeParse({ foo: 'bar' }).success).toBe(false)
-
-    // Object with JSON Schema keywords — accepted
-    expect(
-      JsonSchemaObjectSchema.safeParse({
-        type: 'object',
-        properties: { id: { type: 'string' } },
-      }).success,
-    ).toBe(true)
-
-    // $ref schema — accepted
-    expect(JsonSchemaObjectSchema.safeParse({ $ref: '#/$defs/X' }).success).toBe(true)
-
-    // enum schema — accepted
-    expect(JsonSchemaObjectSchema.safeParse({ enum: ['a', 'b'] }).success).toBe(true)
-
-    // Required — undefined is rejected (consumer composes .optional())
-    expect(JsonSchemaObjectSchema.safeParse(undefined).success).toBe(false)
   })
 })
