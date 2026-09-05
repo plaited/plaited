@@ -51,15 +51,6 @@ export const isListeningFor = ({ type, detail, topic }: CandidateBid) => {
  * result is safe for trace messages and canonical state keys.
  */
 /**
- * Type guard: transform listeners are exactly the registered listeners that
- * carry a `target` (`RegisteredBPListener` declares `target?: never`, so it
- * can never hold one at runtime).
- */
-export const isTransformListener = (
-  listener: RegisteredBPListener | RegisteredTransformListener,
-): listener is RegisteredTransformListener => 'target' in listener
-
-/**
  * Projects a registered BP listener (`waitFor`/`block`/`interrupt`) to its
  * JSON-only serialized form: the zod `detailSchema` instance becomes a JSON
  * Schema document, so the result is safe for trace messages and canonical

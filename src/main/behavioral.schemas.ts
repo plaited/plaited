@@ -90,10 +90,7 @@ export const RegisteredBPListenerSchema = z.object({
   ...BPListenerSchema.shape,
 })
 
-export type RegisteredBPListener = z.output<typeof RegisteredBPListenerSchema> & {
-  query?: never
-  target?: never
-}
+export type RegisteredBPListener = z.output<typeof RegisteredBPListenerSchema>
 /**
  * Registered transform listener — {@link TransformListener} with topic
  * stamping and the compiled detail validator shared by all registered idioms.

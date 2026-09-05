@@ -40,7 +40,6 @@ import {
   computeFrontier,
   generateRulesFunctions,
   isListeningFor,
-  isTransformListener,
   resumePendingThreadsForSelectedEvent,
   serializeRegisteredListener,
   serializeTransformListener,
@@ -403,7 +402,7 @@ const getTriggerSuccessors = ({
  */
 const normalizeListeners = (listener: RegisteredBPListener[] | RegisteredTransformListener[]) =>
   listener
-    .map((l) => JSON.stringify(isTransformListener(l) ? serializeTransformListener(l) : serializeRegisteredListener(l)))
+    .map((l) => JSON.stringify('target' in l ? serializeTransformListener(l) : serializeRegisteredListener(l)))
     .sort()
 
 /**
