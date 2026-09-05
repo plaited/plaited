@@ -29,6 +29,7 @@ import type {
   FrontierTrace,
   RegisteredBPListener,
   RegisteredIdioms,
+  RegisteredTransformListener,
   SelectionTrace,
   Thread,
   Trace,
@@ -294,7 +295,8 @@ const triggerAffectsPendingBid = ({ pendingBid, trigger }: { pendingBid: Pending
       pendingBid.request.topic === trigger.topic &&
       Bun.deepEquals(pendingBid.request.detail, trigger.detail)) ||
     pendingBid.waitFor?.some(isListeningFor(candidate)) ||
-    pendingBid.interrupt?.some(isListeningFor(candidate))
+    pendingBid.interrupt?.some(isListeningFor(candidate)) ||
+    pendingBid.transform?.some(isListeningFor(candidate))
   )
 }
 
@@ -387,16 +389,17 @@ const getTriggerSuccessors = ({
  * @internal
  * Canonicalizes a listener set into a content-sorted array of JSON strings.
  *
- * Each {@link RegisteredBPListener} is projected to its JSON-only form — the
- * zod `detailSchema` instance is converted to JSON Schema — and serialized. The resulting
- * strings are sorted so two listener sets that differ only by declaration
- * order produce the same array. This is what lets {@link frontierStateKey}
- * treat structurally-equal pending sets as the same state.
+ * Each listener (`waitFor`/`block`/`interrupt`/`transform`) is projected to its
+ * JSON-only form — the zod `detailSchema` instance is converted to JSON Schema
+ * — and serialized. The resulting strings are sorted so two listener sets that
+ * differ only by declaration order produce the same array. This is what lets
+ * {@link frontierStateKey} treat structurally-equal pending sets as the same
+ * state.
  *
- * @param listener - Listeners (`waitFor`/`block`/`interrupt`) to canonicalize.
+ * @param listener - Listeners to canonicalize.
  * @returns A sorted array of JSON strings, one per projected listener.
  */
-const normalizeListeners = (listener: RegisteredBPListener[]) =>
+const normalizeListeners = (listener: RegisteredBPListener[] | RegisteredTransformListener[]) =>
   listener
     .map(({ type, detailSchema, ...rest }) =>
       JSON.stringify({
@@ -441,7 +444,7 @@ const normalizeListeners = (listener: RegisteredBPListener[]) =>
 export const frontierStateKey = ({ pending }: { pending: Set<PendingBid> }): string =>
   JSON.stringify(
     [...pending]
-      .map(({ waitFor, block, interrupt, request, generator: _gen, ...rest }) =>
+      .map(({ waitFor, block, interrupt, request, transform, generator: _gen, ...rest }) =>
         JSON.stringify({
           ...rest,
           // request is field-picked to { type, detail, topic } so non-trace
@@ -456,6 +459,7 @@ export const frontierStateKey = ({ pending }: { pending: Set<PendingBid> }): str
           ...(waitFor && { waitFor: normalizeListeners(waitFor) }),
           ...(block && { block: normalizeListeners(block) }),
           ...(interrupt && { interrupt: normalizeListeners(interrupt) }),
+          ...(transform && { transform: normalizeListeners(transform) }),
         }),
       )
       .sort(),
