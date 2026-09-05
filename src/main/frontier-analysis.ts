@@ -41,8 +41,6 @@ import {
   generateRulesFunctions,
   isListeningFor,
   resumePendingThreadsForSelectedEvent,
-  serializeRegisteredListener,
-  serializeTransformListener,
   useThread,
 } from './behavioral.utils.ts'
 
@@ -401,9 +399,8 @@ const getTriggerSuccessors = ({
  * @returns A sorted array of JSON strings, one per projected listener.
  */
 const normalizeListeners = (listener: RegisteredBPListener[] | RegisteredTransformListener[]) =>
-  listener
-    .map((l) => JSON.stringify('target' in l ? serializeTransformListener(l) : serializeRegisteredListener(l)))
-    .sort()
+  // Raw-JSON-Schema listeners serialize without conversion.
+  listener.map((l) => JSON.stringify(l)).sort()
 
 /**
  * Derive a canonical string key for a BP pending set.

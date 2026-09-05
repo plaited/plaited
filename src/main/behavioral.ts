@@ -1,6 +1,6 @@
 import { ueid } from '../utils.ts'
 import { FRONTIER_STATUS, TRACE_MESSAGE_KINDS } from './behavioral.constants.ts'
-import { BPEventSchema, ThreadScehama, type Trace } from './behavioral.schemas.ts'
+import { type Trace, validateBPEvent, validateThread } from './behavioral.schemas.ts'
 import type {
   CandidateBid,
   PendingBid,
@@ -15,8 +15,6 @@ import {
   computeFrontier,
   generateRulesFunctions,
   resumePendingThreadsForSelectedEvent,
-  serializeRegisteredListener,
-  serializeTransformListener,
   useThread,
 } from './behavioral.utils.ts'
 
@@ -35,10 +33,10 @@ const serializePending = (pending: Set<PendingBid>) =>
         ...(request.detail === undefined ? {} : { detail: request.detail }),
       },
     }),
-    ...(waitFor && { waitFor: waitFor.map(serializeRegisteredListener) }),
-    ...(block && { block: block.map(serializeRegisteredListener) }),
-    ...(interrupt && { interrupt: interrupt.map(serializeRegisteredListener) }),
-    ...(transform && { transform: transform.map(serializeTransformListener) }),
+    ...(waitFor && { waitFor }),
+    ...(block && { block }),
+    ...(interrupt && { interrupt }),
+    ...(transform && { transform }),
   }))
 
 /**
@@ -271,19 +269,18 @@ export const behavioral = (options?: { instanceId?: string }) => {
    * Implementation of the public `trigger` function.
    */
   const useTrigger: UseTrigger = (space) => (event) => {
-    const result = BPEventSchema.safeParse(event)
-    if (result.error) {
+    if (!validateBPEvent(event)) {
       return sendTrace({
         kind: TRACE_MESSAGE_KINDS.trigger_error,
         timestamp: Date.now(),
         instanceId,
-        error: result.error.issues,
+        error: validateBPEvent.errors ?? [],
         space,
       })
     }
     const thread = function* () {
       yield {
-        request: result.data,
+        request: event,
       }
     }
     running.add({
@@ -309,8 +306,7 @@ export const behavioral = (options?: { instanceId?: string }) => {
   }
 
   const useAddThread: UseAddThread = (space) => (args) => {
-    const result = ThreadScehama.safeParse(args)
-    if (result.success) {
+    if (validateThread(args)) {
       const { label, rules, once } = args
       try {
         const syncPoints = generateRulesFunctions(rules, space)
@@ -325,7 +321,7 @@ export const behavioral = (options?: { instanceId?: string }) => {
           kind: TRACE_MESSAGE_KINDS.add_thread_error,
           timestamp: Date.now(),
           instanceId,
-          error: err instanceof Error ? err.message : String(err),
+          error: [err instanceof Error ? err.message : String(err)],
           space,
         })
       }
@@ -334,7 +330,7 @@ export const behavioral = (options?: { instanceId?: string }) => {
         kind: TRACE_MESSAGE_KINDS.add_thread_error,
         timestamp: Date.now(),
         instanceId,
-        error: result.error.issues,
+        error: validateThread.errors ?? [],
         space,
       })
     }

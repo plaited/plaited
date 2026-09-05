@@ -1,5 +1,5 @@
 import * as z from 'zod'
-import { BPEventSchema } from './behavioral.schemas.ts'
+import { BPEventZodSchema } from './behavioral.schemas.ts'
 import { SCALE } from './html.constants.ts'
 import {
   CONTROLLER_INCOMING_MESSAGE_TYPES,
@@ -16,7 +16,7 @@ import {
 export const UiEventMessageSchema = z.object({
   type: z.literal(CONTROLLER_OUTGOING_MESSAGE_TYPES.ui_event),
   detail: z.object({
-    event: BPEventSchema,
+    event: BPEventZodSchema,
     timeStamp: z.number(),
   }),
 })
@@ -212,7 +212,7 @@ export const DispatchCustomEventMessageSchema = z.object({
   detail: z.object({
     id: z.string(),
     target: z.string(),
-    event: BPEventSchema,
+    event: BPEventZodSchema,
     bubbles: z.boolean().default(false),
     cancelable: z.boolean().default(true),
     composed: z.boolean().default(true),

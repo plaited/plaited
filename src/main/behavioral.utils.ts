@@ -1,4 +1,3 @@
-import * as z from 'zod'
 import { isTypeOf } from '../utils.ts'
 import { FRONTIER_STATUS, IDIOMS, TRACE_MESSAGE_KINDS } from './behavioral.constants.ts'
 import type {
@@ -7,9 +6,8 @@ import type {
   RegisteredBPListener,
   RegisteredIdioms,
   RegisteredTransformListener,
-  SerializedListener,
-  SerializedTransformListener,
 } from './behavioral.schemas.ts'
+import { ajv, validateDetailSchema } from './behavioral.schemas.ts'
 import type {
   CandidateBid,
   Frontier,
@@ -39,44 +37,43 @@ export const isBPEvent = (data: unknown): data is BPEvent => {
 export const isListeningFor = ({ type, detail, space }: CandidateBid) => {
   return (listener: RegisteredBPListener | RegisteredTransformListener): boolean => {
     const spaceMatches = listener.space ? space === listener.space : true
-    const schemaMatches = listener.detailSchema ? listener.detailSchema.safeParse(detail).success : true
+    const schemaMatches = listener.detailSchema ? detailValidators.get(listener)!(detail) : true
     const detailMatches = listener.detailMatch === 'invalid' ? !schemaMatches : schemaMatches
     return listener.type === type && spaceMatches && detailMatches
   }
 }
 
 /**
- * Projects a registered listener (BP or transform) to its JSON-only serialized
- * form: the zod `detailSchema` instance becomes a JSON Schema document, so the
- * result is safe for trace messages and canonical state keys.
+ * Compiles and caches an Ajv validator per registered listener's
+ * `detailSchema` (WeakMap-keyed so looped threads recompile nothing).
  */
-/**
- * Projects a registered BP listener (`waitFor`/`block`/`interrupt`) to its
- * JSON-only serialized form: the zod `detailSchema` instance becomes a JSON
- * Schema document, so the result is safe for trace messages and canonical
- * state keys.
- */
-export const serializeRegisteredListener = (listener: RegisteredBPListener): SerializedListener => {
-  const { type, detailSchema, ...rest } = listener
-  return {
-    type,
-    // Zod schema → JSON Schema at the serialization boundary; output stays JSON-only.
-    ...(detailSchema && { detailSchema: z.toJSONSchema(detailSchema) }),
-    ...rest,
+const detailValidators = new WeakMap<RegisteredBPListener | RegisteredTransformListener, (detail: unknown) => boolean>()
+
+/** @internal — called from generateRulesFunctions when a listener is registered. */
+export const compileListenerValidator = (listener: RegisteredBPListener | RegisteredTransformListener): void => {
+  if (listener.detailSchema && !detailValidators.has(listener)) {
+    try {
+      detailValidators.set(listener, ajv.compile(listener.detailSchema))
+    } catch (error) {
+      throw new Error(`un-compilable detailSchema for listener "${listener.type}": ${(error as Error).message}`)
+    }
   }
 }
 
 /**
- * Projects a registered transform listener to its JSON-only serialized form.
- * Same projection as {@link serializeRegisteredListener}, kept separate so
- * `query`/`target` stay required in the serialized shape.
+ * Validates + compiles a raw `detailSchema` at registration time; throws on
+ * keyword-invalid or un-compilable documents. Called from
+ * generateRulesFunctions so useAddThread's try/catch surfaces failures as
+ * add_thread_error — never at match time inside the engine loop.
  */
-export const serializeTransformListener = (listener: RegisteredTransformListener): SerializedTransformListener => {
-  const { type, detailSchema, ...rest } = listener
-  return {
-    type,
-    ...(detailSchema && { detailSchema: z.toJSONSchema(detailSchema) }),
-    ...rest,
+export const compileDetailSchema = (schema: NonNullable<RegisteredBPListener['detailSchema']>): void => {
+  if (!validateDetailSchema(schema)) {
+    throw new Error('detailSchema is not a valid JSON Schema document')
+  }
+  try {
+    ajv.compile(schema)
+  } catch (error) {
+    throw new Error(`un-compilable detailSchema: ${(error as Error).message}`)
   }
 }
 
@@ -189,8 +186,7 @@ export const resumePendingThreadsForSelectedEvent = ({
         timestamp: Date.now(),
         step,
         instanceId,
-        // Zod schema → JSON Schema at the trace boundary; traces stay JSON-only.
-        transform: isTransform.map(serializeTransformListener),
+        transform: isTransform,
         selected: selectedEvent,
         threadLabel: label,
       })
@@ -199,12 +195,12 @@ export const resumePendingThreadsForSelectedEvent = ({
 }
 
 export const generateRulesFunctions = (rules: Idioms[], space?: string): RulesFunction[] => {
-  // Fail fast on unrepresentable detailSchemas: z.toJSONSchema throws here, so
-  // useAddThread's try/catch surfaces it as add_thread_error — never at trace
-  // time inside the engine loop.
+  // Fail fast on un-compilable detailSchemas: Ajv throws here, so
+  // useAddThread's try/catch surfaces it as add_thread_error — never at
+  // match time inside the engine loop.
   for (const { waitFor, block, interrupt, transform } of rules) {
     for (const listener of [...(waitFor ?? []), ...(block ?? []), ...(interrupt ?? []), ...(transform ?? [])]) {
-      if (listener.detailSchema) z.toJSONSchema(listener.detailSchema)
+      if (listener.detailSchema) compileDetailSchema(listener.detailSchema)
     }
   }
   const syncs: RulesFunction[] = []

@@ -1,131 +1,186 @@
-import * as z from 'zod'
-import { DETAIL_MATCH, IDIOMS, TRACE_MESSAGE_KINDS } from './behavioral.constants.ts'
-
-// 1. Define the TypeScript types for your JSON structure first
-export type JsonPrimitive = string | number | boolean | null
-export type JsonValue = JsonPrimitive | JsonValue[] | { [key: string]: JsonValue }
-
-// 2. Explicitly type the Zod schema using z.ZodType<JsonValue>
-export const JsonValueSchema: z.ZodType<JsonValue> = z.lazy(() =>
-  z.union([
-    z.string(),
-    z.number(),
-    z.boolean(),
-    z.null(),
-    z.array(JsonValueSchema),
-    z.record(z.string(), JsonValueSchema),
-  ]),
-)
-
-// This strictly validates a valid, plain JSON object (key-value pairs)
-export const JsonObjectSchema = z.record(z.string(), JsonValueSchema)
-
-/** @public */
-export type JsonObject = z.output<typeof JsonObjectSchema>
+import type { JSONSchemaType } from 'ajv'
+import Ajv2020 from 'ajv/dist/2020'
+import { DETAIL_MATCH, type FRONTIER_STATUS, IDIOMS, type TRACE_MESSAGE_KINDS } from './behavioral.constants.ts'
 
 /**
- * Schema for validating BPEvent objects.
- * Uses a JSON-Schema-exportable object shape for runtime validation.
+ * Shared Ajv instance for the behavioral kernel.
+ *
+ * Uses draft 2020-12 (the current JSON Schema standard) so thread authors and
+ * model-generated threads author `detailSchema` as plain JSON Schema documents.
+ * `strict: false` because author-provided schemas may include unknown keywords
+ * or custom extensions; `validateSchema` makes Ajv reject structurally-broken
+ * schemas at compile time (surfaced as `add_thread_error` by `useAddThread`).
+ */
+export const ajv = new Ajv2020({ strict: false, validateSchema: true })
+
+/**
+ * A JSON object value — kernel detail payloads are JSON values.
+ * Plain structural type: Ajv validates payloads against per-listener schemas,
+ * so no recursive validator is needed for the type itself.
+ */
+export type JsonPrimitive = string | number | boolean | null
+export type JsonValue = JsonPrimitive | JsonValue[] | { [key: string]: JsonValue }
+export type JsonObject = { [key: string]: JsonValue }
+
+// ---------------------------------------------------------------------------
+// Validating JSON Schema documents (registration-time)
+// ---------------------------------------------------------------------------
+
+/**
+ * Draft 2020-12 meta-schema reference — validates that a `detailSchema` is
+ * itself a structurally sound JSON Schema document (correct `type` keyword
+ * values, object-shaped `properties`, etc.).
+ */
+const _META_SCHEMA_REF = { $ref: 'https://json-schema.org/draft/2020-12/schema' }
+
+/**
+ * Keywords whose presence distinguishes a real JSON Schema document from an
+ * arbitrary object (a common mistake is passing a detail object where a
+ * schema is expected). Meta-schema validation alone accepts such objects —
+ * extra properties are allowed — so keyword presence is the belt-and-suspenders
+ * check that the author intended a schema.
+ */
+const JSON_SCHEMA_KEYWORDS = new Set([
+  'type',
+  '$ref',
+  '$schema',
+  'enum',
+  'const',
+  'properties',
+  'required',
+  'items',
+  'allOf',
+  'anyOf',
+  'oneOf',
+  'not',
+])
+
+const isJsonSchemaDocument = (value: unknown): boolean => {
+  if (value === null || typeof value !== 'object' || Array.isArray(value)) return false
+  return Object.keys(value).some((key) => JSON_SCHEMA_KEYWORDS.has(key))
+}
+
+/**
+ * Validates that a listener's `detailSchema` is a JSON Schema document:
+ * keyword presence plus meta-schema conformance. Used at registration time;
+ * failures surface as `add_thread_error` traces.
+ */
+export const validateDetailSchema = (schema: JsonObject): boolean => {
+  if (!isJsonSchemaDocument(schema)) return false
+  const valid = ajv.validateSchema(schema as object)
+  return valid === true
+}
+
+// ---------------------------------------------------------------------------
+// Core event shape
+// ---------------------------------------------------------------------------
+
+/**
+ * An event that threads request, wait for, block, or transform.
+ *
+ * @property type - Event identifier; listeners match on this.
+ * @property detail - JSON payload carried by the event.
+ * @property space - Optional scope stamp; listeners only match events in the same space.
  *
  * @public
  */
-export const BPEventSchema = z.object({
-  type: z.string(),
-  detail: JsonObjectSchema.optional(),
-  space: z.string().optional(),
-})
-
-/** @public */
-export type BPEvent = z.output<typeof BPEventSchema>
-
-/**
- * A valid detail schema accepts only JSON-serializable payloads — kernel
- * detail payloads are JSON values. `z.toJSONSchema` in input mode is the
- * oracle: it throws for dates, bigints, transforms, class instances, and
- * other non-JSON shapes.
- */
-const isJsonDetailSchema = (schema: z.ZodObject): boolean => {
-  try {
-    z.toJSONSchema(schema, { io: 'input' })
-    return true
-  } catch {
-    return false
-  }
+export type BPEvent = {
+  type: string
+  detail?: JsonObject
+  space?: string
 }
 
-export const BPListenerSchema = z.object({
-  type: z.string(),
-  detailSchema: z
-    .instanceof(z.ZodObject)
-    .refine(isJsonDetailSchema, {
-      message: 'detailSchema must only accept JSON-serializable detail payloads',
-    })
-    .optional(),
-  detailMatch: z.enum(Object.values(DETAIL_MATCH)).optional(),
-})
+export const BPEventSchema: JSONSchemaType<BPEvent> = {
+  type: 'object',
+  properties: {
+    type: { type: 'string' },
+    detail: { type: 'object', required: [], additionalProperties: true, nullable: true },
+    space: { type: 'string', nullable: true },
+  },
+  required: ['type'],
+  additionalProperties: false,
+}
 
-export type BPListener = z.output<typeof BPListenerSchema>
-
-export const TransformListenerSchema = z.object({
-  ...BPListenerSchema.shape,
-  query: z.string(),
-  target: z.string(),
-})
-
-export type TransformListener = z.output<typeof TransformListenerSchema>
-
-const RegisteredBaseSchema = z.object({
-  space: z.string().optional(),
-})
+/** @internal */
+export const validateBPEvent = ajv.compile(BPEventSchema)
 
 /**
- * Registered listener with space stamping and compiled detail validator.
+ * A listener declaration inside a thread rule.
  *
- * The listener's `detailSchema` is a zod object schema authored by the thread;
- * matching validates candidate event details against it at match time via
- * `safeParse`.
+ * @property type - Event type to match.
+ * @property detailSchema - Optional JSON Schema the event's `detail` must conform to.
+ * @property detailMatch - `'valid'` matches conforming details; `'invalid'` matches non-conforming ones.
+ *
+ * @public
  */
-export const RegisteredBPListenerSchema = z.object({
-  ...RegisteredBaseSchema.shape,
-  ...BPListenerSchema.shape,
-})
+export type BPListener = {
+  type: string
+  detailSchema?: JsonObject
+  detailMatch?: (typeof DETAIL_MATCH)[keyof typeof DETAIL_MATCH]
+}
 
-export type RegisteredBPListener = z.output<typeof RegisteredBPListenerSchema>
+export const BPListenerSchema: JSONSchemaType<BPListener> = {
+  type: 'object',
+  properties: {
+    type: { type: 'string' },
+    detailSchema: { type: 'object', required: [], nullable: true },
+    detailMatch: { type: 'string', enum: Object.values(DETAIL_MATCH), nullable: true },
+  },
+  required: ['type'],
+  additionalProperties: false,
+}
+
+/** @internal */
+export const validateBPListener = ajv.compile(BPListenerSchema)
+
 /**
- * Registered transform listener — {@link TransformListener} with space
- * stamping and the compiled detail validator shared by all registered idioms.
+ * A transform listener — a {@link BPListener} plus the declarative reshaping
+ * contract executed by external code (the daemon): `query` (e.g. a jq
+ * expression) is applied to the matched event's `detail`, and the result is
+ * emitted as a `target` event.
+ *
+ * @public
  */
-export const RegisteredTransformListenerSchema = z.object({
-  ...RegisteredBPListenerSchema.shape,
-  ...TransformListenerSchema.shape,
-})
+export type TransformListener = BPListener & {
+  query: string
+  target: string
+}
 
-export type RegisteredTransformListener = z.output<typeof RegisteredTransformListenerSchema>
+export const TransformListenerSchema: JSONSchemaType<TransformListener> = {
+  type: 'object',
+  properties: {
+    type: { type: 'string' },
+    detailSchema: { type: 'object', required: [], nullable: true },
+    detailMatch: { type: 'string', enum: Object.values(DETAIL_MATCH), nullable: true },
+    query: { type: 'string' },
+    target: { type: 'string' },
+  },
+  required: ['type', 'query', 'target'],
+  additionalProperties: false,
+}
+
+/** @internal */
+export const validateTransformListener = ajv.compile(TransformListenerSchema)
 
 /**
- * Trace-serialized listener — the in-memory zod `detailSchema` instance is
- * emitted as JSON Schema via `z.toJSONSchema()` at the trace boundary, keeping
- * trace messages JSON-only (frontier replay / visited-set invariant).
+ * Registered listener — a {@link BPListener} stamped with its thread's `space`
+ * at registration time in {@link generateRulesFunctions}.
+ *
+ * @public
  */
-export const SerializedListenerSchema = z.object({
-  type: z.string(),
-  space: z.string().optional(),
-  detailMatch: z.enum(Object.values(DETAIL_MATCH)).optional(),
-  // JSON Schema emitted by z.toJSONSchema() — structurally a JSON object.
-  detailSchema: z.record(z.string(), z.unknown()).optional(),
-})
+export type RegisteredBPListener = BPListener & {
+  space?: string
+}
 
-export const SerializedTransformListenerSchema = z.object({
-  ...SerializedListenerSchema.shape,
-  query: z.string(),
-  target: z.string(),
-})
-
-/** @public */
-export type SerializedListener = z.output<typeof SerializedListenerSchema>
-
-/** @public */
-export type SerializedTransformListener = z.output<typeof SerializedTransformListenerSchema>
+/**
+ * Registered transform listener — a {@link TransformListener} with space
+ * stamping, post-registration.
+ *
+ * @public
+ */
+export type RegisteredTransformListener = TransformListener & {
+  space?: string
+}
 
 /**
  * Represents a synchronization statement yielded by a behavioral rule step.
@@ -136,66 +191,97 @@ export type SerializedTransformListener = z.output<typeof SerializedTransformLis
  * @property waitFor - Wait for specific events. Thread pauses until a matching event is selected.
  * @property block - Prevent specific events from being selected. Higher precedence than requests.
  * @property interrupt - Events that terminate the thread's execution if selected.
+ * @property transform - Events to match, hand off to external reshaping, and re-enter via `target`.
  *
  * @remarks
  * - Multiple listeners can be provided as arrays
  * - Blocked events have precedence over requested events
  * - Interrupts cause thread termination
  *
- * @see {@link ThreadScehama} for the tuple that embeds `IdiomSchema` rules
- * @see {@link UseAddThread} for registering a thread from `Idiom[]` rules
+ * @see {@link ThreadSchema} for the tuple that embeds idiom rules
+ * @see {@link UseAddThread} for registering a thread from `Idioms[]` rules
  */
-export const IdiomSchema = z.object({
-  [IDIOMS.waitFor]: z.array(BPListenerSchema).min(1).optional(),
-  [IDIOMS.interrupt]: z.array(BPListenerSchema).min(1).optional(),
-  [IDIOMS.block]: z.array(BPListenerSchema).min(1).optional(),
-  [IDIOMS.request]: BPEventSchema.optional(),
-  [IDIOMS.transform]: z.array(TransformListenerSchema).min(1).optional(),
-})
+export type Idioms = {
+  [IDIOMS.waitFor]?: BPListener[]
+  [IDIOMS.interrupt]?: BPListener[]
+  [IDIOMS.block]?: BPListener[]
+  [IDIOMS.request]?: BPEvent
+  [IDIOMS.transform]?: TransformListener[]
+}
 
-export type Idioms = z.output<typeof IdiomSchema>
+export const IdiomSchema: JSONSchemaType<Idioms> = {
+  type: 'object',
+  properties: {
+    [IDIOMS.waitFor]: { type: 'array', items: BPListenerSchema, nullable: true },
+    [IDIOMS.interrupt]: { type: 'array', items: BPListenerSchema, nullable: true },
+    [IDIOMS.block]: { type: 'array', items: BPListenerSchema, nullable: true },
+    [IDIOMS.request]: { ...BPEventSchema, nullable: true },
+    [IDIOMS.transform]: { type: 'array', items: TransformListenerSchema, nullable: true },
+  },
+  additionalProperties: false,
+}
+
+/** @internal */
+export const validateIdioms = ajv.compile(IdiomSchema)
 
 /**
- * Registered idioms with compiled validators on each listener.
+ * Registered idioms — the internal, post-registration representation.
  *
- * Hand-written (not derived from a Zod schema) because the `validate`
- * callable on each listener is non-serializable and cannot be expressed
- * by a Zod schema. The author-facing shape is {@link IdiomSchema};
- * `RegisteredIdioms` is the internal, post-registration representation.
+ * @remarks
+ * `detailSchema` stays a plain JSON object (it *is* JSON Schema), so registered
+ * listeners serialize without conversion — traces and the frontier visited-set
+ * key stay JSON-only by construction.
  */
 export type RegisteredIdioms = {
   [IDIOMS.waitFor]?: RegisteredBPListener[]
   [IDIOMS.interrupt]?: RegisteredBPListener[]
   [IDIOMS.block]?: RegisteredBPListener[]
-  [IDIOMS.request]?: z.output<typeof BPEventSchema>
+  [IDIOMS.request]?: BPEvent
   [IDIOMS.transform]?: RegisteredTransformListener[]
 }
 
-export const ThreadScehama = z.object({
-  label: z.string().min(1),
-  once: z.literal(true).optional(),
-  rules: z.array(IdiomSchema),
-})
-export type Thread = z.output<typeof ThreadScehama>
+/**
+ * A b-thread registration tuple.
+ *
+ * @property label - Unique-ish human label; appears in trace messages.
+ * @property rules - The thread's synchronization statements, executed in order.
+ * @property once - When `true`, the thread runs its rules once and completes.
+ *
+ * @public
+ */
+export type Thread = {
+  label: string
+  once?: true
+  rules: Idioms[]
+}
 
-export const ThreadsSchema = z.array(ThreadScehama)
+export const ThreadSchema: JSONSchemaType<Thread> = {
+  type: 'object',
+  properties: {
+    label: { type: 'string', minLength: 1 },
+    once: { type: 'boolean', enum: [true], nullable: true },
+    rules: { type: 'array', items: IdiomSchema },
+  },
+  required: ['label', 'rules'],
+  additionalProperties: false,
+}
 
-export type Threads = z.output<typeof ThreadsSchema>
+/** @internal */
+export const validateThread = ajv.compile(ThreadSchema)
 
-export const TraceEventSchema = BPEventSchema.extend({
-  ingress: z.literal(true).optional(),
-})
+export type Threads = Thread[]
 
-/** @public */
-export type TraceEvent = z.output<typeof TraceEventSchema>
+export type TraceEvent = BPEvent & {
+  ingress?: true
+}
 
-export const TraceCandidateSchema = z.object({
-  type: z.string(),
-  detail: JsonObjectSchema.optional(),
-  ingress: z.literal(true).optional(),
-  space: z.string().optional(),
-  priority: z.number(),
-})
+export type TraceCandidate = {
+  type: string
+  detail?: JsonObject
+  ingress?: true
+  space?: string
+  priority: number
+}
 
 /**
  * Structural contract for consumer-supplied trace extensions.
@@ -211,183 +297,141 @@ export const TraceCandidateSchema = z.object({
  *
  * @see {@link Trace} for the engine's closed trace union
  */
-export const TraceBaseSchema = z.looseObject({
-  kind: z.string(),
-  timestamp: z.number(),
-  instanceId: z.string(),
-})
+export type TraceBase = {
+  kind: string
+  timestamp: number
+  instanceId: string
+}
 
-/** @public */
-export type TraceCandidate = z.output<typeof TraceCandidateSchema>
+// ---------------------------------------------------------------------------
+// Trace kinds
+// ---------------------------------------------------------------------------
 
-export const FrontieTraceSchema = z.object({
-  ...TraceBaseSchema.shape,
-  kind: z.literal(TRACE_MESSAGE_KINDS.frontier),
-  step: z.number().int().nonnegative(),
-  status: z.enum(['ready', 'deadlock', 'idle']),
-  candidates: z.array(TraceCandidateSchema),
-  enabled: z.array(TraceCandidateSchema),
-})
+export type FrontierTrace = TraceBase & {
+  kind: typeof TRACE_MESSAGE_KINDS.frontier
+  step: number
+  status: (typeof FRONTIER_STATUS)[keyof typeof FRONTIER_STATUS]
+  candidates: TraceCandidate[]
+  enabled: TraceCandidate[]
+}
 
-/** @public */
-export type FrontierTrace = z.output<typeof FrontieTraceSchema>
+export type SelectionTrace = TraceBase & {
+  kind: typeof TRACE_MESSAGE_KINDS.selection
+  step: number
+  selected: TraceEvent
+}
+
+export type DeadlockTrace = TraceBase & {
+  kind: typeof TRACE_MESSAGE_KINDS.deadlock
+  step: number
+}
 
 /**
- * Schema for a trace of all bids considered during one event selection step.
+ * Emitted when `useAddThread` receives arguments that fail `ThreadSchema`
+ * validation or contain an un-compilable `detailSchema`.
  *
- * @remarks
- * Published via {@link useTrace} after each super-step's event selection.
- * Consumers narrow by `kind === 'selection'`.
- *
- * @see {@link TraceSchema} for the full discriminated union
+ * @property error - Ajv error objects (`ErrorObject[]`) describing the failure,
+ * narrowed via `Array.isArray`.
  *
  * @public
  */
-export const SelectionTraceSchema = z.object({
-  ...TraceBaseSchema.shape,
-  kind: z.literal(TRACE_MESSAGE_KINDS.selection),
-  step: z.number().int().nonnegative(),
-  selected: TraceEventSchema,
-})
+export type AddThreadError = TraceBase & {
+  kind: typeof TRACE_MESSAGE_KINDS.add_thread_error
+  error: unknown[]
+  space?: string
+}
 
-/** @public */
-export type SelectionTrace = z.output<typeof SelectionTraceSchema>
+export type SerializedThread = {
+  label: string
+  priority: number
+  ingress?: true
+  space?: string
+  request?: Pick<BPEvent, 'type' | 'detail'>
+  waitFor?: SerializedBPListener[]
+  block?: SerializedBPListener[]
+  interrupt?: SerializedBPListener[]
+  transform?: SerializedTransformListener[]
+}
 
 /**
- * Schema for a trace emitted when no unblocked candidate can be selected.
- *
- * @remarks
- * Published via {@link useTrace} when at least one request candidate exists
- * but all candidates are blocked. Consumers narrow by `kind === 'deadlock'`.
- *
- * @see {@link TraceSchema} for the full discriminated union
- *
- * @public
+ * Listener shape as it appears in trace messages. With raw-JSON-Schema
+ * `detailSchema`, registered listeners serialize without conversion — this is
+ * structurally the same shape as {@link RegisteredBPListener}.
  */
-export const DeadlockTraceSchema = z.object({
-  ...TraceBaseSchema.shape,
-  kind: z.literal(TRACE_MESSAGE_KINDS.deadlock),
-  step: z.number().int().nonnegative(),
-})
+export type SerializedBPListener = RegisteredBPListener
 
-/** @public */
-export type DeadlockTrace = z.output<typeof DeadlockTraceSchema>
+export type SerializedTransformListener = RegisteredTransformListener
 
-/**
- * Schema for errors emitted when `useAddThread` receives arguments that fail
- * `ThreadScehama` validation or contain an un-compilable JSON Schema.
- *
- * @remarks
- * Published via the trace publisher when `useAddThread`'s `safeParse` rejects
- * the supplied `(label, { rules, once })` tuple, or when Ajv fails to compile a
- * `detailSchema`. `error` is either a human-readable string (Ajv compile failure)
- * or a `ZodIssue[]` (thread-shape validation failure), narrowed via `Array.isArray`.
- *
- * @see {@link UseAddThread} for the consumer-facing API
- * @see {@link ThreadScehama} for the validating schema
- *
- * @public
- */
-export const AddThreadErrorSchema = z.object({
-  ...TraceBaseSchema.shape,
-  kind: z.literal(TRACE_MESSAGE_KINDS.add_thread_error),
-  error: z.union([z.array(z.unknown()), z.string()]),
-  space: z.string().optional(),
-})
+export type PendingBidsTrace = TraceBase & {
+  kind: typeof TRACE_MESSAGE_KINDS.pending_bids
+  step: number
+  threads: SerializedThread[]
+}
 
-/** @public */
-export type AddThreadError = z.output<typeof AddThreadErrorSchema>
+export type TriggerError = TraceBase & {
+  kind: typeof TRACE_MESSAGE_KINDS.trigger_error
+  error: unknown[]
+  space?: string
+}
+
+export type InterruptTrace = TraceBase & {
+  kind: typeof TRACE_MESSAGE_KINDS.interrupt
+  selected: TraceEvent
+  threadLabel: string
+  step: number
+}
+
+export type TransformTrace = TraceBase & {
+  kind: typeof TRACE_MESSAGE_KINDS.transform
+  selected: TraceEvent
+  threadLabel: string
+  step: number
+  transform: SerializedTransformListener[]
+}
 
 /**
- * Schema for the pending thread pool trace taken before each frontier computation.
- *
- * @remarks
- * Published at the start of each super-step's event selection phase, before
- * {@link FrontieTraceSchema}. Contains the serialized state of all pending
- * threads — their labels, priorities, and synchronization intentions — without
- * collapsing them into candidates.
- *
- * Consumers narrow by `kind === 'pending_bids'`.
- *
- * @see {@link TraceSchema} for the full discriminated union
- *
- * @public
- */
-export const PendingBidsTraceSchema = z.object({
-  ...TraceBaseSchema.shape,
-  kind: z.literal(TRACE_MESSAGE_KINDS.pending_bids),
-  step: z.number().int().nonnegative(),
-  threads: z.array(
-    z.object({
-      label: z.string(),
-      priority: z.number().int(),
-      ingress: z.literal(true).optional(),
-      space: z.string().optional(),
-      request: BPEventSchema.pick({ type: true, detail: true }).optional(),
-      waitFor: z.array(SerializedListenerSchema).optional(),
-      block: z.array(SerializedListenerSchema).optional(),
-      interrupt: z.array(SerializedListenerSchema).optional(),
-      transform: z.array(SerializedTransformListenerSchema).optional(),
-    }),
-  ),
-})
-
-/** @public */
-export type PendingBidsTrace = z.output<typeof PendingBidsTraceSchema>
-
-export const TriggerErrorSchema = z.object({
-  ...TraceBaseSchema.shape,
-  kind: z.literal(TRACE_MESSAGE_KINDS.trigger_error),
-  error: z.union([z.array(z.unknown()), z.string()]),
-  space: z.string().optional(),
-})
-
-/** @public */
-export type TriggerError = z.infer<typeof TriggerErrorSchema>
-
-export const InterruptTraceSchema = z.object({
-  ...TraceBaseSchema.shape,
-  kind: z.literal(TRACE_MESSAGE_KINDS.interrupt),
-  selected: BPEventSchema,
-  threadLabel: z.string(),
-  step: z.number().int().nonnegative(),
-})
-
-/** @public */
-export type InterruptTrace = z.infer<typeof InterruptTraceSchema>
-
-export const TransformTraceSchema = z.object({
-  ...TraceBaseSchema.shape,
-  kind: z.literal(TRACE_MESSAGE_KINDS.transform),
-  selected: BPEventSchema,
-  threadLabel: z.string(),
-  step: z.number().int().nonnegative(),
-  transform: z.array(SerializedTransformListenerSchema),
-})
-
-/** @public */
-export type TransformTrace = z.infer<typeof TransformTraceSchema>
-
-/**
- * Discriminated union schema for all observable moments from the BP engine.
+ * Discriminated union of all observable moments from the BP engine.
  * Consumers narrow by the `kind` field.
  *
- * @see {@link SelectionTraceSchema} for event selection observations
- * @see {@link DeadlockTraceSchema} for blocked-candidate deadlock observations
- * @see {@link ExtensionErrorSchema} for host/runtime module diagnostics
+ * @remarks
+ * Hand-written (not derived from a validator) — Ajv has no discriminated-union
+ * inference; the union is the type-level contract while the per-kind schemas
+ * are the runtime contract.
+ *
+ * @see {@link SelectionTrace} for event selection observations
+ * @see {@link DeadlockTrace} for blocked-candidate deadlock observations
  *
  * @public
  */
-export const TraceSchema = z.discriminatedUnion('kind', [
-  TriggerErrorSchema,
-  FrontieTraceSchema,
-  DeadlockTraceSchema,
-  SelectionTraceSchema,
-  AddThreadErrorSchema,
-  PendingBidsTraceSchema,
-  InterruptTraceSchema,
-  TransformTraceSchema,
-])
+export type Trace =
+  | TriggerError
+  | FrontierTrace
+  | DeadlockTrace
+  | SelectionTrace
+  | AddThreadError
+  | PendingBidsTrace
+  | InterruptTrace
+  | TransformTrace
 
-/** @public */
-export type Trace = z.output<typeof TraceSchema>
+// ---------------------------------------------------------------------------
+// Zod bridge for zod-composed consumers (message.schemas.ts)
+// ---------------------------------------------------------------------------
+
+import * as z from 'zod'
+
+/**
+ * Zod twin of {@link BPEventSchema} for consumers that compose schemas with
+ * zod (e.g. message.schemas.ts). Runtime validation is delegated to the Ajv
+ * compiled validator so the two stay behaviorally identical; the zod wrapper
+ * only adapts the shape.
+ */
+export const BPEventZodSchema = z
+  .object({ type: z.string(), detail: z.record(z.string(), z.unknown()).optional(), space: z.string().optional() })
+  .loose()
+  .superRefine((value, ctx) => {
+    if (!validateBPEvent(value)) {
+      for (const issue of validateBPEvent.errors ?? []) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, path: [], message: `${issue.instancePath}: ${issue.message}` })
+      }
+    }
+  })

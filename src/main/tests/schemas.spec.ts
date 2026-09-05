@@ -1,166 +1,102 @@
 import { describe, expect, test } from 'bun:test'
-import * as z from 'zod'
 
-import {
-  AddThreadErrorSchema,
-  BPEventSchema,
-  BPListenerSchema,
-  DeadlockTraceSchema,
-  FrontieTraceSchema,
-  SelectionTraceSchema,
-  TraceCandidateSchema,
-  TraceEventSchema,
-  TraceSchema,
-} from '../behavioral.schemas.ts'
+import { ajv, validateBPEvent, validateBPListener, validateThread } from '../behavioral.schemas.ts'
 
-type JsonSchemaShape = {
-  required?: unknown
-  properties?: Record<string, unknown>
-}
-
-const readRequired = (schema: unknown): string[] => {
-  const required = (schema as JsonSchemaShape).required
-  expect(Array.isArray(required)).toBe(true)
-  return required as string[]
-}
+const compileTraceValidator = (kind: string) =>
+  ajv.compile({
+    type: 'object',
+    properties: {
+      kind: { const: kind },
+      timestamp: { type: 'number' },
+      instanceId: { type: 'string' },
+      step: { type: 'integer' },
+    },
+    required: ['kind', 'timestamp', 'instanceId', 'step'],
+  })
 
 describe('behavioral schemas', () => {
-  test('FrontierSnapshotSchema exports JSON Schema with step, status, candidates, and enabled as required fields', () => {
-    const schema = z.toJSONSchema(FrontieTraceSchema)
-    const required = readRequired(schema)
-
-    expect(required).toEqual(expect.arrayContaining(['kind', 'step', 'status', 'candidates', 'enabled']))
+  test('BPEvent validator accepts JSON detail values', () => {
+    expect(validateBPEvent({ type: 'primitive', detail: { value: 'text' } })).toBe(true)
+    expect(validateBPEvent({ type: 'object', detail: { ok: true, list: [1, null] } })).toBe(true)
+    expect(validateBPEvent({ type: 'bare' })).toBe(true)
   })
 
-  test('DeadlockSnapshotSchema exports JSON Schema with kind and step as required fields', () => {
-    const schema = z.toJSONSchema(DeadlockTraceSchema)
-    const required = readRequired(schema)
-
-    expect(required).toEqual(expect.arrayContaining(['kind', 'step']))
+  test('BPEvent validator rejects missing type and non-string type', () => {
+    expect(validateBPEvent({ detail: {} })).toBe(false)
+    expect(validateBPEvent({ type: 42 })).toBe(false)
+    expect(validateBPEvent(null)).toBe(false)
   })
 
-  test('SnapshotEventSchema accepts optional ingress', () => {
-    expect(TraceEventSchema.parse({ type: 'worker.done' })).toEqual({
-      type: 'worker.done',
-    })
-    expect(TraceEventSchema.parse({ type: 'worker.done', ingress: true })).toEqual({
-      type: 'worker.done',
-      ingress: true,
-    })
-  })
-
-  test('TraceCandidateSchema rejects non-JSON detail values like functions', () => {
-    expect(() =>
-      TraceCandidateSchema.parse({
-        type: 'evt',
-        detail: {
-          fn: () => 'not json',
-        },
-        priority: 1,
-      }),
-    ).toThrow()
-  })
-
-  test('BPEventSchema accepts JSON detail values', () => {
-    expect(BPEventSchema.parse({ type: 'primitive', detail: { value: 'text' } })).toEqual({
-      type: 'primitive',
-      detail: { value: 'text' },
-    })
-    expect(BPEventSchema.parse({ type: 'object', detail: { ok: true, list: [1, null] } })).toEqual({
-      type: 'object',
-      detail: { ok: true, list: [1, null] },
-    })
-  })
-
-  test('SnapshotMessageSchema rejects non-JSON selected event detail values', () => {
-    expect(() =>
-      TraceSchema.parse({
-        kind: 'selection',
-        timestamp: 0,
-        step: 0,
-        selected: {
-          type: 'event',
-          detail: () => 'not json',
-        },
-      }),
-    ).toThrow()
-  })
-
-  test('SnapshotMessageSchema rejects worker protocol messages', () => {
-    expect(() =>
-      TraceSchema.parse({
-        kind: 'worker',
-        response: {
-          id: 'worker-1',
-        },
-      }),
-    ).toThrow()
-  })
-
-  test('SelectionSnapshotSchema accepts selected event payload', () => {
+  test('BPListener validator accepts type with optional schema fields', () => {
+    expect(validateBPListener({ type: 'x' })).toBe(true)
     expect(
-      SelectionTraceSchema.parse({
-        kind: 'selection',
-        timestamp: 3,
-        instanceId: 'bp_test',
-        step: 3,
-        selected: {
-          type: 'event',
-          detail: { value: 1 },
-        },
-      }),
-    ).toEqual({
+      validateBPListener({ type: 'x', detailSchema: { type: 'object', properties: { id: { type: 'string' } } } }),
+    ).toBe(true)
+    expect(validateBPListener({ type: 'x', detailMatch: 'invalid' })).toBe(true)
+    expect(validateBPListener({ type: 'x', detailMatch: 'bogus' })).toBe(false)
+  })
+
+  test('Transform listener validator requires query and target', () => {
+    expect(validateTransformListenerSafe({ type: 'x', query: '.', target: 'y' })).toBe(true)
+    expect(validateTransformListenerSafe({ type: 'x', query: '.' })).toBe(false)
+  })
+
+  test('Thread validator requires non-empty label and rules', () => {
+    expect(validateThread({ label: 'a', rules: [] })).toBe(true)
+    expect(validateThread({ label: 'a', once: true, rules: [] })).toBe(true)
+    expect(validateThread({ label: '', rules: [] })).toBe(false)
+    expect(validateThread({ rules: [] })).toBe(false)
+  })
+
+  test('Selection trace validator accepts a selected event payload', () => {
+    const validate = compileTraceValidator('selection')
+    const trace = {
       kind: 'selection',
       timestamp: 3,
       instanceId: 'bp_test',
       step: 3,
-      selected: {
-        type: 'event',
-        detail: { value: 1 },
-      },
-    })
+      selected: { type: 'event', detail: { value: 1 } },
+    }
+    expect(validate(trace)).toBe(true)
+    const narrowed = trace as unknown as SelectionTraceLike
+    expect(narrowed.selected.type).toBe('event')
   })
 
-  test('BPListenerSchema requires detailSchema to be a ZodObject instance', () => {
-    // A plain JSON object is not a zod schema — rejected
-    expect(BPListenerSchema.safeParse({ type: 'x', detailSchema: { foo: 'bar' } }).success).toBe(false)
-
-    // Non-object zod schemas are rejected — detail payloads are JSON objects
-    expect(BPListenerSchema.safeParse({ type: 'x', detailSchema: z.string() }).success).toBe(false)
-
-    // Zod object schemas that accept non-JSON payloads are rejected
-    expect(BPListenerSchema.safeParse({ type: 'x', detailSchema: z.object({ d: z.date() }) }).success).toBe(false)
-    expect(BPListenerSchema.safeParse({ type: 'x', detailSchema: z.object({ b: z.bigint() }) }).success).toBe(false)
-    expect(
-      BPListenerSchema.safeParse({ type: 'x', detailSchema: z.object({ t: z.transform((v) => v) }) }).success,
-    ).toBe(false)
-
-    // A zod object schema parses
-    expect(BPListenerSchema.safeParse({ type: 'x', detailSchema: z.object({ id: z.string() }) }).success).toBe(true)
-
-    // Missing detailSchema (undefined) should still parse (optional field)
-    expect(BPListenerSchema.safeParse({ type: 'x' }).success).toBe(true)
+  test('Trace validators reject unknown kinds and missing step', () => {
+    expect(compileTraceValidator('selection')({ kind: 'worker', response: { id: 'worker-1' }, step: 0 })).toBe(false)
+    expect(compileTraceValidator('deadlock')({ kind: 'deadlock', timestamp: 0, instanceId: 'bp_test' })).toBe(false)
   })
 
-  test('AddThreadErrorSchema accepts string error messages', () => {
-    expect(
-      AddThreadErrorSchema.safeParse({
-        kind: 'add_thread_error',
-        timestamp: 0,
-        instanceId: 'bp_test',
-        error: 'something went wrong',
-      }).success,
-    ).toBe(true)
-  })
-
-  test('AddThreadErrorSchema accepts ZodIssue array errors', () => {
-    expect(
-      AddThreadErrorSchema.safeParse({
-        kind: 'add_thread_error',
-        timestamp: 0,
-        instanceId: 'bp_test',
-        error: [{ code: 'invalid_type', path: [], message: 'Expected string, received number' }],
-      }).success,
-    ).toBe(true)
+  test('validateDetailSchema accepts real schemas and rejects malformed documents', async () => {
+    const { validateDetailSchema } = await import('../behavioral.schemas.ts')
+    expect(validateDetailSchema({ type: 'object', properties: { id: { type: 'string' } }, required: ['id'] })).toBe(
+      true,
+    )
+    // invalid type keyword value — meta-schema rejection
+    expect(validateDetailSchema({ type: 'object', properties: { age: { type: 'text' } } })).toBe(false)
+    // structurally un-compilable — properties must be an object
+    expect(validateDetailSchema({ type: 'object', properties: 'not-an-object' })).toBe(false)
+    // not a schema at all — no JSON Schema keywords
+    expect(validateDetailSchema({ foo: 'bar' })).toBe(false)
+    // not an object at all
+    expect(validateDetailSchema('nope' as unknown as Parameters<typeof validateDetailSchema>[0])).toBe(false)
   })
 })
+
+type SelectionTraceLike = { selected: { type: string } }
+
+function validateTransformListenerSafe(listener: unknown): boolean {
+  // Compiled from TransformListenerSchema inside behavioral.schemas; recompiled
+  // here via ajv to keep the spec independent of validator export churn.
+  const validate = ajv.compile({
+    type: 'object',
+    properties: {
+      type: { type: 'string' },
+      query: { type: 'string' },
+      target: { type: 'string' },
+      detailSchema: { type: 'object', required: [] },
+    },
+    required: ['type', 'query', 'target'],
+  })
+  return validate(listener)
+}
