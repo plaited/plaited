@@ -412,26 +412,3 @@ export type Trace =
   | PendingBidsTrace
   | InterruptTrace
   | TransformTrace
-
-// ---------------------------------------------------------------------------
-// Zod bridge for zod-composed consumers (message.schemas.ts)
-// ---------------------------------------------------------------------------
-
-import * as z from 'zod'
-
-/**
- * Zod twin of {@link BPEventSchema} for consumers that compose schemas with
- * zod (e.g. message.schemas.ts). Runtime validation is delegated to the Ajv
- * compiled validator so the two stay behaviorally identical; the zod wrapper
- * only adapts the shape.
- */
-export const BPEventZodSchema = z
-  .object({ type: z.string(), detail: z.record(z.string(), z.unknown()).optional(), space: z.string().optional() })
-  .loose()
-  .superRefine((value, ctx) => {
-    if (!validateBPEvent(value)) {
-      for (const issue of validateBPEvent.errors ?? []) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, path: [], message: `${issue.instancePath}: ${issue.message}` })
-      }
-    }
-  })
