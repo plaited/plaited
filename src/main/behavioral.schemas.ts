@@ -1,8 +1,24 @@
 import * as z from 'zod'
 import { DETAIL_MATCH, IDIOMS, TRACE_MESSAGE_KINDS } from './behavioral.constants.ts'
 
-/** @public */
-export const JsonObjectSchema = z.object({}).catchall(z.json())
+// 1. Define the TypeScript types for your JSON structure first
+export type JsonPrimitive = string | number | boolean | null
+export type JsonValue = JsonPrimitive | JsonValue[] | { [key: string]: JsonValue }
+
+// 2. Explicitly type the Zod schema using z.ZodType<JsonValue>
+export const JsonValueSchema: z.ZodType<JsonValue> = z.lazy(() =>
+  z.union([
+    z.string(),
+    z.number(),
+    z.boolean(),
+    z.null(),
+    z.array(JsonValueSchema),
+    z.record(z.string(), JsonValueSchema),
+  ]),
+)
+
+// This strictly validates a valid, plain JSON object (key-value pairs)
+export const JsonObjectSchema = z.record(z.string(), JsonValueSchema)
 
 /** @public */
 export type JsonObject = z.output<typeof JsonObjectSchema>
@@ -60,7 +76,7 @@ export type JsonSchemaObject = z.output<typeof JsonSchemaObjectSchema>
 
 export const BPListenerSchema = z.object({
   type: z.string(),
-  detailSchema: JsonSchemaObjectSchema.optional(),
+  detailSchema: z.instanceof(z.ZodObject).optional(),
   detailMatch: z.enum(Object.values(DETAIL_MATCH)).optional(),
 })
 
@@ -74,10 +90,9 @@ export const TransformListenerSchema = z.object({
 
 export type TransformListener = z.output<typeof TransformListenerSchema>
 
-type RegisteredBase = {
-  topic?: string
-  validate: (detail: unknown) => boolean
-}
+const RegisteredBaseSchema = z.object({
+  topic: z.string().optional(),
+})
 
 /**
  * Registered listener with topic stamping and compiled detail validator.
@@ -86,14 +101,44 @@ type RegisteredBase = {
  * time in {@link generateRulesFunctions}. Returns `true` when the candidate
  * event's `detail` conforms to the listener's `detailSchema`.
  */
-export type RegisteredBPListener = BPListener & RegisteredBase
+export const RegisteredBPListenerSchema = z.object({
+  ...RegisteredBaseSchema.shape,
+  ...BPListenerSchema.shape,
+})
 
+export type RegisteredBPListener = z.output<typeof RegisteredBPListenerSchema> & {
+  query?: never
+  target?: never
+}
 /**
  * Registered transform listener — {@link TransformListener} with topic
  * stamping and the compiled detail validator shared by all registered idioms.
  */
-export type RegisteredTransformListener = TransformListener & RegisteredBase
+export const RegisteredTransformListenerSchema = z.object({
+  ...RegisteredBPListenerSchema.shape,
+  ...TransformListenerSchema.shape,
+})
 
+export type RegisteredTransformListener = z.output<typeof RegisteredTransformListenerSchema>
+
+/**
+ * Trace-serialized listener — the in-memory zod `detailSchema` instance is
+ * emitted as JSON Schema via `z.toJSONSchema()` at the trace boundary, keeping
+ * trace messages JSON-only (frontier replay / visited-set invariant).
+ */
+export const SerializedListenerSchema = z.object({
+  type: z.string(),
+  topic: z.string().optional(),
+  detailMatch: z.enum(Object.values(DETAIL_MATCH)).optional(),
+  // JSON Schema emitted by z.toJSONSchema() — structurally a JSON object.
+  detailSchema: z.record(z.string(), z.unknown()).optional(),
+})
+
+export const SerializedTransformListenerSchema = z.object({
+  ...SerializedListenerSchema.shape,
+  query: z.string(),
+  target: z.string(),
+})
 /**
  * Represents a synchronization statement yielded by a behavioral rule step.
  * This is the core mechanism through which b-threads communicate their behavioral intentions
@@ -291,36 +336,10 @@ export const PendingBidsTraceSchema = z.object({
       ingress: z.literal(true).optional(),
       topic: z.string().optional(),
       request: BPEventSchema.pick({ type: true, detail: true }).optional(),
-      waitFor: z
-        .array(
-          z.object({
-            type: z.string(),
-            topic: z.string().optional(),
-            detailMatch: z.enum(Object.values(DETAIL_MATCH)).optional(),
-            detailSchema: JsonObjectSchema.optional(),
-          }),
-        )
-        .optional(),
-      block: z
-        .array(
-          z.object({
-            type: z.string(),
-            topic: z.string().optional(),
-            detailMatch: z.enum(Object.values(DETAIL_MATCH)).optional(),
-            detailSchema: JsonObjectSchema.optional(),
-          }),
-        )
-        .optional(),
-      interrupt: z
-        .array(
-          z.object({
-            type: z.string(),
-            topic: z.string().optional(),
-            detailMatch: z.enum(Object.values(DETAIL_MATCH)).optional(),
-            detailSchema: JsonObjectSchema.optional(),
-          }),
-        )
-        .optional(),
+      waitFor: z.array(SerializedListenerSchema).optional(),
+      block: z.array(SerializedListenerSchema).optional(),
+      interrupt: z.array(SerializedListenerSchema).optional(),
+      transform: z.array(SerializedTransformListenerSchema).optional(),
     }),
   ),
 })
@@ -355,16 +374,7 @@ export const TransformTraceSchema = z.object({
   selected: BPEventSchema,
   threadLabel: z.string(),
   step: z.number().int().nonnegative(),
-  transform: z.array(
-    z.object({
-      type: z.string(),
-      topic: z.string().optional(),
-      detailMatch: z.enum(Object.values(DETAIL_MATCH)).optional(),
-      detailSchema: JsonObjectSchema.optional(),
-      query: z.string(),
-      target: z.string(),
-    }),
-  ),
+  transform: z.array(SerializedTransformListenerSchema),
 })
 
 /** @public */

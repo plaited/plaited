@@ -1,6 +1,13 @@
+import * as z from 'zod'
 import { ueid } from '../utils.ts'
 import { FRONTIER_STATUS, TRACE_MESSAGE_KINDS } from './behavioral.constants.ts'
-import { BPEventSchema, type RegisteredBPListener, ThreadScehama, type Trace } from './behavioral.schemas.ts'
+import {
+  BPEventSchema,
+  type RegisteredBPListener,
+  type RegisteredTransformListener,
+  ThreadScehama,
+  type Trace,
+} from './behavioral.schemas.ts'
 import type {
   CandidateBid,
   PendingBid,
@@ -28,10 +35,18 @@ import {
  * @template T - Type of values published through this mechanism.
  * @returns A publisher function with a `subscribe` method attached.
  */
-const normalizeListeners = (listener: RegisteredBPListener[]) =>
-  listener.map(({ type, detailSchema, validate: _validate, ...rest }) => ({
+const normalizeBPListeners = (listener: RegisteredBPListener[]) =>
+  listener.map(({ type, detailSchema, ...rest }) => ({
     type,
-    ...(detailSchema && { detailSchema }),
+    // Zod schema → JSON Schema at the trace boundary; traces stay JSON-only.
+    ...(detailSchema && { detailSchema: z.toJSONSchema(detailSchema) }),
+    ...rest,
+  }))
+
+const normalizeTransformListeners = (listener: RegisteredTransformListener[]) =>
+  listener.map(({ type, detailSchema, ...rest }) => ({
+    type,
+    ...(detailSchema && { detailSchema: z.toJSONSchema(detailSchema) }),
     ...rest,
   }))
 
@@ -40,7 +55,7 @@ const normalizeListeners = (listener: RegisteredBPListener[]) =>
  * Serializes the pending set into a trace-friendly thread list.
  */
 const serializePending = (pending: Set<PendingBid>) =>
-  Array.from(pending).map(({ waitFor, block, interrupt, request, generator: _gen, ...rest }) => ({
+  Array.from(pending).map(({ waitFor, block, interrupt, request, transform, generator: _gen, ...rest }) => ({
     ...rest,
     // request is field-picked to { type, detail } so non-trace fields never
     // enter any SnapshotMessage (frontier-analysis invariant).
@@ -50,9 +65,10 @@ const serializePending = (pending: Set<PendingBid>) =>
         ...(request.detail === undefined ? {} : { detail: request.detail }),
       },
     }),
-    ...(waitFor && { waitFor: normalizeListeners(waitFor) }),
-    ...(block && { block: normalizeListeners(block) }),
-    ...(interrupt && { interrupt: normalizeListeners(interrupt) }),
+    ...(waitFor && { waitFor: normalizeBPListeners(waitFor) }),
+    ...(block && { block: normalizeBPListeners(block) }),
+    ...(interrupt && { interrupt: normalizeBPListeners(interrupt) }),
+    ...(transform && { transform: normalizeTransformListeners(transform) }),
   }))
 
 /**

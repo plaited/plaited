@@ -1,7 +1,13 @@
-import Ajv2020 from 'ajv/dist/2020'
+import * as z from 'zod'
 import { isTypeOf } from '../utils.ts'
 import { FRONTIER_STATUS, IDIOMS, TRACE_MESSAGE_KINDS } from './behavioral.constants.ts'
-import type { BPEvent, Idioms, JsonObject, RegisteredBPListener, RegisteredIdioms } from './behavioral.schemas.ts'
+import type {
+  BPEvent,
+  Idioms,
+  RegisteredBPListener,
+  RegisteredIdioms,
+  RegisteredTransformListener,
+} from './behavioral.schemas.ts'
 import type {
   CandidateBid,
   Frontier,
@@ -11,16 +17,6 @@ import type {
   SendTrace,
   UseThread,
 } from './behavioral.types.ts'
-
-/**
- * Shared Ajv instance for compiling JSON Schema validators.
- * Uses draft 2020-12 (current JSON Schema standard), backwards-compatible with
- * the draft-07-common subset used by detailSchema, for parity with a Rust
- * jsonschema consumer. detailSchema is always a JSON object schema over
- * BPEvent.detail; non-JSON values never reach this validator. Strict mode is disabled because author-provided JSON Schema may
- * include unknown keywords or custom extensions.
- */
-const ajv = new Ajv2020({ strict: false })
 
 /**
  * @internal
@@ -35,29 +31,13 @@ export const isBPEvent = (data: unknown): data is BPEvent => {
 }
 
 /**
- * Compiles a JSON Schema object into an Ajv validator function.
- * Returns a function that returns `true` when the value conforms to the schema.
- * Throws if the schema is un-compilable — caller is responsible for
- * handling the error and surfacing it as a trace.
- */
-export const compileValidator = (schema: JsonObject): ((detail: unknown) => boolean) => {
-  const validate = ajv.compile(schema)
-  return (detail: unknown) => {
-    if (!isTypeOf<Record<string, unknown>>(detail, 'object') && detail !== undefined) {
-      return false
-    }
-    return validate(detail) as boolean
-  }
-}
-
-/**
  * @internal
  * Creates a checker function to determine if a given BPListener matches a CandidateBid.
  */
 export const isListeningFor = ({ type, detail, topic }: CandidateBid) => {
-  return (listener: RegisteredBPListener): boolean => {
+  return (listener: RegisteredBPListener | RegisteredTransformListener): boolean => {
     const topicMatches = listener.topic ? topic === listener.topic : true
-    const schemaMatches = listener.detailSchema ? listener.validate(detail) : true
+    const schemaMatches = listener.detailSchema ? listener.detailSchema.safeParse(detail).success : true
     const detailMatches = listener.detailMatch === 'invalid' ? !schemaMatches : schemaMatches
     return listener.type === type && topicMatches && detailMatches
   }
@@ -139,7 +119,7 @@ export const resumePendingThreadsForSelectedEvent = ({
   running: Set<RunningBid>
   pending: Set<PendingBid>
   selectedEvent: CandidateBid
-  sendTrace: SendTrace
+  sendTrace?: SendTrace
   instanceId: string
   step: number
 }) => {
@@ -152,7 +132,7 @@ export const resumePendingThreadsForSelectedEvent = ({
     if (isInterrupted) {
       generator.return?.()
       pending.delete(bid)
-      sendTrace({
+      sendTrace?.({
         kind: TRACE_MESSAGE_KINDS.interrupt,
         timestamp: Date.now(),
         step,
@@ -167,12 +147,16 @@ export const resumePendingThreadsForSelectedEvent = ({
       pending.delete(bid)
     }
     if (isTransform?.length) {
-      sendTrace({
+      sendTrace?.({
         kind: TRACE_MESSAGE_KINDS.transform,
         timestamp: Date.now(),
         step,
         instanceId,
-        transform: isTransform,
+        // Zod schema → JSON Schema at the trace boundary; traces stay JSON-only.
+        transform: isTransform.map(({ detailSchema, ...rest }) => ({
+          ...rest,
+          ...(detailSchema && { detailSchema: z.toJSONSchema(detailSchema) }),
+        })),
         selected: selectedEvent,
         threadLabel: label,
       })
@@ -180,15 +164,15 @@ export const resumePendingThreadsForSelectedEvent = ({
   }
 }
 
-const compileValidators = <T extends { detailSchema?: JsonObject }>(
-  listeners: T[],
-): (T & { validate: (detail: unknown) => boolean })[] =>
-  listeners.map((listener) => ({
-    ...listener,
-    validate: listener.detailSchema ? compileValidator(listener.detailSchema) : () => true,
-  }))
-
 export const generateRulesFunctions = (rules: Idioms[], topic?: string): RulesFunction[] => {
+  // Fail fast on unrepresentable detailSchemas: z.toJSONSchema throws here, so
+  // useAddThread's try/catch surfaces it as add_thread_error — never at trace
+  // time inside the engine loop.
+  for (const { waitFor, block, interrupt, transform } of rules) {
+    for (const listener of [...(waitFor ?? []), ...(block ?? []), ...(interrupt ?? []), ...(transform ?? [])]) {
+      if (listener.detailSchema) z.toJSONSchema(listener.detailSchema)
+    }
+  }
   const syncs: RulesFunction[] = []
   for (const { request, waitFor, block, interrupt, transform } of rules) {
     const registeredIdioms: RegisteredIdioms = {}
@@ -200,36 +184,28 @@ export const generateRulesFunctions = (rules: Idioms[], topic?: string): RulesFu
       }
     }
     if (block) {
-      registeredIdioms[IDIOMS.block] = compileValidators(
-        block.map((listener) => ({
-          ...listener,
-          topic,
-        })),
-      )
+      registeredIdioms[IDIOMS.block] = block.map((listener) => ({
+        ...listener,
+        topic,
+      }))
     }
     if (waitFor) {
-      registeredIdioms[IDIOMS.waitFor] = compileValidators(
-        waitFor.map((listener) => ({
-          ...listener,
-          topic,
-        })),
-      )
+      registeredIdioms[IDIOMS.waitFor] = waitFor.map((listener) => ({
+        ...listener,
+        topic,
+      }))
     }
     if (interrupt) {
-      registeredIdioms[IDIOMS.interrupt] = compileValidators(
-        interrupt.map((listener) => ({
-          ...listener,
-          topic,
-        })),
-      )
+      registeredIdioms[IDIOMS.interrupt] = interrupt.map((listener) => ({
+        ...listener,
+        topic,
+      }))
     }
     if (transform) {
-      registeredIdioms[IDIOMS.transform] = compileValidators(
-        transform.map((listener) => ({
-          ...listener,
-          topic,
-        })),
-      )
+      registeredIdioms[IDIOMS.transform] = transform.map((listener) => ({
+        ...listener,
+        topic,
+      }))
     }
     syncs.push(function* () {
       yield registeredIdioms

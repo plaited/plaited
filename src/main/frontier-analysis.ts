@@ -20,6 +20,9 @@
  *
  * @packageDocumentation
  */
+
+import * as z from 'zod'
+import { ueid } from '../utils.ts'
 import { FRONTIER_STATUS, TRACE_MESSAGE_KINDS } from './behavioral.constants.ts'
 import type {
   BPEvent,
@@ -74,9 +77,18 @@ export const isDeadlockTrace = (msg: Trace): msg is Extract<Trace, { kind: typeo
 const countSelectionTraces = ({ messages }: { messages: Trace[] }) =>
   messages.reduce((count, msg) => count + (msg.kind === 'selection' ? 1 : 0), 0)
 
-const createFrontierTrace = ({ frontier, step }: { frontier: Frontier; step: number }): FrontierTrace => ({
+const createFrontierTrace = ({
+  frontier,
+  step,
+  instanceId,
+}: {
+  frontier: Frontier
+  step: number
+  instanceId: string
+}): FrontierTrace => ({
   kind: 'frontier',
   timestamp: Date.now(),
+  instanceId,
   step,
   status: frontier.status,
   candidates: frontier.candidates.map((candidate) => ({
@@ -98,12 +110,15 @@ const createFrontierTrace = ({ frontier, step }: { frontier: Frontier; step: num
 const createSelectionTrace = ({
   event,
   step,
+  instanceId,
 }: {
   event: BPEvent & { ingress?: true }
   step: number
+  instanceId: string
 }): SelectionTrace => ({
   kind: TRACE_MESSAGE_KINDS.selection,
   timestamp: Date.now(),
+  instanceId,
   step,
   selected: {
     type: event.type,
@@ -113,9 +128,10 @@ const createSelectionTrace = ({
   },
 })
 
-const createDeadlockTrace = ({ step }: { step: number }): Trace => ({
+const createDeadlockTrace = ({ step, instanceId }: { step: number; instanceId: string }): Trace => ({
   kind: TRACE_MESSAGE_KINDS.deadlock,
   timestamp: Date.now(),
+  instanceId,
   step,
 })
 
@@ -195,6 +211,8 @@ export type DeadlockFinding = {
  * @param args.messages - Selection trace to replay. Each selection is
  *   checked for enablement at the corresponding step.
  * @param args.topic - Optional topic stamp applied to all thread rules.
+ * @param args.instanceId - Instance id stamped on synthetic interrupt/transform
+ *   traces emitted during resumption. Defaults to a minted `ueid('bp_')`.
  * @returns The replay result containing the pending set and final frontier.
  *
  * @throws If a selection event is not enabled at its replay step.
@@ -205,10 +223,12 @@ export const replayToFrontier = ({
   threads,
   messages = [],
   topic,
+  instanceId = ueid('bp_'),
 }: {
   threads: Thread[]
   messages?: Trace[]
   topic?: string
+  instanceId?: string
 }): ReplayToFrontierResult => {
   const pending = new Set<PendingBid>()
   const running = new Set<RunningBid>()
@@ -243,6 +263,8 @@ export const replayToFrontier = ({
       running: resumed,
       pending,
       selectedEvent: matched,
+      instanceId,
+      step,
     })
     advanceRunningToPending(resumed, pending)
   }
@@ -280,10 +302,12 @@ const getRequestSuccessors = ({
   frontier,
   selectionPolicy,
   step,
+  instanceId,
 }: {
   frontier: Frontier
   selectionPolicy: 'all-enabled' | 'scheduler'
   step: number
+  instanceId: string
 }) => {
   if (frontier.status !== FRONTIER_STATUS.ready) {
     return []
@@ -297,6 +321,7 @@ const getRequestSuccessors = ({
   return enabled.map((candidate) =>
     createSelectionTrace({
       step,
+      instanceId,
       event: {
         type: candidate.type,
         ...(candidate.detail === undefined ? {} : { detail: candidate.detail }),
@@ -314,6 +339,7 @@ const getTriggerSuccessors = ({
   step,
   triggers,
   topic,
+  instanceId,
 }: {
   pending: Set<PendingBid>
   messages: Trace[]
@@ -321,6 +347,7 @@ const getTriggerSuccessors = ({
   step: number
   triggers: BPEvent[]
   topic?: string
+  instanceId: string
 }) => {
   const successors: SelectionTrace[] = []
 
@@ -331,6 +358,7 @@ const getTriggerSuccessors = ({
 
     const selection = createSelectionTrace({
       step,
+      instanceId,
       event: {
         type: trigger.type,
         ...(trigger.detail === undefined ? {} : { detail: trigger.detail }),
@@ -344,6 +372,7 @@ const getTriggerSuccessors = ({
         threads,
         messages: [...messages, selection],
         topic,
+        instanceId,
       })
       successors.push(selection)
     } catch {
@@ -359,7 +388,7 @@ const getTriggerSuccessors = ({
  * Canonicalizes a listener set into a content-sorted array of JSON strings.
  *
  * Each {@link RegisteredBPListener} is projected to its JSON-only form — the
- * compiled `validate` function is dropped — and serialized. The resulting
+ * zod `detailSchema` instance is converted to JSON Schema — and serialized. The resulting
  * strings are sorted so two listener sets that differ only by declaration
  * order produce the same array. This is what lets {@link frontierStateKey}
  * treat structurally-equal pending sets as the same state.
@@ -369,10 +398,11 @@ const getTriggerSuccessors = ({
  */
 const normalizeListeners = (listener: RegisteredBPListener[]) =>
   listener
-    .map(({ type, detailSchema, validate: _validate, ...rest }) =>
+    .map(({ type, detailSchema, ...rest }) =>
       JSON.stringify({
         type,
-        ...(detailSchema && { detailSchema }),
+        // Zod schema → JSON Schema so the visited-set key stays JSON-only.
+        ...(detailSchema && { detailSchema: z.toJSONSchema(detailSchema) }),
         ...rest,
       }),
     )
@@ -390,7 +420,8 @@ const normalizeListeners = (listener: RegisteredBPListener[]) =>
  *
  * @remarks
  * - Drops instance-identity and non-serializable artifacts: the `generator`
- *   closure and each listener's compiled `validate` function.
+ *   closure and each listener's zod `detailSchema` instance (serialized to
+ *   JSON Schema in its place).
  * - `request` is projected to `{ type, detail, topic }`. Bid order and listener
  *   order are canonicalized by sorting on serialized content, yielding a total
  *   order independent of input order.
@@ -641,6 +672,8 @@ export type ExploreFrontiersArgs = {
   maxDepth?: number
   /** Topic stamp applied to all thread rules. */
   topic?: string
+  /** Instance id stamped on synthetic traces. Defaults to a minted `ueid('bp_')` — pass the analyzed kernel's id to make joins natural. */
+  instanceId?: string
 }
 
 /**
@@ -685,6 +718,7 @@ export const exploreFrontiers = ({
   selectionPolicy = 'all-enabled',
   maxDepth,
   topic,
+  instanceId = ueid('bp_'),
 }: ExploreFrontiersArgs): ExploreFrontiersResult => {
   if (strategy !== 'bfs' && strategy !== 'dfs') {
     throw new Error(`Unsupported frontier exploration strategy "${String(strategy)}".`)
@@ -721,7 +755,7 @@ export const exploreFrontiers = ({
       successors: [],
     })
 
-    const frontierTrace = createFrontierTrace({ frontier, step })
+    const frontierTrace = createFrontierTrace({ frontier, step, instanceId })
 
     traces.push({
       messages: [...current.messages, frontierTrace],
@@ -731,6 +765,7 @@ export const exploreFrontiers = ({
       frontier,
       selectionPolicy,
       step,
+      instanceId,
     })
     const triggerSuccessors = getTriggerSuccessors({
       pending: currentPending,
@@ -739,13 +774,14 @@ export const exploreFrontiers = ({
       step,
       triggers,
       topic,
+      instanceId,
     })
     const successors = [...requestSuccessors, ...triggerSuccessors]
 
     if (frontier.status === FRONTIER_STATUS.deadlock && triggerSuccessors.length === 0) {
       findings.push({
         code: 'deadlock',
-        messages: [...current.messages, frontierTrace, createDeadlockTrace({ step })],
+        messages: [...current.messages, frontierTrace, createDeadlockTrace({ step, instanceId })],
       })
     }
 

@@ -103,6 +103,7 @@ describe('behavioral schemas', () => {
       SelectionTraceSchema.parse({
         kind: 'selection',
         timestamp: 3,
+        instanceId: 'bp_test',
         step: 3,
         selected: {
           type: 'event',
@@ -112,6 +113,7 @@ describe('behavioral schemas', () => {
     ).toEqual({
       kind: 'selection',
       timestamp: 3,
+      instanceId: 'bp_test',
       step: 3,
       selected: {
         type: 'event',
@@ -120,38 +122,15 @@ describe('behavioral schemas', () => {
     })
   })
 
-  test('BPListenerSchema rejects detailSchema without JSON Schema keywords', () => {
-    // A plain object with no recognizable JSON Schema keywords should be rejected
+  test('BPListenerSchema requires detailSchema to be a ZodObject instance', () => {
+    // A plain JSON object is not a zod schema — rejected
     expect(BPListenerSchema.safeParse({ type: 'x', detailSchema: { foo: 'bar' } }).success).toBe(false)
 
-    // A valid JSON Schema object should parse
-    expect(
-      BPListenerSchema.safeParse({
-        type: 'x',
-        detailSchema: {
-          type: 'object',
-          properties: { id: { type: 'string' } },
-          required: ['id'],
-          additionalProperties: false,
-        },
-      }).success,
-    ).toBe(true)
+    // Non-object zod schemas are rejected — detail payloads are JSON objects
+    expect(BPListenerSchema.safeParse({ type: 'x', detailSchema: z.string() }).success).toBe(false)
 
-    // detailSchema with $ref should also parse
-    expect(
-      BPListenerSchema.safeParse({
-        type: 'x',
-        detailSchema: { $ref: '#/$defs/MyType' },
-      }).success,
-    ).toBe(true)
-
-    // detailSchema with enum should parse
-    expect(
-      BPListenerSchema.safeParse({
-        type: 'x',
-        detailSchema: { enum: ['a', 'b', 'c'] },
-      }).success,
-    ).toBe(true)
+    // A zod object schema parses
+    expect(BPListenerSchema.safeParse({ type: 'x', detailSchema: z.object({ id: z.string() }) }).success).toBe(true)
 
     // Missing detailSchema (undefined) should still parse (optional field)
     expect(BPListenerSchema.safeParse({ type: 'x' }).success).toBe(true)
@@ -159,7 +138,12 @@ describe('behavioral schemas', () => {
 
   test('AddThreadErrorSchema accepts string error messages', () => {
     expect(
-      AddThreadErrorSchema.safeParse({ kind: 'add_thread_error', timestamp: 0, error: 'something went wrong' }).success,
+      AddThreadErrorSchema.safeParse({
+        kind: 'add_thread_error',
+        timestamp: 0,
+        instanceId: 'bp_test',
+        error: 'something went wrong',
+      }).success,
     ).toBe(true)
   })
 
@@ -168,6 +152,7 @@ describe('behavioral schemas', () => {
       AddThreadErrorSchema.safeParse({
         kind: 'add_thread_error',
         timestamp: 0,
+        instanceId: 'bp_test',
         error: [{ code: 'invalid_type', path: [], message: 'Expected string, received number' }],
       }).success,
     ).toBe(true)

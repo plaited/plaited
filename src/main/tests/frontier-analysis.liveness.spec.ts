@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'bun:test'
+import * as z from 'zod'
 import type { Thread, TraceEvent } from '../behavioral.schemas.ts'
 import type { PendingBid } from '../behavioral.types.ts'
 import {
@@ -72,10 +73,10 @@ describe('frontierStateKey', () => {
   test('is invariant under pending-set insertion order', () => {
     const first = new Set<PendingBid>([
       bid({ label: 'a', priority: 1, request: { type: 'x' } }),
-      bid({ label: 'b', priority: 2, waitFor: [{ type: 'y', validate: () => true }] }),
+      bid({ label: 'b', priority: 2, waitFor: [{ type: 'y' }] }),
     ])
     const second = new Set<PendingBid>([
-      bid({ label: 'b', priority: 2, waitFor: [{ type: 'y', validate: () => true }] }),
+      bid({ label: 'b', priority: 2, waitFor: [{ type: 'y' }] }),
       bid({ label: 'a', priority: 1, request: { type: 'x' } }),
     ])
     expect(frontierStateKey({ pending: first })).toBe(frontierStateKey({ pending: second }))
@@ -89,16 +90,13 @@ describe('frontierStateKey', () => {
     expect(frontierStateKey({ pending: withGenOne })).toBe(frontierStateKey({ pending: withGenTwo }))
   })
 
-  test('drops compiled validators but keeps the JSON-Schema constraint', () => {
-    const schema = { type: 'object', properties: { id: { type: 'string' } }, required: ['id'] }
-    const loose = new Set<PendingBid>([
-      bid({ label: 'w', priority: 1, waitFor: [{ type: 'done', validate: () => true }] }),
-    ])
+  test('serializes zod detailSchema to JSON Schema in the state key', () => {
+    const loose = new Set<PendingBid>([bid({ label: 'w', priority: 1, waitFor: [{ type: 'done' }] })])
     const strict = new Set<PendingBid>([
       bid({
         label: 'w',
         priority: 1,
-        waitFor: [{ type: 'done', detailSchema: schema, validate: () => true }],
+        waitFor: [{ type: 'done', detailSchema: z.object({ id: z.string() }) }],
       }),
     ])
     expect(frontierStateKey({ pending: loose })).not.toBe(frontierStateKey({ pending: strict }))
