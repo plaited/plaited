@@ -74,9 +74,29 @@ export const JsonSchemaObjectSchema = JsonObjectSchema.refine(
 
 export type JsonSchemaObject = z.output<typeof JsonSchemaObjectSchema>
 
+/**
+ * A valid detail schema accepts only JSON-serializable payloads — kernel
+ * detail payloads are JSON values. `z.toJSONSchema` in input mode is the
+ * oracle: it throws for dates, bigints, transforms, class instances, and
+ * other non-JSON shapes.
+ */
+const isJsonDetailSchema = (schema: z.ZodObject): boolean => {
+  try {
+    z.toJSONSchema(schema, { io: 'input' })
+    return true
+  } catch {
+    return false
+  }
+}
+
 export const BPListenerSchema = z.object({
   type: z.string(),
-  detailSchema: z.instanceof(z.ZodObject).optional(),
+  detailSchema: z
+    .instanceof(z.ZodObject)
+    .refine(isJsonDetailSchema, {
+      message: 'detailSchema must only accept JSON-serializable detail payloads',
+    })
+    .optional(),
   detailMatch: z.enum(Object.values(DETAIL_MATCH)).optional(),
 })
 

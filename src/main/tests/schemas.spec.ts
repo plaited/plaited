@@ -129,6 +129,13 @@ describe('behavioral schemas', () => {
     // Non-object zod schemas are rejected — detail payloads are JSON objects
     expect(BPListenerSchema.safeParse({ type: 'x', detailSchema: z.string() }).success).toBe(false)
 
+    // Zod object schemas that accept non-JSON payloads are rejected
+    expect(BPListenerSchema.safeParse({ type: 'x', detailSchema: z.object({ d: z.date() }) }).success).toBe(false)
+    expect(BPListenerSchema.safeParse({ type: 'x', detailSchema: z.object({ b: z.bigint() }) }).success).toBe(false)
+    expect(
+      BPListenerSchema.safeParse({ type: 'x', detailSchema: z.object({ t: z.transform((v) => v) }) }).success,
+    ).toBe(false)
+
     // A zod object schema parses
     expect(BPListenerSchema.safeParse({ type: 'x', detailSchema: z.object({ id: z.string() }) }).success).toBe(true)
 
