@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test'
 import { $ } from 'bun'
 import { TRACE_MESSAGE_KINDS } from '../behavioral.constants.ts'
 import { behavioral } from '../behavioral.ts'
-import type { SelectionTrace, Trace, TransformTrace } from '../behavioral.types.ts'
+import type { JsonObject, SelectionTrace, Trace, TransformTrace } from '../behavioral.types.ts'
 
 /**
  * The daemon contract under test — a two-phase external transform loop:
@@ -24,7 +24,7 @@ type Transformer = { query: string; target: string; thread: string }
 /** Creates a two-phase transform loop that records selections and dispatches via the given strategy. */
 function createTransformLoop(
   program: ReturnType<typeof behavioral>,
-  dispatch: (target: string, transformed: unknown, transformer: Transformer) => void,
+  dispatch: (target: string, transformed: JsonObject, transformer: Transformer) => void,
 ) {
   const { useTrigger, useTrace } = program
   const trigger = useTrigger()
@@ -46,7 +46,9 @@ function createTransformLoop(
       pending = []
       for (const transformer of toProcess) {
         void jqEval(transformer.query, msg.selected.detail).then((transformed) => {
-          dispatch(transformer.target, transformed, transformer)
+          // jqEval resolves to unknown; the fixtures' queries always select object sub-keys
+          // (or `.` identity over an object detail), so the result is JSON-shaped and object-valued.
+          dispatch(transformer.target, transformed as JsonObject, transformer)
         })
       }
     }
@@ -67,7 +69,7 @@ describe('transform idiom — external two-phase loop', () => {
     })
 
     const { trigger, selections } = createTransformLoop(program, (target, transformed) => {
-      trigger({ type: target, detail: transformed as Record<string, unknown> })
+      trigger({ type: target, detail: transformed })
     })
 
     trigger({ type: 'order', detail: { order: { id: 'o-1', total: 42 } } })
@@ -99,9 +101,9 @@ describe('transform idiom — external two-phase loop', () => {
       addThread({
         label: `transform:${target}`,
         once: true,
-        rules: [{ request: { type: target, detail: transformed as Record<string, unknown> } }],
+        rules: [{ request: { type: target, detail: transformed } }],
       })
-      trigger({ type: target, detail: transformed as Record<string, unknown> })
+      trigger({ type: target, detail: transformed })
     })
 
     trigger({
@@ -139,14 +141,14 @@ describe('transform idiom — external two-phase loop', () => {
     const { trigger, selections } = createTransformLoop(program, (target, transformed) => {
       dispatched.push(target)
       if (target === 'ship') {
-        trigger({ type: target, detail: transformed as Record<string, unknown> })
+        trigger({ type: target, detail: transformed })
       } else {
         addThread({
           label: `transform:${target}`,
           once: true,
-          rules: [{ request: { type: target, detail: transformed as Record<string, unknown> } }],
+          rules: [{ request: { type: target, detail: transformed } }],
         })
-        trigger({ type: target, detail: transformed as Record<string, unknown> })
+        trigger({ type: target, detail: transformed })
       }
     })
 
@@ -179,7 +181,7 @@ describe('transform idiom — external two-phase loop', () => {
     let dispatchCount = 0
     const { trigger, selections } = createTransformLoop(program, (target, transformed) => {
       dispatchCount += 1
-      trigger({ type: target, detail: transformed as Record<string, unknown> })
+      trigger({ type: target, detail: transformed })
     })
 
     trigger({ type: 'tick', detail: { n: 1 } })
