@@ -1,26 +1,6 @@
 import * as path from 'node:path'
-import { fromJsonSchema } from './schema-adapter.ts'
+import * as z from 'zod'
 import { useMCPServer } from './use-mcp-server.ts'
-
-export const inputSchema = {
-  type: 'object',
-  properties: {
-    cwd: { type: 'string', minLength: 1, description: "the tool's provisioned cwd" },
-    pattern: { type: 'string', minLength: 1, description: 'glob pattern to match files against' },
-    dir: { type: 'string', description: "root directory to search from (defaults to the tool's cwd)" },
-  },
-  required: ['glob', 'cwd'],
-  additionalProperties: false,
-}
-
-export const outputSchema = {
-  type: 'object',
-  properties: {
-    paths: { type: 'array', items: { type: 'string' } },
-  },
-  required: ['paths'],
-  additionalProperties: false,
-}
 
 /**
  * Find files matching a glob pattern via `Bun.Glob`.
@@ -38,29 +18,18 @@ export const find = useMCPServer((server) => {
     FIND_TOOL_NAME,
     {
       description: 'Find files matching a glob pattern. Returns relative paths, sorted.',
-      inputSchema: fromJsonSchema({
-        type: 'object',
-        properties: {
-          pattern: { type: 'string', minLength: 1, description: 'glob pattern to match files against' },
-          cwd: { type: 'string', description: "the tool's provisioned cwd" },
-          dir: { type: 'string', description: "root directory to search from (defaults to the tool's cwd)" },
-        },
-        required: ['pattern', 'cwd'],
-        additionalProperties: false,
+      inputSchema: z.object({
+        pattern: z.string().min(1).describe('glob pattern to match files against'),
+        cwd: z.string().describe("the tool's provisioned cwd"),
+        dir: z.string().optional().describe("root directory to search from (defaults to the tool's cwd)"),
       }),
-      outputSchema: fromJsonSchema({
-        type: 'object',
-        properties: {
-          paths: { type: 'array', items: { type: 'string' } },
-          message: { type: 'string', description: 'error detail when isError — states what failed' },
-          isError: { type: 'boolean', description: 'true when the operation failed' },
-        },
-        required: ['paths'],
-        additionalProperties: false,
+      outputSchema: z.object({
+        paths: z.array(z.string()),
+        message: z.string().optional().describe('error detail when isError — states what failed'),
+        isError: z.boolean().optional().describe('true when the operation failed'),
       }),
     },
-    // biome-ignore lint/suspicious/noExplicitAny: schema is data, type safety via JSON Schema validation
-    async ({ pattern, dir, cwd }: any) => {
+    async ({ pattern, dir, cwd }) => {
       try {
         const results: string[] = []
         const glob = new Bun.Glob(pattern)

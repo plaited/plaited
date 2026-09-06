@@ -1,36 +1,7 @@
 import { readdir } from 'node:fs/promises'
 import * as path from 'node:path'
-import { fromJsonSchema } from './schema-adapter.ts'
+import * as z from 'zod'
 import { useMCPServer } from './use-mcp-server.ts'
-
-export const inputSchema = {
-  type: 'object',
-  properties: {
-    cwd: { type: 'string', minLength: 1, description: "the tool's provisioned cwd" },
-    dir: { type: 'string', description: "directory path — absolute, or relative to the tool's provisioned cwd" },
-  },
-  required: ['dir', 'cwd'],
-  additionalProperties: false,
-} as const
-
-export const outputSchema = {
-  type: 'object',
-  properties: {
-    entries: {
-      type: 'array',
-      items: {
-        type: 'object',
-        properties: {
-          name: { type: 'string' },
-          type: { type: 'string', enum: ['file', 'directory', 'symlink', 'unknown'] },
-        },
-        required: ['name', 'type'],
-      },
-    },
-  },
-  required: ['entries'],
-  additionalProperties: false,
-} as const
 
 type LsOutput = { entries: Array<{ name: string; type: 'file' | 'directory' | 'symlink' | 'unknown' }> }
 
@@ -38,8 +9,8 @@ type LsOutput = { entries: Array<{ name: string; type: 'file' | 'directory' | 's
  * List directory entries with their types via `readdir`.
  *
  * Registered via `useMCPServer` as the `ls` MCP tool. `cwd` is a required
- * input field — provided by the provisioner. Returns an error result when
- * the directory cannot be read.
+ * input field — provided by the provisioner. Returns an error result when the
+ * directory cannot be read.
  *
  * MINIMAL: no symlink resolution, no sorting beyond filesystem order.
  * Upgrade path: add `sort` option, symlink target info.
@@ -51,11 +22,22 @@ export const ls = useMCPServer((server) => {
     LS_TOOL_NAME,
     {
       description: 'List entries in a directory with their types.',
-      inputSchema: fromJsonSchema(inputSchema),
-      outputSchema: fromJsonSchema(outputSchema),
+      inputSchema: z.object({
+        cwd: z.string().describe("the tool's provisioned cwd"),
+        dir: z.string().describe("directory path — absolute, or relative to the tool's provisioned cwd"),
+      }),
+      outputSchema: z.object({
+        entries: z.array(
+          z.object({
+            name: z.string(),
+            type: z.enum(['file', 'directory', 'symlink', 'unknown']),
+          }),
+        ),
+        message: z.string().optional().describe('error detail when isError — states what failed'),
+        isError: z.boolean().optional().describe('true when the operation failed'),
+      }),
     },
-    // biome-ignore lint/suspicious/noExplicitAny: schema is data, type safety via JSON Schema validation
-    async ({ dir, cwd }: any) => {
+    async ({ dir, cwd }) => {
       const resolved = path.resolve(cwd, dir)
 
       let entries: { name: string; type: LsOutput['entries'][number]['type'] }[]

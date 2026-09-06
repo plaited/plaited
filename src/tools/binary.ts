@@ -15,33 +15,6 @@ import { useMCPServer } from './use-mcp-server.ts'
  * in Phase 7.
  */
 export const DEFAULT_MAX_BINARY_BYTES = 20 * 1024 * 1024
-
-// ----------------------------------------------------------------
-// Schemas
-// ----------------------------------------------------------------
-
-export const outputSchema = {
-  type: 'object',
-  properties: {
-    mimeType: { type: 'string', description: 'detected MIME type, e.g. "image/jpeg", "audio/mpeg", "video/mp4"' },
-    base64: { type: 'string', description: 'base64-encoded file content — data-URI ready' },
-    width: { type: 'integer', description: 'image width — present when image MIME and Bun.Image.metadata() succeeds' },
-    height: { type: 'integer', description: 'image height in pixels, same conditions as width' },
-    imageFormat: {
-      type: 'string',
-      description: "Bun.Image's own format sniff (jpeg/png/webp...) — corroborates magic bytes when present",
-    },
-    bytesRead: { type: 'integer', description: 'actual bytes encoded' },
-    message: {
-      type: 'string',
-      description: 'error detail when isError — states what failed and, for size ceilings, the limit',
-    },
-    isError: { type: 'boolean' },
-  },
-  required: ['mimeType', 'base64', 'bytesRead'],
-  additionalProperties: false,
-}
-
 /**
  * Provision-time extension for the binary tool.
  * `maxBytes` caps the binary read size — over the ceiling returns isError.

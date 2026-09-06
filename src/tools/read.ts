@@ -1,5 +1,5 @@
 import * as path from 'node:path'
-import { fromJsonSchema } from './schema-adapter.ts'
+import * as z from 'zod'
 import { useMCPServer } from './use-mcp-server.ts'
 
 /**
@@ -8,30 +8,6 @@ import { useMCPServer } from './use-mcp-server.ts'
  */
 const MAX_LINES = 2000
 const MAX_BYTES = 50 * 1024
-
-export const inputSchema = {
-  type: 'object',
-  properties: {
-    cwd: { type: 'string', minLength: 1, description: "the tool's provisioned cwd" },
-    path: { type: 'string', description: "file path — absolute, or relative to the tool's provisioned cwd" },
-    offset: { type: 'integer', description: '1-indexed line to start reading from' },
-    limit: { type: 'integer', description: 'maximum number of lines to read' },
-  },
-  required: ['path', 'cwd'],
-  additionalProperties: false,
-}
-
-export const outputSchema = {
-  type: 'object',
-  properties: {
-    content: { type: 'string' },
-    truncated: { type: 'boolean' },
-    isError: { type: 'boolean', description: 'true when the result is an error message rather than file content' },
-  },
-  required: ['content', 'truncated'],
-  additionalProperties: false,
-}
-
 /**
  * Read a file with optional offset/limit line windowing.
  *
@@ -48,11 +24,20 @@ export const read = useMCPServer((server) => {
     {
       description:
         'Read the contents of a file. Output is truncated to 2000 lines or 50KB (whichever is hit first). Use offset/limit for large files.',
-      inputSchema: fromJsonSchema(inputSchema),
-      outputSchema: fromJsonSchema(outputSchema),
+      inputSchema: z.object({
+        cwd: z.string().describe("the tool's provisioned cwd"),
+        path: z.string().describe("file path — absolute, or relative to the tool's provisioned cwd"),
+        offset: z.number().int().optional().describe('1-indexed line to start reading from'),
+        limit: z.number().int().optional().describe('maximum number of lines to read'),
+      }),
+      outputSchema: z.object({
+        content: z.string(),
+        truncated: z.boolean(),
+        isError: z.boolean().optional().describe('true when the result is an error message rather than file content'),
+        message: z.string().optional().describe('error detail when isError — states what failed'),
+      }),
     },
-    // biome-ignore lint/suspicious/noExplicitAny: schema is data, type safety via JSON Schema validation
-    async ({ path: filePath, offset, limit, cwd }: any) => {
+    async ({ path: filePath, offset, limit, cwd }) => {
       const resolved = path.resolve(cwd, filePath)
 
       const bunFile = Bun.file(resolved)

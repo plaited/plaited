@@ -136,34 +136,6 @@ const buildPatch = (oldLines: string[], ranges: TextRange[], contextLines = 4): 
   return hunks.join('\n')
 }
 
-// ----------------------------------------------------------------
-// Schemas (JSON Schema documents)
-// ----------------------------------------------------------------
-
-export const inputSchema = {
-  type: 'object',
-  properties: {
-    path: { type: 'string', description: "file path — absolute, or relative to the tool's provisioned cwd" },
-    old_text: { type: 'string', minLength: 1, description: 'exact text to replace' },
-    new_text: { type: 'string', description: 'replacement text' },
-    replace_all: { type: 'boolean', description: 'when true, replaces ALL occurrences of old_text' },
-  },
-  required: ['path', 'old_text', 'new_text'],
-  additionalProperties: false,
-}
-
-export const outputSchema = {
-  type: 'object',
-  properties: {
-    content: { type: 'string', description: 'the new file content' },
-    patch: { type: 'string', description: 'unified diff patch of the change' },
-    replacements: { type: 'integer', description: 'number of replacements made' },
-    isError: { type: 'boolean', description: 'true when the result is an error rather than a successful edit' },
-  },
-  required: ['patch', 'replacements'],
-  additionalProperties: false,
-}
-
 export const EDIT_TOOL_NAME = 'edit'
 /**
  * Edit a file using exact text replacement. old_text must match exactly once

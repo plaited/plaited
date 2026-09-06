@@ -2,35 +2,6 @@ import * as path from 'node:path'
 import * as z from 'zod'
 import { useMCPServer } from './use-mcp-server.ts'
 
-export const inputSchema = {
-  type: 'object',
-  properties: {
-    cwd: { type: 'string', minLength: 1, description: "the tool's provisioned cwd" },
-    pattern: { type: 'string', minLength: 1, description: 'pattern to search for' },
-    dir: { type: 'string', description: "directory to search (defaults to the tool's provisioned cwd)" },
-    include: { type: 'string', description: 'glob filter for file names (e.g. "*.ts")' },
-  },
-  required: ['pattern', 'cwd'],
-  additionalProperties: false,
-}
-
-export const outputSchema = {
-  type: 'object',
-  properties: {
-    matches: {
-      type: 'array',
-      items: {
-        type: 'object',
-        properties: { path: { type: 'string' }, line: { type: 'integer' }, text: { type: 'string' } },
-        required: ['path', 'line', 'text'],
-      },
-    },
-    truncated: { type: 'boolean' },
-  },
-  required: ['matches', 'truncated'],
-  additionalProperties: false,
-}
-
 type GrepOutput = {
   matches: Array<{ path: string; line: number; text: string }>
   truncated: boolean
