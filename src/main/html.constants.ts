@@ -42,19 +42,12 @@ export const STYLES = 'styles'
 
 export const CLASS = 'class'
 
-/** Pattern for lowercase custom element tags after template tag normalization. */
-export const CUSTOM_ELEMENT_TAG_PATTERN = /^[a-z][.0-9_a-z-]*-[.0-9_a-z-]*$/
-
 /**
- * Pattern for lowercase unknown/non-standard HTML tag names that are not custom elements
- * (i.e., do not contain a hyphen). Matches any lowercase tag name starting with a letter
- * followed by zero or more lowercase letters or digits. These are tags unknown to the HTML
- * spec that are not valid custom elements — the browser treats them as generic inline elements.
- *
- * @example 'mycomponent', 'x-app-root' — would NOT match (has hyphen, belongs to CUSTOM_ELEMENT_TAG_PATTERN)
- * @example 'myapp', 'thing', 'foo123' — would match
+ * Pattern for lowercase custom element tags after template tag normalization.
+ * Must contain a hyphen (per the custom elements spec) — e.g. `my-widget`, `x-app-root`.
+ * @public
  */
-export const UNKNOWN_TAG_PATTERN = /^[a-z][a-z0-9]*$/
+export const CUSTOM_ELEMENT_TAG_PATTERN = /^[a-z][.0-9_a-z-]*-[.0-9_a-z-]*$/
 
 /**
  * A Set containing HTML and SVG tag names that are considered "void elements".

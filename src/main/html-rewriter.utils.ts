@@ -2,7 +2,8 @@
 import { parse, walk } from 'css-tree'
 import { CUSTOM_PROPERTY_REF_PATTERN } from './css.constants.ts'
 import { CSSPropertiesSchema, validateCSSValue } from './css.schemas.ts'
-import { getNodeSchema } from './html.schemas.ts'
+import { CUSTOM_ELEMENT_TAG_PATTERN, VOID_TAGS } from './html.constants.ts'
+import { ElementAttributeListSchema, validateAttribute } from './html.schemas.ts'
 import { type CssError, type HtmlError, ValidationError } from './render.errors.ts'
 
 export type { CssError, HtmlError } from './render.errors.ts'
@@ -18,7 +19,7 @@ export { ValidationError } from './render.errors.ts'
  *
  * 1. `.on('*', { element })` — for every element: (a) block `on*` inline event
  *    handler attributes (security: events must use `p-trigger`); (b) validate
- *    attributes against the per-tag schema via {@link getNodeSchema}; (c)
+ *    attributes against the per-tag schema via {@link validateAttribute}; (c)
  *    re-serialize every non-`on*` attribute via `setAttribute`, which
  *    normalizes to double-quoted form and escapes `"` (the only character that
  *    can break out of a double-quoted attribute). Idempotent on already-escaped
@@ -73,8 +74,23 @@ export const validateAndEscapeHtml = (html: string): string => {
   const out = new HTMLRewriter()
     .on('*', {
       element(el) {
+        const tag = el.tagName
+        if (VOID_TAGS.has(tag) && el.canHaveContent) {
+          htmlErrors.push({
+            tag,
+            attribute: '',
+            message: `Void element [${tag}] cannot have content`,
+          })
+        }
+        const isKnownTag = tag in (ElementAttributeListSchema.properties as Record<string, unknown>)
+        if (!isKnownTag && !CUSTOM_ELEMENT_TAG_PATTERN.test(tag)) {
+          htmlErrors.push({
+            tag,
+            attribute: '',
+            message: `Unknown tag [${tag}] is not a known HTML/SVG element or a valid custom element`,
+          })
+        }
         const names = [...el.attributes].map(([name]) => name)
-        const schema = getNodeSchema(el.tagName)
         const attrs: Record<string, unknown> = {}
         for (const name of names) {
           if (name.startsWith('on')) {
@@ -88,11 +104,8 @@ export const validateAndEscapeHtml = (html: string): string => {
           const value = el.getAttribute(name) ?? ''
           attrs[name] = value
           el.setAttribute(name, value)
-        }
-        const result = schema.shape.attributes.safeParse(attrs)
-        if (!result.success) {
-          for (const issue of result.error.issues) {
-            htmlErrors.push({ tag: el.tagName, attribute: issue.path.join('.'), message: issue.message })
+          if (!validateAttribute(el.tagName, { [name]: value })) {
+            htmlErrors.push({ tag: el.tagName, attribute: name, message: `Invalid value for attribute [${name}]` })
           }
         }
       },
@@ -150,7 +163,7 @@ export const validateAndEscapeHtml = (html: string): string => {
  * 1. `on*` attributes are always blocked (security: events must use
  *    `p-trigger`) — throws {@link ValidationError} with an `HtmlError`.
  * 2. Otherwise the value is validated against the per-tag attribute schema
- *    via {@link getNodeSchema}; schema failures throw {@link ValidationError}.
+ *    via {@link validateAttribute}; schema failures throw {@link ValidationError}.
  *
  * @param tag - The element tag name (lowercase, e.g. `'div'`, `'a'`).
  * @param attr - The attribute name.
@@ -174,15 +187,9 @@ export const validateAttributeValue = ({
       htmlErrors: [{ tag, attribute: attr, message: `Event handler attributes are not allowed: [${attr}]` }],
     })
   }
-  const schema = getNodeSchema(tag)
-  const result = schema.shape.attributes.safeParse({ [attr]: val })
-  if (!result.success) {
+  if (!validateAttribute(tag, { [attr]: val })) {
     throw new ValidationError({
-      htmlErrors: result.error.issues.map((issue) => ({
-        tag,
-        attribute: issue.path.join('.') || attr,
-        message: issue.message,
-      })),
+      htmlErrors: [{ tag, attribute: attr, message: `Invalid value for attribute [${attr}]` }],
     })
   }
 }

@@ -352,9 +352,9 @@ export const CSSPropertiesSchema = {
     'flex-basis': { type: ['string', 'number'] },
     'flex-direction': { type: 'string', enum: ['row', 'row-reverse', 'column', 'column-reverse'] },
     'flex-flow': { type: ['string', 'number'] },
-    'flex-grow': { anyOf: [{ type: 'string', enum: [] }, { type: 'number' }] },
-    'flex-line-count': { anyOf: [{ type: 'string', enum: [] }, { type: 'number' }] },
-    'flex-shrink': { anyOf: [{ type: 'string', enum: [] }, { type: 'number' }] },
+    'flex-grow': { type: 'number' },
+    'flex-line-count': { type: 'number' },
+    'flex-shrink': { type: 'number' },
     'flex-wrap': { type: ['string', 'number'] },
     float: { type: ['string', 'number'] },
     'float-defer': { anyOf: [{ type: 'string', enum: ['last', 'none'] }, { type: 'number' }] },
@@ -537,8 +537,8 @@ export const CSSPropertiesSchema = {
     'offset-position': { type: ['string', 'number'] },
     'offset-rotate': { type: ['string', 'number'] },
     opacity: { type: ['string', 'number'] },
-    order: { anyOf: [{ type: 'string', enum: [] }, { type: 'number' }] },
-    orphans: { anyOf: [{ type: 'string', enum: [] }, { type: 'number' }] },
+    order: { type: 'number' },
+    orphans: { type: 'number' },
     outline: { type: ['string', 'number'] },
     'outline-color': { type: ['string', 'number'] },
     'outline-offset': { type: ['string', 'number'] },
@@ -626,7 +626,7 @@ export const CSSPropertiesSchema = {
       type: 'string',
       enum: ['normal', 'source-order', 'flex-visual', 'flex-flow', 'grid-rows', 'grid-columns', 'grid-order'],
     },
-    'reading-order': { anyOf: [{ type: 'string', enum: [] }, { type: 'number' }] },
+    'reading-order': { type: 'number' },
     'region-fragment': { type: 'string', enum: ['auto', 'break'] },
     resize: { type: 'string', enum: ['none', 'both', 'horizontal', 'vertical', 'block', 'inline'] },
     rest: { type: ['string', 'number'] },
@@ -738,7 +738,7 @@ export const CSSPropertiesSchema = {
     'stroke-image': { type: ['string', 'number'] },
     'stroke-linecap': { type: 'string', enum: ['butt', 'round', 'square'] },
     'stroke-linejoin': { type: ['string', 'number'] },
-    'stroke-miterlimit': { anyOf: [{ type: 'string', enum: [] }, { type: 'number' }] },
+    'stroke-miterlimit': { type: 'number' },
     'stroke-opacity': { type: ['string', 'number'] },
     'stroke-origin': {
       type: 'string',
@@ -854,7 +854,7 @@ export const CSSPropertiesSchema = {
       enum: ['collapse', 'discard', 'preserve', 'preserve-breaks', 'preserve-spaces', 'break-spaces'],
     },
     'white-space-trim': { type: ['string', 'number'] },
-    widows: { anyOf: [{ type: 'string', enum: [] }, { type: 'number' }] },
+    widows: { type: 'number' },
     width: { type: ['string', 'number'] },
     'will-change': { type: ['string', 'number'] },
     'window-drag': { type: 'string', enum: ['none', 'move'] },
@@ -896,23 +896,18 @@ export const CSSPropertiesSchema = {
 export type CSSProperties = Record<string, string | number>
 
 /**
- * Per-property validator cache — compile lazily on first use so runtime
- * cost is paid only for properties actually encountered.
+ * Whole-schema validator compiled once at module load. Validates a
+ * `{ [property]: value }` object against `CSSPropertiesSchema` — known
+ * properties use their per-property subschema; unknown properties fall
+ * through to `additionalProperties: { type: ['string', 'number'] }`.
  */
-const validatorCache = new Map<string, (value: unknown) => boolean>()
+const cssValidator = ajv.compile(CSSPropertiesSchema)
 
 /**
  * Validates one CSS property value against its generated schema.
- * Custom properties ('--*') and unknown properties pass as string/number.
+ * Custom properties ('--*') pass as string/number.
  */
 export const validateCSSValue = (property: string, value: unknown): boolean => {
   if (property.startsWith('--')) return typeof value === 'string' || typeof value === 'number'
-  const schema = (CSSPropertiesSchema.properties as Record<string, unknown>)[property]
-  if (!schema) return false
-  let validate = validatorCache.get(property)
-  if (!validate) {
-    validate = ajv.compile(schema as object)
-    validatorCache.set(property, validate)
-  }
-  return validate(value)
+  return cssValidator({ [property]: value })
 }

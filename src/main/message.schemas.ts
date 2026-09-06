@@ -1,5 +1,6 @@
+import type { JSONSchemaType } from 'ajv'
 import Ajv2020 from 'ajv/dist/2020'
-import type { BPEvent } from './behavioral.schemas.ts'
+import { type BPEvent, BPEventSchema } from './behavioral.schemas.ts'
 import { SCALE } from './html.constants.ts'
 import {
   CONTROLLER_INCOMING_MESSAGE_TYPES,
@@ -15,14 +16,22 @@ import {
  */
 const ajv = new Ajv2020({ strict: false, validateSchema: true, useDefaults: true })
 
-/** SWAP_MODES value union, shared by render and scale-check messages. */
-const swapModeSchema = { type: 'string', enum: Object.values(SWAP_MODES) } as const
+/**
+ * Element matching strategies in attribute selectors.
+ * - '=':  Exact match
+ * - '~=': Space-separated list contains
+ * - '|=': Exact match or prefix followed by hyphen
+ * - '^=': Starts with
+ * - '$=': Ends with
+ * - '*=': Contains
+ */
+export type SelectorMatch = '=' | '~=' | '|=' | '^=' | '$=' | '*='
 
-/** CSS attribute selector operators, shared by render/attrs/scale-check messages. */
-const selectorMatchSchema = {
+/** SWAP_MODES value union, shared by render and scale-check messages. */
+const swapModeSchema: JSONSchemaType<(typeof SWAP_MODES)[keyof typeof SWAP_MODES]> = {
   type: 'string',
-  enum: ['=', '~=', '|=', '^=', '$=', '*='],
-} as const
+  enum: Object.values(SWAP_MODES),
+}
 
 // ---------------------------------------------------------------------------
 // Client → server messages
@@ -38,14 +47,14 @@ export type UiEventMessage = {
   detail: { event: BPEvent; timeStamp: number }
 }
 
-export const UiEventMessageSchema = {
+export const UiEventMessageSchema: JSONSchemaType<UiEventMessage> = {
   type: 'object',
   properties: {
     type: { type: 'string', const: CONTROLLER_OUTGOING_MESSAGE_TYPES.ui_event },
     detail: {
       type: 'object',
       properties: {
-        event: { type: 'object', properties: { type: { type: 'string' } }, required: ['type'] },
+        event: BPEventSchema,
         timeStamp: { type: 'number' },
       },
       required: ['event', 'timeStamp'],
@@ -64,10 +73,10 @@ export const UiEventMessageSchema = {
 export type FormSubmitMessage = {
   type: typeof CONTROLLER_OUTGOING_MESSAGE_TYPES.form_submit
   detail: {
-    name: string | null
+    name?: string | null
     timeStamp: number
-    action: string | null
-    data: Record<string, string | string[]>
+    action?: string | null
+    data?: Record<string, string | string[]>
   }
 }
 
@@ -78,21 +87,22 @@ export const FormSubmitMessageSchema = {
     detail: {
       type: 'object',
       properties: {
-        name: { type: ['string', 'null'] },
+        name: { type: 'string', nullable: true },
         timeStamp: { type: 'number' },
-        action: { type: ['string', 'null'] },
+        action: { type: 'string', nullable: true },
         data: {
           type: 'object',
+          nullable: true,
           additionalProperties: { anyOf: [{ type: 'string' }, { type: 'array', items: { type: 'string' } }] },
         },
       },
-      required: ['name', 'timeStamp', 'action', 'data'],
+      required: ['timeStamp'],
       additionalProperties: false,
     },
   },
   required: ['type', 'detail'],
   additionalProperties: false,
-}
+} as unknown as JSONSchemaType<FormSubmitMessage>
 
 /**
  * Schema for controller runtime errors sent from a controller island to the server.
@@ -110,7 +120,7 @@ export type ErrorMessage = {
   detail: { timeStamp: number; id?: string; name: string; error?: string; stack?: string }
 }
 
-export const ErrorMessageSchema = {
+export const ErrorMessageSchema: JSONSchemaType<ErrorMessage> = {
   type: 'object',
   properties: {
     type: { type: 'string', const: CONTROLLER_OUTGOING_MESSAGE_TYPES.error },
@@ -142,7 +152,7 @@ export type SuccessMessage = {
   detail: { id: string; timeStamp: number }
 }
 
-export const SuccessMessageSchema = {
+export const SuccessMessageSchema: JSONSchemaType<SuccessMessage> = {
   type: 'object',
   properties: {
     type: { type: 'string', const: CONTROLLER_OUTGOING_MESSAGE_TYPES.success },
@@ -168,7 +178,7 @@ export type PageSnapshot = {
   detail: { timeStamp: number; type: (typeof PAGE_EVENTS)[keyof typeof PAGE_EVENTS]; serializedHTML: string }
 }
 
-export const PageSnapshotSchema = {
+export const PageSnapshotSchema: JSONSchemaType<PageSnapshot> = {
   type: 'object',
   properties: {
     type: { type: 'string', const: CONTROLLER_OUTGOING_MESSAGE_TYPES.snapshot },
@@ -198,7 +208,7 @@ export type ScaleCheckResultMessage = {
   detail: { id: string; target: string; effectiveScale: (typeof SCALE)[keyof typeof SCALE]; timeStamp: number }
 }
 
-export const ScaleCheckResultMessageSchema = {
+export const ScaleCheckResultMessageSchema: JSONSchemaType<ScaleCheckResultMessage> = {
   type: 'object',
   properties: {
     type: { type: 'string', const: CONTROLLER_OUTGOING_MESSAGE_TYPES.scale_check_result },
@@ -244,28 +254,9 @@ export const validateClientMessage = ajv.compile({
   ],
 })
 
-/** Optional selector-match subschema (shared by several message kinds). */
-function selectorModeOptional() {
-  return { ...selectorMatchSchema, nullable: true }
-}
-
 // ---------------------------------------------------------------------------
 // Server → controller messages
 // ---------------------------------------------------------------------------
-
-/**
- * Type for element matching strategies in attribute selectors.
- * Supports all CSS attribute selector operators.
- *
- * Values:
- * - '=':  Exact match
- * - '~=': Space-separated list contains
- * - '|=': Exact match or prefix followed by hyphen
- * - '^=': Starts with
- * - '$=': Ends with
- * - '*=': Contains
- */
-export type SelectorMatch = '=' | '~=' | '|=' | '^=' | '$=' | '*='
 
 /**
  * Schema for render messages that insert or replace DOM content.
@@ -283,7 +274,7 @@ export type RenderMessage = {
   }
 }
 
-export const RenderMessageSchema = {
+export const RenderMessageSchema: JSONSchemaType<RenderMessage> = {
   type: 'object',
   properties: {
     type: { type: 'string', const: CONTROLLER_INCOMING_MESSAGE_TYPES.render },
@@ -293,7 +284,7 @@ export const RenderMessageSchema = {
         id: { type: 'string' },
         target: { type: 'string' },
         html: { type: 'string' },
-        match: selectorModeOptional(),
+        match: { type: 'string', enum: ['=', '~=', '|=', '^=', '$=', '*='], nullable: true },
         swap: swapModeSchema,
       },
       required: ['id', 'target', 'html', 'swap'],
@@ -328,11 +319,14 @@ export const AttrsMessageSchema = {
       properties: {
         id: { type: 'string' },
         target: { type: 'string' },
-        match: selectorModeOptional(),
+        match: { type: 'string', enum: ['=', '~=', '|=', '^=', '$=', '*='], nullable: true },
         attr: {
           type: 'object',
-          additionalProperties: { type: ['string', 'number', 'boolean', 'null'] },
-        },
+          required: [],
+          additionalProperties: {
+            anyOf: [{ type: 'string' }, { type: 'number' }, { type: 'boolean' }, { type: 'null' }],
+          },
+        } as unknown as JSONSchemaType<Record<string, string | number | boolean | null>>,
       },
       required: ['id', 'target', 'attr'],
       additionalProperties: false,
@@ -340,7 +334,7 @@ export const AttrsMessageSchema = {
   },
   required: ['type', 'detail'],
   additionalProperties: false,
-}
+} as unknown as JSONSchemaType<AttrsMessage>
 
 /**
  * Schema for dispatch-custom-event messages that instruct the controller to
@@ -360,7 +354,7 @@ export type DispatchCustomEventMessage = {
   }
 }
 
-export const DispatchCustomEventMessageSchema = {
+export const DispatchCustomEventMessageSchema: JSONSchemaType<DispatchCustomEventMessage> = {
   type: 'object',
   properties: {
     type: { type: 'string', const: CONTROLLER_INCOMING_MESSAGE_TYPES.dispatch_custom_event },
@@ -369,12 +363,12 @@ export const DispatchCustomEventMessageSchema = {
       properties: {
         id: { type: 'string' },
         target: { type: 'string' },
-        event: { type: 'object', properties: { type: { type: 'string' } }, required: ['type'] },
+        event: BPEventSchema,
         bubbles: { type: 'boolean', default: false, nullable: true },
         cancelable: { type: 'boolean', default: true, nullable: true },
         composed: { type: 'boolean', default: true, nullable: true },
       },
-      required: ['id', 'target', 'event', 'bubbles', 'cancelable', 'composed'],
+      required: ['id', 'target', 'event'],
       additionalProperties: false,
     },
   },
@@ -397,7 +391,7 @@ export type NavigateMessage = {
   detail: { id: string; url: string; replace?: boolean }
 }
 
-export const NavigateMessageSchema = {
+export const NavigateMessageSchema: JSONSchemaType<NavigateMessage> = {
   type: 'object',
   properties: {
     type: { type: 'string', const: CONTROLLER_INCOMING_MESSAGE_TYPES.navigate },
@@ -408,7 +402,7 @@ export const NavigateMessageSchema = {
         url: { type: 'string' },
         replace: { type: 'boolean', default: false, nullable: true },
       },
-      required: ['id', 'url', 'replace'],
+      required: ['id', 'url'],
       additionalProperties: false,
     },
   },
@@ -433,7 +427,7 @@ export type ScaleCheckMessage = {
   detail: { id: string; target: string; swap: (typeof SWAP_MODES)[keyof typeof SWAP_MODES]; match?: SelectorMatch }
 }
 
-export const ScaleCheckMessageSchema = {
+export const ScaleCheckMessageSchema: JSONSchemaType<ScaleCheckMessage> = {
   type: 'object',
   properties: {
     type: { type: 'string', const: CONTROLLER_INCOMING_MESSAGE_TYPES.scale_check },
@@ -443,7 +437,7 @@ export const ScaleCheckMessageSchema = {
         id: { type: 'string' },
         target: { type: 'string' },
         swap: swapModeSchema,
-        match: selectorModeOptional(),
+        match: { type: 'string', enum: ['=', '~=', '|=', '^=', '$=', '*='], nullable: true },
       },
       required: ['id', 'target', 'swap'],
       additionalProperties: false,

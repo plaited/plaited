@@ -1,33 +1,73 @@
-/**
- * @internal
- * @module template.schemas
- *
- * Zod schemas for HTML/SVG attribute validation.
- * Converts hand-written types in `template.types.ts` into runtime-validatable
- * schemas for agent-generated component catalog entries (see `UI-GENERATION-PATTERNS.md` §3.4).
- *
- * @remarks
- * Each exported schema ends in `Schema` with a paired `z.output<>` type alias.
- * The schema is the source of truth for validated shapes; type aliases are derived.
- *
- * @see {@link https://ui-generation-patterns#34-the-catalog-json-shapes}
- */
-
-import * as z from 'zod'
+import Ajv2020 from 'ajv/dist/2020'
 import { CUSTOM_PROPERTY_REF_PATTERN } from './css.constants.ts'
 import { CSSPropertiesSchema, validateCSSValue } from './css.schemas.ts'
-import {
-  CLASS,
-  CUSTOM_ELEMENT_TAG_PATTERN,
-  P_FORM,
-  P_SCALE,
-  P_TARGET,
-  P_TRIGGER,
-  SCALE,
-  STYLE,
-  UNKNOWN_TAG_PATTERN,
-  VOID_TAGS,
-} from './html.constants.ts'
+import { CLASS, P_FORM, P_SCALE, P_TARGET, P_TRIGGER, SCALE, STYLE } from './html.constants.ts'
+
+/**
+ * Shared Ajv instance (draft 2020-12) for HTML/SVG attribute validation.
+ * Mirrors the `css.schemas.ts` ajv instance configuration.
+ * @public
+ */
+export const ajv = new Ajv2020({ strict: false, validateSchema: true })
+
+// ── Imperative refines: p-trigger and style ───────────────────────────────
+//
+// These validation rules can't be expressed in JSON Schema. They are
+// implemented as AJV custom keywords (`pTriggerFormat`, `pStyleFormat`) so
+// a single `ajv.validate(schema, data)` call covers structure + format.
+// The underlying functions are also exported for explicit pre-checks.
+
+/**
+ * Validates `p-trigger` strings: semicolon-separated `event:action` pairs
+ * with no duplicate keys. Empty/whitespace strings are valid (no triggers).
+ * @public
+ */
+export const validatePTrigger = (_schema: unknown, data: unknown): boolean => {
+  if (typeof data !== 'string') return true
+  if (data.trim() === '') return true
+  const seen = new Set<string>()
+  const declarations = data.split(';').filter(Boolean)
+  for (const decl of declarations) {
+    const colonIndex = decl.indexOf(':')
+    if (colonIndex === -1) return false
+    const key = decl.slice(0, colonIndex).trim()
+    const value = decl.slice(colonIndex + 1).trim()
+    if (!key || !value) return false
+    if (seen.has(key)) return false
+    seen.add(key)
+  }
+  return true
+}
+
+/**
+ * Validates `style` strings: semicolon-separated `property:value` CSS
+ * declarations. Known CSS properties are validated via `validateCSSValue`;
+ * `var(--*)` refs are allowed. Custom properties (`--*`) always pass.
+ * @public
+ */
+export const validatePStyle = (_schema: unknown, data: unknown): boolean => {
+  if (typeof data !== 'string') return true
+  if (data.trim() === '') return true
+  const declarations = data.split(';').filter(Boolean)
+  for (const decl of declarations) {
+    const colonIndex = decl.indexOf(':')
+    if (colonIndex === -1) return false
+    const propertyName = decl.slice(0, colonIndex).trim()
+    const value = decl.slice(colonIndex + 1).trim()
+    if (!propertyName || !value) return false
+    if (propertyName.startsWith('--')) continue
+    if (propertyName in (CSSPropertiesSchema.properties as Record<string, unknown>)) {
+      if (!validateCSSValue(propertyName, value)) {
+        if (CUSTOM_PROPERTY_REF_PATTERN.test(value)) continue
+        return false
+      }
+    }
+  }
+  return true
+}
+
+ajv.addKeyword({ keyword: 'pTriggerFormat', validate: validatePTrigger })
+ajv.addKeyword({ keyword: 'pStyleFormat', validate: validatePStyle })
 
 // ── Internal helper schemas (not exported) ────────────────────────────────
 
@@ -35,112 +75,132 @@ import {
  * Booleanish — `boolean | 'true' | 'false'`.
  * @internal
  */
-const BooleanishSchema = z.union([z.boolean(), z.enum(['true', 'false'])])
+const BooleanishSchema = { anyOf: [{ type: 'boolean' }, { type: 'string', enum: ['true', 'false'] }] }
 
 /**
  * Cross-origin attribute value.
  * @internal
  */
-const CrossOriginSchema = z.enum(['anonymous', 'use-credentials', ''])
+const CrossOriginSchema = { type: 'string', enum: ['anonymous', 'use-credentials', ''] }
 
 /**
  * Anchor target attribute values.
  * @internal
  */
-const AnchorTargetSchema = z.enum(['_self', '_blank', '_parent', '_top'])
+const AnchorTargetSchema = { type: 'string', enum: ['_self', '_blank', '_parent', '_top'] }
 
 /**
  * Referrer policy attribute values.
  * @internal
  */
-const ReferrerPolicySchema = z.enum([
-  '',
-  'no-referrer',
-  'no-referrer-when-downgrade',
-  'origin',
-  'origin-when-cross-origin',
-  'same-origin',
-  'strict-origin',
-  'strict-origin-when-cross-origin',
-  'unsafe-url',
-])
+const ReferrerPolicySchema = {
+  type: 'string',
+  enum: [
+    '',
+    'no-referrer',
+    'no-referrer-when-downgrade',
+    'origin',
+    'origin-when-cross-origin',
+    'same-origin',
+    'strict-origin',
+    'strict-origin-when-cross-origin',
+    'unsafe-url',
+  ],
+}
 
 /**
  * Input `type` attribute values.
  * @internal
  */
-const InputTypeSchema = z.enum([
-  'button',
-  'checkbox',
-  'color',
-  'date',
-  'datetime-local',
-  'email',
-  'file',
-  'hidden',
-  'image',
-  'month',
-  'number',
-  'password',
-  'radio',
-  'range',
-  'reset',
-  'search',
-  'submit',
-  'tel',
-  'text',
-  'time',
-  'url',
-  'week',
-])
+const InputTypeSchema = {
+  type: 'string',
+  enum: [
+    'button',
+    'checkbox',
+    'color',
+    'date',
+    'datetime-local',
+    'email',
+    'file',
+    'hidden',
+    'image',
+    'month',
+    'number',
+    'password',
+    'radio',
+    'range',
+    'reset',
+    'search',
+    'submit',
+    'tel',
+    'text',
+    'time',
+    'url',
+    'week',
+  ],
+}
 
 // ── ARIA ───────────────────────────────────────────────────────────────────
 
-const AriaAttributesSchema = z.object({
-  'aria-activedescendant': z.string().optional(),
-  'aria-atomic': BooleanishSchema.optional(),
-  'aria-autocomplete': z.enum(['none', 'inline', 'list', 'both']).optional(),
-  'aria-braillelabel': z.string().optional(),
-  'aria-brailleroledescription': z.string().optional(),
-  'aria-busy': BooleanishSchema.optional(),
-  'aria-checked': z.union([z.boolean(), z.enum(['false', 'mixed', 'true'])]).optional(),
-  'aria-colcount': z.number().optional(),
-  'aria-colindex': z.number().optional(),
-  'aria-colindextext': z.string().optional(),
-  'aria-colspan': z.number().optional(),
-  'aria-controls': z.string().optional(),
-  'aria-current': z
-    .union([z.boolean(), z.enum(['false', 'true', 'page', 'step', 'location', 'date', 'time'])])
-    .optional(),
-  'aria-describedby': z.string().optional(),
-  'aria-description': z.string().optional(),
-  'aria-details': z.string().optional(),
-  'aria-disabled': BooleanishSchema.optional(),
-  'aria-errormessage': z.string().optional(),
-  'aria-expanded': BooleanishSchema.optional(),
-  'aria-flowto': z.string().optional(),
-  'aria-haspopup': z
-    .union([z.boolean(), z.enum(['false', 'true', 'menu', 'listbox', 'tree', 'grid', 'dialog'])])
-    .optional(),
-  'aria-hidden': BooleanishSchema.optional(),
-  'aria-invalid': z.union([z.boolean(), z.enum(['false', 'true', 'grammar', 'spelling'])]).optional(),
-  'aria-keyshortcuts': z.string().optional(),
-  'aria-label': z.string().optional(),
-  'aria-labelledby': z.string().optional(),
-  'aria-level': z.number().optional(),
-  'aria-live': z.enum(['off', 'assertive', 'polite']).optional(),
-  'aria-modal': BooleanishSchema.optional(),
-  'aria-multiline': BooleanishSchema.optional(),
-  'aria-multiselectable': BooleanishSchema.optional(),
-  'aria-orientation': z.enum(['horizontal', 'vertical']).optional(),
-  'aria-owns': z.string().optional(),
-  'aria-placeholder': z.string().optional(),
-  'aria-posinset': z.number().optional(),
-  'aria-pressed': z.union([z.boolean(), z.enum(['false', 'mixed', 'true'])]).optional(),
-  'aria-readonly': BooleanishSchema.optional(),
-  'aria-relevant': z
-    .union([
-      z.enum([
+const AriaAttributesSchema = {
+  type: 'object',
+  properties: {
+    'aria-activedescendant': { type: 'string' },
+    'aria-atomic': BooleanishSchema,
+    'aria-autocomplete': { type: 'string', enum: ['none', 'inline', 'list', 'both'] },
+    'aria-braillelabel': { type: 'string' },
+    'aria-brailleroledescription': { type: 'string' },
+    'aria-busy': BooleanishSchema,
+    'aria-checked': {
+      anyOf: [{ type: 'boolean' }, { type: 'string', enum: ['false', 'mixed', 'true'] }],
+    },
+    'aria-colcount': { type: 'number' },
+    'aria-colindex': { type: 'number' },
+    'aria-colindextext': { type: 'string' },
+    'aria-colspan': { type: 'number' },
+    'aria-controls': { type: 'string' },
+    'aria-current': {
+      anyOf: [
+        { type: 'boolean' },
+        { type: 'string', enum: ['false', 'true', 'page', 'step', 'location', 'date', 'time'] },
+      ],
+    },
+    'aria-describedby': { type: 'string' },
+    'aria-description': { type: 'string' },
+    'aria-details': { type: 'string' },
+    'aria-disabled': BooleanishSchema,
+    'aria-errormessage': { type: 'string' },
+    'aria-expanded': BooleanishSchema,
+    'aria-flowto': { type: 'string' },
+    'aria-haspopup': {
+      anyOf: [
+        { type: 'boolean' },
+        { type: 'string', enum: ['false', 'true', 'menu', 'listbox', 'tree', 'grid', 'dialog'] },
+      ],
+    },
+    'aria-hidden': BooleanishSchema,
+    'aria-invalid': {
+      anyOf: [{ type: 'boolean' }, { type: 'string', enum: ['false', 'true', 'grammar', 'spelling'] }],
+    },
+    'aria-keyshortcuts': { type: 'string' },
+    'aria-label': { type: 'string' },
+    'aria-labelledby': { type: 'string' },
+    'aria-level': { type: 'number' },
+    'aria-live': { type: 'string', enum: ['off', 'assertive', 'polite'] },
+    'aria-modal': BooleanishSchema,
+    'aria-multiline': BooleanishSchema,
+    'aria-multiselectable': BooleanishSchema,
+    'aria-orientation': { type: 'string', enum: ['horizontal', 'vertical'] },
+    'aria-owns': { type: 'string' },
+    'aria-placeholder': { type: 'string' },
+    'aria-posinset': { type: 'number' },
+    'aria-pressed': {
+      anyOf: [{ type: 'boolean' }, { type: 'string', enum: ['false', 'mixed', 'true'] }],
+    },
+    'aria-readonly': BooleanishSchema,
+    'aria-relevant': {
+      type: 'string',
+      enum: [
         'additions',
         'additions removals',
         'additions text',
@@ -151,947 +211,974 @@ const AriaAttributesSchema = z.object({
         'text',
         'text additions',
         'text removals',
-      ]),
-    ])
-    .optional(),
-  'aria-required': BooleanishSchema.optional(),
-  'aria-roledescription': z.string().optional(),
-  'aria-rowcount': z.number().optional(),
-  'aria-rowindex': z.number().optional(),
-  'aria-rowindextext': z.string().optional(),
-  'aria-rowspan': z.number().optional(),
-  'aria-selected': BooleanishSchema.optional(),
-  'aria-setsize': z.number().optional(),
-  'aria-sort': z.enum(['none', 'ascending', 'descending', 'other']).optional(),
-  'aria-valuemax': z.number().optional(),
-  'aria-valuemin': z.number().optional(),
-  'aria-valuenow': z.number().optional(),
-  'aria-valuetext': z.string().optional(),
-})
+      ],
+    },
+    'aria-required': BooleanishSchema,
+    'aria-roledescription': { type: 'string' },
+    'aria-rowcount': { type: 'number' },
+    'aria-rowindex': { type: 'number' },
+    'aria-rowindextext': { type: 'string' },
+    'aria-rowspan': { type: 'number' },
+    'aria-selected': BooleanishSchema,
+    'aria-setsize': { type: 'number' },
+    'aria-sort': { type: 'string', enum: ['none', 'ascending', 'descending', 'other'] },
+    'aria-valuemax': { type: 'number' },
+    'aria-valuemin': { type: 'number' },
+    'aria-valuenow': { type: 'number' },
+    'aria-valuetext': { type: 'string' },
+  },
+}
 
-const AriaRoleSchema = z.enum([
-  'alert',
-  'alertdialog',
-  'application',
-  'article',
-  'banner',
-  'button',
-  'cell',
-  'checkbox',
-  'columnheader',
-  'combobox',
-  'complementary',
-  'contentinfo',
-  'definition',
-  'dialog',
-  'directory',
-  'document',
-  'feed',
-  'figure',
-  'form',
-  'grid',
-  'gridcell',
-  'group',
-  'heading',
-  'img',
-  'link',
-  'list',
-  'listbox',
-  'listitem',
-  'log',
-  'main',
-  'marquee',
-  'math',
-  'menu',
-  'menubar',
-  'menuitem',
-  'menuitemcheckbox',
-  'menuitemradio',
-  'navigation',
-  'none',
-  'note',
-  'option',
-  'presentation',
-  'progressbar',
-  'radio',
-  'radiogroup',
-  'region',
-  'row',
-  'rowgroup',
-  'rowheader',
-  'scrollbar',
-  'search',
-  'searchbox',
-  'separator',
-  'slider',
-  'spinbutton',
-  'status',
-  'switch',
-  'tab',
-  'table',
-  'tablist',
-  'tabpanel',
-  'term',
-  'textbox',
-  'timer',
-  'toolbar',
-  'tooltip',
-  'tree',
-  'treegrid',
-  'treeitem',
-])
+const AriaRoleSchema = {
+  type: 'string',
+  enum: [
+    'alert',
+    'alertdialog',
+    'application',
+    'article',
+    'banner',
+    'button',
+    'cell',
+    'checkbox',
+    'columnheader',
+    'combobox',
+    'complementary',
+    'contentinfo',
+    'definition',
+    'dialog',
+    'directory',
+    'document',
+    'feed',
+    'figure',
+    'form',
+    'grid',
+    'gridcell',
+    'group',
+    'heading',
+    'img',
+    'link',
+    'list',
+    'listbox',
+    'listitem',
+    'log',
+    'main',
+    'marquee',
+    'math',
+    'menu',
+    'menubar',
+    'menuitem',
+    'menuitemcheckbox',
+    'menuitemradio',
+    'navigation',
+    'none',
+    'note',
+    'option',
+    'presentation',
+    'progressbar',
+    'radio',
+    'radiogroup',
+    'region',
+    'row',
+    'rowgroup',
+    'rowheader',
+    'scrollbar',
+    'search',
+    'searchbox',
+    'separator',
+    'slider',
+    'spinbutton',
+    'status',
+    'switch',
+    'tab',
+    'table',
+    'tablist',
+    'tabpanel',
+    'term',
+    'textbox',
+    'timer',
+    'toolbar',
+    'tooltip',
+    'tree',
+    'treegrid',
+    'treeitem',
+  ],
+}
 
-export const PlaitedAttributesSchema = z.object({
-  [CLASS]: z.string().optional(),
-  [P_SCALE]: z.enum(Object.values(SCALE)).optional(),
-  [P_TARGET]: z.union([z.string(), z.number()]).optional(),
-  [P_TRIGGER]: z
-    .string()
-    .refine(
-      (val) => {
-        // Empty string is valid (no triggers)
-        if (val.trim() === '') return true
+// ── Plaited attributes ────────────────────────────────────────────────────
 
-        const seen = new Set<string>()
-        const declarations = val.split(';').filter(Boolean)
-        for (const decl of declarations) {
-          const colonIndex = decl.indexOf(':')
-          if (colonIndex === -1) return false
-          const key = decl.slice(0, colonIndex).trim()
-          const value = decl.slice(colonIndex + 1).trim()
+export const PlaitedAttributesSchema = {
+  type: 'object',
+  properties: {
+    [CLASS]: { type: 'string' },
+    [P_SCALE]: { type: 'string', enum: Object.values(SCALE) },
+    [P_TARGET]: { anyOf: [{ type: 'string' }, { type: 'number' }] },
+    [P_TRIGGER]: { type: 'string', pTriggerFormat: true },
+    [STYLE]: { type: 'string', pStyleFormat: true },
+  },
+}
 
-          if (!key || !value) return false
-          if (seen.has(key)) return false
-          seen.add(key)
-        }
-        return true
-      },
-      { message: 'Invalid p-trigger string: duplicate or malformed pairs' },
-    )
-    .optional(),
-  [STYLE]: z
-    .string()
-    .refine(
-      (val) => {
-        // Empty string is valid (no styles)
-        if (val.trim() === '') return true
-
-        const declarations = val.split(';').filter(Boolean)
-        for (const decl of declarations) {
-          const colonIndex = decl.indexOf(':')
-          if (colonIndex === -1) return false
-          const propertyName = decl.slice(0, colonIndex).trim()
-          const value = decl.slice(colonIndex + 1).trim()
-
-          if (!propertyName || !value) return false
-
-          // Custom properties (--*) are always valid
-          if (propertyName.startsWith('--')) continue
-
-          if (propertyName in (CSSPropertiesSchema.properties as Record<string, unknown>)) {
-            // Known CSS property — validate against its schema; allow var() refs
-            if (!validateCSSValue(propertyName, value)) {
-              if (CUSTOM_PROPERTY_REF_PATTERN.test(value)) continue
-              return false
-            }
-          }
-          // Unknown properties (browser-prefixed, future specs, etc.) are
-          // browser-handled — no schema validation, but empty values like
-          // `color: ;` are already caught by the !value check above.
-        }
-        return true
-      },
-      { message: 'Invalid CSS style string' },
-    )
-    .optional(),
-})
+// ── Detailed HTML attributes ──────────────────────────────────────────────
 
 /**
- * Schema for standard HTML attributes combined with ARIA and Plaited attributes.
- *
+ * Standard HTML attributes combined with ARIA and Plaited attributes.
  * @public
  */
-export const DetailedHTMLAttributesSchema = z
-  .object({
-    ...PlaitedAttributesSchema.shape,
-    ...AriaAttributesSchema.shape,
+export const DetailedHTMLAttributesSchema = {
+  type: 'object',
+  properties: {
+    ...PlaitedAttributesSchema.properties,
+    ...AriaAttributesSchema.properties,
     // Standard HTML Attributes
-    accesskey: z.string().optional(),
-    autofocus: z.boolean().optional(),
-    contenteditable: z.union([BooleanishSchema, z.enum(['inherit', 'plaintext-only'])]).optional(),
-    dir: z.string().optional(),
-    draggable: BooleanishSchema.optional(),
-    hidden: z.boolean().optional(),
-    id: z.union([z.string(), z.number()]).optional(),
-    lang: z.string().optional(),
-    nonce: z.string().optional(),
-    placeholder: z.string().optional(),
-    slot: z.string().optional(),
-    spellcheck: BooleanishSchema.optional(),
-    tabindex: z.number().optional(),
-    title: z.string().optional(),
-    translate: z.enum(['yes', 'no']).optional(),
+    accesskey: { type: 'string' },
+    autofocus: { type: 'boolean' },
+    contenteditable: {
+      anyOf: [BooleanishSchema, { type: 'string', enum: ['inherit', 'plaintext-only'] }],
+    },
+    dir: { type: 'string' },
+    draggable: BooleanishSchema,
+    hidden: { type: 'boolean' },
+    id: { anyOf: [{ type: 'string' }, { type: 'number' }] },
+    lang: { type: 'string' },
+    nonce: { type: 'string' },
+    placeholder: { type: 'string' },
+    slot: { type: 'string' },
+    spellcheck: BooleanishSchema,
+    tabindex: { type: 'number' },
+    title: { type: 'string' },
+    translate: { type: 'string', enum: ['yes', 'no'] },
 
     // WAI-ARIA
-    role: AriaRoleSchema.optional(),
+    role: AriaRoleSchema,
 
     // RDFa Attributes
-    about: z.string().optional(),
-    content: z.string().optional(),
-    datatype: z.string().optional(),
-    prefix: z.string().optional(),
-    property: z.string().optional(),
-    rel: z.string().optional(),
-    resource: z.string().optional(),
-    rev: z.string().optional(),
-    typeof: z.string().optional(),
-    vocab: z.string().optional(),
+    about: { type: 'string' },
+    content: { type: 'string' },
+    datatype: { type: 'string' },
+    prefix: { type: 'string' },
+    property: { type: 'string' },
+    rel: { type: 'string' },
+    resource: { type: 'string' },
+    rev: { type: 'string' },
+    typeof: { type: 'string' },
+    vocab: { type: 'string' },
 
     // Non-standard Attributes
-    autocapitalize: z.enum(['off', 'none', 'on', 'sentences', 'words', 'characters']).optional(),
-    autocorrect: z.enum(['on', 'off']).optional(),
-    autosave: z.string().optional(),
-    itemprop: z.string().optional(),
-    itemscope: z.boolean().optional(),
-    itemtype: z.string().optional(),
-    itemid: z.string().optional(),
-    itemref: z.string().optional(),
-    results: z.number().optional(),
-    security: z.string().optional(),
+    autocapitalize: { type: 'string', enum: ['off', 'none', 'on', 'sentences', 'words', 'characters'] },
+    autocorrect: { type: 'string', enum: ['on', 'off'] },
+    autosave: { type: 'string' },
+    itemprop: { type: 'string' },
+    itemscope: { type: 'boolean' },
+    itemtype: { type: 'string' },
+    itemid: { type: 'string' },
+    itemref: { type: 'string' },
+    results: { type: 'number' },
+    security: { type: 'string' },
 
     // Standard HTML attributes not covered above
-    for: z.string().optional(),
+    for: { type: 'string' },
 
     // Living Standard
-    inputmode: z.union([z.enum(['none', 'text', 'tel', 'url', 'email', 'numeric', 'decimal', 'search'])]).optional(),
-    is: z.string().optional(),
-  })
-  .catchall(z.union([z.string(), z.number(), z.boolean()]))
+    inputmode: {
+      type: 'string',
+      enum: ['none', 'text', 'tel', 'url', 'email', 'numeric', 'decimal', 'search'],
+    },
+    is: { type: 'string' },
+  },
+  // catchall(z.union([z.string(), z.number(), z.boolean()]))
+  additionalProperties: { type: ['string', 'number', 'boolean'] },
+}
 
-export type DetailedHTMLAttributes = z.output<typeof DetailedHTMLAttributesSchema>
+// ── Element-specific attribute schemas ─────────────────────────────────────
+// Each extends DetailedHTMLAttributesSchema with tag-specific attributes.
 
-// ── Element nodes ─────────────────────────────────────────────────────────
+const DetailedAnchorHTMLAttributesSchema = {
+  type: 'object',
+  properties: {
+    ...DetailedHTMLAttributesSchema.properties,
+    download: { type: 'boolean' },
+    href: { type: 'string' },
+    hreflang: { type: 'string' },
+    media: { type: 'string' },
+    ping: { type: 'string' },
+    target: AnchorTargetSchema,
+    type: { type: 'string' },
+    referrerpolicy: ReferrerPolicySchema,
+  },
+}
 
-// HTML elements with tag-specific attributes
+const DetailedAreaHTMLAttributesSchema = {
+  type: 'object',
+  properties: {
+    ...DetailedHTMLAttributesSchema.properties,
+    alt: { type: 'string' },
+    coords: { type: 'string' },
+    download: { type: 'boolean' },
+    href: { type: 'string' },
+    hreflang: { type: 'string' },
+    media: { type: 'string' },
+    referrerpolicy: ReferrerPolicySchema,
+    shape: { type: 'string' },
+    target: { type: 'string' },
+  },
+}
 
-const DetailedAnchorHTMLAttributesSchema = z.object({
-  ...DetailedHTMLAttributesSchema.shape,
-  download: z.boolean().optional(),
-  href: z.string().optional(),
-  hreflang: z.string().optional(),
-  media: z.string().optional(),
-  ping: z.string().optional(),
-  target: AnchorTargetSchema.optional(),
-  type: z.string().optional(),
-  referrerpolicy: ReferrerPolicySchema.optional(),
-})
+const DetailedBaseHTMLAttributesSchema = {
+  type: 'object',
+  properties: {
+    ...DetailedHTMLAttributesSchema.properties,
+    href: { type: 'string' },
+    target: { type: 'string' },
+  },
+}
 
-const DetailedAreaHTMLAttributesSchema = z.object({
-  ...DetailedHTMLAttributesSchema.shape,
-  alt: z.string().optional(),
-  coords: z.string().optional(),
-  download: z.boolean().optional(),
-  href: z.string().optional(),
-  hreflang: z.string().optional(),
-  media: z.string().optional(),
-  referrerpolicy: ReferrerPolicySchema.optional(),
-  shape: z.string().optional(),
-  target: z.string().optional(),
-})
+const DetailedBlockquoteHTMLAttributesSchema = {
+  type: 'object',
+  properties: {
+    ...DetailedHTMLAttributesSchema.properties,
+    cite: { type: 'string' },
+  },
+}
 
-const DetailedBaseHTMLAttributesSchema = z.object({
-  ...DetailedHTMLAttributesSchema.shape,
-  href: z.string().optional(),
-  target: z.string().optional(),
-})
+const DetailedButtonHTMLAttributesSchema = {
+  type: 'object',
+  properties: {
+    ...DetailedHTMLAttributesSchema.properties,
+    disabled: { type: 'boolean' },
+    form: { type: 'string' },
+    formaction: { type: 'string' },
+    formenctype: { type: 'string' },
+    formmethod: { type: 'string' },
+    formnovalidate: { type: 'boolean' },
+    formtarget: { type: 'string' },
+    name: { type: 'string' },
+    type: { type: 'string', enum: ['submit', 'reset', 'button'] },
+    value: { anyOf: [{ type: 'string' }, { type: 'number' }] },
+  },
+}
 
-const DetailedBlockquoteHTMLAttributesSchema = z.object({
-  ...DetailedHTMLAttributesSchema.shape,
-  cite: z.string().optional(),
-})
+const DetailedCanvasHTMLAttributesSchema = {
+  type: 'object',
+  properties: {
+    ...DetailedHTMLAttributesSchema.properties,
+    height: { anyOf: [{ type: 'number' }, { type: 'string' }] },
+    width: { anyOf: [{ type: 'number' }, { type: 'string' }] },
+  },
+}
 
-const DetailedButtonHTMLAttributesSchema = z.object({
-  ...DetailedHTMLAttributesSchema.shape,
-  disabled: z.boolean().optional(),
-  form: z.string().optional(),
-  formaction: z.string().optional(),
-  formenctype: z.string().optional(),
-  formmethod: z.string().optional(),
-  formnovalidate: z.boolean().optional(),
-  formtarget: z.string().optional(),
-  name: z.string().optional(),
-  type: z.enum(['submit', 'reset', 'button']).optional(),
-  value: z.union([z.string(), z.number()]).optional(),
-})
+const DetailedColHTMLAttributesSchema = {
+  type: 'object',
+  properties: {
+    ...DetailedHTMLAttributesSchema.properties,
+    span: { type: 'number' },
+    width: { anyOf: [{ type: 'number' }, { type: 'string' }] },
+  },
+}
 
-const DetailedCanvasHTMLAttributesSchema = z.object({
-  ...DetailedHTMLAttributesSchema.shape,
-  height: z.union([z.number(), z.string()]).optional(),
-  width: z.union([z.number(), z.string()]).optional(),
-})
+const DetailedColgroupHTMLAttributesSchema = {
+  type: 'object',
+  properties: {
+    ...DetailedHTMLAttributesSchema.properties,
+    span: { type: 'number' },
+  },
+}
 
-const DetailedColHTMLAttributesSchema = z.object({
-  ...DetailedHTMLAttributesSchema.shape,
-  span: z.number().optional(),
-  width: z.union([z.number(), z.string()]).optional(),
-})
+const DetailedDataHTMLAttributesSchema = {
+  type: 'object',
+  properties: {
+    ...DetailedHTMLAttributesSchema.properties,
+    value: { anyOf: [{ type: 'string' }, { type: 'number' }] },
+  },
+}
 
-const DetailedColgroupHTMLAttributesSchema = z.object({
-  ...DetailedHTMLAttributesSchema.shape,
-  span: z.number().optional(),
-})
+const DetailedDetailsHTMLAttributesSchema = {
+  type: 'object',
+  properties: {
+    ...DetailedHTMLAttributesSchema.properties,
+    open: { type: 'boolean' },
+  },
+}
 
-const DetailedDataHTMLAttributesSchema = z.object({
-  ...DetailedHTMLAttributesSchema.shape,
-  value: z.union([z.string(), z.number()]).optional(),
-})
+const DetailedDelHTMLAttributesSchema = {
+  type: 'object',
+  properties: {
+    ...DetailedHTMLAttributesSchema.properties,
+    cite: { type: 'string' },
+    datetime: { type: 'string' },
+  },
+}
 
-const DetailedDetailsHTMLAttributesSchema = z.object({
-  ...DetailedHTMLAttributesSchema.shape,
-  open: z.boolean().optional(),
-})
+const DetailedDialogHTMLAttributesSchema = {
+  type: 'object',
+  properties: {
+    ...DetailedHTMLAttributesSchema.properties,
+    open: { type: 'boolean' },
+  },
+}
 
-const DetailedDelHTMLAttributesSchema = z.object({
-  ...DetailedHTMLAttributesSchema.shape,
-  cite: z.string().optional(),
-  datetime: z.string().optional(),
-})
+const DetailedEmbedHTMLAttributesSchema = {
+  type: 'object',
+  properties: {
+    ...DetailedHTMLAttributesSchema.properties,
+    height: { anyOf: [{ type: 'number' }, { type: 'string' }] },
+    src: { type: 'string' },
+    type: { type: 'string' },
+    width: { anyOf: [{ type: 'number' }, { type: 'string' }] },
+  },
+}
 
-const DetailedDialogHTMLAttributesSchema = z.object({
-  ...DetailedHTMLAttributesSchema.shape,
-  open: z.boolean().optional(),
-})
+const DetailedFieldsetHTMLAttributesSchema = {
+  type: 'object',
+  properties: {
+    ...DetailedHTMLAttributesSchema.properties,
+    disabled: { type: 'boolean' },
+    form: { type: 'string' },
+    name: { type: 'string' },
+  },
+}
 
-const DetailedEmbedHTMLAttributesSchema = z.object({
-  ...DetailedHTMLAttributesSchema.shape,
-  height: z.union([z.number(), z.string()]).optional(),
-  src: z.string().optional(),
-  type: z.string().optional(),
-  width: z.union([z.number(), z.string()]).optional(),
-})
+const DetailedFormHTMLAttributesSchema = {
+  type: 'object',
+  properties: {
+    ...DetailedHTMLAttributesSchema.properties,
+    'accept-charset': { type: 'string' },
+    action: { not: {} },
+    autocomplete: { type: 'string' },
+    enctype: { type: 'string' },
+    method: { type: 'string' },
+    name: { type: 'string' },
+    novalidate: { type: 'boolean' },
+    target: { type: 'string' },
+    [P_TRIGGER]: { not: {} },
+    [P_FORM]: { type: 'string' },
+  },
+  required: [P_FORM],
+}
 
-const DetailedFieldsetHTMLAttributesSchema = z.object({
-  ...DetailedHTMLAttributesSchema.shape,
-  disabled: z.boolean().optional(),
-  form: z.string().optional(),
-  name: z.string().optional(),
-})
+const DetailedHtmlHTMLAttributesSchema = {
+  type: 'object',
+  properties: {
+    ...DetailedHTMLAttributesSchema.properties,
+    manifest: { type: 'string' },
+  },
+}
 
-const DetailedFormHTMLAttributesSchema = z.object({
-  ...DetailedHTMLAttributesSchema.shape,
-  'accept-charset': z.string().optional(),
-  action: z.never().optional(),
-  autocomplete: z.string().optional(),
-  enctype: z.string().optional(),
-  method: z.string().optional(),
-  name: z.string().optional(),
-  novalidate: z.boolean().optional(),
-  target: z.string().optional(),
-  [P_TRIGGER]: z.never().optional(),
-  [P_FORM]: z.string(),
-})
+const DetailedIframeHTMLAttributesSchema = {
+  type: 'object',
+  properties: {
+    ...DetailedHTMLAttributesSchema.properties,
+    allow: { type: 'string' },
+    height: { anyOf: [{ type: 'number' }, { type: 'string' }] },
+    loading: { type: 'string', enum: ['eager', 'lazy'] },
+    name: { type: 'string' },
+    referrerpolicy: ReferrerPolicySchema,
+    sandbox: { type: 'string' },
+    seamless: { type: 'boolean' },
+    src: { type: 'string' },
+    srcdoc: { type: 'string' },
+    width: { anyOf: [{ type: 'number' }, { type: 'string' }] },
+  },
+}
 
-const DetailedHtmlHTMLAttributesSchema = z.object({
-  ...DetailedHTMLAttributesSchema.shape,
-  manifest: z.string().optional(),
-})
+const DetailedImgHTMLAttributesSchema = {
+  type: 'object',
+  properties: {
+    ...DetailedHTMLAttributesSchema.properties,
+    alt: { type: 'string' },
+    crossorigin: CrossOriginSchema,
+    decoding: { type: 'string', enum: ['async', 'auto', 'sync'] },
+    height: { anyOf: [{ type: 'number' }, { type: 'string' }] },
+    loading: { type: 'string', enum: ['eager', 'lazy'] },
+    referrerpolicy: ReferrerPolicySchema,
+    sizes: { type: 'string' },
+    src: { type: 'string' },
+    srcset: { type: 'string' },
+    usemap: { type: 'string' },
+    width: { anyOf: [{ type: 'number' }, { type: 'string' }] },
+  },
+}
 
-const DetailedIframeHTMLAttributesSchema = z.object({
-  ...DetailedHTMLAttributesSchema.shape,
-  allow: z.string().optional(),
-  height: z.union([z.number(), z.string()]).optional(),
-  loading: z.enum(['eager', 'lazy']).optional(),
-  name: z.string().optional(),
-  referrerpolicy: ReferrerPolicySchema.optional(),
-  sandbox: z.string().optional(),
-  seamless: z.boolean().optional(),
-  src: z.string().optional(),
-  srcdoc: z.string().optional(),
-  width: z.union([z.number(), z.string()]).optional(),
-})
+const DetailedInputHTMLAttributesSchema = {
+  type: 'object',
+  properties: {
+    ...DetailedHTMLAttributesSchema.properties,
+    accept: { type: 'string' },
+    alt: { type: 'string' },
+    autocomplete: { type: 'string' },
+    capture: { anyOf: [{ type: 'boolean' }, { type: 'string', enum: ['user', 'environment'] }] },
+    checked: { type: 'boolean' },
+    disabled: { type: 'boolean' },
+    enterkeyhint: { type: 'string', enum: ['enter', 'done', 'go', 'next', 'previous', 'search', 'send'] },
+    form: { type: 'string' },
+    formaction: { type: 'string' },
+    formenctype: { type: 'string' },
+    formmethod: { type: 'string' },
+    formnovalidate: { type: 'boolean' },
+    formtarget: { type: 'string' },
+    height: { anyOf: [{ type: 'number' }, { type: 'string' }] },
+    list: { type: 'string' },
+    max: { anyOf: [{ type: 'number' }, { type: 'string' }] },
+    maxlength: { type: 'number' },
+    min: { anyOf: [{ type: 'number' }, { type: 'string' }] },
+    minlength: { type: 'number' },
+    multiple: { type: 'boolean' },
+    name: { type: 'string' },
+    pattern: { type: 'string' },
+    placeholder: { type: 'string' },
+    readonly: { type: 'boolean' },
+    required: { type: 'boolean' },
+    size: { type: 'number' },
+    src: { type: 'string' },
+    step: { anyOf: [{ type: 'number' }, { type: 'string' }] },
+    type: InputTypeSchema,
+    value: { anyOf: [{ type: 'string' }, { type: 'number' }] },
+    width: { anyOf: [{ type: 'number' }, { type: 'string' }] },
+  },
+}
 
-const DetailedImgHTMLAttributesSchema = z.object({
-  ...DetailedHTMLAttributesSchema.shape,
-  alt: z.string().optional(),
-  crossorigin: CrossOriginSchema.optional(),
-  decoding: z.enum(['async', 'auto', 'sync']).optional(),
-  height: z.union([z.number(), z.string()]).optional(),
-  loading: z.enum(['eager', 'lazy']).optional(),
-  referrerpolicy: ReferrerPolicySchema.optional(),
-  sizes: z.string().optional(),
-  src: z.string().optional(),
-  srcset: z.string().optional(),
-  usemap: z.string().optional(),
-  width: z.union([z.number(), z.string()]).optional(),
-})
+const DetailedInsHTMLAttributesSchema = {
+  type: 'object',
+  properties: {
+    ...DetailedHTMLAttributesSchema.properties,
+    cite: { type: 'string' },
+    datetime: { type: 'string' },
+  },
+}
 
-const DetailedInputHTMLAttributesSchema = z.object({
-  ...DetailedHTMLAttributesSchema.shape,
-  accept: z.string().optional(),
-  alt: z.string().optional(),
-  autocomplete: z.string().optional(),
-  capture: z.union([z.boolean(), z.enum(['user', 'environment'])]).optional(),
-  checked: z.boolean().optional(),
-  disabled: z.boolean().optional(),
-  enterkeyhint: z.enum(['enter', 'done', 'go', 'next', 'previous', 'search', 'send']).optional(),
-  form: z.string().optional(),
-  formaction: z.string().optional(),
-  formenctype: z.string().optional(),
-  formmethod: z.string().optional(),
-  formnovalidate: z.boolean().optional(),
-  formtarget: z.string().optional(),
-  height: z.union([z.number(), z.string()]).optional(),
-  list: z.string().optional(),
-  max: z.union([z.number(), z.string()]).optional(),
-  maxlength: z.number().optional(),
-  min: z.union([z.number(), z.string()]).optional(),
-  minlength: z.number().optional(),
-  multiple: z.boolean().optional(),
-  name: z.string().optional(),
-  pattern: z.string().optional(),
-  placeholder: z.string().optional(),
-  readonly: z.boolean().optional(),
-  required: z.boolean().optional(),
-  size: z.number().optional(),
-  src: z.string().optional(),
-  step: z.union([z.number(), z.string()]).optional(),
-  type: InputTypeSchema.optional(),
-  value: z.union([z.string(), z.number()]).optional(),
-  width: z.union([z.number(), z.string()]).optional(),
-})
+const DetailedLabelHTMLAttributesSchema = {
+  type: 'object',
+  properties: {
+    ...DetailedHTMLAttributesSchema.properties,
+    form: { type: 'string' },
+    for: { type: 'string' },
+  },
+}
 
-const DetailedInsHTMLAttributesSchema = z.object({
-  ...DetailedHTMLAttributesSchema.shape,
-  cite: z.string().optional(),
-  datetime: z.string().optional(),
-})
+const DetailedLiHTMLAttributesSchema = {
+  type: 'object',
+  properties: {
+    ...DetailedHTMLAttributesSchema.properties,
+    value: { anyOf: [{ type: 'string' }, { type: 'number' }] },
+  },
+}
 
-const DetailedLabelHTMLAttributesSchema = z.object({
-  ...DetailedHTMLAttributesSchema.shape,
-  form: z.string().optional(),
-  for: z.string().optional(),
-})
+const DetailedLinkHTMLAttributesSchema = {
+  type: 'object',
+  properties: {
+    ...DetailedHTMLAttributesSchema.properties,
+    as: { type: 'string' },
+    crossorigin: CrossOriginSchema,
+    fetchPriority: { type: 'string', enum: ['high', 'low', 'auto'] },
+    href: { type: 'string' },
+    hreflang: { type: 'string' },
+    integrity: { type: 'string' },
+    media: { type: 'string' },
+    imagesrcset: { type: 'string' },
+    imagesizes: { type: 'string' },
+    referrerpolicy: ReferrerPolicySchema,
+    sizes: { type: 'string' },
+    type: { type: 'string' },
+    charSet: { type: 'string' },
+  },
+}
 
-const DetailedLiHTMLAttributesSchema = z.object({
-  ...DetailedHTMLAttributesSchema.shape,
-  value: z.union([z.string(), z.number()]).optional(),
-})
+const DetailedMapHTMLAttributesSchema = {
+  type: 'object',
+  properties: {
+    ...DetailedHTMLAttributesSchema.properties,
+    name: { type: 'string' },
+  },
+}
 
-const DetailedLinkHTMLAttributesSchema = z.object({
-  ...DetailedHTMLAttributesSchema.shape,
-  as: z.string().optional(),
-  crossorigin: CrossOriginSchema.optional(),
-  fetchPriority: z.enum(['high', 'low', 'auto']).optional(),
-  href: z.string().optional(),
-  hreflang: z.string().optional(),
-  integrity: z.string().optional(),
-  media: z.string().optional(),
-  imagesrcset: z.string().optional(),
-  imagesizes: z.string().optional(),
-  referrerpolicy: ReferrerPolicySchema.optional(),
-  sizes: z.string().optional(),
-  type: z.string().optional(),
-  charSet: z.string().optional(),
-})
+const DetailedMenuHTMLAttributesSchema = {
+  type: 'object',
+  properties: {
+    ...DetailedHTMLAttributesSchema.properties,
+    type: { type: 'string' },
+  },
+}
 
-const DetailedMapHTMLAttributesSchema = z.object({
-  ...DetailedHTMLAttributesSchema.shape,
-  name: z.string().optional(),
-})
+const DetailedMetaHTMLAttributesSchema = {
+  type: 'object',
+  properties: {
+    ...DetailedHTMLAttributesSchema.properties,
+    charset: { type: 'string' },
+    'http-equiv': { type: 'string' },
+    name: { type: 'string' },
+    media: { type: 'string' },
+    content: { type: 'string' },
+  },
+}
 
-const DetailedMenuHTMLAttributesSchema = z.object({
-  ...DetailedHTMLAttributesSchema.shape,
-  type: z.string().optional(),
-})
+const DetailedMeterHTMLAttributesSchema = {
+  type: 'object',
+  properties: {
+    ...DetailedHTMLAttributesSchema.properties,
+    form: { type: 'string' },
+    high: { type: 'number' },
+    low: { type: 'number' },
+    max: { anyOf: [{ type: 'number' }, { type: 'string' }] },
+    min: { anyOf: [{ type: 'number' }, { type: 'string' }] },
+    optimum: { type: 'number' },
+    value: { anyOf: [{ type: 'string' }, { type: 'number' }] },
+  },
+}
 
-const DetailedMetaHTMLAttributesSchema = z.object({
-  ...DetailedHTMLAttributesSchema.shape,
-  charset: z.string().optional(),
-  'http-equiv': z.string().optional(),
-  name: z.string().optional(),
-  media: z.string().optional(),
-  content: z.string().optional(),
-})
+const DetailedObjectHTMLAttributesSchema = {
+  type: 'object',
+  properties: {
+    ...DetailedHTMLAttributesSchema.properties,
+    classid: { type: 'string' },
+    data: { type: 'string' },
+    form: { type: 'string' },
+    height: { anyOf: [{ type: 'number' }, { type: 'string' }] },
+    name: { type: 'string' },
+    type: { type: 'string' },
+    usemap: { type: 'string' },
+    width: { anyOf: [{ type: 'number' }, { type: 'string' }] },
+  },
+}
 
-const DetailedMeterHTMLAttributesSchema = z.object({
-  ...DetailedHTMLAttributesSchema.shape,
-  form: z.string().optional(),
-  high: z.number().optional(),
-  low: z.number().optional(),
-  max: z.union([z.number(), z.string()]).optional(),
-  min: z.union([z.number(), z.string()]).optional(),
-  optimum: z.number().optional(),
-  value: z.union([z.string(), z.number()]).optional(),
-})
+const DetailedOlHTMLAttributesSchema = {
+  type: 'object',
+  properties: {
+    ...DetailedHTMLAttributesSchema.properties,
+    reversed: { type: 'boolean' },
+    start: { type: 'number' },
+    type: { type: 'string', enum: ['1', 'a', 'A', 'i', 'I'] },
+  },
+}
 
-const DetailedObjectHTMLAttributesSchema = z.object({
-  ...DetailedHTMLAttributesSchema.shape,
-  classid: z.string().optional(),
-  data: z.string().optional(),
-  form: z.string().optional(),
-  height: z.union([z.number(), z.string()]).optional(),
-  name: z.string().optional(),
-  type: z.string().optional(),
-  usemap: z.string().optional(),
-  width: z.union([z.number(), z.string()]).optional(),
-})
+const DetailedOptgroupHTMLAttributesSchema = {
+  type: 'object',
+  properties: {
+    ...DetailedHTMLAttributesSchema.properties,
+    disabled: { type: 'boolean' },
+    label: { type: 'string' },
+  },
+}
 
-const DetailedOlHTMLAttributesSchema = z.object({
-  ...DetailedHTMLAttributesSchema.shape,
-  reversed: z.boolean().optional(),
-  start: z.number().optional(),
-  type: z.enum(['1', 'a', 'A', 'i', 'I']).optional(),
-})
+const DetailedOptionHTMLAttributesSchema = {
+  type: 'object',
+  properties: {
+    ...DetailedHTMLAttributesSchema.properties,
+    disabled: { type: 'boolean' },
+    label: { type: 'string' },
+    selected: { type: 'boolean' },
+    value: { anyOf: [{ type: 'string' }, { type: 'number' }] },
+  },
+}
 
-const DetailedOptgroupHTMLAttributesSchema = z.object({
-  ...DetailedHTMLAttributesSchema.shape,
-  disabled: z.boolean().optional(),
-  label: z.string().optional(),
-})
+const DetailedOutputHTMLAttributesSchema = {
+  type: 'object',
+  properties: {
+    ...DetailedHTMLAttributesSchema.properties,
+    form: { type: 'string' },
+    for: { type: 'string' },
+    name: { type: 'string' },
+  },
+}
 
-const DetailedOptionHTMLAttributesSchema = z.object({
-  ...DetailedHTMLAttributesSchema.shape,
-  disabled: z.boolean().optional(),
-  label: z.string().optional(),
-  selected: z.boolean().optional(),
-  value: z.union([z.string(), z.number()]).optional(),
-})
+const DetailedProgressHTMLAttributesSchema = {
+  type: 'object',
+  properties: {
+    ...DetailedHTMLAttributesSchema.properties,
+    max: { anyOf: [{ type: 'number' }, { type: 'string' }] },
+    value: { anyOf: [{ type: 'string' }, { type: 'number' }] },
+  },
+}
 
-const DetailedOutputHTMLAttributesSchema = z.object({
-  ...DetailedHTMLAttributesSchema.shape,
-  form: z.string().optional(),
-  for: z.string().optional(),
-  name: z.string().optional(),
-})
+const DetailedQuoteHTMLAttributesSchema = {
+  type: 'object',
+  properties: {
+    ...DetailedHTMLAttributesSchema.properties,
+    cite: { type: 'string' },
+  },
+}
 
-const DetailedProgressHTMLAttributesSchema = z.object({
-  ...DetailedHTMLAttributesSchema.shape,
-  max: z.union([z.number(), z.string()]).optional(),
-  value: z.union([z.string(), z.number()]).optional(),
-})
+const DetailedSlotHTMLAttributesSchema = {
+  type: 'object',
+  properties: {
+    ...DetailedHTMLAttributesSchema.properties,
+    name: { type: 'string' },
+  },
+}
 
-const DetailedQuoteHTMLAttributesSchema = z.object({
-  ...DetailedHTMLAttributesSchema.shape,
-  cite: z.string().optional(),
-})
+const DetailedScriptHTMLAttributesSchema = {
+  type: 'object',
+  properties: {
+    ...DetailedHTMLAttributesSchema.properties,
+    async: { type: 'boolean' },
+    crossorigin: CrossOriginSchema,
+    defer: { type: 'boolean' },
+    integrity: { type: 'string' },
+    nomodule: { type: 'boolean' },
+    referrerpolicy: ReferrerPolicySchema,
+    src: { type: 'string' },
+    type: { type: 'string' },
+  },
+}
 
-const DetailedSlotHTMLAttributesSchema = z.object({
-  ...DetailedHTMLAttributesSchema.shape,
-  name: z.string().optional(),
-})
+const DetailedSelectHTMLAttributesSchema = {
+  type: 'object',
+  properties: {
+    ...DetailedHTMLAttributesSchema.properties,
+    autocomplete: { type: 'string' },
+    disabled: { type: 'boolean' },
+    form: { type: 'string' },
+    multiple: { type: 'boolean' },
+    name: { type: 'string' },
+    required: { type: 'boolean' },
+    size: { type: 'number' },
+    value: { anyOf: [{ type: 'string' }, { type: 'number' }] },
+  },
+}
 
-const DetailedScriptHTMLAttributesSchema = z.object({
-  ...DetailedHTMLAttributesSchema.shape,
-  async: z.boolean().optional(),
-  crossorigin: CrossOriginSchema.optional(),
-  defer: z.boolean().optional(),
-  integrity: z.string().optional(),
-  nomodule: z.boolean().optional(),
-  referrerpolicy: ReferrerPolicySchema.optional(),
-  src: z.string().optional(),
-  type: z.string().optional(),
-})
+const DetailedSourceHTMLAttributesSchema = {
+  type: 'object',
+  properties: {
+    ...DetailedHTMLAttributesSchema.properties,
+    height: { anyOf: [{ type: 'number' }, { type: 'string' }] },
+    media: { type: 'string' },
+    sizes: { type: 'string' },
+    src: { type: 'string' },
+    srcset: { type: 'string' },
+    type: { type: 'string' },
+    width: { anyOf: [{ type: 'number' }, { type: 'string' }] },
+  },
+}
 
-const DetailedSelectHTMLAttributesSchema = z.object({
-  ...DetailedHTMLAttributesSchema.shape,
-  autocomplete: z.string().optional(),
-  disabled: z.boolean().optional(),
-  form: z.string().optional(),
-  multiple: z.boolean().optional(),
-  name: z.string().optional(),
-  required: z.boolean().optional(),
-  size: z.number().optional(),
-  value: z.union([z.string(), z.number()]).optional(),
-})
+const DetailedStyleHTMLAttributesSchema = {
+  type: 'object',
+  properties: {
+    ...DetailedHTMLAttributesSchema.properties,
+    media: { type: 'string' },
+  },
+}
 
-const DetailedSourceHTMLAttributesSchema = z.object({
-  ...DetailedHTMLAttributesSchema.shape,
-  height: z.union([z.number(), z.string()]).optional(),
-  media: z.string().optional(),
-  sizes: z.string().optional(),
-  src: z.string().optional(),
-  srcset: z.string().optional(),
-  type: z.string().optional(),
-  width: z.union([z.number(), z.string()]).optional(),
-})
+const DetailedTableHTMLAttributesSchema = {
+  type: 'object',
+  properties: {
+    ...DetailedHTMLAttributesSchema.properties,
+    align: { type: 'string', enum: ['left', 'center', 'right'] },
+    bgcolor: { type: 'string' },
+    border: { type: 'number' },
+    cellpadding: { anyOf: [{ type: 'number' }, { type: 'string' }] },
+    cellspacing: { anyOf: [{ type: 'number' }, { type: 'string' }] },
+    frame: { type: 'boolean' },
+    rules: { type: 'string', enum: ['none', 'groups', 'rows', 'columns', 'all'] },
+    summary: { type: 'string' },
+    width: { anyOf: [{ type: 'number' }, { type: 'string' }] },
+  },
+}
 
-const DetailedStyleHTMLAttributesSchema = z.object({
-  ...DetailedHTMLAttributesSchema.shape,
-  media: z.string().optional(),
-})
+const DetailedTemplateHTMLAttributesSchema = {
+  type: 'object',
+  properties: {
+    ...DetailedHTMLAttributesSchema.properties,
+    shadowrootmode: { type: 'string', enum: ['open', 'closed'] },
+    shadowrootdelegatesfocus: { type: 'boolean' },
+    shadowrootclonable: { type: 'boolean' },
+  },
+}
 
-const DetailedTableHTMLAttributesSchema = z.object({
-  ...DetailedHTMLAttributesSchema.shape,
-  align: z.enum(['left', 'center', 'right']).optional(),
-  bgcolor: z.string().optional(),
-  border: z.number().optional(),
-  cellpadding: z.union([z.number(), z.string()]).optional(),
-  cellspacing: z.union([z.number(), z.string()]).optional(),
-  frame: z.boolean().optional(),
-  rules: z.enum(['none', 'groups', 'rows', 'columns', 'all']).optional(),
-  summary: z.string().optional(),
-  width: z.union([z.number(), z.string()]).optional(),
-})
+const DetailedTextareaHTMLAttributesSchema = {
+  type: 'object',
+  properties: {
+    ...DetailedHTMLAttributesSchema.properties,
+    autocomplete: { type: 'string' },
+    cols: { type: 'number' },
+    dirname: { type: 'string' },
+    disabled: { type: 'boolean' },
+    form: { type: 'string' },
+    maxlength: { type: 'number' },
+    minlength: { type: 'number' },
+    name: { type: 'string' },
+    placeholder: { type: 'string' },
+    readonly: { type: 'boolean' },
+    required: { type: 'boolean' },
+    rows: { type: 'number' },
+    value: { anyOf: [{ type: 'string' }, { type: 'number' }] },
+    wrap: { type: 'string' },
+  },
+}
 
-const DetailedTemplateHTMLAttributesSchema = z.object({
-  ...DetailedHTMLAttributesSchema.shape,
-  shadowrootmode: z.enum(['open', 'closed']).optional(),
-  shadowrootdelegatesfocus: z.boolean().optional(),
-  shadowrootclonable: z.boolean().optional(),
-})
+const DetailedTdHTMLAttributesSchema = {
+  type: 'object',
+  properties: {
+    ...DetailedHTMLAttributesSchema.properties,
+    align: { type: 'string', enum: ['left', 'center', 'right', 'justify', 'char'] },
+    colspan: { type: 'number' },
+    headers: { type: 'string' },
+    rowspan: { type: 'number' },
+    scope: { type: 'string' },
+    abbr: { type: 'string' },
+    height: { type: 'string' },
+    width: { type: 'string' },
+    valign: { type: 'string', enum: ['top', 'middle', 'bottom', 'baseline'] },
+  },
+}
 
-const DetailedTextareaHTMLAttributesSchema = z.object({
-  ...DetailedHTMLAttributesSchema.shape,
-  autocomplete: z.string().optional(),
-  cols: z.number().optional(),
-  dirname: z.string().optional(),
-  disabled: z.boolean().optional(),
-  form: z.string().optional(),
-  maxlength: z.number().optional(),
-  minlength: z.number().optional(),
-  name: z.string().optional(),
-  placeholder: z.string().optional(),
-  readonly: z.boolean().optional(),
-  required: z.boolean().optional(),
-  rows: z.number().optional(),
-  value: z.union([z.string(), z.number()]).optional(),
-  wrap: z.string().optional(),
-})
+const DetailedThHTMLAttributesSchema = {
+  type: 'object',
+  properties: {
+    ...DetailedHTMLAttributesSchema.properties,
+    align: { type: 'string', enum: ['left', 'center', 'right', 'justify', 'char'] },
+    colspan: { type: 'number' },
+    headers: { type: 'string' },
+    rowspan: { type: 'number' },
+    scope: { type: 'string' },
+    abbr: { type: 'string' },
+  },
+}
 
-const DetailedTdHTMLAttributesSchema = z.object({
-  ...DetailedHTMLAttributesSchema.shape,
-  align: z.enum(['left', 'center', 'right', 'justify', 'char']).optional(),
-  colspan: z.number().optional(),
-  headers: z.string().optional(),
-  rowspan: z.number().optional(),
-  scope: z.string().optional(),
-  abbr: z.string().optional(),
-  height: z.string().optional(),
-  width: z.string().optional(),
-  valign: z.enum(['top', 'middle', 'bottom', 'baseline']).optional(),
-})
+const DetailedTimeHTMLAttributesSchema = {
+  type: 'object',
+  properties: {
+    ...DetailedHTMLAttributesSchema.properties,
+    datetime: { type: 'string' },
+  },
+}
 
-const DetailedThHTMLAttributesSchema = z.object({
-  ...DetailedHTMLAttributesSchema.shape,
-  align: z.enum(['left', 'center', 'right', 'justify', 'char']).optional(),
-  colspan: z.number().optional(),
-  headers: z.string().optional(),
-  rowspan: z.number().optional(),
-  scope: z.string().optional(),
-  abbr: z.string().optional(),
-})
-
-const DetailedTimeHTMLAttributesSchema = z.object({
-  ...DetailedHTMLAttributesSchema.shape,
-  datetime: z.string().optional(),
-})
-
-const DetailedTrackHTMLAttributesSchema = z.object({
-  ...DetailedHTMLAttributesSchema.shape,
-  default: z.boolean().optional(),
-  kind: z.enum(['subtitles', 'captions', 'descriptions', 'chapters', 'metadata']).optional(),
-  label: z.string().optional(),
-  src: z.string().optional(),
-  srclang: z.string().optional(),
-})
+const DetailedTrackHTMLAttributesSchema = {
+  type: 'object',
+  properties: {
+    ...DetailedHTMLAttributesSchema.properties,
+    default: { type: 'boolean' },
+    kind: { type: 'string', enum: ['subtitles', 'captions', 'descriptions', 'chapters', 'metadata'] },
+    label: { type: 'string' },
+    src: { type: 'string' },
+    srclang: { type: 'string' },
+  },
+}
 
 // Media-based elements
 
-const DetailedAudioHTMLAttributesSchema = z.object({
-  ...DetailedHTMLAttributesSchema.shape,
-  autoplay: z.boolean().optional(),
-  controls: z.boolean().optional(),
-  controlslist: z.string().optional(),
-  crossorigin: CrossOriginSchema.optional(),
-  loop: z.boolean().optional(),
-  mediagroup: z.string().optional(),
-  muted: z.boolean().optional(),
-  playsinline: z.boolean().optional(),
-  preload: z.string().optional(),
-  src: z.string().optional(),
-})
+const DetailedAudioHTMLAttributesSchema = {
+  type: 'object',
+  properties: {
+    ...DetailedHTMLAttributesSchema.properties,
+    autoplay: { type: 'boolean' },
+    controls: { type: 'boolean' },
+    controlslist: { type: 'string' },
+    crossorigin: CrossOriginSchema,
+    loop: { type: 'boolean' },
+    mediagroup: { type: 'string' },
+    muted: { type: 'boolean' },
+    playsinline: { type: 'boolean' },
+    preload: { type: 'string' },
+    src: { type: 'string' },
+  },
+}
 
-const DetailedVideoHTMLAttributesSchema = z.object({
-  ...DetailedAudioHTMLAttributesSchema.shape,
-  height: z.string().optional(),
-  playsinline: z.boolean().optional(),
-  poster: z.string().optional(),
-  width: z.string().optional(),
-  disablepictureinpicture: z.boolean().optional(),
-  disableremoteplayback: z.boolean().optional(),
-})
+const DetailedVideoHTMLAttributesSchema = {
+  type: 'object',
+  properties: {
+    ...DetailedAudioHTMLAttributesSchema.properties,
+    height: { type: 'string' },
+    playsinline: { type: 'boolean' },
+    poster: { type: 'string' },
+    width: { type: 'string' },
+    disablepictureinpicture: { type: 'boolean' },
+    disableremoteplayback: { type: 'boolean' },
+  },
+}
 
 // ── SVG Attributes ─────────────────────────────────────────────────────────
 
-const DetailedSVGAttributesSchema = z.object({
-  ...DetailedHTMLAttributesSchema.shape,
-  'accent-height': z.number().optional(),
-  accumulate: z.union([z.enum(['none', 'sum']), z.string()]).optional(),
-  additive: z.union([z.enum(['replace', 'sum']), z.string()]).optional(),
-  'alignment-baseline': z
-    .union([
-      z.union([
-        z.enum([
-          'auto',
-          'baseline',
-          'before-edge',
-          'text-before-edge',
-          'middle',
-          'central',
-          'after-edge',
-          'text-after-edge',
-          'ideographic',
-          'alphabetic',
-          'hanging',
-          'mathematical',
-          'inherit',
-        ]),
-        z.string(),
-      ]),
-    ])
-    .optional(),
-  allowReorder: z.union([z.enum(['no', 'yes']), z.string()]).optional(),
-  amplitude: z.union([z.number(), z.string()]).optional(),
-  attributeName: z.string().optional(),
-  attributeType: z.string().optional(),
-  autoReverse: BooleanishSchema.optional(),
-  azimuth: z.number().optional(),
-  baseFrequency: z.union([z.number(), z.string()]).optional(),
-  'baseline-shift': z.union([z.enum(['sub', 'super']), z.number(), z.string()]).optional(),
-  baseProfile: z.string().optional(),
-  begin: z.union([z.number(), z.string()]).optional(),
-  bias: z.union([z.number(), z.string()]).optional(),
-  by: z.union([z.number(), z.string()]).optional(),
-  calcMode: z.union([z.enum(['discrete', 'linear', 'paced', 'spline']), z.string()]).optional(),
-  'clip-path': z.string().optional(),
-  'clip-rule': z.union([z.enum(['nonzero', 'evenodd', 'inherit']), z.string()]).optional(),
-  clipPathUnits: z.union([z.enum(['userSpaceOnUse', 'objectBoundingBox']), z.string()]).optional(),
-  color: z.string().optional(),
-  'color-interpolation': z.union([z.enum(['auto', 'sRGB', 'linearRGB', 'inherit']), z.string()]).optional(),
-  'color-interpolation-filters': z.string().optional(),
-  'color-rendering': z.union([z.number(), z.string()]).optional(),
-  contentScriptType: z.string().optional(),
-  contentStyleType: z.string().optional(),
-  cursor: z.string().optional(),
-  cx: z.string().optional(),
-  cy: z.string().optional(),
-  d: z.string().optional(),
-  decoding: z.union([z.enum(['sync', 'async', 'auto']), z.string()]).optional(),
-  diffuseConstant: z.union([z.number(), z.string()]).optional(),
-  direction: z.union([z.enum(['ltr', 'rtl']), z.string()]).optional(),
-  display: z.string().optional(),
-  divisor: z.union([z.number(), z.string()]).optional(),
-  'dominant-baseline': z
-    .union([
-      z.union([
-        z.enum([
-          'auto',
-          'text-bottom',
-          'alphabetic',
-          'ideographic',
-          'middle',
-          'central',
-          'mathematical',
-          'hanging',
-          'text-top',
-        ]),
-        z.string(),
-      ]),
-    ])
-    .optional(),
-  dur: z.union([z.enum(['media', 'indefinite']), z.number(), z.string()]).optional(),
-  dx: z.union([z.number(), z.string()]).optional(),
-  dy: z.union([z.number(), z.number(), z.string()]).optional(),
-  edgeMode: z.string().optional(),
-  elevation: z.union([z.number(), z.string()]).optional(),
-  end: z.string().optional(),
-  exponent: z.union([z.number(), z.string()]).optional(),
-  fill: z.string().optional(),
-  'fill-opacity': z.union([z.number(), z.string()]).optional(),
-  'fill-rule': z.union([z.enum(['nonzero', 'evenodd', 'inherit']), z.string()]).optional(),
-  filter: z.string().optional(),
-  filterRes: z.union([z.number(), z.string()]).optional(),
-  filterUnits: z.union([z.enum(['userSpaceOnUse', 'objectBoundingBox']), z.string()]).optional(),
-  'flood-color': z.string().optional(),
-  'flood-opacity': z.union([z.number(), z.string()]).optional(),
-  focusable: z.union([BooleanishSchema, z.literal('auto')]).optional(),
-  'font-family': z.string().optional(),
-  'font-size': z.string().optional(),
-  'font-size-adjust': z.string().optional(),
-  'font-stretch': z.string().optional(),
-  'font-style': z.string().optional(),
-  'font-variant': z.string().optional(),
-  'font-weight': z.string().optional(),
-  fr: z.string().optional(),
-  from: z.string().optional(),
-  fx: z.string().optional(),
-  fy: z.string().optional(),
-  gradientTransform: z.string().optional(),
-  gradientUnits: z.union([z.enum(['userSpaceOnUse', 'objectBoundingBox']), z.string()]).optional(),
-  href: z.string().optional(),
-  'image-rendering': z.union([z.enum(['auto', 'optimizeSpeed', 'optimizeQuality']), z.string()]).optional(),
-  in: z
-    .union([
-      z.union([
-        z.enum(['SourceGraphic', 'SourceAlpha', 'BackgroundImage', 'BackgroundAlpha', 'FillPaint', 'StrokePaint']),
-        z.string(),
-      ]),
-    ])
-    .optional(),
-  in2: z
-    .union([
-      z.union([
-        z.enum(['SourceGraphic', 'SourceAlpha', 'BackgroundImage', 'BackgroundAlpha', 'FillPaint', 'StrokePaint']),
-        z.string(),
-      ]),
-    ])
-    .optional(),
-  intercept: z.union([z.number(), z.string()]).optional(),
-  k1: z.union([z.number(), z.string()]).optional(),
-  k2: z.union([z.number(), z.string()]).optional(),
-  k3: z.union([z.number(), z.string()]).optional(),
-  k4: z.union([z.number(), z.string()]).optional(),
-  kernelMatrix: z.string().optional(),
-  kernelUnitLength: z.string().optional(),
-  keyPoints: z.string().optional(),
-  keySplines: z.string().optional(),
-  keyTimes: z.string().optional(),
-  lengthAdjust: z.union([z.enum(['spacing', 'spacingAndGlyphs']), z.string()]).optional(),
-  'letter-spacing': z.union([z.number(), z.string()]).optional(),
-  'lighting-color': z.string().optional(),
-  limitingConeAngle: z.union([z.number(), z.string()]).optional(),
-  'marker-end': z.string().optional(),
-  'marker-mid': z.string().optional(),
-  'marker-start': z.string().optional(),
-  markerHeight: z.union([z.string(), z.number()]).optional(),
-  markerUnits: z.union([z.enum(['userSpaceOnUse', 'strokeWidth']), z.string()]).optional(),
-  markerWidth: z.union([z.string(), z.number()]).optional(),
-  mask: z.string().optional(),
-  maskContentUnits: z.union([z.enum(['userSpaceOnUse', 'objectBoundingBox']), z.string()]).optional(),
-  maskUnits: z.union([z.enum(['userSpaceOnUse', 'objectBoundingBox']), z.string()]).optional(),
-  method: z.enum(['align', 'stretch']).optional(),
-  mode: z.string().optional(),
-  numOctaves: z.union([z.number(), z.string()]).optional(),
-  offset: z.string().optional(),
-  opacity: z.union([z.number(), z.string()]).optional(),
-  operator: z.string().optional(),
-  order: z.union([z.number(), z.string()]).optional(),
-  orient: z.union([z.number(), z.string()]).optional(),
-  origin: z.string().optional(),
-  overflow: z.union([z.enum(['visible', 'hidden', 'scroll', 'auto']), z.string()]).optional(),
-  'overline-position': z.union([z.number(), z.string()]).optional(),
-  'overline-thickness': z.union([z.number(), z.string()]).optional(),
-  'paint-order': z.string().optional(),
-  path: z.string().optional(),
-  pathLength: z.union([z.number(), z.string()]).optional(),
-  patternContentUnits: z.union([z.enum(['userSpaceOnUse', 'objectBoundingBox']), z.string()]).optional(),
-  patternTransform: z.string().optional(),
-  patternUnits: z.union([z.enum(['userSpaceOnUse', 'objectBoundingBox']), z.string()]).optional(),
-  'pointer-events': z
-    .union([
-      z.union([
-        z.enum([
-          'bounding-box',
-          'visiblePainted',
-          'visibleFill',
-          'visibleStroke',
-          'visible',
-          'painted',
-          'fill',
-          'stroke',
-          'all',
-          'none',
-        ]),
-        z.string(),
-      ]),
-    ])
-    .optional(),
-  points: z.string().optional(),
-  pointsAtX: z.union([z.number(), z.string()]).optional(),
-  pointsAtY: z.union([z.number(), z.string()]).optional(),
-  pointsAtZ: z.union([z.number(), z.string()]).optional(),
-  preserveAlpha: z.enum(['true', 'false']).optional(),
-  preserveAspectRatio: z.string().optional(),
-  primitiveUnits: z.union([z.enum(['userSpaceOnUse', 'objectBoundingBox']), z.string()]).optional(),
-  r: z.union([z.number(), z.string()]).optional(),
-  radius: z.union([z.number(), z.string()]).optional(),
-  refX: z.union([z.number(), z.string()]).optional(),
-  refY: z.union([z.number(), z.string()]).optional(),
-  repeatCount: z.union([z.enum(['indefinite']), z.number(), z.string()]).optional(),
-  repeatDur: z.union([z.enum(['indefinite']), z.string()]).optional(),
-  restart: z.union([z.enum(['always', 'whenNotActive', 'never']), z.string()]).optional(),
-  result: z.string().optional(),
-  rotate: z.union([z.enum(['auto', 'auto-reverse']), z.number(), z.string()]).optional(),
-  rx: z.union([z.number(), z.string()]).optional(),
-  ry: z.union([z.number(), z.string()]).optional(),
-  scale: z.union([z.number(), z.string()]).optional(),
-  seed: z.union([z.number(), z.string()]).optional(),
-  'shape-rendering': z
-    .union([z.enum(['auto', 'optimizeSpeed', 'crispEdges', 'geometricPrecision']), z.string()])
-    .optional(),
-  spacing: z.enum(['auto', 'exact']).optional(),
-  specularConstant: z.union([z.number(), z.string()]).optional(),
-  specularExponent: z.union([z.number(), z.string()]).optional(),
-  spreadMethod: z.union([z.enum(['pad', 'reflect', 'repeat']), z.string()]).optional(),
-  startOffset: z.union([z.number(), z.string()]).optional(),
-  stdDeviation: z.union([z.number(), z.string()]).optional(),
-  stitchTiles: z.union([z.enum(['noStitch', 'stitch']), z.string()]).optional(),
-  'stop-color': z.string().optional(),
-  'stop-opacity': z.union([z.number(), z.string()]).optional(),
-  'strikethrough-position': z.union([z.number(), z.string()]).optional(),
-  'strikethrough-thickness': z.union([z.number(), z.string()]).optional(),
-  stroke: z.string().optional(),
-  'stroke-dasharray': z.string().optional(),
-  'stroke-dashoffset': z.union([z.number(), z.string()]).optional(),
-  'stroke-linecap': z.union([z.enum(['butt', 'round', 'square', 'inherit']), z.string()]).optional(),
-  'stroke-linejoin': z
-    .union([z.enum(['arcs', 'bevel', 'miter', 'miter-clip', 'round', 'inherit']), z.string()])
-    .optional(),
-  'stroke-miterlimit': z.union([z.number(), z.string()]).optional(),
-  'stroke-opacity': z.union([z.number(), z.string()]).optional(),
-  'stroke-width': z.union([z.number(), z.string()]).optional(),
-  surfaceScale: z.union([z.number(), z.string()]).optional(),
-  systemLanguage: z.string().optional(),
-  tableValues: z.string().optional(),
-  targetX: z.union([z.number(), z.string()]).optional(),
-  targetY: z.union([z.number(), z.string()]).optional(),
-  'text-anchor': z.union([z.enum(['start', 'middle', 'end']), z.string()]).optional(),
-  'text-decoration': z.string().optional(),
-  'text-rendering': z
-    .union([z.union([z.enum(['auto', 'optimizeSpeed', 'optimizeLegibility', 'geometricPrecision']), z.string()])])
-    .optional(),
-  textLength: z.union([z.number(), z.string()]).optional(),
-  to: z.union([z.number(), z.string()]).optional(),
-  transform: z.string().optional(),
-  'transform-origin': z.string().optional(),
-  'underline-position': z.union([z.number(), z.string()]).optional(),
-  'underline-thickness': z.union([z.number(), z.string()]).optional(),
-  values: z.string().optional(),
-  'vector-effect': z
-    .union([
-      z.union([
-        z.enum(['none', 'non-scaling-stroke', 'non-scaling-size', 'non-rotation', 'fixed-position']),
-        z.string(),
-      ]),
-    ])
-    .optional(),
-  viewBox: z.string().optional(),
-  visibility: z.union([z.enum(['visible', 'hidden', 'collapse']), z.string()]).optional(),
-  'word-spacing': z.union([z.number(), z.string()]).optional(),
-  'writing-mode': z.union([z.enum(['horizontal-tb', 'vertical-rl', 'vertical-lr']), z.string()]).optional(),
-  x: z.union([z.number(), z.string()]).optional(),
-  x1: z.union([z.number(), z.string()]).optional(),
-  x2: z.union([z.number(), z.string()]).optional(),
-  xChannelSelector: z.union([z.enum(['R', 'G', 'B', 'A']), z.string()]).optional(),
-  y: z.union([z.number(), z.string()]).optional(),
-  y1: z.union([z.number(), z.string()]).optional(),
-  y2: z.union([z.number(), z.string()]).optional(),
-  yChannelSelector: z.union([z.enum(['R', 'G', 'B', 'A']), z.string()]).optional(),
-  z: z.union([z.number(), z.string()]).optional(),
-})
+const DetailedSVGAttributesSchema = {
+  type: 'object',
+  properties: {
+    ...DetailedHTMLAttributesSchema.properties,
+    'accent-height': { type: 'number' },
+    // z.union([z.enum([...]), z.string()]) — the string branch accepts any
+    // string, making the enum redundant. Simplified to { type: 'string' }.
+    accumulate: { type: 'string' },
+    additive: { type: 'string' },
+    'alignment-baseline': { type: 'string' },
+    allowReorder: { type: 'string' },
+    amplitude: { anyOf: [{ type: 'number' }, { type: 'string' }] },
+    attributeName: { type: 'string' },
+    attributeType: { type: 'string' },
+    autoReverse: BooleanishSchema,
+    azimuth: { type: 'number' },
+    baseFrequency: { anyOf: [{ type: 'number' }, { type: 'string' }] },
+    'baseline-shift': { anyOf: [{ type: 'number' }, { type: 'string' }] },
+    baseProfile: { type: 'string' },
+    begin: { anyOf: [{ type: 'number' }, { type: 'string' }] },
+    bias: { anyOf: [{ type: 'number' }, { type: 'string' }] },
+    by: { anyOf: [{ type: 'number' }, { type: 'string' }] },
+    calcMode: { type: 'string' },
+    'clip-path': { type: 'string' },
+    'clip-rule': { type: 'string' },
+    clipPathUnits: { type: 'string' },
+    color: { type: 'string' },
+    'color-interpolation': { type: 'string' },
+    'color-interpolation-filters': { type: 'string' },
+    'color-rendering': { anyOf: [{ type: 'number' }, { type: 'string' }] },
+    contentScriptType: { type: 'string' },
+    contentStyleType: { type: 'string' },
+    cursor: { type: 'string' },
+    cx: { type: 'string' },
+    cy: { type: 'string' },
+    d: { type: 'string' },
+    decoding: { type: 'string' },
+    diffuseConstant: { anyOf: [{ type: 'number' }, { type: 'string' }] },
+    direction: { type: 'string' },
+    display: { type: 'string' },
+    divisor: { anyOf: [{ type: 'number' }, { type: 'string' }] },
+    'dominant-baseline': { type: 'string' },
+    dur: { anyOf: [{ type: 'number' }, { type: 'string' }] },
+    dx: { anyOf: [{ type: 'number' }, { type: 'string' }] },
+    dy: { anyOf: [{ type: 'number' }, { type: 'string' }] },
+    edgeMode: { type: 'string' },
+    elevation: { anyOf: [{ type: 'number' }, { type: 'string' }] },
+    end: { type: 'string' },
+    exponent: { anyOf: [{ type: 'number' }, { type: 'string' }] },
+    fill: { type: 'string' },
+    'fill-opacity': { anyOf: [{ type: 'number' }, { type: 'string' }] },
+    'fill-rule': { type: 'string' },
+    filter: { type: 'string' },
+    filterRes: { anyOf: [{ type: 'number' }, { type: 'string' }] },
+    filterUnits: { type: 'string' },
+    'flood-color': { type: 'string' },
+    'flood-opacity': { anyOf: [{ type: 'number' }, { type: 'string' }] },
+    focusable: { anyOf: [BooleanishSchema, { type: 'string', enum: ['auto'] }] },
+    'font-family': { type: 'string' },
+    'font-size': { type: 'string' },
+    'font-size-adjust': { type: 'string' },
+    'font-stretch': { type: 'string' },
+    'font-style': { type: 'string' },
+    'font-variant': { type: 'string' },
+    'font-weight': { type: 'string' },
+    fr: { type: 'string' },
+    from: { type: 'string' },
+    fx: { type: 'string' },
+    fy: { type: 'string' },
+    gradientTransform: { type: 'string' },
+    gradientUnits: { type: 'string' },
+    href: { type: 'string' },
+    'image-rendering': { type: 'string' },
+    in: { type: 'string' },
+    in2: { type: 'string' },
+    intercept: { anyOf: [{ type: 'number' }, { type: 'string' }] },
+    k1: { anyOf: [{ type: 'number' }, { type: 'string' }] },
+    k2: { anyOf: [{ type: 'number' }, { type: 'string' }] },
+    k3: { anyOf: [{ type: 'number' }, { type: 'string' }] },
+    k4: { anyOf: [{ type: 'number' }, { type: 'string' }] },
+    kernelMatrix: { type: 'string' },
+    kernelUnitLength: { type: 'string' },
+    keyPoints: { type: 'string' },
+    keySplines: { type: 'string' },
+    keyTimes: { type: 'string' },
+    lengthAdjust: { type: 'string' },
+    'letter-spacing': { anyOf: [{ type: 'number' }, { type: 'string' }] },
+    'lighting-color': { type: 'string' },
+    limitingConeAngle: { anyOf: [{ type: 'number' }, { type: 'string' }] },
+    'marker-end': { type: 'string' },
+    'marker-mid': { type: 'string' },
+    'marker-start': { type: 'string' },
+    markerHeight: { anyOf: [{ type: 'string' }, { type: 'number' }] },
+    markerUnits: { type: 'string' },
+    markerWidth: { anyOf: [{ type: 'string' }, { type: 'number' }] },
+    mask: { type: 'string' },
+    maskContentUnits: { type: 'string' },
+    maskUnits: { type: 'string' },
+    method: { type: 'string', enum: ['align', 'stretch'] },
+    mode: { type: 'string' },
+    numOctaves: { anyOf: [{ type: 'number' }, { type: 'string' }] },
+    offset: { type: 'string' },
+    opacity: { anyOf: [{ type: 'number' }, { type: 'string' }] },
+    operator: { type: 'string' },
+    order: { anyOf: [{ type: 'number' }, { type: 'string' }] },
+    orient: { anyOf: [{ type: 'number' }, { type: 'string' }] },
+    origin: { type: 'string' },
+    overflow: { type: 'string' },
+    'overline-position': { anyOf: [{ type: 'number' }, { type: 'string' }] },
+    'overline-thickness': { anyOf: [{ type: 'number' }, { type: 'string' }] },
+    'paint-order': { type: 'string' },
+    path: { type: 'string' },
+    pathLength: { anyOf: [{ type: 'number' }, { type: 'string' }] },
+    patternContentUnits: { type: 'string' },
+    patternTransform: { type: 'string' },
+    patternUnits: { type: 'string' },
+    'pointer-events': { type: 'string' },
+    points: { type: 'string' },
+    pointsAtX: { anyOf: [{ type: 'number' }, { type: 'string' }] },
+    pointsAtY: { anyOf: [{ type: 'number' }, { type: 'string' }] },
+    pointsAtZ: { anyOf: [{ type: 'number' }, { type: 'string' }] },
+    preserveAlpha: { type: 'string', enum: ['true', 'false'] },
+    preserveAspectRatio: { type: 'string' },
+    primitiveUnits: { type: 'string' },
+    r: { anyOf: [{ type: 'number' }, { type: 'string' }] },
+    radius: { anyOf: [{ type: 'number' }, { type: 'string' }] },
+    refX: { anyOf: [{ type: 'number' }, { type: 'string' }] },
+    refY: { anyOf: [{ type: 'number' }, { type: 'string' }] },
+    repeatCount: { anyOf: [{ type: 'number' }, { type: 'string' }] },
+    repeatDur: { type: 'string' },
+    restart: { type: 'string' },
+    result: { type: 'string' },
+    rotate: { anyOf: [{ type: 'number' }, { type: 'string' }] },
+    rx: { anyOf: [{ type: 'number' }, { type: 'string' }] },
+    ry: { anyOf: [{ type: 'number' }, { type: 'string' }] },
+    scale: { anyOf: [{ type: 'number' }, { type: 'string' }] },
+    seed: { anyOf: [{ type: 'number' }, { type: 'string' }] },
+    'shape-rendering': { type: 'string' },
+    spacing: { type: 'string', enum: ['auto', 'exact'] },
+    specularConstant: { anyOf: [{ type: 'number' }, { type: 'string' }] },
+    specularExponent: { anyOf: [{ type: 'number' }, { type: 'string' }] },
+    spreadMethod: { type: 'string' },
+    startOffset: { anyOf: [{ type: 'number' }, { type: 'string' }] },
+    stdDeviation: { anyOf: [{ type: 'number' }, { type: 'string' }] },
+    stitchTiles: { type: 'string' },
+    'stop-color': { type: 'string' },
+    'stop-opacity': { anyOf: [{ type: 'number' }, { type: 'string' }] },
+    'strikethrough-position': { anyOf: [{ type: 'number' }, { type: 'string' }] },
+    'strikethrough-thickness': { anyOf: [{ type: 'number' }, { type: 'string' }] },
+    stroke: { type: 'string' },
+    'stroke-dasharray': { type: 'string' },
+    'stroke-dashoffset': { anyOf: [{ type: 'number' }, { type: 'string' }] },
+    'stroke-linecap': { type: 'string' },
+    'stroke-linejoin': { type: 'string' },
+    'stroke-miterlimit': { anyOf: [{ type: 'number' }, { type: 'string' }] },
+    'stroke-opacity': { anyOf: [{ type: 'number' }, { type: 'string' }] },
+    'stroke-width': { anyOf: [{ type: 'number' }, { type: 'string' }] },
+    surfaceScale: { anyOf: [{ type: 'number' }, { type: 'string' }] },
+    systemLanguage: { type: 'string' },
+    tableValues: { type: 'string' },
+    targetX: { anyOf: [{ type: 'number' }, { type: 'string' }] },
+    targetY: { anyOf: [{ type: 'number' }, { type: 'string' }] },
+    'text-anchor': { type: 'string' },
+    'text-decoration': { type: 'string' },
+    'text-rendering': { type: 'string' },
+    textLength: { anyOf: [{ type: 'number' }, { type: 'string' }] },
+    to: { anyOf: [{ type: 'number' }, { type: 'string' }] },
+    transform: { type: 'string' },
+    'transform-origin': { type: 'string' },
+    'underline-position': { anyOf: [{ type: 'number' }, { type: 'string' }] },
+    'underline-thickness': { anyOf: [{ type: 'number' }, { type: 'string' }] },
+    values: { type: 'string' },
+    'vector-effect': { type: 'string' },
+    viewBox: { type: 'string' },
+    visibility: { type: 'string' },
+    'word-spacing': { anyOf: [{ type: 'number' }, { type: 'string' }] },
+    'writing-mode': { type: 'string' },
+    x: { anyOf: [{ type: 'number' }, { type: 'string' }] },
+    x1: { anyOf: [{ type: 'number' }, { type: 'string' }] },
+    x2: { anyOf: [{ type: 'number' }, { type: 'string' }] },
+    xChannelSelector: { type: 'string' },
+    y: { anyOf: [{ type: 'number' }, { type: 'string' }] },
+    y1: { anyOf: [{ type: 'number' }, { type: 'string' }] },
+    y2: { anyOf: [{ type: 'number' }, { type: 'string' }] },
+    yChannelSelector: { type: 'string' },
+    z: { anyOf: [{ type: 'number' }, { type: 'string' }] },
+  },
+}
 
-export const ElementAttributeListSchema = z
-  .object({
+// ── Element attribute list ────────────────────────────────────────────────
+
+export const ElementAttributeListSchema = {
+  type: 'object',
+  properties: {
     a: DetailedAnchorHTMLAttributesSchema,
     abbr: DetailedHTMLAttributesSchema,
     address: DetailedHTMLAttributesSchema,
@@ -1206,7 +1293,7 @@ export const ElementAttributeListSchema = z
     var: DetailedHTMLAttributesSchema,
     video: DetailedVideoHTMLAttributesSchema,
     wbr: DetailedHTMLAttributesSchema,
-    //SVG
+    // SVG
     svg: DetailedSVGAttributesSchema,
     animate: DetailedSVGAttributesSchema,
     circle: DetailedSVGAttributesSchema,
@@ -1266,40 +1353,17 @@ export const ElementAttributeListSchema = z
     tspan: DetailedSVGAttributesSchema,
     use: DetailedSVGAttributesSchema,
     view: DetailedSVGAttributesSchema,
-  })
-  .catchall(DetailedHTMLAttributesSchema)
+  },
+  // catchall(DetailedHTMLAttributesSchema)
+  additionalProperties: DetailedHTMLAttributesSchema,
+}
 
-const ElementKeysSchema = ElementAttributeListSchema.keyof()
-
-/**
- * Schema for custom element tag names (must match `${string}-${string}` pattern).
- *
- * @public
- */
-export const CustomElementTagSchema = z.string().regex(CUSTOM_ELEMENT_TAG_PATTERN)
-
-/** @public */
-export type CustomElementTag = `${string}-${string}`
+const attributeListValidator = ajv.compile(ElementAttributeListSchema)
 
 /**
- * Schema for custom element tag names (must match `${string}-${string}` pattern).
- *
- * @public
+ * Validates one CSS property value against its generated schema.
+ * Custom properties ('--*') pass as string/number.
  */
-export const UnknownElementTagSchema = z.string().regex(UNKNOWN_TAG_PATTERN)
-
-export const getNodeSchema = (tag: string) => {
-  const result = ElementKeysSchema.safeParse(tag)
-  if (result.success) {
-    const knownTag = result.data
-    return z.object({
-      void: VOID_TAGS.has(tag),
-      attributes: ElementAttributeListSchema.shape[knownTag],
-    })
-  } else {
-    return z.object({
-      void: false,
-      attributes: DetailedHTMLAttributesSchema,
-    })
-  }
+export const validateAttribute = (property: string, value: unknown): boolean => {
+  return attributeListValidator({ [property]: value })
 }
