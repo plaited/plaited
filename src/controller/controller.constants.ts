@@ -1,5 +1,81 @@
 import { keyMirror } from '../utils.ts'
 
+/*
+ * @internal
+ *
+ * Central constants for hyperscript runtime, template creation, and DOM serialization.
+ * Defines Plaited's special attributes and DOM behavior.
+ *
+ * @remarks
+ * Implementation details:
+ * - VOID_TAGS and BOOLEAN_ATTRS align with HTML5 and SVG specs
+ * - P_TARGET & P_TRIGGER declare controller update and event wiring
+ * - Sets provide O(1) lookup performance for validation
+ *
+ * Known limitations:
+ * - Static lists may become outdated with HTML spec changes
+ * - No support for custom elements' boolean attributes
+ * - Electron-specific attributes hardcoded
+ * - Case-sensitive attribute matching
+ */
+
+/**
+ * Constant representing the attribute name (`p-target`) used to identify specific elements
+ * within a controller island for server-pushed render and attribute updates.
+ */
+export const P_TARGET = 'p-target'
+/**
+ * Constant representing the attribute name (`p-trigger`) used for declarative event binding,
+ * connecting DOM events to BP events sent by a controller island. Serialized values contain
+ * space-separated pairs of `event:action` (e.g., "click:doSomething focus:notify").
+ */
+export const P_TRIGGER = 'p-trigger'
+
+export const P_SCALE = 'p-scale'
+
+export const P_FORM = 'p-form'
+
+/**
+ * A Set containing HTML attribute names that are considered boolean attributes.
+ * Their presence on an element implies a `true` value, and their absence implies `false`.
+ * The attribute value itself is typically omitted in HTML serialization (e.g., `<input disabled>`).
+ * This set includes standard HTML boolean attributes and some specific to environments like Electron (`<webview>`).
+ */
+export const BOOLEAN_ATTRS = new Set([
+  // Media and content loading attributes.
+  'allowfullscreen',
+  'async',
+  'autofocus',
+  'autoplay',
+  'controls',
+  'default',
+  'defer',
+  'disablepictureinpicture',
+  'disableremoteplayback',
+  'download',
+  'loop',
+  'muted',
+  'nomodule',
+  'playsinline',
+  // Form and input state attributes.
+  'checked',
+  'disabled',
+  'formnovalidate',
+  'multiple',
+  'novalidate',
+  'readonly',
+  'required',
+  'reversed',
+  'selected',
+  // Accessibility and semantic attributes.
+  'inert',
+  'ismap',
+  'itemscope',
+  'open',
+  'popover',
+  'shadowrootdelegatesfocus',
+])
+
 /** @internal WebSocket close codes that warrant reconnect attempts. */
 export const UI_CORE_RETRY_STATUS_CODES = new Set([1006, 1012, 1013])
 
@@ -20,3 +96,65 @@ export const ERROR_TYPES = keyMirror(
   'web_socket',
   'form_submit',
 )
+
+/**
+ * Event keys used for messages emitted by the browser controller to the
+ * behavioral engine.
+ *
+ * @public
+ */
+export const CONTROLLER_OUTGOING_MESSAGE_TYPES = keyMirror(
+  'ui_event',
+  'error',
+  'form_submit',
+  'success',
+  'snapshot',
+  'scale_check_result',
+)
+
+/**
+ * Event keys used for messages emitted by the behavioral engine to the browser
+ * controller.
+ *
+ * @public
+ */
+export const CONTROLLER_INCOMING_MESSAGE_TYPES = keyMirror(
+  'attrs',
+  'render',
+  'dispatch_custom_event',
+  'navigate',
+  'scale_check',
+)
+
+/**
+ * Page lifecycle event keys observed by the browser controller and reported
+ * back to the server via snapshot messages.
+ *
+ * @public
+ */
+export const PAGE_EVENTS = keyMirror('pagereveal', 'pageswap', 'pagehide', 'pageshow')
+
+export const SCALE = keyMirror('s1', 's2', 's3', 's4', 's5', 's6', 'rel')
+
+export const SCALE_RANK = {
+  [SCALE.s1]: 1,
+  [SCALE.s2]: 2,
+  [SCALE.s3]: 3,
+  [SCALE.s4]: 4,
+  [SCALE.s5]: 5,
+  [SCALE.s6]: 6,
+  [SCALE.rel]: 0,
+} as const
+
+/**
+ * Supported DOM insertion modes for `render` protocol messages.
+ *
+ * @remarks
+ * These values align with the insertion positions accepted by the controller's
+ * DOM update path, plus `innerHTML` and `outerHTML` replacement modes.
+ *
+ * @public
+ */
+export const SWAP_MODES = keyMirror('afterbegin', 'afterend', 'beforebegin', 'beforeend', 'innerHTML', 'outerHTML')
+
+export const SWAP_TARGETS = keyMirror('parent', 'self')

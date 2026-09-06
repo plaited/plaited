@@ -2,7 +2,7 @@
  * @module css-schemas/generate
  *
  * Pure CSS property schema generator. Reads CSS property definition data
- * and produces the Zod schema source code for `src/shared/css.schemas.ts`.
+ * and produces the AJV (JSON Schema) source code for `src/tools/html/css.schemas.ts`.
  *
  * @remarks
  * This is a dev-only module used by the `run.ts` script. It is not part of
@@ -128,8 +128,13 @@ const generateLiteralSchema = (property: PropertyEntry): string => {
 
   switch (classification) {
     case 'enum':
+      // Empty keyword set means no string value is valid — emit `{ type: 'number' }`
+      // instead of `{ anyOf: [{ type: 'string', enum: [] }, { type: 'number' }] }`
+      // since AJV rejects empty enum arrays at compile time.
+      if (keywords.length === 0) return `{ type: 'number' }`
       return keywordsToEnum(keywords)
     case 'enum-or-number':
+      if (keywords.length === 0) return `{ type: 'number' }`
       return `{ anyOf: [${keywordsToEnum(keywords)}, { type: 'number' }] }`
     case 'string-or-number':
       return `{ type: ['string', 'number'] }`
@@ -232,25 +237,20 @@ ${objectCode}
     'export type CSSProperties = Record<string, string | number>',
     '',
     '/**',
-    ' * Per-property validator cache — compile lazily on first use so runtime',
-    ' * cost is paid only for properties actually encountered.',
+    ' * Whole-schema validator compiled once at module load. Validates a',
+    ' * `{ [property]: value }` object against `CSSPropertiesSchema` — known',
+    ' * properties use their per-property subschema; unknown properties fall',
+    " * through to `additionalProperties: { type: ['string', 'number'] }`.",
     ' */',
-    'const validatorCache = new Map<string, (value: unknown) => boolean>()',
+    'const cssValidator = ajv.compile(CSSPropertiesSchema)',
     '',
     '/**',
     ' * Validates one CSS property value against its generated schema.',
-    " * Custom properties ('--*') and unknown properties pass as string/number.",
+    " * Custom properties ('--*') pass as string/number.",
     ' */',
     'export const validateCSSValue = (property: string, value: unknown): boolean => {',
     "  if (property.startsWith('--')) return typeof value === 'string' || typeof value === 'number'",
-    '  const schema = (CSSPropertiesSchema.properties as Record<string, unknown>)[property]',
-    '  if (!schema) return false',
-    '  let validate = validatorCache.get(property)',
-    '  if (!validate) {',
-    '    validate = ajv.compile(schema as object)',
-    '    validatorCache.set(property, validate)',
-    '  }',
-    '  return validate(value)',
+    '  return cssValidator({ [property]: value })',
     '}',
     '',
   ].join('\n')

@@ -1,24 +1,20 @@
-import type { BPEvent, Disconnect } from '../main/behavioral.schemas.ts'
-import { BOOLEAN_ATTRS, P_FORM, P_SCALE, P_TARGET, P_TRIGGER, SCALE, SCALE_RANK } from '../main/html.constants.ts'
+import type { BPEvent, Disconnect } from '../behavioral/behavioral.types.ts'
 import {
+  BOOLEAN_ATTRS,
   CONTROLLER_INCOMING_MESSAGE_TYPES,
   CONTROLLER_OUTGOING_MESSAGE_TYPES,
+  P_FORM,
+  P_SCALE,
+  P_TARGET,
+  P_TRIGGER,
   PAGE_EVENTS,
+  SCALE,
+  SCALE_RANK,
   SWAP_MODES,
   SWAP_TARGETS,
-} from '../main/message.constants.ts'
-import type {
-  AttrsMessage,
-  ClientMessage,
-  DispatchCustomEventMessage,
-  NavigateMessage,
-  RenderMessage,
-  ScaleCheckMessage,
-  ServerMessage,
-} from '../main/message.schemas.ts'
-import { validateServerMessage } from '../main/message.schemas.ts'
-import { swapBoundary } from '../main/swap-boundary.ts'
-import { UI_CORE_MAX_RETRIES, UI_CORE_RETRY_STATUS_CODES } from './controller.constants.ts'
+  UI_CORE_MAX_RETRIES,
+  UI_CORE_RETRY_STATUS_CODES,
+} from './controller.constants.ts'
 import {
   ElementNotFoundError,
   FormSubmitError,
@@ -27,8 +23,19 @@ import {
   WebSocketError,
   WebSocketMessageError,
 } from './controller.errors.ts'
-import type { ControllerConstructorArgs, ControllerExtension } from './controller.types.ts'
+import type {
+  AttrsMessage,
+  ClientMessage,
+  ControllerConstructorArgs,
+  ControllerExtension,
+  DispatchCustomEventMessage,
+  NavigateMessage,
+  RenderMessage,
+  ScaleCheckMessage,
+  ServerMessage,
+} from './controller.types.ts'
 import { DelegatedListener } from './delegated-listener.ts'
+import { swapBoundary } from './swap-boundary.ts'
 
 const delegates = new WeakMap<EventTarget, DelegatedListener>()
 
@@ -56,15 +63,6 @@ const updateAttributes = ({
 
 const isPageShow = (event: Event): event is PageTransitionEvent => event.type === PAGE_EVENTS.pageshow
 
-/** Formats Ajv validation errors for the websocket error report path. */
-const ajvErrorsToMessage = (errors: unknown): string =>
-  Array.isArray(errors)
-    ? errors
-        .map((e) =>
-          `${(e as { instancePath?: string }).instancePath ?? ''} ${(e as { message?: string }).message ?? ''}`.trim(),
-        )
-        .join('; ')
-    : 'unknown validation failure'
 const isPageHide = (event: Event): event is PageTransitionEvent => event.type === PAGE_EVENTS.pagehide
 const isPageReveal = (event: Event): event is PageRevealEvent => event instanceof PageRevealEvent
 const isPageSwap = (event: Event): event is PageSwapEvent => event instanceof PageSwapEvent
@@ -428,9 +426,6 @@ export class Controller {
     let id: string | undefined
     try {
       const raw: unknown = JSON.parse(String(event.data))
-      if (!validateServerMessage(raw)) {
-        throw new Error(`invalid server message: ${ajvErrorsToMessage(validateServerMessage.errors)}`)
-      }
       // oneOf validates type + detail shape; narrow via the tag.
       const { type, detail } = raw as ServerMessage
       id = detail.id

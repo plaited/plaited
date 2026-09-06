@@ -35,13 +35,187 @@ escapes; validation is Bun test.
   pack-contributed behaviors. `Handler<T>` has no self-removal `disconnect`
   (caller-held `Disconnect` only). Tool pack data in `src/tools/` (read, bash,
   edit, write, grep, find, ls, binary) with JSON Schema + pure `run`.
-- **In-flight:** tool spec files (`bash.spec.ts`, `edit.spec.ts`,
-  `find.spec.ts`, `binary.spec.ts`) have pre-existing `result: unknown`
-  type-narrowing issues — follow-up fix needed.
-- **Active area:** provisioning handler design — moving tool provisioning
-  inside the kernel as an event-driven handler (not imperative boot function).
+  **`verify_frontiers` MCP tool** in `src/tools/verify-frontiers.ts`: verdict-only,
+  policy-free wrapper over `verifyFrontiers` (`useMCPServer` pattern, trust-boundary
+  via `validateThread`) — covers `src/tools/tests/verify-frontiers.spec.ts`.
+  **Registration gate reverted from the engine** (2024-09-03): the in-engine
+  `useAddThread` `verifyFrontiers` gate is removed; the gate moves to the kernel
+  (calls the function in-process before provisioning, configurable `maxDepth` +
+  retry on `truncated`). `src/main/tests/add-thread-gate.spec.ts` is dead — slated
+  for deletion.
+- **In-flight:** `src/agent/**` mid-refactor (zod→AJV, `tool.types.ts` deleted,
+  `provision-defaults.ts` default-import mismatch, `behavioral.types.ts` gone) —
+  `bun --bun tsc --noEmit` fails across `src/agent/`, `src/main.ts`, and several
+  `src/main/tests/*` from deleted modules. The new gate/tool files are type-clean
+  in isolation. Tool spec files (`bash.spec.ts`, `edit.spec.ts`, `find.spec.ts`,
+  `binary.spec.ts`) have pre-existing `result: unknown` type-narrowing issues.
+- **zod→AJV test cleanup batch (open):** 9 tsc errors + 1 runtime failure in
+  `src/main/tests/` from zod types/validators leaking into fixtures that now
+  expect AJV/JSON-schema shapes — `transform.spec.ts` ×7 (`Record<string,unknown>`
+  vs `JsonObject`), `frontier-analysis.spec.ts:13` (`Trace[]` mismatch),
+  `frontier-analysis.liveness.spec.ts:99` (stale premise: passes a Zod schema to
+  a `detailSchema: Record<string,unknown>` field — needs rewriting to a
+  JSON-schema literal, not a cast), `match-listener.spec.ts:639` (runtime:
+  `prefixItems` 2020-12 keyword). Shared root cause; batch in one pass, don't split.
+- **Active area (revised 2024-09-03):** finish the **`src/tools/`** surface first,
+  then lock the runtime, then build a **small kernel** that completes the agent
+  harness. The kernel uses the **MCP tool approach** (`useMCPServer` tools, not
+  the old `defineTool`/`addHandler` dispatch), is **controlled by behavioral
+  threads**, and **makes use of the new `transform` idiom** (the daemon-side
+  jq-style reshape: a matched event's `detail` is passed through `query` and
+  re-emitted as `target` — `behavioral.utils.ts:127`, `behavioral.schemas.ts:153`).
+  Provisioning-as-event-driven-handler is deferred until the kernel rebuild; the
+  old `src/agent/kernel.ts` (built on `addHandler`) is being replaced, not patched.
 
 ## Decision Log
+
+### 2024-09-03 — Build sequence: tools → lock runtime → small kernel
+
+- **Sequence:** (1) finish `src/tools/` (MCP `useMCPServer` tools), (2) lock
+  the runtime, (3) build a small kernel that completes the agent harness.
+- **The behavioral core IS the loop.** The super-step
+  (`computeFrontier → selectNextEvent → publish`) is the agent turn cycle — no
+  separate `runLoop`. The kernel is thin: set up the program, register the fixed
+  tool set, wire `useTrace` as the action channel, feed `user.prompt` in.
+- **`useTrace` async callback = the action channel** (replaces `useAddHandler`).
+  The engine does NOT await listeners (`behavioral.ts:28`, `void Promise.resolve(...)`
+  — non-awaiting by design). The action listener does its async work outside the
+  super-step and re-enters the result via `trigger`. The program synchronizes on
+  the *event*, not on the listener completing — a thread with `waitFor: ['T']`
+  yields; the listener fires, does I/O, `trigger`s `T` back; the next super-step
+  selects it. The behavioral core stays synchronous/deterministic; async I/O is
+  off to the side.
+- **Kernel shape:** MCP tool approach (tools are `useMCPServer` registrations),
+  controlled by behavioral threads, uses the `transform` idiom.
+- **Model-as-tool.** `request({ type: 'respond' })` → action listener calls
+  `useResponse` → triggers each stream event verbatim into the space. The model
+  is one tool in the fixed set, not special.
+- **`transform` idiom = the declarative synchronous reshape** (query → target,
+  no I/O). Pure-data counterpart to the action listener: `transform` for
+  reshaping, action listeners for I/O side effects. Both re-enter via the event
+  stream.
+- **Fixed tool set + threads + triggers = extension surface.** Tools are
+  built-in/fixed; behavior is threads; ingress is triggers. No new tools, no
+  handlers.
+- **`onSelection` is test-only.** The `useTrace` + selection-filter helper in
+  `src/main/tests/helpers.ts` is NOT the engine API and NOT the design direction
+  for `src/agent/`. How `useTrace` is consumed agent-side is undecided; do not
+  bake it into docs or the kernel.
+- **Doc/skill handler-mention updates deferred.** Stale `useAddHandler`/
+  `useFeedback`/`feedback_error` references should NOT be rewritten to describe
+  a `useTrace`-replacement story yet — that story is undecided. Pure *removal* of
+  provably-dead references is safe; replacing with an un-landed design is
+  speculative.
+- **Resolved: no engine error mechanism needed.** Split listener failures into
+  two classes: (1) tool/I/O failures (bash non-zero, model error, remote MCP
+  down) are *expected runtime outcomes* that return as **data** (`isError`,
+  terminal error event) — the kernel's action listener catches these and
+  `trigger`s a `T.error` event the program can `waitFor`/`block` on (kernel
+  convention, ~5 lines, not an engine feature); (2) genuine listener bugs
+  (uncaught throw) are rare because the kernel owns the listeners, they're
+  typed, and they're tested — the engine's `console.error` swallow
+  (`behavioral.ts:32`) is acceptable for this tail (surface to log, fix with a
+  test). The user-extensible surfaces sidestep uncaught-throw risk: remote MCPs
+  return `isError` data, skills are prose, threads are gated by `verifyFrontiers`.
+  So `feedback_error` has no successor at the engine layer; the error path is a
+  kernel convention.
+
+### 2024-09-03 — Drop MCP SDK; runtime internal-only; frontier-analysis → src/tools/
+
+- **Q2 — `src/main.ts` deleted permanently.** The runtime is internal to the
+  harness, not a published library. The package has no public entry point;
+  `behavioral()` is importable only by internal paths (controller, tools, the
+  future kernel). Matches "the agent is a `plaited` CLI command, the runtime is
+  internal." Not provisional — committed.
+- **Q1 — Drop the MCP SDK (`@modelcontextprotocol/*`) in favor of an AJV /
+  `defineTool`-style registrar.** The SDK is currently ceremony with no live
+  consumer — `use-mcp-server.ts` is a 3-line pass-through, and `new McpServer`
+  appears only in a test's in-memory transport; nothing in `bin/` or `src/agent/`
+  serves a server. The plan's Phase 2 already specified the target shape
+  (`defineTool` taking a `ToolArgs` data object with JSON Schema, validated by
+  AJV); the `useMCPServer` drift moved away from it. Dropping the SDK returns to
+  the plan. The tool *data* (name, inputSchema, outputSchema, description, run)
+  survives the swap; only the `server.registerTool` wrapper changes. MCP wire
+  protocol is deferred to a Phase 7 adapter if remote tool execution needs it —
+  tool definitions won't change, only the serving layer. This resolves the
+  "tool wiring drift" open question.
+- **Q3 — Move `src/main/frontier-analysis.ts` into `src/tools/`.** The runtime
+  does NOT import it (verified: `behavioral.ts`/`behavioral.utils.ts`/
+  `behavioral.types.ts`/`behavioral.constants.ts` have zero refs). The dep runs
+  the other way: `frontier-analysis.ts` imports FROM the runtime. Its only
+  non-test consumer is the `verify_frontiers` tool. So moving it next to its
+  consumer reflects the true dep direction, not an inversion. The gate (now
+  removed) was the only thing that ever pulled it into the engine.
+
+### 2024-09-03 — Gate moves out of the engine into the kernel
+
+- **Decision: the registration gate does NOT live in the engine.** Revert the
+  `useAddThread` gate added earlier this session (`behavioral.ts:272-293`):
+  `verifyFrontiers` is removed from `useAddThread`; the engine goes back to
+  `validateThread → generateRulesFunctions → useThread → running.add`, with
+  `add_thread_error` only on schema-invalid / actual exceptions.
+- **Rationale:** (1) the plan already said this — Phase 5.5 Layer 1: "Lives in
+  `src/agent/`, not the engine — the engine stays domain-agnostic and must not
+  pay exploration cost per `useAddThread`." The in-engine gate was drift. (2)
+  Moving the gate to the kernel enables **configurable `maxDepth` + retry on
+  `truncated`** (the whole point of moving it) instead of a hardcoded `maxDepth:
+  10` magic number. (3) The engine calling an MCP *tool* would invert the
+  dependency (engine → `src/tools/`); the kernel calls the `verifyFrontiers`
+  **function** in-process before `useAddThread` — no protocol round-trip.
+- **Coverage:** `src/main/tests/add-thread-gate.spec.ts` is now dead — it tests
+  engine gating that no longer exists. Delete it; coverage moves to a kernel
+  test when the kernel gate lands.
+- **`verify_frontiers` tool stays.** It is the external surface for the
+  autoresearch loop; the kernel calls the function directly.
+
+### 2024-09-03 — Frontier gate + verify_frontiers tool
+
+- **One tool, verdict-only.** `verify_frontiers` exposes `verifyFrontiers`
+  over the process edge returning `{ status, findings, livelocks, report }`.
+  No `computeThreadReward`/`threadGateReward` scalar wrapper — it's RL cargo the
+  no-fine-tuning premise jettisons (a scalar exists to feed a gradient; with no
+  gradient the agent maps `status → keep/discard` in its own loop), it bakes a
+  `truncated` policy the tool deliberately leaves to the caller, and it's a
+  pass-through rename of one expression (Runtime Wiring Style violation).
+- **Runtime gate policy: positive-proof only.** `useAddThread` admits only on
+  `verdict.status === 'verified'`; both `failed` and `truncated` are rejected
+  via `!== 'verified'`. No budget-escalation retry at the runtime layer — a
+  kernel registration path must not loop on `maxDepth` escalation. The tool,
+  by contrast, returns `report.truncated` so an agent autoresearch caller can
+  retry `truncated` variants with a higher `maxDepth` (caller policy, not gate
+  policy). Two layers, coherent: runtime = strict guardrail, tool = flexible
+  surface.
+- **Reuse the `add_thread_error` trace kind, enrich the payload.** No new trace
+  kind for gate rejection — `add_thread_error` already has `error: unknown[]`,
+  which carries `{ code, findings, livelocks, report }`. Schema stays; the
+  discriminator moves inside the `error` array.
+- **`progress` = event types, not thread labels.** `findLivelocks` matches
+  `progress` against `edge.selection.type`. The tool's `progress` describe text
+  reads "Event types that count as progress" (code is source of truth).
+- **Trust boundary via `validateThread`, not zod.** The tool's zod input makes
+  `rules` optional so the MCP framework doesn't reject before the handler runs;
+  the AJV `validateThread` (full `IdiomSchema`) is the authoritative boundary
+  validator, returning `{ isError, errors }` as structured output.
+- **`ok: z.boolean()` + optional verdict fields.** One `outputSchema` covers
+  success (`ok:true` + verdict) and error (`ok:false` + `isError`/`message`)
+  paths; success vs error is discriminated by `isError`/`ok`, not by schema
+  shape (matches `binary.ts`; a `z.discriminatedUnion` was considered but
+  rejected for consistency with the existing tool pattern).
+- **`once: true` is the verified-fixture idiom.** A looping `request`/`waitFor`
+  thread without `once` livelocks under `progress: [label]` (label ≠ the
+  requested event, so re-requesting makes no labeled progress). `once: true`
+  is also the `deadlock.spec.ts` pattern. Test fixtures for verified threads
+  must carry `once: true` or use a non-cyclic rule.
+- **`messages` is not exposed by the tool.** The exploration trace prefix is an
+  internal `Trace[]` shape an agent caller can't supply over JSON; the tool
+  always calls `verifyFrontiers` with `messages: []`.
+- **`truncated` is reachable at the self-check tier (resolved empirically).**
+  `progress: [label]` only converts *cyclic* would-be-truncations into
+  livelock-`failed`; an acyclic-but-deep chain (15 sync points, `once: true`)
+  truncates at `maxDepth: 10` with zero findings/livelocks. The gate's
+  `!== 'verified'` has two reachable branches — `failed` and `truncated` — both
+  covered by `add-thread-gate.spec.ts`. The `truncated`-rejection branch is
+  genuine defense-in-depth, not dead code.
 
 ### 2024-09-02 — Handler lifecycle
 
@@ -90,6 +264,42 @@ escapes; validation is Bun test.
   `plugin.loaded`? Both? What's the ingress event, and who emits it?
 - **Does the provisioning handler also handle the `tools`/`excludeTools`
   filtering, or does that happen before the tool list reaches the handler?**
+- **Gate location drift — RESOLVED (2024-09-03).** Gate moves out of the
+  engine (see Decision Log). The in-engine `useAddThread` gate is reverted;
+  the kernel will call `verifyFrontiers` (the function, in-process) before
+  provisioning, with configurable `maxDepth` + retry on `truncated`. Phase 5.5
+  Layer 1 text now matches the decision (gate in `src/agent/`, not engine) — no
+  phase fold needed; the drift was the code, now reverted.
+- **Tool wiring drift — RESOLVED (2024-09-03).** Drop the MCP SDK; tools
+  become `defineTool`-style units with AJV/JSON-Schema (the plan's Phase 2
+  shape). `verify_frontiers` and the other tools convert from `useMCPServer`
+  to the new registrar. Phase 5.5 Layer 2 text (which specified `defineTool`)
+  now matches — no phase fold needed; the drift was the `useMCPServer` code,
+  now being reverted.
+- **How does the small kernel consume `useTrace`?** Direction set (2024-09-03):
+  `useTrace` async callbacks ARE the action channel — a listener filtered on a
+  selected event type does the side effect and `trigger`s results back; the
+  program `waitFor`s the result event, not the listener. **Open sub-questions:**
+  (a) how the fixed MCP tool set (`useMCPServer` registrations) is invoked from
+  the action listener — does the kernel map selection→MCP-call→trigger, or are
+  tools invoked more directly; (b) does the model-stream tool trigger each
+  stream event as it arrives (preserving the spec-events-verbatim invariant) or
+  batch.
+- **Renderer/HTML tool: this pass or Phase 7 pack?** A stateless HTML transform
+  tool (caller passes HTML each call) is a clean `src/tools/` shape if the
+  Renderer class collapses to pure functions. But the plan routes rendering
+  through the Phase 7 pack seam. `html-rewriter.utils.ts` validators stay
+  library imports either way (pass-through wrapper = Runtime-Wiring-Style
+  violation).
+- **Does the `Renderer`/`html-rewriter.utils.ts` move belong in this tool pass,
+  or stay a Phase 7 pack-wrapped surface?** A stateless HTML transform tool
+  (caller passes the HTML string each call) is a clean `src/tools/` shape if
+  the Renderer class is collapsed to pure functions. But the plan routes
+  rendering through the Phase 7 pack seam, not built-in `src/tools/`. Decide
+  before Phase -2 relocation: collapse the class + add a built-in tool, or move
+  to `src/ui/` as a library and wrap in a pack later. `html-rewriter.utils.ts`
+  validators stay library imports in either case (pass-through wrapper =
+  Runtime-Wiring-Style violation).
 
 ## Phases
 

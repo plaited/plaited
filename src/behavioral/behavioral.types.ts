@@ -1,0 +1,546 @@
+import type { JSONSchemaType } from 'ajv'
+import Ajv2020 from 'ajv/dist/2020'
+import { DETAIL_MATCH, type FRONTIER_STATUS, IDIOMS, type TRACE_MESSAGE_KINDS } from './behavioral.constants.ts'
+
+/**
+ * Shared Ajv instance for the behavioral kernel.
+ *
+ * Uses draft 2020-12 (the current JSON Schema standard) so thread authors and
+ * model-generated threads author `detailSchema` as plain JSON Schema documents.
+ * `strict: false` because author-provided schemas may include unknown keywords
+ * or custom extensions; `validateSchema` makes Ajv reject structurally-broken
+ * schemas at compile time (surfaced as `add_thread_error` by `useAddThread`).
+ */
+export const ajv = new Ajv2020({ strict: true, validateSchema: true, strictRequired: false })
+
+/**
+ * A JSON object value — kernel detail payloads are JSON values.
+ * Plain structural type: Ajv validates payloads against per-listener schemas,
+ * so no recursive validator is needed for the type itself.
+ */
+export type JsonPrimitive = string | number | boolean | null
+export type JsonValue = JsonPrimitive | JsonValue[] | { [key: string]: JsonValue }
+export type JsonObject = { [key: string]: JsonValue }
+
+// ---------------------------------------------------------------------------
+// Validating JSON Schema documents (registration-time)
+// ---------------------------------------------------------------------------
+
+// ---------------------------------------------------------------------------
+// Core event shape
+// ---------------------------------------------------------------------------
+
+/**
+ * An event that threads request, wait for, block, or transform.
+ *
+ * @property type - Event identifier; listeners match on this.
+ * @property detail - JSON payload carried by the event.
+ * @property space - Optional scope stamp; listeners only match events in the same space.
+ *
+ * @public
+ */
+export type BPEvent = {
+  type: string
+  detail?: JsonObject
+  space?: string
+}
+
+export const BPEventSchema: JSONSchemaType<BPEvent> = {
+  type: 'object',
+  properties: {
+    type: { type: 'string' },
+    detail: { type: 'object', required: [], additionalProperties: true, nullable: true },
+    space: { type: 'string', nullable: true },
+  },
+  required: ['type'],
+  additionalProperties: false,
+}
+
+/** @internal */
+export const validateBPEvent = ajv.compile(BPEventSchema)
+
+/**
+ * A listener declaration inside a thread rule.
+ *
+ * @property type - Event type to match.
+ * @property detailSchema - Optional JSON Schema the event's `detail` must conform to.
+ * @property detailMatch - `'valid'` matches conforming details; `'invalid'` matches non-conforming ones.
+ *
+ * @public
+ */
+export type BPListener = {
+  type: string
+  detailSchema?: Record<string, unknown>
+  detailMatch?: (typeof DETAIL_MATCH)[keyof typeof DETAIL_MATCH]
+}
+
+export const BPListenerSchema: JSONSchemaType<BPListener> = {
+  type: 'object',
+  properties: {
+    type: { type: 'string' },
+    detailSchema: {
+      type: 'object', // <-- Must be at the top level of detailSchema
+      nullable: true,
+      allOf: [
+        { $ref: 'https://json-schema.org/draft/2020-12/schema' },
+        {
+          anyOf: [
+            { required: ['type'] },
+            { required: ['properties'] },
+            { required: ['$ref'] },
+            { required: ['enum'] },
+            { required: ['const'] },
+            { required: ['items'] },
+          ],
+        },
+      ],
+    },
+    detailMatch: { type: 'string', enum: Object.values(DETAIL_MATCH), nullable: true },
+  },
+  required: ['type'],
+  additionalProperties: false,
+}
+
+/**
+ * A transform listener — a {@link BPListener} plus the declarative reshaping
+ * contract executed by external code (the daemon): `query` (e.g. a jq
+ * expression) is applied to the matched event's `detail`, and the result is
+ * emitted as a `target` event.
+ *
+ * @public
+ */
+type TransformListener = BPListener & {
+  query: string
+  target: string
+}
+
+const TransformListenerSchema: JSONSchemaType<TransformListener> = {
+  type: 'object',
+  properties: {
+    type: { type: 'string' },
+    detailSchema: {
+      type: 'object', // <-- Must be at the top level of detailSchema
+      nullable: true,
+      allOf: [
+        { $ref: 'https://json-schema.org/draft/2020-12/schema' },
+        {
+          anyOf: [
+            { required: ['type'] },
+            { required: ['properties'] },
+            { required: ['$ref'] },
+            { required: ['enum'] },
+            { required: ['const'] },
+            { required: ['items'] },
+          ],
+        },
+      ],
+    },
+    detailMatch: { type: 'string', enum: Object.values(DETAIL_MATCH), nullable: true },
+    query: { type: 'string' },
+    target: { type: 'string' },
+  },
+  required: ['type', 'query', 'target'],
+  additionalProperties: false,
+}
+
+/**
+ * Registered listener — a {@link BPListener} stamped with its thread's `space`
+ * at registration time in {@link generateRulesFunctions}.
+ *
+ * @public
+ */
+export type RegisteredBPListener = BPListener & {
+  space?: string
+}
+
+/**
+ * Registered transform listener — a {@link TransformListener} with space
+ * stamping, post-registration.
+ *
+ * @public
+ */
+export type RegisteredTransformListener = TransformListener & {
+  space?: string
+}
+
+/**
+ * Represents a synchronization statement yielded by a behavioral rule step.
+ * This is the core mechanism through which b-threads communicate their behavioral intentions
+ * to the behavioral program scheduler at each step of execution.
+ *
+ * @property request - Propose an event to be selected and triggered. Only one request per sync point.
+ * @property waitFor - Wait for specific events. Thread pauses until a matching event is selected.
+ * @property block - Prevent specific events from being selected. Higher precedence than requests.
+ * @property interrupt - Events that terminate the thread's execution if selected.
+ * @property transform - Events to match, hand off to external reshaping, and re-enter via `target`.
+ *
+ * @remarks
+ * - Multiple listeners can be provided as arrays
+ * - Blocked events have precedence over requested events
+ * - Interrupts cause thread termination
+ *
+ * @see {@link ThreadSchema} for the tuple that embeds idiom rules
+ * @see {@link UseAddThread} for registering a thread from `Idioms[]` rules
+ */
+export type Idioms = {
+  [IDIOMS.waitFor]?: BPListener[]
+  [IDIOMS.interrupt]?: BPListener[]
+  [IDIOMS.block]?: BPListener[]
+  [IDIOMS.request]?: BPEvent
+  [IDIOMS.transform]?: TransformListener[]
+}
+
+const IdiomSchema: JSONSchemaType<Idioms> = {
+  type: 'object',
+  properties: {
+    [IDIOMS.waitFor]: { type: 'array', items: BPListenerSchema, minItems: 1, nullable: true },
+    [IDIOMS.interrupt]: { type: 'array', items: BPListenerSchema, minItems: 1, nullable: true },
+    [IDIOMS.block]: { type: 'array', items: BPListenerSchema, minItems: 1, nullable: true },
+    [IDIOMS.request]: { ...BPEventSchema, nullable: true },
+    [IDIOMS.transform]: { type: 'array', items: TransformListenerSchema, minItems: 1, nullable: true },
+  },
+  additionalProperties: false,
+}
+
+/**
+ * Registered idioms — the internal, post-registration representation.
+ *
+ * @remarks
+ * `detailSchema` stays a plain JSON object (it *is* JSON Schema), so registered
+ * listeners serialize without conversion — traces and the frontier visited-set
+ * key stay JSON-only by construction.
+ */
+export type RegisteredIdioms = {
+  [IDIOMS.waitFor]?: RegisteredBPListener[]
+  [IDIOMS.interrupt]?: RegisteredBPListener[]
+  [IDIOMS.block]?: RegisteredBPListener[]
+  [IDIOMS.request]?: BPEvent
+  [IDIOMS.transform]?: RegisteredTransformListener[]
+}
+
+/**
+ * Composes an ordered array of rule generators into a single behavioral thread generator.
+ *
+ * @param rules - Rule generators (each yielding one `RegisteredIdioms`) to compose.
+ * @param once - When `true`, the thread runs through the rules once and completes.
+ *               When omitted, the thread loops the rules indefinitely.
+ * @returns A generator function yielding the idioms from each rule in sequence.
+ *
+ * @remarks
+ * - The `once` flag controls repetition semantics for the behavioral scheduler.
+ * - Empty rule arrays complete immediately (the generator is `done` on first call).
+ *
+ * @see {@link generateRulesFunctions} for building the rule array from author-facing `Idioms`.
+ */
+
+export type RulesFunction = () => Generator<RegisteredIdioms, void, unknown>
+
+export type UseThread = (rules: RulesFunction[], once?: true) => RulesFunction
+
+/**
+ * @internal
+ * Represents a b-thread that is currently executing its rule sequence.
+ *
+ * These are threads that are active and running between synchronization
+ * points. Running threads are those that have been moved from the
+ * pending state after selecting an event that matches their `waitFor`
+ * or `request` declarations.
+ */
+export type RunningBid = {
+  /** Optional human-readable label for spawned thread instances. */
+  label: string
+  /** The priority level of the thread, used for resolving conflicts when multiple threads request events. Lower numbers = higher priority. */
+  priority: number
+  /** Internal iterator representing the thread's execution state. Holds the current position in the rule sequence. */
+  generator: IterableIterator<RegisteredIdioms>
+  ingress?: true
+  space?: string
+}
+
+/**
+ * @internal
+ * Represents a b-thread that has yielded and is waiting for the next event selection.
+ *
+ * These threads have reached a synchronization point and declared their `Idioms` (request, waitFor, block, interrupt).
+ * The thread remains in this state until an event matching its `waitFor`, `request`, or `interrupt` is selected.
+ */
+export type PendingBid = RegisteredIdioms & RunningBid
+
+/**
+ * @internal
+ * Represents a potential event candidate derived from a pending thread's request.
+ *
+ * During each super-step, the behavioral program collects all requested events as candidates,
+ * filters out those that are blocked, and selects the highest priority remaining candidate.
+ * This structure holds the metadata needed for this selection process.
+ */
+export type CandidateBid = {
+  /** The priority of the thread proposing the event. Lower numbers indicate higher priority in the selection process. */
+  priority: number
+  /** The type of the requested event, used for matching against waitFor, block, and interrupt declarations. */
+  type: string
+  /** Optional detail payload of the requested event, contains any data associated with this event. */
+  detail?: BPEvent['detail']
+
+  ingress?: true
+  space?: string
+}
+/**
+ * A b-thread registration tuple.
+ *
+ * @property label - Unique-ish human label; appears in trace messages.
+ * @property rules - The thread's synchronization statements, executed in order.
+ * @property once - When `true`, the thread runs its rules once and completes.
+ *
+ * @public
+ */
+export type Thread = {
+  label: string
+  once?: true
+  rules: Idioms[]
+}
+
+const ThreadSchema: JSONSchemaType<Thread> = {
+  type: 'object',
+  properties: {
+    label: { type: 'string', minLength: 1 },
+    once: { type: 'boolean', enum: [true], nullable: true },
+    rules: { type: 'array', items: IdiomSchema },
+  },
+  required: ['label', 'rules'],
+  additionalProperties: false,
+}
+
+/** @internal */
+export const validateThread = ajv.compile(ThreadSchema)
+
+export type Threads = Thread[]
+
+/**
+ * Structural contract for consumer-supplied trace extensions.
+ *
+ * @remarks
+ * `Trace` variants happen to satisfy this shape (each spreads it), but consumers
+ * should treat this as the contract their *extension* kinds must match when
+ * parameterizing {@link behavioral} with a custom trace type — namely
+ * `{ kind: string; timestamp: number }` plus kind-specific fields. Extension
+ * kinds should use literal `kind` strings distinct from the engine's
+ * `TRACE_MESSAGE_KINDS` so narrowing by `kind` remains unambiguous in the
+ * unified `Trace | T` stream.
+ *
+ * @see {@link Trace} for the engine's closed trace union
+ */
+type TraceBase = {
+  kind: string
+  timestamp: number
+  instanceId: string
+}
+
+// ---------------------------------------------------------------------------
+// Trace kinds
+// ---------------------------------------------------------------------------
+
+export type FrontierTrace = TraceBase & {
+  kind: typeof TRACE_MESSAGE_KINDS.frontier
+  step: number
+  status: (typeof FRONTIER_STATUS)[keyof typeof FRONTIER_STATUS]
+  candidates: CandidateBid[]
+  enabled: CandidateBid[]
+}
+
+export type SelectionTrace = TraceBase & {
+  kind: typeof TRACE_MESSAGE_KINDS.selection
+  step: number
+  selected: CandidateBid
+}
+
+export type DeadlockTrace = TraceBase & {
+  kind: typeof TRACE_MESSAGE_KINDS.deadlock
+  step: number
+}
+
+/**
+ * Emitted when `useAddThread` receives arguments that fail `ThreadSchema`
+ * validation or contain an un-compilable `detailSchema`.
+ *
+ * @property error - Ajv error objects (`ErrorObject[]`) describing the failure,
+ * narrowed via `Array.isArray`.
+ *
+ * @public
+ */
+export type AddThreadError = TraceBase & {
+  kind: typeof TRACE_MESSAGE_KINDS.add_thread_error
+  error: unknown[]
+  space?: string
+}
+
+export type SerializedThread = {
+  label: string
+  priority: number
+  ingress?: true
+  space?: string
+  request?: Pick<BPEvent, 'type' | 'detail'>
+  waitFor?: RegisteredBPListener[]
+  block?: RegisteredBPListener[]
+  interrupt?: RegisteredBPListener[]
+  transform?: RegisteredTransformListener[]
+}
+
+export type PendingBidsTrace = TraceBase & {
+  kind: typeof TRACE_MESSAGE_KINDS.pending_bids
+  step: number
+  threads: SerializedThread[]
+}
+
+export type TriggerError = TraceBase & {
+  kind: typeof TRACE_MESSAGE_KINDS.trigger_error
+  error: unknown[]
+  space?: string
+}
+
+export type InterruptTrace = TraceBase & {
+  kind: typeof TRACE_MESSAGE_KINDS.interrupt
+  selected: CandidateBid
+  threadLabel: string
+  step: number
+}
+
+export type TransformTrace = TraceBase & {
+  kind: typeof TRACE_MESSAGE_KINDS.transform
+  step: number
+  transformers: { query: string; target: string; thread: string }[]
+}
+
+/**
+ * Discriminated union of all observable moments from the BP engine.
+ * Consumers narrow by the `kind` field.
+ *
+ * @remarks
+ * Hand-written (not derived from a validator) — Ajv has no discriminated-union
+ * inference; the union is the type-level contract while the per-kind schemas
+ * are the runtime contract.
+ *
+ * @see {@link SelectionTrace} for event selection observations
+ * @see {@link DeadlockTrace} for blocked-candidate deadlock observations
+ *
+ * @public
+ */
+export type Trace =
+  | TriggerError
+  | FrontierTrace
+  | DeadlockTrace
+  | SelectionTrace
+  | AddThreadError
+  | PendingBidsTrace
+  | InterruptTrace
+  | TransformTrace
+
+/**
+ * @internal
+ * Frontier classification for the current pending set.
+ *
+ * This is an execution-oriented shape used by the scheduler to decide whether to:
+ * - select and process an event (`ready`)
+ * - emit a deadlock trace (`deadlock`)
+ * - do nothing (`idle`)
+ */
+export type Frontier = {
+  candidates: CandidateBid[]
+  enabled: CandidateBid[]
+  status: keyof typeof FRONTIER_STATUS
+}
+
+/**
+ * @internal
+ * Reconstructed replay result for downstream explorer slices.
+ */
+export type ReplayToFrontierResult = {
+  pending: Set<PendingBid>
+  frontier: Frontier
+}
+
+/**
+ * Represents a cleanup function for resource management.
+ * Follows the disposable pattern for proper lifecycle management.
+ *
+ * @returns `void` or `Promise<void>` for asynchronous cleanup.
+ *
+ * @see {@link UseFeedback} for event handler cleanup
+ * @see {@link UseTrace} for trace listener cleanup
+ */
+export type Disconnect = () => void | Promise<void>
+
+/**
+ * A callback function invoked with a trace of the behavioral program's state
+ * after each event selection step (super-step). This provides a hook for observing
+ * the program's internal execution state in real-time without affecting its behavior.
+ *
+ * The listener is called immediately after an event is selected but before the event is
+ * published to feedback handlers. This allows for real-time monitoring, logging,
+ * debugging, and analysis of the behavioral program's execution flow.
+ *
+ * @param msg - A trace describing the step (an engine {@link Trace} variant).
+ * @returns `void` for synchronous listeners or `Promise<void>` for asynchronous
+ *   processing. The return value is ignored by the behavioral program.
+ *
+ * @see {@link UseTrace} for registering trace listeners
+ * @see {@link Trace} for the engine's trace structure
+ */
+type TraceListener = (msg: Trace) => void | Promise<void>
+
+/**
+ * Represents a generic structure for event detail payloads.
+ * It's a record where keys are string identifiers (typically event property names)
+ * and values can be of any type. This type is often used as a constraint
+ * in more specific event handling types to allow for arbitrary data.
+ *
+ * It serves as the default type for the `Details` generic parameter in `Handlers<Details>`,
+ * meaning if no specific event map is provided, handlers will expect `EventDetails` for
+ * their payloads.
+ */
+// biome-ignore lint/suspicious/noExplicitAny: Default event map allows any detail type, constrained by Handlers<T>
+export type EventDetails = Record<string, any>
+
+/**
+ * Hook for monitoring internal state transitions of the behavioral program.
+ * Provides debugging, visualization, and analysis capabilities.
+ *
+ * @param listener - Callback receiving traces after each event selection.
+ * @returns Disconnect function for cleanup.
+ *
+ * @remarks
+ * - Called before feedback handlers
+ * - Doesn't affect program execution
+ * - Useful for debugging, tracing, and eval capture (see the `eval` skill)
+ *
+ * @see {@link Trace} for the engine's trace structure
+ * @see {@link TraceListener} for listener type
+ */
+export type UseTrace = (listener: TraceListener) => Disconnect
+
+export type AddThread = (args: Thread) => void
+
+export type UseAddThread = (space?: string) => AddThread
+
+/**
+ * Injects external events into the behavioral program.
+ * Primary interface for external systems to communicate with the program.
+ *
+ * @param args - Event to trigger, including its `type` and optional `detail`.
+ *
+ * @remarks
+ * - Triggered events have highest priority (0)
+ * - Can be blocked by active threads
+ * - Initiates new execution cycle
+ *
+ * @see {@link BPEvent} for event structure
+ * @see {@link PlaitedTrigger} for enhanced trigger
+ */
+export type Trigger = <T extends BPEvent>(args: T) => void
+
+export type UseTrigger = (space?: string) => Trigger
+
+export type SendTrace = {
+  (value: Trace): void
+  subscribe(listener: (msg: Trace) => void | Promise<void>): () => void
+}
