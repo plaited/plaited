@@ -1,5 +1,4 @@
-import type { BPEvent } from '../main/behavioral.schemas.ts'
-import type { Disconnect } from '../main/behavioral.types.ts'
+import type { BPEvent, Disconnect } from '../main/behavioral.schemas.ts'
 import { BOOLEAN_ATTRS, P_FORM, P_SCALE, P_TARGET, P_TRIGGER, SCALE, SCALE_RANK } from '../main/html.constants.ts'
 import {
   CONTROLLER_INCOMING_MESSAGE_TYPES,

@@ -1,34 +1,19 @@
-import { isTypeOf } from '../utils.ts'
 import { FRONTIER_STATUS, IDIOMS, TRACE_MESSAGE_KINDS } from './behavioral.constants.ts'
 import type {
   BPEvent,
+  CandidateBid,
+  Frontier,
   Idioms,
+  PendingBid,
   RegisteredBPListener,
   RegisteredIdioms,
   RegisteredTransformListener,
-} from './behavioral.schemas.ts'
-import { ajv, validateDetailSchema } from './behavioral.schemas.ts'
-import type {
-  CandidateBid,
-  Frontier,
-  PendingBid,
   RulesFunction,
   RunningBid,
   SendTrace,
   UseThread,
-} from './behavioral.types.ts'
-
-/**
- * @internal
- * Type guard to check if an unknown value conforms to the `BPEvent` structure.
- */
-export const isBPEvent = (data: unknown): data is BPEvent => {
-  return (
-    isTypeOf<{ [key: string]: unknown }>(data, 'object') &&
-    Object.hasOwn(data, 'type') &&
-    isTypeOf<string>(data.type, 'string')
-  )
-}
+} from './behavioral.schemas.ts'
+import { ajv } from './behavioral.schemas.ts'
 
 /**
  * @internal
@@ -50,7 +35,7 @@ export const isListeningFor = ({ type, detail, space }: CandidateBid) => {
 const detailValidators = new WeakMap<RegisteredBPListener | RegisteredTransformListener, (detail: unknown) => boolean>()
 
 /** @internal — called from generateRulesFunctions when a listener is registered. */
-export const compileListenerValidator = (listener: RegisteredBPListener | RegisteredTransformListener): void => {
+const compileListenerValidator = (listener: RegisteredBPListener | RegisteredTransformListener): void => {
   if (listener.detailSchema && !detailValidators.has(listener)) {
     try {
       detailValidators.set(listener, ajv.compile(listener.detailSchema))
@@ -59,24 +44,6 @@ export const compileListenerValidator = (listener: RegisteredBPListener | Regist
     }
   }
 }
-
-/**
- * Validates + compiles a raw `detailSchema` at registration time; throws on
- * keyword-invalid or un-compilable documents. Called from
- * generateRulesFunctions so useAddThread's try/catch surfaces failures as
- * add_thread_error — never at match time inside the engine loop.
- */
-export const compileDetailSchema = (schema: NonNullable<RegisteredBPListener['detailSchema']>): void => {
-  if (!validateDetailSchema(schema)) {
-    throw new Error('detailSchema is not a valid JSON Schema document')
-  }
-  try {
-    ajv.compile(schema)
-  } catch (error) {
-    throw new Error(`un-compilable detailSchema: ${(error as Error).message}`)
-  }
-}
-
 /**
  * @internal
  * Computes the execution frontier from pending bids.
@@ -86,7 +53,7 @@ export const compileDetailSchema = (schema: NonNullable<RegisteredBPListener['de
  * - the subset enabled after applying block listeners
  * - a scheduler-facing status classification
  */
-export const computeFrontier = ({ pending }: { pending: Set<PendingBid> }): Frontier => {
+export const computeFrontier = (pending: Set<PendingBid>): Frontier => {
   const blocked: RegisteredBPListener[] = []
   const candidates: CandidateBid[] = []
 
@@ -157,11 +124,14 @@ export const resumePendingThreadsForSelectedEvent = ({
   instanceId: string
   step: number
 }) => {
+  const transformers: { query: string; target: string; thread: string }[] = []
   for (const bid of pending) {
     const { waitFor, request, generator, interrupt, transform, label } = bid
     const isInterrupted = interrupt?.some(isListeningFor(selectedEvent))
     const isWaitedFor = waitFor?.some(isListeningFor(selectedEvent))
-    const isTransform = transform?.filter(isListeningFor(selectedEvent))
+    const isTransform = transform?.flatMap((listener) =>
+      isListeningFor(selectedEvent)(listener) ? { target: listener.target, query: listener.query, thread: label } : [],
+    )
     const hasPendingRequest = request && eventMatchesCandidate(request, selectedEvent)
     if (isInterrupted) {
       generator.return?.()
@@ -181,28 +151,13 @@ export const resumePendingThreadsForSelectedEvent = ({
       pending.delete(bid)
     }
     if (isTransform?.length) {
-      sendTrace?.({
-        kind: TRACE_MESSAGE_KINDS.transform,
-        timestamp: Date.now(),
-        step,
-        instanceId,
-        transform: isTransform,
-        selected: selectedEvent,
-        threadLabel: label,
-      })
+      transformers.push(...isTransform)
     }
   }
+  return transformers
 }
 
 export const generateRulesFunctions = (rules: Idioms[], space?: string): RulesFunction[] => {
-  // Fail fast on un-compilable detailSchemas: Ajv throws here, so
-  // useAddThread's try/catch surfaces it as add_thread_error — never at
-  // match time inside the engine loop.
-  for (const { waitFor, block, interrupt, transform } of rules) {
-    for (const listener of [...(waitFor ?? []), ...(block ?? []), ...(interrupt ?? []), ...(transform ?? [])]) {
-      if (listener.detailSchema) compileDetailSchema(listener.detailSchema)
-    }
-  }
   const syncs: RulesFunction[] = []
   for (const { request, waitFor, block, interrupt, transform } of rules) {
     const registeredIdioms: RegisteredIdioms = {}

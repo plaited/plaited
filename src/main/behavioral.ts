@@ -1,15 +1,17 @@
 import { ueid } from '../utils.ts'
 import { FRONTIER_STATUS, TRACE_MESSAGE_KINDS } from './behavioral.constants.ts'
-import { type Trace, validateBPEvent, validateThread } from './behavioral.schemas.ts'
-import type {
-  CandidateBid,
-  PendingBid,
-  RunningBid,
-  SendTrace,
-  UseAddThread,
-  UseTrace,
-  UseTrigger,
-} from './behavioral.types.ts'
+import {
+  type CandidateBid,
+  type PendingBid,
+  type RunningBid,
+  type SendTrace,
+  type Trace,
+  type UseAddThread,
+  type UseTrace,
+  type UseTrigger,
+  validateBPEvent,
+  validateThread,
+} from './behavioral.schemas.ts'
 import {
   advanceRunningToPending,
   computeFrontier,
@@ -17,55 +19,6 @@ import {
   resumePendingThreadsForSelectedEvent,
   useThread,
 } from './behavioral.utils.ts'
-
-/**
- * @internal
- * Serializes the pending set into a trace-friendly thread list.
- */
-const serializePending = (pending: Set<PendingBid>) =>
-  Array.from(pending).map(({ waitFor, block, interrupt, request, transform, generator: _gen, ...rest }) => ({
-    ...rest,
-    // request is field-picked to { type, detail } so non-trace fields never
-    // enter any SnapshotMessage (frontier-analysis invariant).
-    ...(request && {
-      request: {
-        type: request.type,
-        ...(request.detail === undefined ? {} : { detail: request.detail }),
-      },
-    }),
-    ...(waitFor && { waitFor }),
-    ...(block && { block }),
-    ...(interrupt && { interrupt }),
-    ...(transform && { transform }),
-  }))
-
-/**
- * @internal
- * Projects a {@link CandidateBid} to the JSON-only trace shape (`priority`,
- * `type`, `detail`, `ingress`, `space`).
- *
- * Frontiers must stay JSON so frontier analysis (trace replay/matching) and the
- * visited-set key never observe non-serializable values.
- */
-const toCandidateSnapshot = ({ priority, type, detail, ingress, space }: CandidateBid) => ({
-  priority,
-  type,
-  ...(detail === undefined ? {} : { detail }),
-  ...(ingress === undefined ? {} : { ingress }),
-  ...(space === undefined ? {} : { space }),
-})
-
-/**
- * @internal
- * Projects the selected candidate to the JSON-only {@link SnapshotEvent} shape
- * (`type`, `detail`, `ingress`, `space`).
- */
-const toSelectedSnapshot = ({ type, detail, ingress, space }: CandidateBid) => ({
-  type,
-  ...(detail === undefined ? {} : { detail }),
-  ...(ingress === undefined ? {} : { ingress }),
-  ...(space === undefined ? {} : { space }),
-})
 
 const createSubject = (): SendTrace => {
   const listeners = new Set<(value: Trace) => void | Promise<void>>()
@@ -188,19 +141,16 @@ export const behavioral = (options?: { instanceId?: string }) => {
       timestamp: Date.now(),
       step,
       instanceId,
-      threads: serializePending(pending),
+      threads: [...pending].map(({ generator: _, ...rest }) => rest),
     })
 
-    const frontier = computeFrontier({ pending })
-    const { enabled, candidates } = frontier
+    const frontier = computeFrontier(pending)
     sendTrace({
       kind: TRACE_MESSAGE_KINDS.frontier,
       timestamp: Date.now(),
       step,
       instanceId,
-      status: frontier.status,
-      candidates: candidates.map(toCandidateSnapshot),
-      enabled: enabled.map(toCandidateSnapshot),
+      ...frontier,
     })
 
     if (frontier.status === FRONTIER_STATUS.ready) {
@@ -235,7 +185,7 @@ export const behavioral = (options?: { instanceId?: string }) => {
    * @param selectedEvent - Event candidate selected for this step.
    */
   function nextStep(selectedEvent: CandidateBid, stepId: number) {
-    resumePendingThreadsForSelectedEvent({
+    const transformers = resumePendingThreadsForSelectedEvent({
       selectedEvent,
       running,
       pending,
@@ -243,12 +193,20 @@ export const behavioral = (options?: { instanceId?: string }) => {
       instanceId,
       step: stepId,
     })
+    transformers.length &&
+      sendTrace?.({
+        kind: TRACE_MESSAGE_KINDS.transform,
+        timestamp: Date.now(),
+        step: stepId,
+        instanceId,
+        transformers,
+      })
     sendTrace({
       kind: TRACE_MESSAGE_KINDS.selection,
       timestamp: Date.now(),
       step: stepId,
       instanceId,
-      selected: toSelectedSnapshot(selectedEvent),
+      selected: selectedEvent,
     })
     /**
      * @internal

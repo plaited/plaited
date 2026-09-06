@@ -25,16 +25,19 @@ import { ueid } from '../utils.ts'
 import { FRONTIER_STATUS, TRACE_MESSAGE_KINDS } from './behavioral.constants.ts'
 import type {
   BPEvent,
+  CandidateBid,
+  Frontier,
   FrontierTrace,
+  PendingBid,
   RegisteredBPListener,
   RegisteredIdioms,
   RegisteredTransformListener,
+  ReplayToFrontierResult,
+  RunningBid,
   SelectionTrace,
   Thread,
   Trace,
-  TraceEvent,
 } from './behavioral.schemas.ts'
-import type { CandidateBid, Frontier, PendingBid, ReplayToFrontierResult, RunningBid } from './behavioral.types.ts'
 import {
   advanceRunningToPending,
   computeFrontier,
@@ -108,11 +111,11 @@ const createFrontierTrace = ({
 })
 
 const createSelectionTrace = ({
-  event,
+  selected,
   step,
   instanceId,
 }: {
-  event: BPEvent & { ingress?: true }
+  selected: CandidateBid
   step: number
   instanceId: string
 }): SelectionTrace => ({
@@ -120,12 +123,7 @@ const createSelectionTrace = ({
   timestamp: Date.now(),
   instanceId,
   step,
-  selected: {
-    type: event.type,
-    ...(event.detail === undefined ? {} : { detail: event.detail }),
-    ...(event.ingress === undefined ? {} : { ingress: event.ingress }),
-    ...(event.space === undefined ? {} : { space: event.space }),
-  },
+  selected,
 })
 
 const createDeadlockTrace = ({ step, instanceId }: { step: number; instanceId: string }): Trace => ({
@@ -135,12 +133,12 @@ const createDeadlockTrace = ({ step, instanceId }: { step: number; instanceId: s
   step,
 })
 
-const matchesSelectedEvent = ({ candidate, selected }: { candidate: CandidateBid; selected: TraceEvent }) =>
+const matchesSelectedEvent = ({ candidate, selected }: { candidate: CandidateBid; selected: CandidateBid }) =>
   candidate.type === selected.type &&
   candidate.space === selected.space &&
   Bun.deepEquals(candidate.detail, selected.detail)
 
-const addIngressTriggerToPending = ({ pending, selected }: { pending: Set<PendingBid>; selected: TraceEvent }) => {
+const addIngressTriggerToPending = ({ pending, selected }: { pending: Set<PendingBid>; selected: CandidateBid }) => {
   const triggerThread = function* () {
     yield {
       request: {
@@ -250,7 +248,7 @@ export const replayToFrontier = ({
       addIngressTriggerToPending({ pending, selected })
     }
 
-    const frontier = computeFrontier({ pending })
+    const frontier = computeFrontier(pending)
     const enabled = [...frontier.enabled].sort((left, right) => left.priority - right.priority)
     const matched = enabled.find((candidate) => matchesSelectedEvent({ candidate, selected }))
 
@@ -271,7 +269,7 @@ export const replayToFrontier = ({
 
   return {
     pending,
-    frontier: computeFrontier({ pending }),
+    frontier: computeFrontier(pending),
   }
 }
 
@@ -319,18 +317,7 @@ const getRequestSuccessors = ({
       ? [...frontier.enabled].sort((left, right) => left.priority - right.priority).slice(0, 1)
       : frontier.enabled
 
-  return enabled.map((candidate) =>
-    createSelectionTrace({
-      step,
-      instanceId,
-      event: {
-        type: candidate.type,
-        ...(candidate.detail === undefined ? {} : { detail: candidate.detail }),
-        ...(candidate.ingress === undefined ? {} : { ingress: candidate.ingress }),
-        ...(candidate.space === undefined ? {} : { space: candidate.space }),
-      },
-    }),
-  )
+  return enabled.map((candidate) => createSelectionTrace({ selected: candidate, step, instanceId }))
 }
 
 const getTriggerSuccessors = ({
@@ -360,7 +347,8 @@ const getTriggerSuccessors = ({
     const selection = createSelectionTrace({
       step,
       instanceId,
-      event: {
+      selected: {
+        priority: 0,
         type: trigger.type,
         ...(trigger.detail === undefined ? {} : { detail: trigger.detail }),
         ...(trigger.space === undefined ? {} : { space: trigger.space }),
@@ -463,7 +451,7 @@ export type StateNode = {
   /** Selection depth at first discovery (BFS-shortest under bfs; arbitrary under dfs). */
   step: number
   /** Labeled outgoing edges: the event selected to reach each successor state. */
-  successors: Array<{ selection: TraceEvent; to: string }>
+  successors: Array<{ selection: CandidateBid; to: string }>
 }
 
 /**
@@ -693,7 +681,7 @@ export type ExploreFrontiersResult = {
 type WorkItem = {
   messages: Trace[] // what you already push
   from?: string // stateKey of the state this item was pushed FROM
-  via?: TraceEvent // the selection that was appended to get here
+  via?: CandidateBid // the selection that was appended to get here
 }
 
 /**

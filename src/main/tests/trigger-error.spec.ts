@@ -39,3 +39,81 @@ describe('trigger', () => {
     expect(received).toEqual([{ id: 99 }])
   })
 })
+
+describe('trigger_error isolation — no error pooling across calls', () => {
+  test('sequential invalid triggers each carry only their own errors', () => {
+    const program = behavioral()
+    const { useTrigger } = program
+    const trigger = useTrigger()
+
+    const traces: Array<{ kind: string; error?: unknown[]; space?: string }> = []
+    program.useTrace((msg: any) => {
+      if (msg.kind === 'trigger_error') traces.push(msg)
+    })
+
+    // Three invalid triggers with distinct failure shapes
+    trigger({ type: 42 } as any) // wrong type field
+    trigger({ space: 'no-type-here' } as any) // missing type
+    trigger({ type: 'x', space: 123 } as any) // space is a number
+
+    expect(traces).toHaveLength(3)
+
+    // Each trace's errors match only that call's validation failure
+    const first = traces[0]!
+    const second = traces[1]!
+    const third = traces[2]!
+
+    // First: type is 42 (not string)
+    expect(Array.isArray(first.error)).toBe(true)
+    expect((first.error as unknown[]).length).toBeGreaterThan(0)
+    const firstMsgs = (first.error as Array<{ message?: string }>).map((e) => e.message ?? '').join(' ')
+    expect(firstMsgs).toContain('string')
+
+    // Second: missing type — different error than the first
+    expect(Array.isArray(second.error)).toBe(true)
+    const secondMsgs = (second.error as Array<{ message?: string; params?: Record<string, unknown> }>)
+      .map((e) => e.message ?? '')
+      .join(' ')
+    expect(secondMsgs).toContain('required')
+
+    // Third: space is a number — error mentions space, not type
+    expect(Array.isArray(third.error)).toBe(true)
+    const thirdStr = JSON.stringify(third.error)
+    expect(thirdStr).toContain('space')
+
+    // Critical: the first trace's errors must NOT contain the second or third call's errors
+    const firstStr = JSON.stringify(first.error)
+    expect(firstStr).not.toContain('required')
+    expect(firstStr).not.toContain('space')
+  })
+
+  test('valid trigger between invalid ones does not leak stale errors into the next trace', () => {
+    const program = behavioral()
+    const { useAddThread, useTrigger } = program
+    const addThread = useAddThread()
+    const trigger = useTrigger()
+
+    const triggerErrors: unknown[][] = []
+    program.useTrace((msg: any) => {
+      if (msg.kind === 'trigger_error') triggerErrors.push(msg.error ?? [])
+    })
+
+    addThread({ label: 'listener', rules: [{ waitFor: [{ type: 'valid_event' }] }], once: true })
+
+    // Invalid → valid → invalid
+    trigger({ type: 42 } as any)
+    trigger({ type: 'valid_event' })
+    trigger({ space: 'missing-type' } as any)
+
+    // Two trigger_error traces (the valid one doesn't emit trigger_error)
+    expect(triggerErrors).toHaveLength(2)
+
+    // The second invalid trigger's errors are fresh — not accumulated from the first
+    const firstCount = (triggerErrors[0] as unknown[]).length
+    const secondCount = (triggerErrors[1] as unknown[]).length
+    // First: type is 42 → 1 error; Second: space is number → 1 error
+    // If pooled, the second would have ≥2 errors
+    expect(firstCount).toBe(1)
+    expect(secondCount).toBe(1)
+  })
+})
