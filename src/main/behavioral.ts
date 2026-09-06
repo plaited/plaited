@@ -19,6 +19,7 @@ import {
   resumePendingThreadsForSelectedEvent,
   useThread,
 } from './behavioral.utils.ts'
+import { verifyFrontiers } from './frontier-analysis.ts'
 
 const createSubject = (): SendTrace => {
   const listeners = new Set<(value: Trace) => void | Promise<void>>()
@@ -268,6 +269,28 @@ export const behavioral = (options?: { instanceId?: string }) => {
       const { label, rules, once } = args
       try {
         const syncPoints = generateRulesFunctions(rules, space)
+        const verdict = verifyFrontiers({
+          threads: [args],
+          maxDepth: 10,
+          progress: [label],
+        })
+        if (verdict.status !== 'verified') {
+          sendTrace({
+            kind: TRACE_MESSAGE_KINDS.add_thread_error,
+            timestamp: Date.now(),
+            instanceId,
+            error: [
+              {
+                code: verdict.status,
+                findings: verdict.findings,
+                livelocks: verdict.livelocks,
+                report: verdict.report,
+              },
+            ],
+            space,
+          })
+          return
+        }
         const thread = useThread(syncPoints, once)
         running.add({
           priority: running.size + 1,
