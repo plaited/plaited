@@ -3,7 +3,7 @@ import * as path from 'node:path'
 import type { JSONSchemaType } from 'ajv'
 import * as z from 'zod'
 import { type InputContentPart, InputContentPartSchema } from './responses/open-responses.schemas.ts'
-import { formatSize, DEFAULT_MAX_BYTES as MAX_BYTES, truncateHead } from './truncate.ts'
+import { formatSize, DEFAULT_MAX_BYTES as MAX_BYTES, type TruncationResult, truncateHead } from './truncate.ts'
 import { useTool } from './use-tool.ts'
 
 // ----------------------------------------------------------------
@@ -327,17 +327,10 @@ export const ReadInputSchema: JSONSchemaType<Input> = {
   additionalProperties: false,
 }
 
-type TruncationDetail = {
-  truncatedBy: 'lines' | 'bytes'
-  totalLines: number
-  outputLines: number
-  firstLineExceedsLimit: boolean
-}
-
 type Output = {
   content: InputContentPart[]
   truncated?: boolean
-  truncation?: TruncationDetail | null
+  truncation?: TruncationResult
   message?: string
   isError?: boolean
 }
@@ -353,7 +346,48 @@ const inputContentPartJsonSchema = z.toJSONSchema(InputContentPartSchema) as Rec
 // the embedded sub-schema (AJV rejects $schema outside the root document).
 delete inputContentPartJsonSchema.$schema
 
-export const ReadOutputSchema: JSONSchemaType<Output> = {
+// TruncationResult has a nullable-enum field (truncatedBy: 'lines' | 'bytes'
+// | null) that JSONSchemaType cannot statically verify. Define the schema as a
+// separate const and cast through `unknown` — same pattern as
+// inputContentPartJsonSchema above. AJV validates the shape at runtime.
+const truncationResultJsonSchema = {
+  type: 'object' as const,
+  nullable: true,
+  properties: {
+    content: { type: 'string' as const },
+    truncated: { type: 'boolean' as const },
+    truncatedBy: { type: 'string' as const, enum: ['lines', 'bytes'], nullable: true },
+    totalLines: { type: 'integer' as const },
+    totalBytes: { type: 'integer' as const },
+    outputLines: { type: 'integer' as const },
+    outputBytes: { type: 'integer' as const },
+    lastLinePartial: { type: 'boolean' as const },
+    firstLineExceedsLimit: { type: 'boolean' as const },
+    maxLines: { type: 'integer' as const },
+    maxBytes: { type: 'integer' as const },
+  },
+  required: [
+    'content',
+    'truncated',
+    'truncatedBy',
+    'totalLines',
+    'totalBytes',
+    'outputLines',
+    'outputBytes',
+    'lastLinePartial',
+    'firstLineExceedsLimit',
+    'maxLines',
+    'maxBytes',
+  ],
+  additionalProperties: false,
+  description: 'full TruncationResult from truncateHead — present when truncation occurred',
+}
+
+// The full ReadOutputSchema is cast through `unknown` because
+// TruncationResult.truncatedBy ('lines' | 'bytes' | null) is a nullable enum
+// that JSONSchemaType cannot statically verify — same limitation as the
+// Zod-derived inputContentPartJsonSchema above. AJV validates at runtime.
+export const ReadOutputSchema = {
   type: 'object',
   properties: {
     content: {
@@ -361,25 +395,13 @@ export const ReadOutputSchema: JSONSchemaType<Output> = {
       items: inputContentPartJsonSchema as unknown as JSONSchemaType<InputContentPart>,
     },
     truncated: { type: 'boolean', nullable: true },
-    truncation: {
-      type: 'object',
-      nullable: true,
-      properties: {
-        truncatedBy: { type: 'string', enum: ['lines', 'bytes'] },
-        totalLines: { type: 'integer' },
-        outputLines: { type: 'integer' },
-        firstLineExceedsLimit: { type: 'boolean' },
-      },
-      required: ['truncatedBy', 'totalLines', 'outputLines', 'firstLineExceedsLimit'],
-      additionalProperties: false,
-      description: 'present when truncation occurred',
-    },
+    truncation: truncationResultJsonSchema,
     message: { type: 'string', nullable: true, description: 'error/detail note' },
     isError: { type: 'boolean', nullable: true, description: 'true when the operation failed' },
   },
   required: ['content'],
   additionalProperties: false,
-}
+} as unknown as JSONSchemaType<Output>
 
 // ----------------------------------------------------------------
 // Run function
@@ -528,18 +550,11 @@ export const read = useTool(
     // Byte-accurate, UTF-8-safe truncation — never .slice() by code units.
     const truncation = truncateHead(selectedContent)
     let outputText: string
-    let truncationDetail: TruncationDetail | null = null
 
     if (truncation.firstLineExceedsLimit) {
       // First line alone exceeds the byte limit — point the model at a bash fallback.
       const firstLineSize = formatSize(Buffer.byteLength(allLines[startLine] ?? '', 'utf-8'))
       outputText = `[Line ${startLineDisplay} is ${firstLineSize}, exceeds ${formatSize(MAX_BYTES)} limit. Use bash: sed -n '${startLineDisplay}p' ${filePath} | head -c ${MAX_BYTES}]`
-      truncationDetail = {
-        truncatedBy: 'bytes',
-        totalLines: truncation.totalLines,
-        outputLines: 0,
-        firstLineExceedsLimit: true,
-      }
     } else if (truncation.truncated) {
       // Truncation occurred — build an actionable continuation notice.
       const endLineDisplay = startLineDisplay + truncation.outputLines - 1
@@ -549,12 +564,6 @@ export const read = useTool(
         outputText += `\n\n[Showing lines ${startLineDisplay}-${endLineDisplay} of ${totalFileLines}. Use offset=${nextOffset} to continue.]`
       } else {
         outputText += `\n\n[Showing lines ${startLineDisplay}-${endLineDisplay} of ${totalFileLines} (${formatSize(MAX_BYTES)} limit). Use offset=${nextOffset} to continue.]`
-      }
-      truncationDetail = {
-        truncatedBy: truncation.truncatedBy!,
-        totalLines: truncation.totalLines,
-        outputLines: truncation.outputLines,
-        firstLineExceedsLimit: false,
       }
     } else if (userLimitedLines !== undefined && startLine + userLimitedLines < totalFileLines) {
       // User-specified limit stopped early, but the file still has more content.
@@ -569,8 +578,9 @@ export const read = useTool(
       content: [textPart(outputText)],
       truncated: truncation.truncated || truncation.firstLineExceedsLimit,
     }
+    // Pass the full TruncationResult straight through — no re-computation drift.
     if (result.truncated) {
-      result.truncation = truncationDetail
+      result.truncation = truncation
     }
     return result
   },

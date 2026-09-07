@@ -303,6 +303,10 @@ describe('read tool — text branch', () => {
       // The continuation hint points at the next offset
       expect(text).toContain(`Use offset=${MAX_LINES + 1} to continue.`)
       expect(result.truncation?.truncatedBy).toBe('lines')
+      // Pin the pass-through: truncation.outputBytes must equal the byte length
+      // of the content portion (without the continuation notice) — no
+      // re-computation drift between truncateHead and the read tool output.
+      expect(result.truncation?.outputBytes).toBe(Buffer.byteLength(contentPortion, 'utf-8'))
     } finally {
       await cleanup()
     }
