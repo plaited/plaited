@@ -4,7 +4,7 @@ import { edit } from '../edit.ts'
 import { tempDir } from './helpers.ts'
 
 describe('edit tool', () => {
-  test('replaces exact text and produces a valid patch', async () => {
+  test('replaces exact text and produces a valid patch (legacy single-edit shape)', async () => {
     const { dir, cleanup } = await tempDir({ 'file.txt': 'hello world\nfoo bar\nbaz qux' })
     const filePath = path.join(dir, 'file.txt')
     try {
@@ -19,10 +19,12 @@ describe('edit tool', () => {
       expect(result.patch).toContain('@@')
       expect(result.patch).toContain('-foo bar')
       expect(result.patch).toContain('+FOO BAR')
+      expect(result.notice).toContain('Successfully replaced 1 block(s)')
+      // Full content is no longer returned
+      expect(result.content).toBeUndefined()
 
       const content = await Bun.file(filePath).text()
       expect(content).toBe('hello world\nFOO BAR\nbaz qux')
-      expect(result.content).toBe(content)
     } finally {
       await cleanup()
     }
@@ -41,7 +43,7 @@ describe('edit tool', () => {
 
       expect(result.isError).toBe(true)
       expect(result.replacements).toBe(0)
-      expect(result.content).toContain('Error')
+      expect(result.message).toContain('Error')
     } finally {
       await cleanup()
     }
@@ -60,29 +62,72 @@ describe('edit tool', () => {
 
       expect(result.isError).toBe(true)
       expect(result.replacements).toBe(0)
-      expect(result.content).toContain('2 occurrences')
+      expect(result.message).toContain('2 occurrences')
     } finally {
       await cleanup()
     }
   })
 
-  test('replace_all replaces multiple occurrences with multi-hunk patch', async () => {
-    const { dir, cleanup } = await tempDir({ 'file.txt': 'apple\nbanana\napple\ncherry' })
+  test('multi-edit: disjoint edits in one call', async () => {
+    const { dir, cleanup } = await tempDir({ 'file.txt': 'alpha\nbeta\ngamma\ndelta' })
     const filePath = path.join(dir, 'file.txt')
     try {
       const result = await edit({
         cwd: process.cwd(),
         path: filePath,
-        old_text: 'apple',
-        new_text: 'orange',
-        replace_all: true,
+        edits: [
+          { old_text: 'alpha', new_text: 'ALPHA' },
+          { old_text: 'gamma', new_text: 'GAMMA' },
+        ],
       })
 
       expect(result.replacements).toBe(2)
-      expect(result.patch).toContain('@@')
+      expect(result.notice).toContain('Successfully replaced 2 block(s)')
+      expect(result.patch).toContain('-alpha')
+      expect(result.patch).toContain('+ALPHA')
+      expect(result.patch).toContain('-gamma')
+      expect(result.patch).toContain('+GAMMA')
 
       const content = await Bun.file(filePath).text()
-      expect(content).toBe('orange\nbanana\norange\ncherry')
+      expect(content).toBe('ALPHA\nbeta\nGAMMA\ndelta')
+    } finally {
+      await cleanup()
+    }
+  })
+
+  test('multi-edit: overlapping edits are rejected', async () => {
+    const { dir, cleanup } = await tempDir({ 'file.txt': 'hello world\nfoo bar' })
+    const filePath = path.join(dir, 'file.txt')
+    try {
+      const result = await edit({
+        cwd: process.cwd(),
+        path: filePath,
+        edits: [
+          { old_text: 'hello world', new_text: 'HELLO WORLD' },
+          { old_text: 'world\nfoo', new_text: 'WORLD\nFOO' },
+        ],
+      })
+
+      expect(result.isError).toBe(true)
+      expect(result.replacements).toBe(0)
+      expect(result.message).toContain('overlap')
+    } finally {
+      await cleanup()
+    }
+  })
+
+  test('multi-edit: non-unique old_text in one edit → error', async () => {
+    const { dir, cleanup } = await tempDir({ 'file.txt': 'dup\ndup\nother' })
+    const filePath = path.join(dir, 'file.txt')
+    try {
+      const result = await edit({
+        cwd: process.cwd(),
+        path: filePath,
+        edits: [{ old_text: 'dup', new_text: 'replaced' }],
+      })
+
+      expect(result.isError).toBe(true)
+      expect(result.message).toContain('2 occurrences')
     } finally {
       await cleanup()
     }
@@ -133,7 +178,7 @@ describe('edit tool', () => {
     }
   })
 
-  test('reconstruction: replace_all with line-count changes — patch reproduces new content', async () => {
+  test('reconstruction: multi-edit with line-count changes — patch reproduces new content', async () => {
     const before = 'a\nX\nb\nX\nc\n'
     const { dir, cleanup } = await tempDir({ 'file.txt': before })
     const filePath = path.join(dir, 'file.txt')
@@ -141,9 +186,10 @@ describe('edit tool', () => {
       const result = await edit({
         cwd: process.cwd(),
         path: filePath,
-        old_text: 'X',
-        new_text: 'Y1\nY2',
-        replace_all: true,
+        edits: [
+          { old_text: 'X\nb', new_text: 'Y1\nY2\nb' },
+          { old_text: 'X\nc', new_text: 'Y1\nY2\nc' },
+        ],
       })
       const after = await Bun.file(filePath).text()
       expect(applyUnifiedPatch(before, result.patch)).toBe(after)
@@ -152,7 +198,7 @@ describe('edit tool', () => {
     }
   })
 
-  test('reconstruction: same-size replace_all — patch reproduces new content', async () => {
+  test('reconstruction: multi-edit same-size — patch reproduces new content', async () => {
     const before = 'apple\nbanana\napple\ncherry'
     const { dir, cleanup } = await tempDir({ 'file.txt': before })
     const filePath = path.join(dir, 'file.txt')
@@ -160,9 +206,10 @@ describe('edit tool', () => {
       const result = await edit({
         cwd: process.cwd(),
         path: filePath,
-        old_text: 'apple',
-        new_text: 'orange',
-        replace_all: true,
+        edits: [
+          { old_text: 'apple\nbanana', new_text: 'orange\nbanana' },
+          { old_text: 'apple\ncherry', new_text: 'orange\ncherry' },
+        ],
       })
       const after = await Bun.file(filePath).text()
       expect(applyUnifiedPatch(before, result.patch)).toBe(after)
@@ -205,6 +252,23 @@ describe('edit tool', () => {
       const bytes = await Bun.file(filePath).bytes()
       const raw = new TextDecoder().decode(bytes)
       expect(raw).toBe('line1\r\nmodified\r\nline3')
+    } finally {
+      await cleanup()
+    }
+  })
+
+  test('full content is no longer returned in the output', async () => {
+    const { dir, cleanup } = await tempDir({ 'file.txt': 'hello world' })
+    const filePath = path.join(dir, 'file.txt')
+    try {
+      const result = await edit({
+        cwd: process.cwd(),
+        path: filePath,
+        old_text: 'hello',
+        new_text: 'goodbye',
+      })
+      expect(result.content).toBeUndefined()
+      expect(result.notice).toBeDefined()
     } finally {
       await cleanup()
     }

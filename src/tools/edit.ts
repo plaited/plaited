@@ -136,40 +136,69 @@ const buildPatch = (oldLines: string[], ranges: TextRange[], contextLines = 4): 
   return hunks.join('\n')
 }
 
-type Input = {
-  path: string
+type EditEntry = {
   old_text: string
   new_text: string
-  replace_all?: boolean
+}
+
+type Input = {
+  path: string
+  edits?: EditEntry[]
+  /** Legacy single-edit shape — migrated to edits[0] in the handler. */
+  old_text?: string
+  new_text?: string
   cwd: string
 }
 
 export const EditInputSchema: JSONSchemaType<Input> = {
   type: 'object',
+  description: 'Edit a single file using exact text replacement.',
   properties: {
     path: { type: 'string', description: "file path — absolute, or relative to the tool's provisioned cwd" },
-    old_text: { type: 'string', minLength: 1, description: 'exact text to replace' },
-    new_text: { type: 'string', description: 'replacement text' },
-    replace_all: { type: 'boolean', nullable: true, description: 'when true, replaces ALL occurrences of old_text' },
+    edits: {
+      type: 'array',
+      nullable: true,
+      items: {
+        type: 'object',
+        properties: {
+          old_text: {
+            type: 'string',
+            minLength: 1,
+            description:
+              'exact text for one targeted replacement — must be unique in the file and must not overlap with any other edits[].old_text',
+          },
+          new_text: { type: 'string', description: 'replacement text for this edit' },
+        },
+        required: ['old_text', 'new_text'],
+        additionalProperties: false,
+      },
+      description:
+        'one or more targeted replacements, matched against the original file, not incrementally. Do not include overlapping or nested edits.',
+    },
+    old_text: { type: 'string', nullable: true, description: 'legacy single-edit — migrated to edits[0]' },
+    new_text: { type: 'string', nullable: true, description: 'legacy single-edit — migrated to edits[0]' },
     cwd: { type: 'string', description: "the tool's provisioned cwd" },
   },
-  required: ['path', 'old_text', 'new_text', 'cwd'],
+  required: ['path', 'cwd'],
   additionalProperties: false,
 }
 
 type Output = {
-  content?: string
   patch: string
   replacements: number
+  notice?: string
+  message?: string
   isError?: boolean
 }
 
 export const EditOutputSchema: JSONSchemaType<Output> = {
   type: 'object',
+  description: 'Result of an edit operation.',
   properties: {
-    content: { type: 'string', nullable: true, description: 'the new file content' },
     patch: { type: 'string', description: 'unified diff patch of the change' },
     replacements: { type: 'integer', description: 'number of replacements made' },
+    notice: { type: 'string', nullable: true, description: 'success notice' },
+    message: { type: 'string', nullable: true, description: 'error message when isError' },
     isError: {
       type: 'boolean',
       nullable: true,
@@ -181,23 +210,43 @@ export const EditOutputSchema: JSONSchemaType<Output> = {
 }
 
 /**
- * Edit a file using exact text replacement. old_text must match exactly once
- * unless replace_all is true. Returns a unified diff patch and writes the
- * result to disk.
+ * Edit a file using exact text replacement. Each edits[].old_text must match
+ * a unique, non-overlapping region of the original file. Edits are matched
+ * against the original file, not incrementally — do not emit overlapping or
+ * nested edits.
  *
- * `cwd` is a required input field — provided by the provisioner.
+ * Drop replace_all: each edit must be unique. MINIMAL: no fuzzy/whitespace-
+ * tolerant retry (fuzzyFindText). Upgrade path: port pi's normalizeForFuzzyMatch.
+ *
+ * `cwd` is a required input field — provided by the provisioner. Returns a
+ * unified diff patch and a success notice — never the full file content.
  */
 export const EDIT_TOOL_NAME = 'edit'
 export const edit = useTool(
   {
     name: EDIT_TOOL_NAME,
     description:
-      'Edit a file using exact text replacement. old_text must match exactly once unless replace_all is true. Returns a unified diff patch.',
+      'Edit a file using exact text replacement. Each edits[].old_text must match a unique, non-overlapping region of the original file. Multiple disjoint edits in one call are supported.',
     inputSchema: EditInputSchema,
     outputSchema: EditOutputSchema,
   },
-  async ({ path: filePath, old_text, new_text, replace_all, cwd }, validate) => {
+  async ({ path: filePath, edits: editsInput, old_text, new_text, cwd }, _validate) => {
     const resolvedPath = path.resolve(cwd, filePath)
+
+    // Migrate legacy single old_text/new_text to edits[0]
+    let edits: EditEntry[]
+    if (editsInput && editsInput.length > 0) {
+      edits = editsInput
+    } else if (typeof old_text === 'string' && typeof new_text === 'string') {
+      edits = [{ old_text, new_text }]
+    } else {
+      return {
+        patch: '',
+        replacements: 0,
+        message: '[Error: edits must contain at least one replacement. Provide edits: [{old_text, new_text}].]',
+        isError: true,
+      }
+    }
 
     // Read file
     const bunFile = Bun.file(resolvedPath)
@@ -206,7 +255,7 @@ export const edit = useTool(
       return {
         patch: '',
         replacements: 0,
-        content: `[Error: file not found: ${resolvedPath}]`,
+        message: `[Error: file not found: ${resolvedPath}]`,
         isError: true,
       }
     }
@@ -218,7 +267,7 @@ export const edit = useTool(
       return {
         patch: '',
         replacements: 0,
-        content: `[Error: could not read file: ${resolvedPath}]`,
+        message: `[Error: could not read file: ${resolvedPath}]`,
         isError: true,
       }
     }
@@ -227,65 +276,130 @@ export const edit = useTool(
     const lineEnding = detectLineEnding(text)
     const normalized = normalizeToLF(text)
 
-    // Normalize old_text / new_text too
-    const normOld = normalizeToLF(old_text)
-    const normNew = normalizeToLF(new_text)
+    // Normalize all edits to LF
+    const normalizedEdits = edits.map((e) => ({
+      oldText: normalizeToLF(e.old_text),
+      newText: normalizeToLF(e.new_text),
+    }))
 
-    // Count occurrences
-    let searchFrom = 0
-    const matchPositions: number[] = []
-    while (true) {
-      const idx = normalized.indexOf(normOld, searchFrom)
-      if (idx === -1) break
-      matchPositions.push(idx)
-      searchFrom = idx + normOld.length
-    }
-
-    if (matchPositions.length === 0) {
-      return {
-        patch: '',
-        replacements: 0,
-        content: `[Error: could not find the exact text in ${resolvedPath}. The old_text must match exactly.]`,
-        isError: true,
+    // Validate: no empty old_text
+    for (let i = 0; i < normalizedEdits.length; i++) {
+      if (normalizedEdits[i]!.oldText.length === 0) {
+        return {
+          patch: '',
+          replacements: 0,
+          message:
+            edits.length === 1
+              ? `[Error: old_text must not be empty in ${filePath}.]`
+              : `[Error: edits[${i}].old_text must not be empty in ${filePath}.]`,
+          isError: true,
+        }
       }
     }
 
-    if (!replace_all && matchPositions.length > 1) {
-      return {
-        patch: '',
-        replacements: 0,
-        content: `[Error: found ${matchPositions.length} occurrences of the text in ${resolvedPath}. The text must be unique. Use replace_all for multiple matches.]`,
-        isError: true,
+    // Find match positions for each edit — all matched against the original
+    type MatchedEdit = {
+      index: number
+      position: number
+      oldText: string
+      newText: string
+    }
+
+    const matchedEdits: MatchedEdit[] = []
+    for (let i = 0; i < normalizedEdits.length; i++) {
+      const { oldText } = normalizedEdits[i]!
+
+      // Count occurrences
+      let searchFrom = 0
+      let firstMatch = -1
+      let count = 0
+      while (true) {
+        const idx = normalized.indexOf(oldText, searchFrom)
+        if (idx === -1) break
+        if (count === 0) firstMatch = idx
+        count++
+        searchFrom = idx + oldText.length
+      }
+
+      if (count === 0) {
+        return {
+          patch: '',
+          replacements: 0,
+          message:
+            edits.length === 1
+              ? `[Error: could not find the exact text in ${filePath}. The old_text must match exactly.]`
+              : `[Error: could not find edits[${i}] in ${filePath}. The old_text must match exactly.]`,
+          isError: true,
+        }
+      }
+
+      if (count > 1) {
+        return {
+          patch: '',
+          replacements: 0,
+          message:
+            edits.length === 1
+              ? `[Error: found ${count} occurrences of the text in ${filePath}. The text must be unique. Please provide more context.]`
+              : `[Error: found ${count} occurrences of edits[${i}] in ${filePath}. Each old_text must be unique.]`,
+          isError: true,
+        }
+      }
+
+      matchedEdits.push({
+        index: i,
+        position: firstMatch,
+        oldText: normalizedEdits[i]!.oldText,
+        newText: normalizedEdits[i]!.newText,
+      })
+    }
+
+    // Check for overlapping edits — reject with a clear error
+    matchedEdits.sort((a, b) => a.position - b.position)
+    for (let i = 1; i < matchedEdits.length; i++) {
+      const prev = matchedEdits[i - 1]!
+      const curr = matchedEdits[i]!
+      if (prev.position + prev.oldText.length > curr.position) {
+        return {
+          patch: '',
+          replacements: 0,
+          message: `[Error: edits[${prev.index}] and edits[${curr.index}] overlap in ${filePath}. Merge them into one edit or target disjoint regions.]`,
+          isError: true,
+        }
       }
     }
 
-    // Build the new content by applying substitutions (right-to-left to
-    // keep offsets stable)
+    // Apply substitutions (right-to-left to keep offsets stable)
     let newContent = normalized
-
-    const sortedPositions = [...matchPositions].sort((a, b) => b - a)
-    for (const pos of sortedPositions) {
-      newContent = newContent.slice(0, pos) + normNew + newContent.slice(pos + normOld.length)
+    for (let i = matchedEdits.length - 1; i >= 0; i--) {
+      const { position, oldText, newText } = matchedEdits[i]!
+      newContent = newContent.slice(0, position) + newText + newContent.slice(position + oldText.length)
     }
 
-    // Build patch
-    const oldLines = splitLinesPreserving(normalized)
+    // Check for no change
+    if (normalized === newContent) {
+      return {
+        patch: '',
+        replacements: 0,
+        message: `[Error: no changes made to ${filePath}. The replacement produced identical content.]`,
+        isError: true,
+      }
+    }
 
-    // Map replacement positions to line ranges
+    // Build patch with multiple ranges — buildPatch sorts and merges them
+    const oldLines = splitLinesPreserving(normalized)
     const ranges: TextRange[] = []
-    const sortedForPatch = [...matchPositions].sort((a, b) => a - b)
-    for (const pos of sortedForPatch) {
+    for (const { position, oldText, newText } of matchedEdits) {
       // First line containing the match (0-indexed, inclusive)
       let startLine = 0
       let charPos = 0
-      while (startLine < oldLines.length && charPos + oldLines[startLine]!.length <= pos) {
+      while (startLine < oldLines.length && charPos + oldLines[startLine]!.length <= position) {
         charPos += oldLines[startLine]!.length
         startLine++
       }
-      const prefix = normalized.slice(charPos, pos)
+      const prefix = normalized.slice(charPos, position)
 
       // Last line containing the match (0-indexed, inclusive)
-      const matchEnd = pos + normOld.length
+      const matchEnd = position + oldText.length
       let endLine = startLine
       let endChar = charPos
       while (endLine < oldLines.length && endChar + oldLines[endLine]!.length < matchEnd) {
@@ -298,7 +412,7 @@ export const edit = useTool(
         startLine,
         endLine,
         oldLines: oldLines.slice(startLine, endLine + 1),
-        newLines: splitLinesPreserving(prefix + normNew + suffix),
+        newLines: splitLinesPreserving(prefix + newText + suffix),
       })
     }
 
@@ -307,10 +421,11 @@ export const edit = useTool(
     // Restore original line endings and write
     const finalContent = restoreLineEndings(newContent, lineEnding)
     await Bun.write(resolvedPath, finalContent)
+
     return {
-      content: finalContent,
       patch,
-      replacements: matchPositions.length,
+      replacements: matchedEdits.length,
+      notice: `Successfully replaced ${matchedEdits.length} block(s) in ${filePath}.`,
     }
   },
 )
