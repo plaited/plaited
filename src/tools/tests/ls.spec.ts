@@ -24,4 +24,52 @@ describe('ls tool', () => {
       await cleanup()
     }
   })
+
+  test('entries are sorted case-insensitively', async () => {
+    const { dir, cleanup } = await tempDir({})
+    // Create entries in non-sorted order with mixed case
+    await Bun.write(path.join(dir, 'Banana.txt'), '')
+    await Bun.write(path.join(dir, 'apple.txt'), '')
+    await Bun.write(path.join(dir, 'Cherry.txt'), '')
+    await Bun.$`mkdir -p ${path.join(dir, 'BlueDir')}`.quiet().nothrow()
+
+    try {
+      const result = await ls({ cwd: process.cwd(), dir })
+      const names = result.entries.map((e) => e.name)
+      // Case-insensitive sort: apple, Banana, BlueDir, Cherry
+      expect(names).toEqual(['apple.txt', 'Banana.txt', 'BlueDir', 'Cherry.txt'])
+    } finally {
+      await cleanup()
+    }
+  })
+
+  test('limit caps entry count and appends a notice', async () => {
+    const { dir, cleanup } = await tempDir({})
+    for (let i = 0; i < 10; i++) {
+      await Bun.write(path.join(dir, `file${i}.txt`), '')
+    }
+
+    try {
+      const result = await ls({ cwd: process.cwd(), dir, limit: 5 })
+      expect(result.entries).toHaveLength(5)
+      expect(result.truncated).toBe(true)
+      expect(result.notice).toContain('5 entries limit reached')
+      expect(result.notice).toContain('limit=10')
+      expect(result.limit).toBe(5)
+    } finally {
+      await cleanup()
+    }
+  })
+
+  test('empty directory returns empty entries with no error', async () => {
+    const { dir, cleanup } = await tempDir({})
+    try {
+      const result = await ls({ cwd: process.cwd(), dir })
+      expect(result.entries).toHaveLength(0)
+      expect(result.isError).toBeUndefined()
+      expect(result.truncated).toBe(false)
+    } finally {
+      await cleanup()
+    }
+  })
 })
