@@ -47,4 +47,18 @@ describe('write tool', () => {
       await cleanup()
     }
   })
+
+  test('bytesWritten is UTF-8 byte count, not code-unit count', async () => {
+    const { dir, cleanup } = await tempDir({})
+    const filePath = path.join(dir, 'multibyte.txt')
+    try {
+      // '✓' is 3 UTF-8 bytes, 'x' is 1 byte — 5 chars = 11 bytes
+      const content = '✓x✓x✓'
+      const result = await write({ cwd: process.cwd(), path: filePath, content })
+      expect(result.bytesWritten).toBe(11)
+      expect(result.bytesWritten).not.toBe(content.length) // 5 code units
+    } finally {
+      await cleanup()
+    }
+  })
 })

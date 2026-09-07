@@ -20,8 +20,8 @@ describe('edit tool', () => {
       expect(result.patch).toContain('-foo bar')
       expect(result.patch).toContain('+FOO BAR')
       expect(result.notice).toContain('Successfully replaced 1 block(s)')
-      // Full content is no longer returned
-      expect(result.content).toBeUndefined()
+      // Full content is no longer returned — the Output type has no content field
+      expect((result as Record<string, unknown>).content).toBeUndefined()
 
       const content = await Bun.file(filePath).text()
       expect(content).toBe('hello world\nFOO BAR\nbaz qux')
@@ -267,7 +267,7 @@ describe('edit tool', () => {
         old_text: 'hello',
         new_text: 'goodbye',
       })
-      expect(result.content).toBeUndefined()
+      expect((result as Record<string, unknown>).content).toBeUndefined()
       expect(result.notice).toBeDefined()
     } finally {
       await cleanup()

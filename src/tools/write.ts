@@ -47,7 +47,7 @@ export const write = useTool(
     inputSchema: WriteInputSchema,
     outputSchema: WriteOutputSchema,
   },
-  async ({ path: filePath, content, cwd }, validate) => {
+  async ({ path: filePath, content, cwd }, _validate) => {
     const resolved = path.resolve(cwd, filePath)
 
     // Ensure parent directory exists
@@ -56,6 +56,6 @@ export const write = useTool(
 
     await Bun.write(resolved, content)
 
-    return { bytesWritten: content.length }
+    return { bytesWritten: Buffer.byteLength(content, 'utf-8') }
   },
 )
