@@ -2,6 +2,13 @@ import { mkdtemp } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import type { JSONSchemaType } from 'ajv'
+import {
+  formatSize,
+  DEFAULT_MAX_BYTES as MAX_BYTES,
+  DEFAULT_MAX_LINES as MAX_LINES,
+  type TruncationResult,
+  truncateTail,
+} from './truncate.ts'
 import { useTool } from './use-tool.ts'
 
 // ================================================================
@@ -10,8 +17,6 @@ import { useTool } from './use-tool.ts'
 
 /** Spawn timeouts are int32 milliseconds — cap seconds accordingly. */
 const MAX_TIMEOUT_SECONDS = 2_147_483 // ≈ int32 ms / 1000
-const MAX_LINES = 2000
-const MAX_BYTES = 50 * 1024
 
 /**
  * Resolve the interpreter once. bash is preferred (models emit bash-flavored
@@ -39,29 +44,13 @@ const sanitize = (text: string): string =>
 
 /**
  * Tail-truncate to the last MAX_LINES lines / MAX_BYTES bytes (whichever
- * bites first), UTF-8-safe — a multibyte character is never split.
- * Tail-biased: errors surface at the end of output.
+ * bites first) via the shared truncateTail — UTF-8-safe, never splits a
+ * multibyte character. Tail-biased: errors surface at the end of output.
+ *
+ * MINIMAL: streaming OutputAccumulator bounded memory + process-tree kill
+ * + stdout/stderr interleaving deferred to the kernel phase. Upgrade path:
+ * pi's OutputAccumulator + killProcessTree.
  */
-const truncateTail = (text: string): { content: string; truncated: boolean } => {
-  const endsWithNewline = text.endsWith('\n')
-  let lines = text.split('\n')
-  if (endsWithNewline) lines.pop() // phantom '' from the trailing newline — not a line
-  let truncated = false
-  if (lines.length > MAX_LINES) {
-    lines = lines.slice(-MAX_LINES)
-    truncated = true
-  }
-  let content = lines.join('\n')
-  if (endsWithNewline) content += '\n'
-  const bytes = new TextEncoder().encode(content)
-  if (bytes.byteLength > MAX_BYTES) {
-    let start = bytes.byteLength - MAX_BYTES
-    while (start < bytes.byteLength && (bytes[start]! & 0xc0) === 0x80) start++
-    content = new TextDecoder().decode(bytes.subarray(start))
-    truncated = true
-  }
-  return { content, truncated }
-}
 
 type Input = {
   command: string
@@ -100,6 +89,7 @@ type Output = {
   exitCode: number
   truncated?: boolean
   fullOutputPath?: string
+  notice?: string
 }
 
 export const BashOutputSchema: JSONSchemaType<Output> = {
@@ -117,6 +107,11 @@ export const BashOutputSchema: JSONSchemaType<Output> = {
       type: 'string',
       nullable: true,
       description: 'absolute path to the untruncated output — present only when truncated',
+    },
+    notice: {
+      type: 'string',
+      nullable: true,
+      description: 'continuation hint when output was truncated — names the spill path and line range',
     },
   },
   required: ['stdout', 'stderr', 'exitCode'],
@@ -157,7 +152,7 @@ export const bash = useTool(
     inputSchema: BashInputSchema,
     outputSchema: BashOutputSchema,
   },
-  async ({ command, timeout, cwd, env: extraEnv }, validate) => {
+  async ({ command, timeout, cwd, env: extraEnv }, _validate) => {
     try {
       const spillDir = await mkdtemp(join(tmpdir(), 'bash-spill-'))
 
@@ -176,36 +171,71 @@ export const bash = useTool(
       ])
       const exitCode = await proc.exited
 
-      /** Tail-truncate; on truncation, spill the full output to the spill dir. */
-      const capture = async (raw: string) => {
-        const tail = truncateTail(sanitize(raw))
-        if (!tail.truncated) return { content: tail.content, truncated: false, fullOutputPath: undefined }
-        const spillPath = join(spillDir, 'output.log')
+      type Captured = {
+        content: string
+        truncation: TruncationResult
+        fullOutputPath: string | undefined
+        sanitized: string
+      }
+
+      /** Tail-truncate via the shared truncateTail; spill the full raw output on truncation. */
+      const capture = async (raw: string, spillName: string): Promise<Captured> => {
+        const sanitized = sanitize(raw)
+        const truncation = truncateTail(sanitized)
+        if (!truncation.truncated) {
+          return { content: truncation.content, truncation, fullOutputPath: undefined, sanitized }
+        }
+        const spillPath = join(spillDir, spillName)
         await Bun.write(spillPath, raw)
-        return { ...tail, fullOutputPath: spillPath }
+        return { content: truncation.content, truncation, fullOutputPath: spillPath, sanitized }
+      }
+
+      /** Build a continuation notice naming the spill path and line range. */
+      const buildNotice = (stream: 'stdout' | 'stderr', cap: Captured): string | undefined => {
+        if (!cap.fullOutputPath) return undefined
+        const { truncation, fullOutputPath, sanitized } = cap
+        const startLine = truncation.totalLines - truncation.outputLines + 1
+        const endLine = truncation.totalLines
+        if (truncation.lastLinePartial) {
+          const lines = sanitized.split('\n')
+          const lastLineBytes = Buffer.byteLength(lines[lines.length - 1] ?? '', 'utf-8')
+          return `[${stream}: Showing last ${formatSize(truncation.outputBytes)} of line ${endLine} (line is ${formatSize(lastLineBytes)}). Full output: ${fullOutputPath}]`
+        }
+        if (truncation.truncatedBy === 'lines') {
+          return `[${stream}: Showing lines ${startLine}-${endLine} of ${truncation.totalLines}. Full output: ${fullOutputPath}]`
+        }
+        return `[${stream}: Showing lines ${startLine}-${endLine} of ${truncation.totalLines} (${formatSize(MAX_BYTES)} limit). Full output: ${fullOutputPath}]`
+      }
+
+      /** Combine per-stream notices into a single notice string. */
+      const combineNotices = (parts: (string | undefined)[]): string | undefined => {
+        const filtered = parts.filter((p): p is string => p !== undefined)
+        return filtered.length > 0 ? filtered.join('\n') : undefined
       }
 
       // Native timeout kills with SIGTERM — surface it as the timeout condition
       if (timeout !== undefined && proc.signalCode !== null) {
-        const out = await capture(rawStdout)
-        const err = await capture(rawStderr)
+        const out = await capture(rawStdout, 'stdout.log')
+        const err = await capture(rawStderr, 'stderr.log')
         return {
           stdout: out.content,
           stderr: `${err.content}\nCommand timed out after ${timeout} seconds (${proc.signalCode})`.trim(),
           exitCode: -1,
-          truncated: out.truncated || err.truncated || undefined,
+          truncated: out.truncation.truncated || err.truncation.truncated || undefined,
           fullOutputPath: out.fullOutputPath ?? err.fullOutputPath,
+          notice: combineNotices([buildNotice('stdout', out), buildNotice('stderr', err)]),
         }
       }
 
-      const stdoutTail = await capture(rawStdout)
-      const stderrTail = await capture(rawStderr)
+      const stdoutCap = await capture(rawStdout, 'stdout.log')
+      const stderrCap = await capture(rawStderr, 'stderr.log')
       return {
-        stdout: stdoutTail.content,
-        stderr: stderrTail.content,
+        stdout: stdoutCap.content,
+        stderr: stderrCap.content,
         exitCode: exitCode ?? -1,
-        truncated: stdoutTail.truncated || stderrTail.truncated || undefined,
-        fullOutputPath: stdoutTail.fullOutputPath ?? stderrTail.fullOutputPath,
+        truncated: stdoutCap.truncation.truncated || stderrCap.truncation.truncated || undefined,
+        fullOutputPath: stdoutCap.fullOutputPath ?? stderrCap.fullOutputPath,
+        notice: combineNotices([buildNotice('stdout', stdoutCap), buildNotice('stderr', stderrCap)]),
       }
     } catch (err) {
       // Catch unexpected spawn errors (command not found, cwd deleted, etc.)
