@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 import * as path from 'node:path'
-import { DEFAULT_MAX_BINARY_BYTES, detectMimeType, MAX_BYTES, MAX_LINES, read } from '../read.ts'
+import { DEFAULT_MAX_BINARY_BYTES, detectMimeType, read } from '../read.ts'
+import { DEFAULT_MAX_BYTES as MAX_BYTES, DEFAULT_MAX_LINES as MAX_LINES } from '../truncate.ts'
 import { tempDir } from './helpers.ts'
 
 // ================================================================
@@ -236,7 +237,7 @@ describe('read tool — text branch', () => {
     }
   })
 
-  test('offset + limit windows correctly', async () => {
+  test('offset + limit windows correctly and appends a continuation hint', async () => {
     const { dir, cleanup } = await tempDir({ 'test.txt': 'line1\nline2\nline3\nline4\nline5' })
     try {
       const result = await read({
@@ -246,33 +247,62 @@ describe('read tool — text branch', () => {
         limit: 2,
       })
       expect(result.truncated).toBe(false)
-      expect((result.content[0] as { text: string }).text).toBe('line2\nline3')
+      const text = (result.content[0] as { text: string }).text
+      expect(text).toContain('line2\nline3')
+      expect(text).toContain('2 more lines in file. Use offset=4 to continue.')
     } finally {
       await cleanup()
     }
   })
 
-  test('truncates when the window exceeds MAX_BYTES', async () => {
-    // Build a single line well over 50 KB so byte truncation triggers.
+  test('first line exceeding MAX_BYTES returns a bash-fallback notice', async () => {
+    // Build a single line well over 50 KB so the byte limit triggers on line 1.
     const bigLine = 'x'.repeat(MAX_BYTES + 100)
     const { dir, cleanup } = await tempDir({ 'test.txt': bigLine })
     try {
       const result = await read({ cwd: process.cwd(), path: path.join(dir, 'test.txt') })
       expect(result.truncated).toBe(true)
-      expect((result.content[0] as { text: string }).text.length).toBe(MAX_BYTES)
+      const text = (result.content[0] as { text: string }).text
+      expect(text).toContain('exceeds')
+      expect(text).toContain('sed -n')
+      expect(result.truncation?.firstLineExceedsLimit).toBe(true)
     } finally {
       await cleanup()
     }
   })
 
-  test('truncates when the window exceeds MAX_LINES', async () => {
+  test('multibyte content is byte-accurate — never splits a character on byte cap', async () => {
+    // Each '✓' is 3 UTF-8 bytes. A file of many '✓' lines whose total exceeds
+    // 50KB must truncate on a character boundary, not mid-code-unit.
+    const line = '✓'.repeat(200) // 600 bytes per line
+    const lines = Array.from({ length: 200 }, () => line).join('\n') // ~120KB
+    const { dir, cleanup } = await tempDir({ 'test.txt': lines })
+    try {
+      const result = await read({ cwd: process.cwd(), path: path.join(dir, 'test.txt') })
+      expect(result.truncated).toBe(true)
+      const text = (result.content[0] as { text: string }).text
+      // The content portion (before the hint) must contain only complete '✓' chars
+      const contentPortion = text.split('\n\n[Showing')[0]!
+      expect(contentPortion).toMatch(/^[✓\n]*$/)
+      expect(Buffer.byteLength(contentPortion, 'utf-8')).toBeLessThanOrEqual(MAX_BYTES)
+    } finally {
+      await cleanup()
+    }
+  })
+
+  test('truncates when the window exceeds MAX_LINES and appends a continuation hint', async () => {
     const lines = Array.from({ length: MAX_LINES + 50 }, (_, i) => `line${i}`).join('\n')
     const { dir, cleanup } = await tempDir({ 'test.txt': lines })
     try {
       const result = await read({ cwd: process.cwd(), path: path.join(dir, 'test.txt') })
       expect(result.truncated).toBe(true)
       const text = (result.content[0] as { text: string }).text
-      expect(text.split('\n')).toHaveLength(MAX_LINES)
+      // The content portion (before the hint) has exactly MAX_LINES lines
+      const contentPortion = text.split('\n\n[Showing')[0]!
+      expect(contentPortion.split('\n')).toHaveLength(MAX_LINES)
+      // The continuation hint points at the next offset
+      expect(text).toContain(`Use offset=${MAX_LINES + 1} to continue.`)
+      expect(result.truncation?.truncatedBy).toBe('lines')
     } finally {
       await cleanup()
     }

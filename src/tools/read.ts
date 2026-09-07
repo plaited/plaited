@@ -3,18 +3,16 @@ import * as path from 'node:path'
 import type { JSONSchemaType } from 'ajv'
 import * as z from 'zod'
 import { type InputContentPart, InputContentPartSchema } from './responses/open-responses.schemas.ts'
+import { formatSize, DEFAULT_MAX_BYTES as MAX_BYTES, truncateHead } from './truncate.ts'
 import { useTool } from './use-tool.ts'
 
 // ----------------------------------------------------------------
 // Constants
 // ----------------------------------------------------------------
 
-/**
- * Approximate ceiling for the text branch — mirrors pi's DEFAULT_MAX_LINES
- * (2000) and DEFAULT_MAX_BYTES (50 KB).
- */
-export const MAX_LINES = 2000
-export const MAX_BYTES = 50 * 1024
+// MAX_LINES / MAX_BYTES are re-exported from truncate.ts (single source of
+// truth) so existing import sites keep working.
+export { DEFAULT_MAX_BYTES as MAX_BYTES, DEFAULT_MAX_LINES as MAX_LINES } from './truncate.ts'
 
 /**
  * Default ceiling for the binary (image/audio/video) branch (20 MB).
@@ -329,9 +327,17 @@ export const ReadInputSchema: JSONSchemaType<Input> = {
   additionalProperties: false,
 }
 
+type TruncationDetail = {
+  truncatedBy: 'lines' | 'bytes'
+  totalLines: number
+  outputLines: number
+  firstLineExceedsLimit: boolean
+}
+
 type Output = {
   content: InputContentPart[]
   truncated?: boolean
+  truncation?: TruncationDetail | null
   message?: string
   isError?: boolean
 }
@@ -355,6 +361,19 @@ export const ReadOutputSchema: JSONSchemaType<Output> = {
       items: inputContentPartJsonSchema as unknown as JSONSchemaType<InputContentPart>,
     },
     truncated: { type: 'boolean', nullable: true },
+    truncation: {
+      type: 'object',
+      nullable: true,
+      properties: {
+        truncatedBy: { type: 'string', enum: ['lines', 'bytes'] },
+        totalLines: { type: 'integer' },
+        outputLines: { type: 'integer' },
+        firstLineExceedsLimit: { type: 'boolean' },
+      },
+      required: ['truncatedBy', 'totalLines', 'outputLines', 'firstLineExceedsLimit'],
+      additionalProperties: false,
+      description: 'present when truncation occurred',
+    },
     message: { type: 'string', nullable: true, description: 'error/detail note' },
     isError: { type: 'boolean', nullable: true, description: 'true when the operation failed' },
   },
@@ -397,7 +416,7 @@ export const read = useTool(
     inputSchema: ReadInputSchema,
     outputSchema: ReadOutputSchema,
   },
-  async ({ path: filePath, cwd, offset, limit, maxBytes }, validate) => {
+  async ({ path: filePath, cwd, offset, limit, maxBytes }, _validate) => {
     const resolved = path.resolve(cwd, filePath)
 
     // Directory/existence check via stat (node:fs — no Bun equivalent for dirs;
@@ -482,34 +501,77 @@ export const read = useTool(
     }
 
     const allLines = text.split('\n')
-    const totalLines = allLines.length
+    const totalFileLines = allLines.length
 
-    // Apply offset (1-indexed)
-    const startLine = offset ? Math.max(0, offset - 1) : 0
-    if (startLine >= totalLines) {
+    // Apply offset (1-indexed) — convert to 0-indexed array access.
+    const startLine = typeof offset === 'number' && offset > 0 ? offset - 1 : 0
+    const startLineDisplay = startLine + 1
+    if (startLine >= totalFileLines) {
       return {
-        content: [textPart(`[Error: offset ${offset} is beyond end of file (${totalLines} lines total)]`)],
+        content: [textPart(`[Error: offset ${offset} is beyond end of file (${totalFileLines} lines total)]`)],
         isError: true,
       }
     }
 
-    const endLine = limit ? Math.min(startLine + limit, totalLines) : totalLines
-    const windowed = allLines.slice(startLine, endLine).join('\n')
-
-    // Check truncation ceiling
-    const byteLen = new TextEncoder().encode(windowed).byteLength
-    const windowLines = endLine - startLine
-
-    if (byteLen > MAX_BYTES) {
-      return { content: [textPart(windowed.slice(0, MAX_BYTES))], truncated: true }
+    // If a user limit is specified, honor it first; otherwise truncateHead
+    // decides against the MAX_LINES / MAX_BYTES ceiling.
+    let selectedContent: string
+    let userLimitedLines: number | undefined
+    if (typeof limit === 'number') {
+      const endLine = Math.min(startLine + limit, totalFileLines)
+      selectedContent = allLines.slice(startLine, endLine).join('\n')
+      userLimitedLines = endLine - startLine
+    } else {
+      selectedContent = allLines.slice(startLine).join('\n')
     }
-    if (windowLines > MAX_LINES) {
-      return {
-        content: [textPart(allLines.slice(startLine, startLine + MAX_LINES).join('\n'))],
-        truncated: true,
+
+    // Byte-accurate, UTF-8-safe truncation — never .slice() by code units.
+    const truncation = truncateHead(selectedContent)
+    let outputText: string
+    let truncationDetail: TruncationDetail | null = null
+
+    if (truncation.firstLineExceedsLimit) {
+      // First line alone exceeds the byte limit — point the model at a bash fallback.
+      const firstLineSize = formatSize(Buffer.byteLength(allLines[startLine] ?? '', 'utf-8'))
+      outputText = `[Line ${startLineDisplay} is ${firstLineSize}, exceeds ${formatSize(MAX_BYTES)} limit. Use bash: sed -n '${startLineDisplay}p' ${filePath} | head -c ${MAX_BYTES}]`
+      truncationDetail = {
+        truncatedBy: 'bytes',
+        totalLines: truncation.totalLines,
+        outputLines: 0,
+        firstLineExceedsLimit: true,
       }
+    } else if (truncation.truncated) {
+      // Truncation occurred — build an actionable continuation notice.
+      const endLineDisplay = startLineDisplay + truncation.outputLines - 1
+      const nextOffset = endLineDisplay + 1
+      outputText = truncation.content
+      if (truncation.truncatedBy === 'lines') {
+        outputText += `\n\n[Showing lines ${startLineDisplay}-${endLineDisplay} of ${totalFileLines}. Use offset=${nextOffset} to continue.]`
+      } else {
+        outputText += `\n\n[Showing lines ${startLineDisplay}-${endLineDisplay} of ${totalFileLines} (${formatSize(MAX_BYTES)} limit). Use offset=${nextOffset} to continue.]`
+      }
+      truncationDetail = {
+        truncatedBy: truncation.truncatedBy!,
+        totalLines: truncation.totalLines,
+        outputLines: truncation.outputLines,
+        firstLineExceedsLimit: false,
+      }
+    } else if (userLimitedLines !== undefined && startLine + userLimitedLines < totalFileLines) {
+      // User-specified limit stopped early, but the file still has more content.
+      const remaining = totalFileLines - (startLine + userLimitedLines)
+      const nextOffset = startLine + userLimitedLines + 1
+      outputText = `${truncation.content}\n\n[${remaining} more lines in file. Use offset=${nextOffset} to continue.]`
+    } else {
+      outputText = truncation.content
     }
 
-    return { content: [textPart(windowed)], truncated: false }
+    const result: Output = {
+      content: [textPart(outputText)],
+      truncated: truncation.truncated || truncation.firstLineExceedsLimit,
+    }
+    if (result.truncated) {
+      result.truncation = truncationDetail
+    }
+    return result
   },
 )
