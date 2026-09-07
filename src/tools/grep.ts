@@ -1,6 +1,6 @@
 import * as path from 'node:path'
-import * as z from 'zod'
-import { useMCPServer } from './use-mcp-server.ts'
+import type { JSONSchemaType } from 'ajv'
+import { useTool } from './use-tool.ts'
 
 type GrepOutput = {
   matches: Array<{ path: string; line: number; text: string }>
@@ -124,73 +124,99 @@ const runFallback = async ({
   return { matches, truncated: matches.length >= MAX_MATCHES }
 }
 
+type Input = {
+  pattern: string
+  cwd: string
+  dir?: string
+  include?: string
+}
+
+export const GrepInputSchema: JSONSchemaType<Input> = {
+  type: 'object',
+  properties: {
+    pattern: { type: 'string', minLength: 1, description: 'pattern to search for' },
+    cwd: { type: 'string', description: "the tool's provisioned cwd" },
+    dir: {
+      type: 'string',
+      nullable: true,
+      description: "directory to search (defaults to the tool's provisioned cwd)",
+    },
+    include: { type: 'string', nullable: true, description: 'glob filter for file names (e.g. "*.ts")' },
+  },
+  required: ['pattern', 'cwd'],
+  additionalProperties: false,
+}
+
+type Output = {
+  matches: Array<{ path: string; line: number; text: string }>
+  truncated: boolean
+  message?: string
+  isError?: boolean
+}
+
+export const GrepOutputSchema: JSONSchemaType<Output> = {
+  type: 'object',
+  properties: {
+    matches: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          path: { type: 'string' },
+          line: { type: 'integer' },
+          text: { type: 'string' },
+        },
+        required: ['path', 'line', 'text'],
+        additionalProperties: false,
+      },
+    },
+    truncated: { type: 'boolean' },
+    message: { type: 'string', nullable: true, description: 'error detail when isError — states what failed' },
+    isError: { type: 'boolean', nullable: true, description: 'true when the operation failed' },
+  },
+  required: ['matches', 'truncated'],
+  additionalProperties: false,
+}
+
 /**
  * Search for a pattern in files using ripgrep (rg) when available, with a JS
  * line-scanner fallback. Returns matching lines with file path, line number,
  * and text.
  *
- * Registered via `useMCPServer` as the `grep` MCP tool. `cwd` is a required
- * input field — provided by the provisioner. Returns an info message when no
- * matches are found, and an error result on failure.
+ * `cwd` is a required input field — provided by the provisioner. Returns an
+ * info message when no matches are found, and an error result on failure.
  */
-export const grep = useMCPServer((server) => {
-  server.registerTool(
-    GREP_TOOL_NAME,
-    {
-      description:
-        'Search for a pattern in files. Prefers ripgrep (rg) when available; falls back to a JS line scanner.',
-      inputSchema: z.object({
-        pattern: z.string().min(1).describe('pattern to search for'),
-        cwd: z.string().describe("the tool's provisioned cwd"),
-        dir: z.string().optional().describe("directory to search (defaults to the tool's provisioned cwd)"),
-        include: z.string().optional().describe('glob filter for file names (e.g. "*.ts")'),
-      }),
-      outputSchema: z.object({
-        matches: z.array(
-          z.object({
-            path: z.string(),
-            line: z.number().int(),
-            text: z.string(),
-          }),
-        ),
-        truncated: z.boolean(),
-        message: z.string().optional().describe('error detail when isError — states what failed'),
-        isError: z.boolean().optional().describe('true when the operation failed'),
-      }),
-    },
-    async ({ pattern, dir, include, cwd }) => {
-      try {
-        const resolvedSearch = path.resolve(cwd, dir ?? '.')
-        const rgPath = Bun.which('rg')
+export const grep = useTool(
+  {
+    name: GREP_TOOL_NAME,
+    description: 'Search for a pattern in files. Prefers ripgrep (rg) when available; falls back to a JS line scanner.',
+    inputSchema: GrepInputSchema,
+    outputSchema: GrepOutputSchema,
+  },
+  async ({ pattern, dir, include, cwd }, validate) => {
+    try {
+      const resolvedSearch = path.resolve(cwd, dir ?? '.')
+      const rgPath = Bun.which('rg')
 
-        let output: GrepOutput & { message?: string; isError?: boolean }
-
-        if (rgPath) {
-          output = await runWithRg({ pattern, searchPath: resolvedSearch, include, rgPath })
-        } else {
-          output = await runFallback({ pattern, searchPath: resolvedSearch, include })
-        }
-
-        if (output.matches.length === 0) {
-          output.message = `[Info: no matches found for pattern "${pattern}" in ${resolvedSearch}]`
-        }
-
-        return {
-          content: [{ type: 'text' as const, text: JSON.stringify(output) }],
-          structuredContent: output,
-        }
-      } catch (err) {
-        const output = {
-          matches: [],
-          truncated: false,
-          message: `[Error: failed to search: ${(err as Error).message}]`,
-          isError: true,
-        }
-        return {
-          content: [{ type: 'text' as const, text: JSON.stringify(output) }],
-          structuredContent: output,
-        }
+      let output: Output
+      if (rgPath) {
+        output = await runWithRg({ pattern, searchPath: resolvedSearch, include, rgPath })
+      } else {
+        output = await runFallback({ pattern, searchPath: resolvedSearch, include })
       }
-    },
-  )
-})
+
+      if (output.matches.length === 0) {
+        output.message = `[Info: no matches found for pattern "${pattern}" in ${resolvedSearch}]`
+      }
+
+      return output
+    } catch (err) {
+      return {
+        matches: [],
+        truncated: false,
+        message: `[Error: failed to search: ${(err as Error).message}]`,
+        isError: true,
+      }
+    }
+  },
+)

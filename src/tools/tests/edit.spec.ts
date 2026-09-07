@@ -1,76 +1,28 @@
-import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
+import { describe, expect, test } from 'bun:test'
 import * as path from 'node:path'
-import { Client } from '@modelcontextprotocol/client'
-import { InMemoryTransport, McpServer } from '@modelcontextprotocol/server'
-import { binary, EDIT_TOOL_NAME } from '../edit.ts'
+import { edit } from '../edit.ts'
 import { tempDir } from './helpers.ts'
 
-// ================================================================
-// edit tool — exercised through an in-process MCP client/server
-// ================================================================
-
-let server: McpServer
-let client: Client
-let cleanupClosable: (() => Promise<void>) | undefined
-
-const setupServer = async () => {
-  server = new McpServer({ name: 'test', version: '0.0.0' })
-  binary(server)
-
-  const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair()
-  await server.connect(serverTransport)
-
-  client = new Client({ name: 'test-client', version: '0.0.0' }, { capabilities: {} })
-  await client.connect(clientTransport)
-
-  cleanupClosable = async () => {
-    await client.close()
-  }
-}
-
-const callEdit = async (args: Record<string, unknown>) => {
-  const result = await client.callTool({ name: EDIT_TOOL_NAME, arguments: { cwd: process.cwd(), ...args } })
-  return result
-}
-
-type EditToolOutput = {
-  content?: string
-  patch: string
-  replacements: number
-  isError?: boolean
-}
-
 describe('edit tool', () => {
-  beforeEach(async () => {
-    await setupServer()
-  })
-
-  afterEach(async () => {
-    await cleanupClosable?.()
-  })
-
-  test('listTools includes edit', async () => {
-    const { tools } = await client.listTools()
-    const tool = tools.find((t) => t.name === EDIT_TOOL_NAME)
-    expect(tool).toBeDefined()
-    expect(tool!.description).toContain('Edit a file')
-  })
-
   test('replaces exact text and produces a valid patch', async () => {
     const { dir, cleanup } = await tempDir({ 'file.txt': 'hello world\nfoo bar\nbaz qux' })
     const filePath = path.join(dir, 'file.txt')
     try {
-      const result = await callEdit({ path: filePath, old_text: 'foo bar', new_text: 'FOO BAR' })
-      const data = result.structuredContent as EditToolOutput
+      const result = await edit({
+        cwd: process.cwd(),
+        path: filePath,
+        old_text: 'foo bar',
+        new_text: 'FOO BAR',
+      })
 
-      expect(data.replacements).toBe(1)
-      expect(data.patch).toContain('@@')
-      expect(data.patch).toContain('-foo bar')
-      expect(data.patch).toContain('+FOO BAR')
+      expect(result.replacements).toBe(1)
+      expect(result.patch).toContain('@@')
+      expect(result.patch).toContain('-foo bar')
+      expect(result.patch).toContain('+FOO BAR')
 
       const content = await Bun.file(filePath).text()
       expect(content).toBe('hello world\nFOO BAR\nbaz qux')
-      expect(data.content).toBe(content)
+      expect(result.content).toBe(content)
     } finally {
       await cleanup()
     }
@@ -80,12 +32,16 @@ describe('edit tool', () => {
     const { dir, cleanup } = await tempDir({ 'file.txt': 'existing content' })
     const filePath = path.join(dir, 'file.txt')
     try {
-      const result = await callEdit({ path: filePath, old_text: 'does not exist', new_text: 'replacement' })
-      const data = result.structuredContent as EditToolOutput
+      const result = await edit({
+        cwd: process.cwd(),
+        path: filePath,
+        old_text: 'does not exist',
+        new_text: 'replacement',
+      })
 
-      expect(data.isError).toBe(true)
-      expect(data.replacements).toBe(0)
-      expect(data.content).toContain('Error')
+      expect(result.isError).toBe(true)
+      expect(result.replacements).toBe(0)
+      expect(result.content).toContain('Error')
     } finally {
       await cleanup()
     }
@@ -95,12 +51,16 @@ describe('edit tool', () => {
     const { dir, cleanup } = await tempDir({ 'file.txt': 'dup dup\nother' })
     const filePath = path.join(dir, 'file.txt')
     try {
-      const result = await callEdit({ path: filePath, old_text: 'dup', new_text: 'replaced' })
-      const data = result.structuredContent as EditToolOutput
+      const result = await edit({
+        cwd: process.cwd(),
+        path: filePath,
+        old_text: 'dup',
+        new_text: 'replaced',
+      })
 
-      expect(data.isError).toBe(true)
-      expect(data.replacements).toBe(0)
-      expect(data.content).toContain('2 occurrences')
+      expect(result.isError).toBe(true)
+      expect(result.replacements).toBe(0)
+      expect(result.content).toContain('2 occurrences')
     } finally {
       await cleanup()
     }
@@ -110,11 +70,16 @@ describe('edit tool', () => {
     const { dir, cleanup } = await tempDir({ 'file.txt': 'apple\nbanana\napple\ncherry' })
     const filePath = path.join(dir, 'file.txt')
     try {
-      const result = await callEdit({ path: filePath, old_text: 'apple', new_text: 'orange', replace_all: true })
-      const data = result.structuredContent as EditToolOutput
+      const result = await edit({
+        cwd: process.cwd(),
+        path: filePath,
+        old_text: 'apple',
+        new_text: 'orange',
+        replace_all: true,
+      })
 
-      expect(data.replacements).toBe(2)
-      expect(data.patch).toContain('@@')
+      expect(result.replacements).toBe(2)
+      expect(result.patch).toContain('@@')
 
       const content = await Bun.file(filePath).text()
       expect(content).toBe('orange\nbanana\norange\ncherry')
@@ -155,10 +120,14 @@ describe('edit tool', () => {
     const { dir, cleanup } = await tempDir({ 'file.txt': before })
     const filePath = path.join(dir, 'file.txt')
     try {
-      const result = await callEdit({ path: filePath, old_text: 'two', new_text: 'TWO-A\nTWO-B' })
-      const data = result.structuredContent as EditToolOutput
+      const result = await edit({
+        cwd: process.cwd(),
+        path: filePath,
+        old_text: 'two',
+        new_text: 'TWO-A\nTWO-B',
+      })
       const after = await Bun.file(filePath).text()
-      expect(applyUnifiedPatch(before, data.patch)).toBe(after)
+      expect(applyUnifiedPatch(before, result.patch)).toBe(after)
     } finally {
       await cleanup()
     }
@@ -169,10 +138,15 @@ describe('edit tool', () => {
     const { dir, cleanup } = await tempDir({ 'file.txt': before })
     const filePath = path.join(dir, 'file.txt')
     try {
-      const result = await callEdit({ path: filePath, old_text: 'X', new_text: 'Y1\nY2', replace_all: true })
-      const data = result.structuredContent as EditToolOutput
+      const result = await edit({
+        cwd: process.cwd(),
+        path: filePath,
+        old_text: 'X',
+        new_text: 'Y1\nY2',
+        replace_all: true,
+      })
       const after = await Bun.file(filePath).text()
-      expect(applyUnifiedPatch(before, data.patch)).toBe(after)
+      expect(applyUnifiedPatch(before, result.patch)).toBe(after)
     } finally {
       await cleanup()
     }
@@ -183,10 +157,15 @@ describe('edit tool', () => {
     const { dir, cleanup } = await tempDir({ 'file.txt': before })
     const filePath = path.join(dir, 'file.txt')
     try {
-      const result = await callEdit({ path: filePath, old_text: 'apple', new_text: 'orange', replace_all: true })
-      const data = result.structuredContent as EditToolOutput
+      const result = await edit({
+        cwd: process.cwd(),
+        path: filePath,
+        old_text: 'apple',
+        new_text: 'orange',
+        replace_all: true,
+      })
       const after = await Bun.file(filePath).text()
-      expect(applyUnifiedPatch(before, data.patch)).toBe(after)
+      expect(applyUnifiedPatch(before, result.patch)).toBe(after)
     } finally {
       await cleanup()
     }
@@ -197,10 +176,14 @@ describe('edit tool', () => {
     const { dir, cleanup } = await tempDir({ 'file.txt': before })
     const filePath = path.join(dir, 'file.txt')
     try {
-      const result = await callEdit({ path: filePath, old_text: 'apple', new_text: 'orange' })
-      const data = result.structuredContent as EditToolOutput
+      const result = await edit({
+        cwd: process.cwd(),
+        path: filePath,
+        old_text: 'apple',
+        new_text: 'orange',
+      })
       const after = await Bun.file(filePath).text()
-      expect(applyUnifiedPatch(before, data.patch)).toBe(after)
+      expect(applyUnifiedPatch(before, result.patch)).toBe(after)
     } finally {
       await cleanup()
     }
@@ -210,10 +193,14 @@ describe('edit tool', () => {
     const { dir, cleanup } = await tempDir({ 'file.txt': 'line1\r\nline2\r\nline3' })
     const filePath = path.join(dir, 'file.txt')
     try {
-      const result = await callEdit({ path: filePath, old_text: 'line2', new_text: 'modified' })
-      const data = result.structuredContent as EditToolOutput
+      const result = await edit({
+        cwd: process.cwd(),
+        path: filePath,
+        old_text: 'line2',
+        new_text: 'modified',
+      })
 
-      expect(data.replacements).toBe(1)
+      expect(result.replacements).toBe(1)
 
       const bytes = await Bun.file(filePath).bytes()
       const raw = new TextDecoder().decode(bytes)
@@ -225,20 +212,11 @@ describe('edit tool', () => {
 })
 
 describe('edit tool — provisioned cwd', () => {
-  beforeEach(async () => {
-    await setupServer()
-  })
-
-  afterEach(async () => {
-    await cleanupClosable?.()
-  })
-
   test('relative path resolves against the composed cwd', async () => {
     const { dir, cleanup } = await tempDir({ 'file.txt': 'old text' })
     try {
-      const result = await callEdit({ path: 'file.txt', cwd: dir, old_text: 'old', new_text: 'new' })
-      const data = result.structuredContent as EditToolOutput
-      expect(data.replacements).toBe(1)
+      const result = await edit({ cwd: dir, path: 'file.txt', old_text: 'old', new_text: 'new' })
+      expect(result.replacements).toBe(1)
       expect(await Bun.file(path.join(dir, 'file.txt')).text()).toBe('new text')
     } finally {
       await cleanup()
