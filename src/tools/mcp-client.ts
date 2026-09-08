@@ -13,10 +13,10 @@
  * @packageDocumentation
  */
 
-import type { OAuthClientProvider } from '@modelcontextprotocol/sdk/client/auth.js'
-import type { Client } from '@modelcontextprotocol/sdk/client/index.js'
-import type { OAuthClientInformationMixed, OAuthTokens } from '@modelcontextprotocol/sdk/shared/auth.js'
+import type { Client, OAuthClientProvider } from '@modelcontextprotocol/client'
 import type { JSONSchemaType } from 'ajv'
+import type { Keychain } from '../kernel/oauth/keychain.ts'
+import { BunKeychainOAuthProvider, type KeychainOAuthProviderOptions } from '../kernel/oauth/keychain-oauth-provider.ts'
 import { getSharedClient, type McpDiscovery, setPoolDiscovery } from '../kernel/use-plugin-adapter.ts'
 import { ajv, useTool } from './use-tool.ts'
 
@@ -453,7 +453,6 @@ export const McpClientOutputSchema = {
 
 export const MCP_CLIENT_TOOL_NAME = 'mcp-client'
 const DEFAULT_BEARER_PREFIX = 'Bearer'
-const TOKEN_EXPIRY_SKEW_MS = 30_000
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -474,214 +473,121 @@ const resolveRequiredSecret = async (secret: RemoteMcpSecret, label: string): Pr
   throw new Error(`${label} env var ${secret.envVar} resolved to an empty value. Check your environment.`)
 }
 
-const defaultTokenCachePath = (url: string): string => {
-  const home = Bun.env.HOME ?? Bun.env.USERPROFILE ?? '.'
-  const host = new URL(url).hostname
-  return `${home}/.plaited/mcp/tokens/${host}.json`
-}
-
-const encodeBasicAuth = (username: string, password: string) =>
-  Buffer.from(`${username}:${password}`).toString('base64')
-
 const getScopeString = (scopes?: string[]) => (scopes && scopes.length > 0 ? scopes.join(' ') : undefined)
 
-type InMemoryOAuthTokens = OAuthTokens & {
-  expiresAtMs?: number
-}
-
-const withExpiry = (tokens: OAuthTokens): InMemoryOAuthTokens => ({
-  ...tokens,
-  expiresAtMs: tokens.expires_in === undefined ? undefined : Date.now() + tokens.expires_in * 1000,
-})
-
-const isAccessTokenFresh = (tokens: InMemoryOAuthTokens | undefined) =>
-  Boolean(tokens?.access_token) &&
-  (tokens?.expiresAtMs === undefined || tokens.expiresAtMs - Date.now() > TOKEN_EXPIRY_SKEW_MS)
-
 // ---------------------------------------------------------------------------
-// Token persistence (file-backed).
+// OAuth provider construction (v2 BunKeychainOAuthProvider)
 //
-// MINIMAL: file persistence under ~/.plaited/mcp/tokens/<host>.json. Upgrade
-// path (Slice C): replace with a BunKeychainOAuthProvider backed by
-// Bun.secrets and upgrade to the v2 OAuthClientProvider shape (issuer-keyed
-// clientInformation(ctx), state()/saveDiscoveryState/discoveryState(),
-// validateResourceURL with RFC 9207 iss validation).
+// Replaces the former in-memory createOAuthProvider + file persistence. The
+// v2 SDK's `auth()` orchestrator (invoked by the transport on 401) does RFC
+// 9728 discovery and the token exchange via the provider's
+// prepareTokenRequest + addClientAuthentication + clientInformation; the
+// provider supplies grant params + credentials and persists the
+// issuer-stamped tokens/client-info to the OS keychain (Bun.secrets). One
+// provider per server-url, reused across process restarts.
+//
+// MINIMAL: the v2 flow is discovery-based, so `auth.tokenUrl` is no longer the
+// direct token endpoint — the SDK discovers it. `auth.tokenPersistence`
+// (file/env) is obsolete now that the keychain is the store; the field is
+// accepted for backward-compat and ignored. Upgrade path: drop the field
+// from the auth config once no caller relies on it.
 // ---------------------------------------------------------------------------
 
-const readPersistedRefreshToken = async (
-  url: string,
-  persistence?: RemoteMcpTokenPersistence,
-): Promise<string | undefined> => {
-  if (!persistence || persistence.kind === 'env') return undefined
-  const path = persistence.path ?? defaultTokenCachePath(url)
-  try {
-    const file = Bun.file(path)
-    if (!(await file.exists())) return undefined
-    const data = (await file.json()) as { refreshToken?: string }
-    return data.refreshToken
-  } catch {
-    return undefined
-  }
-}
-
-const writePersistedRefreshToken = async (
-  url: string,
-  refreshToken: string | undefined,
-  persistence?: RemoteMcpTokenPersistence,
-): Promise<void> => {
-  if (!persistence || persistence.kind === 'env' || !refreshToken) return
-  const path = persistence.path ?? defaultTokenCachePath(url)
-  await Bun.write(path, JSON.stringify({ refreshToken }, null, 2))
-}
-
-// ---------------------------------------------------------------------------
-// OAuth helpers
-// ---------------------------------------------------------------------------
-
-const buildOAuthRequest = async (
-  auth: Extract<RemoteMcpAuthConfig, { type: 'oauth-client-credentials' | 'oauth-refresh-token' }>,
-  refreshTokenOverride?: string,
-): Promise<{ headers: Headers; params: URLSearchParams }> => {
-  const params = new URLSearchParams()
-  const headers = new Headers({
-    Accept: 'application/json',
-    'Content-Type': 'application/x-www-form-urlencoded',
-  })
-
-  const clientId = await resolveRequiredSecret(auth.clientId, 'OAuth client ID')
-  const clientSecret = auth.clientSecret ? await resolveEnvSecret(auth.clientSecret) : undefined
-  const clientAuthentication = auth.clientAuthentication ?? (clientSecret ? 'client_secret_basic' : 'none')
-
-  params.set('grant_type', auth.type === 'oauth-client-credentials' ? 'client_credentials' : 'refresh_token')
-
-  if (auth.type === 'oauth-refresh-token') {
-    const rt = refreshTokenOverride ?? (await resolveRequiredSecret(auth.refreshToken, 'OAuth refresh token'))
-    if (!rt) throw new Error('Missing refresh token for OAuth refresh-token flow')
-    params.set('refresh_token', rt)
-  }
-
-  const scope = getScopeString(auth.scopes)
-  if (scope) params.set('scope', scope)
-  if (auth.audience) params.set('audience', auth.audience)
-  if (auth.resource) params.set('resource', auth.resource)
-
-  switch (clientAuthentication) {
-    case 'client_secret_basic':
-      if (!clientSecret) throw new Error('client_secret_basic requires clientSecret')
-      headers.set('Authorization', `Basic ${encodeBasicAuth(clientId, clientSecret)}`)
-      break
-    case 'client_secret_post':
-      params.set('client_id', clientId)
-      if (clientSecret) params.set('client_secret', clientSecret)
-      break
-    case 'none':
-      params.set('client_id', clientId)
-      break
-  }
-
-  return { headers, params }
-}
-
-const exchangeOAuthTokens = async (
-  auth: Extract<RemoteMcpAuthConfig, { type: 'oauth-client-credentials' | 'oauth-refresh-token' }>,
-  refreshTokenOverride?: string,
-): Promise<OAuthTokens> => {
-  const { headers, params } = await buildOAuthRequest(auth, refreshTokenOverride)
-  const response = await fetch(auth.tokenUrl, {
-    method: 'POST',
-    headers,
-    body: params.toString(),
-  })
-
-  if (!response.ok) {
-    const body = await response.text()
-    throw new Error(`OAuth token request failed (${response.status}): ${body}`)
-  }
-
-  const json = (await response.json()) as Partial<OAuthTokens>
-  if (!json.access_token || !json.token_type) {
-    throw new Error('OAuth token response missing access_token or token_type')
-  }
-
-  return json as OAuthTokens
-}
-
-const createOAuthProvider = (
+/**
+ * Build a v2 {@link OAuthClientProvider} for an `oauth-*` auth config.
+ * Exposed (with an injectable keychain) so tests can drive the provider with
+ * an in-memory keychain without touching the OS keychain.
+ */
+export const createKeychainOAuthProvider = (
   auth: Extract<RemoteMcpAuthConfig, { type: 'oauth-client-credentials' | 'oauth-refresh-token' }>,
   url: string,
+  keychain?: Keychain,
 ): OAuthClientProvider => {
-  let cachedTokens: InMemoryOAuthTokens | undefined
-  let loadedPersisted = false
-  let persistedRefreshToken: string | undefined
-
-  const loadRefreshToken = async (): Promise<string | undefined> => {
-    if (auth.type !== 'oauth-refresh-token') return undefined
-    if (!loadedPersisted) {
-      persistedRefreshToken = await readPersistedRefreshToken(url, auth.tokenPersistence)
-      loadedPersisted = true
+  // clientId is required for both grants; resolve eagerly to fail fast.
+  // clientSecret / refreshToken are resolved lazily by the provider via the
+  // env-var secret config — but the v2 provider takes resolved values, so we
+  // resolve them here. Required secrets throw if missing; optional ones
+  // (clientSecret) resolve to undefined.
+  const build = async (): Promise<KeychainOAuthProviderOptions> => {
+    const clientId = await resolveRequiredSecret(auth.clientId, 'OAuth client ID')
+    const clientSecret = auth.clientSecret ? await resolveEnvSecret(auth.clientSecret) : undefined
+    const options: KeychainOAuthProviderOptions = {
+      serverUrl: url,
+      grantType: auth.type === 'oauth-client-credentials' ? 'client_credentials' : 'refresh_token',
+      clientId,
+      clientSecret,
+      scope: getScopeString(auth.scopes),
+      audience: auth.audience,
+      resource: auth.resource,
+      clientAuthentication: auth.clientAuthentication,
+      expectedIssuer: auth.issuer,
+      keychain,
     }
-    return persistedRefreshToken ?? resolveEnvSecret(auth.refreshToken)
+    if (auth.type === 'oauth-refresh-token') {
+      options.initialRefreshToken = await resolveRequiredSecret(auth.refreshToken, 'OAuth refresh token')
+    }
+    return options
   }
 
-  const ensureTokens = async (): Promise<InMemoryOAuthTokens> => {
-    if (isAccessTokenFresh(cachedTokens)) return cachedTokens as InMemoryOAuthTokens
+  // The v2 transport reads `authProvider` synchronously at construction, but
+  // our env-var secrets resolve async. Bridge with a lazy proxy that resolves
+  // the real provider on first method call and delegates every property to
+  // it. This keeps getSharedClient(url, options) synchronous in `authProvider`.
+  let providerPromise: Promise<BunKeychainOAuthProvider> | undefined
+  const getProvider = (): Promise<BunKeychainOAuthProvider> =>
+    (providerPromise ??= build().then((opts) => new BunKeychainOAuthProvider(opts)))
 
-    const refreshToken = auth.type === 'oauth-refresh-token' ? await loadRefreshToken() : undefined
-    const nextTokens = await exchangeOAuthTokens(auth, refreshToken)
-
-    const newRefresh =
-      nextTokens.refresh_token ??
-      cachedTokens?.refresh_token ??
-      (auth.type === 'oauth-refresh-token' ? refreshToken : undefined)
-
-    cachedTokens = withExpiry({ ...nextTokens, ...(newRefresh ? { refresh_token: newRefresh } : {}) })
-
-    if (auth.type === 'oauth-refresh-token' && nextTokens.refresh_token) {
-      persistedRefreshToken = nextTokens.refresh_token
-      await writePersistedRefreshToken(url, nextTokens.refresh_token, auth.tokenPersistence)
-    }
-
-    return cachedTokens
+  // Delegate every OAuthClientProvider member through the lazy provider.
+  // The async members await getProvider() first; the getters (redirectUrl,
+  // clientMetadata) are read by the SDK after the first async call has
+  // resolved the provider, so a cached reference is used once warmed.
+  let cached: BunKeychainOAuthProvider | undefined
+  const ensure = async (): Promise<BunKeychainOAuthProvider> => {
+    if (cached) return cached
+    cached = await getProvider()
+    return cached
   }
 
-  return {
+  const proxy: OAuthClientProvider = {
     get redirectUrl() {
       return undefined
     },
     get clientMetadata() {
-      return {
-        redirect_uris: [],
-        grant_types: [auth.type === 'oauth-client-credentials' ? 'client_credentials' : 'refresh_token'],
-        token_endpoint_auth_method: auth.clientAuthentication === 'none' ? undefined : auth.clientAuthentication,
-        client_name: 'plaited remote mcp',
-        scope: getScopeString(auth.scopes),
-      }
+      // clientMetadata has no async deps beyond clientId/secret/scope, which
+      // the provider resolves in its constructor via the options we pass
+      // resolved. Return a best-effort metadata; the real provider's
+      // clientMetadata is used once warmed.
+      return (
+        cached?.clientMetadata ?? {
+          redirect_uris: [],
+          grant_types: [auth.type === 'oauth-client-credentials' ? 'client_credentials' : 'refresh_token'],
+          token_endpoint_auth_method: auth.clientAuthentication === 'none' ? undefined : auth.clientAuthentication,
+          client_name: 'plaited remote mcp',
+          scope: getScopeString(auth.scopes),
+        }
+      )
     },
-    clientInformation: async (): Promise<OAuthClientInformationMixed | undefined> => {
-      const clientId = await resolveRequiredSecret(auth.clientId, 'OAuth client ID')
-      const clientSecret = auth.clientSecret ? await resolveEnvSecret(auth.clientSecret) : undefined
-      return { client_id: clientId, ...(clientSecret ? { client_secret: clientSecret } : {}) }
-    },
-    tokens: () => ensureTokens(),
-    saveTokens: async (tokens: OAuthTokens) => {
-      const newRefresh = tokens.refresh_token ?? cachedTokens?.refresh_token
-      cachedTokens = withExpiry({ ...tokens, ...(newRefresh ? { refresh_token: newRefresh } : {}) })
-      if (auth.type === 'oauth-refresh-token' && tokens.refresh_token) {
-        persistedRefreshToken = tokens.refresh_token
-        await writePersistedRefreshToken(url, tokens.refresh_token, auth.tokenPersistence)
-      }
-    },
-    redirectToAuthorization() {
+    clientInformation: (ctx) => ensure().then((p) => p.clientInformation(ctx)),
+    saveClientInformation: (ci, ctx) => ensure().then((p) => p.saveClientInformation(ci, ctx)),
+    tokens: (ctx) => ensure().then((p) => p.tokens(ctx)),
+    saveTokens: (tokens, ctx) => ensure().then((p) => p.saveTokens(tokens, ctx)),
+    state: () => ensure().then((p) => p.state()),
+    redirectToAuthorization: () => {
       throw new Error('Interactive OAuth authorization not supported')
     },
-    saveCodeVerifier() {},
-    codeVerifier() {
-      return ''
+    saveCodeVerifier: () => {
+      /* delegated once provider exists; no-op is safe */
     },
-    invalidateCredentials: async () => {
-      cachedTokens = undefined
-    },
+    codeVerifier: () => '',
+    addClientAuthentication: (headers, params, u, metadata) =>
+      ensure().then((p) => p.addClientAuthentication(headers, params, u, metadata)),
+    validateResourceURL: (serverUrl, resource) => ensure().then((p) => p.validateResourceURL(serverUrl, resource)),
+    invalidateCredentials: (scope) => ensure().then((p) => p.invalidateCredentials(scope)),
+    prepareTokenRequest: (scope) => ensure().then((p) => p.prepareTokenRequest(scope)),
+    saveDiscoveryState: (state) => ensure().then((p) => p.saveDiscoveryState(state)),
+    discoveryState: () => ensure().then((p) => p.discoveryState()),
   }
+  return proxy
 }
 
 // ---------------------------------------------------------------------------
@@ -709,7 +615,7 @@ const resolveAuth = async (config: RemoteMcpAuthConfig, url: string): Promise<Re
       return { headers: { ...config.headers } }
     case 'oauth-client-credentials':
     case 'oauth-refresh-token':
-      return { authProvider: createOAuthProvider(config, url) }
+      return { authProvider: createKeychainOAuthProvider(config, url) }
   }
 }
 
