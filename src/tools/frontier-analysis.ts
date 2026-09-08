@@ -8,9 +8,9 @@
  *
  * ## Entry points
  *
- * - {@link replayToFrontier} — replay one concrete event-selection trace
- * - {@link exploreFrontiers} — enumerate reachable histories, find deadlocks
- * - {@link verifyFrontiers} — derive a pass/fail/truncated status from exploration
+ * - {@link replayToFrontierRaw} — replay one concrete event-selection trace
+ * - {@link exploreFrontiersRaw} — enumerate reachable histories, find deadlocks
+ * - {@link verifyFrontiersRaw} — derive a pass/fail/truncated status from exploration
  *
  * ## Trace kind filters
  *
@@ -21,6 +21,7 @@
  * @packageDocumentation
  */
 
+import type { JSONSchemaType } from 'ajv'
 import { FRONTIER_STATUS, TRACE_MESSAGE_KINDS } from '../behavioral/behavioral.constants.ts'
 import type {
   BPEvent,
@@ -46,6 +47,7 @@ import {
   useThread,
 } from '../behavioral/behavioral.utils.ts'
 import { ueid } from '../utils.ts'
+import { useTool } from './use-tool.ts'
 
 // ---------------------------------------------------------------------------
 // Private helpers
@@ -191,7 +193,7 @@ export type DeadlockFinding = {
  *
  * @public
  */
-export const replayToFrontier = ({
+export const replayToFrontierRaw = ({
   threads,
   messages = [],
   space,
@@ -331,7 +333,7 @@ const getTriggerSuccessors = ({
     })
 
     try {
-      replayToFrontier({
+      replayToFrontierRaw({
         threads,
         messages: [...messages, selection],
         space,
@@ -371,7 +373,7 @@ const normalizeListeners = (listener: RegisteredBPListener[] | RegisteredTransfo
  * identical — same threads parked at the same sync points, yielding the same
  * idioms with the same constraints — regardless of bid insertion order or the
  * identity of the underlying generator closures. This is the abstraction that
- * lets `exploreFrontiers` close the state graph for looping programs instead
+ * lets `exploreFrontiersRaw` close the state graph for looping programs instead
  * of chasing ever-growing traces.
  *
  * @remarks
@@ -455,7 +457,7 @@ export const isCycle = (scc: string[], graph: Map<string, StateNode>): boolean =
  * Iterative (explicit work stack) rather than recursive, so a large single
  * cycle does not overflow the JS stack. Depends only on node adjacency
  * (`successors: Array<{ to }>`), so it accepts the state graph built by
- * `exploreFrontiers` as well as hand-constructed fake graphs for testing.
+ * `exploreFrontiersRaw` as well as hand-constructed fake graphs for testing.
  *
  * @param graph - Graph keyed by state key; each node carries its successor edges.
  * @returns One array per SCC, each containing the state keys in that component.
@@ -568,7 +570,7 @@ export type LivelockFinding = {
  * `sccs` is expected to come from {@link findStronglyConnectedComponents} over
  * the same `graph`.
  *
- * @param args.graph - The labeled state graph (as built by `exploreFrontiers`).
+ * @param args.graph - The labeled state graph (as built by `exploreFrontiersRaw`).
  * @param args.sccs - Strongly connected components of `graph`.
  * @param args.progress - Event types that count as progress (the specification).
  * @returns One {@link LivelockFinding} per cycle that never selects a progress event.
@@ -610,7 +612,7 @@ export const findLivelocks = ({
 }
 
 /**
- * Arguments for {@link exploreFrontiers} and {@link verifyFrontiers}.
+ * Arguments for {@link exploreFrontiersRaw} and {@link verifyFrontiersRaw}.
  *
  * @public
  */
@@ -634,7 +636,7 @@ export type ExploreFrontiersArgs = {
 }
 
 /**
- * Result of an {@link exploreFrontiers} call.
+ * Result of an {@link exploreFrontiersRaw} call.
  *
  * @public
  */
@@ -667,7 +669,7 @@ type WorkItem = {
  *
  * @public
  */
-export const exploreFrontiers = ({
+export const exploreFrontiersRaw = ({
   threads,
   messages = [],
   triggers = [],
@@ -690,7 +692,7 @@ export const exploreFrontiers = ({
 
   while (pending.length > 0) {
     const current = strategy === 'bfs' ? pending.shift()! : pending.pop()!
-    const { frontier, pending: currentPending } = replayToFrontier({
+    const { frontier, pending: currentPending } = replayToFrontierRaw({
       threads,
       messages: current.messages,
       space,
@@ -779,7 +781,7 @@ export const exploreFrontiers = ({
 }
 
 /**
- * Result of a {@link verifyFrontiers} call.
+ * Result of a {@link verifyFrontiersRaw} call.
  *
  * @public
  */
@@ -801,8 +803,8 @@ export type VerifyFrontiersArgs = ExploreFrontiersArgs & { progress?: string[] }
  *
  * @public
  */
-export const verifyFrontiers = ({ progress, ...args }: VerifyFrontiersArgs): VerifyFrontiersResult => {
-  const { findings, report, stateGraph } = exploreFrontiers(args)
+export const verifyFrontiersRaw = ({ progress, ...args }: VerifyFrontiersArgs): VerifyFrontiersResult => {
+  const { findings, report, stateGraph } = exploreFrontiersRaw(args)
   const livelocks: LivelockFinding[] = []
   if (progress !== undefined) {
     livelocks.push(
@@ -838,3 +840,144 @@ export const verifyFrontiers = ({ progress, ...args }: VerifyFrontiersArgs): Ver
     livelocks,
   }
 }
+
+// ---------------------------------------------------------------------------
+// useTool wrappers — the public interface
+// ---------------------------------------------------------------------------
+//
+// The interface IS the tool. The raw algorithm functions above
+// (replayToFrontierRaw, exploreFrontiersRaw, verifyFrontiersRaw) and every
+// graph internal (frontierStateKey, findStronglyConnectedComponents,
+// findLivelocks, isCycle, StateNode, the *Args/*Result/*Finding/*Record types)
+// are the implementation; the three tools below are the only public surface.
+
+/**
+ * Serialized {@link Frontier} for JSON output. CandidateBid is JSON-safe
+ * (priority/type/detail/space — no generator or compiled validator), so the
+ * frontier crosses the boundary verbatim.
+ */
+const frontierJsonSchema = {
+  type: 'object',
+  properties: {
+    status: { type: 'string', enum: ['ready', 'deadlock', 'idle'] },
+    candidates: { type: 'array', items: { type: 'object', additionalProperties: true } },
+    enabled: { type: 'array', items: { type: 'object', additionalProperties: true } },
+  },
+  required: ['status', 'candidates', 'enabled'],
+  additionalProperties: false,
+} as const
+
+// threads — structural (label + rules); idiom internals permissive so a
+// caller's detailSchema (JSON Schema) reaches the runtime validator verbatim
+// (generateRulesFunctions compiles it). The permissive idiom items can't be
+// statically verified for JSONSchemaType<Idioms>, so the sub-schema is cast
+// through `unknown` below — same pattern read.ts uses for Zod-derived
+// sub-schemas. AJV validates the structural shape at runtime.
+const threadsJsonSchema = {
+  type: 'array',
+  items: {
+    type: 'object',
+    properties: {
+      label: { type: 'string', minLength: 1 },
+      once: { type: 'boolean', enum: [true], nullable: true },
+      rules: { type: 'array', items: { type: 'object', additionalProperties: true } },
+    },
+    required: ['label', 'rules'],
+    additionalProperties: false,
+  },
+} as const
+
+// messages — a selection-trace prefix. Validated as array-of-object; the
+// runtime discriminates by `kind` and reads `selected`. CandidateBid's
+// `ingress?: true` literal exceeds JSONSchemaType's static power.
+const messagesJsonSchema = {
+  type: 'array',
+  items: { type: 'object', additionalProperties: true },
+  description: 'selection-trace prefix: { kind: "selection", timestamp, instanceId, step, selected: CandidateBid }[]',
+} as const
+
+export type ReplayFrontierInput = {
+  threads: Thread[]
+  messages?: SelectionTrace[]
+  space?: string
+  instanceId?: string
+}
+
+export type ReplayFrontierOutput = {
+  frontier: Frontier | null
+  stateKey: string | null
+  pendingCount: number | null
+  isError?: boolean
+  message?: string
+}
+
+export const ReplayFrontierInputSchema = {
+  type: 'object',
+  properties: {
+    threads: threadsJsonSchema,
+    messages: { ...messagesJsonSchema, nullable: true },
+    space: { type: 'string', nullable: true, description: 'space stamp applied to all thread rules' },
+    instanceId: {
+      type: 'string',
+      nullable: true,
+      description: 'instance id stamped on synthetic traces; defaults to a minted ueid("bp_")',
+    },
+  },
+  required: ['threads'],
+  additionalProperties: false,
+  description: 'Replay one concrete event-selection trace against a thread set and return the resulting frontier.',
+} as unknown as JSONSchemaType<ReplayFrontierInput>
+
+export const ReplayFrontierOutputSchema = {
+  type: 'object',
+  properties: {
+    frontier: { ...frontierJsonSchema, nullable: true, description: 'the resulting frontier; null on error' },
+    stateKey: { type: 'string', nullable: true, description: 'canonical state key for the pending set; null on error' },
+    pendingCount: { type: 'integer', nullable: true, description: 'count of pending bids; null on error' },
+    isError: {
+      type: 'boolean',
+      nullable: true,
+      description: 'true when a selection was not enabled at its replay step',
+    },
+    message: { type: 'string', nullable: true, description: 'error detail when isError' },
+  },
+  required: ['frontier', 'stateKey', 'pendingCount'],
+  additionalProperties: false,
+} as unknown as JSONSchemaType<ReplayFrontierOutput>
+
+/**
+ * Replay one concrete event-selection trace and return the resulting frontier.
+ *
+ * Wraps the raw replay: the pending `Set` (with generator closures) is
+ * serialized to `stateKey` (canonical) + `pendingCount`; the frontier crosses
+ * verbatim. If a selection was not enabled at its replay step the raw fn
+ * throws — the tool catches it and returns `{ isError: true, message }` so the
+ * throw never crosses the model channel.
+ */
+export const replayFrontier = useTool(
+  {
+    name: 'replay-frontier',
+    description:
+      'Replay one concrete event-selection trace against a thread set and return the resulting frontier, the canonical pending-state key, and the pending-bid count. Use to inspect a known event sequence and prove it was valid — a disabled selection returns isError instead of throwing.',
+    inputSchema: ReplayFrontierInputSchema,
+    outputSchema: ReplayFrontierOutputSchema,
+  },
+  ({ threads, messages, space, instanceId }) => {
+    try {
+      const { pending, frontier } = replayToFrontierRaw({ threads, messages, space, instanceId })
+      return {
+        frontier,
+        stateKey: frontierStateKey({ pending }),
+        pendingCount: pending.size,
+      }
+    } catch (err) {
+      return {
+        frontier: null,
+        stateKey: null,
+        pendingCount: null,
+        isError: true,
+        message: (err as Error).message,
+      }
+    }
+  },
+)

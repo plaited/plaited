@@ -1,13 +1,13 @@
 import { describe, expect, test } from 'bun:test'
 import type { CandidateBid, PendingBid, Thread } from '../../behavioral/behavioral.types.ts'
 import {
-  exploreFrontiers,
+  exploreFrontiersRaw,
   findLivelocks,
   findStronglyConnectedComponents,
   frontierStateKey,
   isCycle,
   type StateNode,
-  verifyFrontiers,
+  verifyFrontiersRaw,
 } from '../frontier-analysis.ts'
 
 /**
@@ -47,7 +47,7 @@ const labeledGraph = (nodes: Record<string, Array<{ type: string; to: string }>>
  * `frontierStateKey` collapses a pending set to a stable string that is
  * invariant under reordering and insensitive to non-stateful artifacts
  * (generator closures, compiled validators). This is the
- * abstraction that lets `exploreFrontiers` close the state graph for looping
+ * abstraction that lets `exploreFrontiersRaw` close the state graph for looping
  * programs instead of chasing ever-growing traces.
  *
  * These tests are written FIRST (red). Implement `frontierStateKey` to turn
@@ -129,7 +129,7 @@ describe('frontierStateKey', () => {
 /**
  * Step 2 — state-keyed dedup + explicit labeled state graph.
  *
- * `exploreFrontiers` must deduplicate on `frontierStateKey` (the canonical state)
+ * `exploreFrontiersRaw` must deduplicate on `frontierStateKey` (the canonical state)
  * rather than the full message trace, so finite-state looping programs
  * terminate without relying on `maxDepth`. The exploration also builds an
  * explicit labeled state graph (nodes keyed by state, edges labeled by the
@@ -138,7 +138,7 @@ describe('frontierStateKey', () => {
  * Written FIRST (red). Implement state-keyed dedup + graph construction to
  * turn these green.
  */
-describe('exploreFrontiers state-keyed dedup', () => {
+describe('exploreFrontiersRaw state-keyed dedup', () => {
   test('terminates early (state graph closes) on a looping program', () => {
     // A `while(true)` ticker: requests `tick` forever. Under trace-keyed dedup
     // the trace grows every step, so a generous maxDepth is needed to keep the
@@ -147,7 +147,7 @@ describe('exploreFrontiers state-keyed dedup', () => {
     // exploration stops well before maxDepth — proving termination, not a
     // depth cutoff.
     const looping: Thread[] = [{ label: 'ticker', rules: [{ request: { type: 'tick' } }] }]
-    const result = exploreFrontiers({ threads: looping, strategy: 'bfs', maxDepth: 100 })
+    const result = exploreFrontiersRaw({ threads: looping, strategy: 'bfs', maxDepth: 100 })
     expect(result.report.truncated).toBe(false)
     // One distinct state: the single pending bid requesting `tick`.
     expect(result.report.visitedCount).toBe(1)
@@ -160,7 +160,7 @@ describe('exploreFrontiers state-keyed dedup', () => {
     // ({request on}, {request off}); the cycle closes back to the first
     // state. Generous maxDepth keeps the red phase from hanging.
     const toggle: Thread[] = [{ label: 'toggle', rules: [{ request: { type: 'on' } }, { request: { type: 'off' } }] }]
-    const result = exploreFrontiers({ threads: toggle, strategy: 'bfs', maxDepth: 100 })
+    const result = exploreFrontiersRaw({ threads: toggle, strategy: 'bfs', maxDepth: 100 })
     expect(result.report.truncated).toBe(false)
     expect(result.report.visitedCount).toBe(2)
     expect(result.findings).toHaveLength(0)
@@ -173,7 +173,7 @@ describe('exploreFrontiers state-keyed dedup', () => {
       { label: 'requester', rules: [{ request: { type: 'a' } }] },
       { label: 'blocker', rules: [{ block: [{ type: 'a' }] }] },
     ]
-    const result = exploreFrontiers({ threads: blocked, strategy: 'bfs' })
+    const result = exploreFrontiersRaw({ threads: blocked, strategy: 'bfs' })
     expect(result.findings.length).toBeGreaterThan(0)
     expect(result.findings[0]!.code).toBe('deadlock')
   })
@@ -184,7 +184,7 @@ describe('exploreFrontiers state-keyed dedup', () => {
       { label: 'ticker', rules: [{ request: { type: 'tick' } }], once: true },
       { label: 'worker', once: true, rules: [{ request: { type: 'start', detail: { id: 'job-1' } } }] },
     ]
-    const result = exploreFrontiers({ threads: finite, strategy: 'bfs', maxDepth: 3 })
+    const result = exploreFrontiersRaw({ threads: finite, strategy: 'bfs', maxDepth: 3 })
     expect(result.report.visitedCount).toBeGreaterThan(0)
     expect(result.traces.length).toBe(result.report.visitedCount)
     for (const trace of result.traces) {
@@ -199,7 +199,7 @@ describe('exploreFrontiers state-keyed dedup', () => {
  * Step 3 — strongly connected components (Tarjan, iterative).
  *
  * `findStronglyConnectedComponents` returns the SCCs of a labeled state graph
- * (the structure `exploreFrontiers` builds as a side effect). An SCC of size
+ * (the structure `exploreFrontiersRaw` builds as a side effect). An SCC of size
  * > 1, or a single node with a self-edge, is a cycle — the raw material for
  * Step 4's livelock detection. The helper is pure and depends only on node
  * adjacency (`successors: Array<{ to }>`), so tests build fake graphs directly.
@@ -401,9 +401,9 @@ describe('findLivelocks', () => {
       { label: 'ticker', rules: [{ request: { type: 'tick' } }] },
       { label: 'stalled', rules: [{ waitFor: [{ type: 'succeeded' }] }] },
     ]
-    // Full public chain: exploreFrontiers → findStronglyConnectedComponents →
+    // Full public chain: exploreFrontiersRaw → findStronglyConnectedComponents →
     // findLivelocks, run on the real explored state graph.
-    const result = exploreFrontiers({ threads, strategy: 'bfs', maxDepth: 50 })
+    const result = exploreFrontiersRaw({ threads, strategy: 'bfs', maxDepth: 50 })
     expect(result.report.truncated).toBe(false)
     expect(result.findings).toHaveLength(0)
     expect(result.report.visitedCount).toBe(1)
@@ -416,9 +416,9 @@ describe('findLivelocks', () => {
 })
 
 /**
- * Step 5 — verifyFrontiers wired to livelock + exposed state graph.
+ * Step 5 — verifyFrontiersRaw wired to livelock + exposed state graph.
  *
- * verifyFrontiers now accepts an optional `progress` spec. When provided, it
+ * verifyFrontiersRaw now accepts an optional `progress` spec. When provided, it
  * runs livelock detection over the explored state graph and folds livelock
  * findings into the `failed` status alongside deadlocks. The explored state
  * graph is exposed on ExploreFrontiersResult so callers can run their own
@@ -426,13 +426,13 @@ describe('findLivelocks', () => {
  *
  * Written FIRST (red). Implement to turn green.
  */
-describe('verifyFrontiers livelock integration', () => {
+describe('verifyFrontiersRaw livelock integration', () => {
   test('a looping program with no progress is failed (livelock), not verified', () => {
     // A ticker requesting `tick` forever. No deadlock, not truncated. Without
     // a progress spec it would be `verified`; with progress=['succeeded'] the
     // cycle never selects `succeeded` → livelock → `failed`.
     const threads: Thread[] = [{ label: 'ticker', rules: [{ request: { type: 'tick' } }] }]
-    const result = verifyFrontiers({ threads, progress: ['succeeded'], maxDepth: 50 })
+    const result = verifyFrontiersRaw({ threads, progress: ['succeeded'], maxDepth: 50 })
     expect(result.status).toBe('failed')
     expect(result.livelocks).toHaveLength(1)
     expect(result.livelocks[0]!.code).toBe('livelock')
@@ -443,7 +443,7 @@ describe('verifyFrontiers livelock integration', () => {
     // A ticker requesting `done` forever. progress=['done'] → the cycle DOES
     // select a progress event → not a livelock → `verified`.
     const threads: Thread[] = [{ label: 'ticker', rules: [{ request: { type: 'done' } }] }]
-    const result = verifyFrontiers({ threads, progress: ['done'], maxDepth: 50 })
+    const result = verifyFrontiersRaw({ threads, progress: ['done'], maxDepth: 50 })
     expect(result.status).toBe('verified')
     expect(result.livelocks).toHaveLength(0)
   })
@@ -452,7 +452,7 @@ describe('verifyFrontiers livelock integration', () => {
     // Same looping ticker, no progress spec. Behaves as before Step 5: no
     // deadlock, not truncated → `verified`, livelocks empty (not checked).
     const threads: Thread[] = [{ label: 'ticker', rules: [{ request: { type: 'tick' } }] }]
-    const result = verifyFrontiers({ threads, maxDepth: 50 })
+    const result = verifyFrontiersRaw({ threads, maxDepth: 50 })
     expect(result.status).toBe('verified')
     expect(result.livelocks).toHaveLength(0)
   })
@@ -460,7 +460,7 @@ describe('verifyFrontiers livelock integration', () => {
   test('an empty progress set flags every cycle as a livelock', () => {
     // progress=[] → nothing counts as progress → any cycle is a livelock.
     const threads: Thread[] = [{ label: 'ticker', rules: [{ request: { type: 'done' } }] }]
-    const result = verifyFrontiers({ threads, progress: [], maxDepth: 50 })
+    const result = verifyFrontiersRaw({ threads, progress: [], maxDepth: 50 })
     expect(result.status).toBe('failed')
     expect(result.livelocks).toHaveLength(1)
   })
@@ -472,17 +472,17 @@ describe('verifyFrontiers livelock integration', () => {
       { label: 'requester', rules: [{ request: { type: 'a' } }] },
       { label: 'blocker', rules: [{ block: [{ type: 'a' }] }] },
     ]
-    const result = verifyFrontiers({ threads, progress: ['x'] })
+    const result = verifyFrontiersRaw({ threads, progress: ['x'] })
     expect(result.status).toBe('failed')
     expect(result.findings.length).toBeGreaterThan(0)
   })
 
-  test('exploreFrontiers exposes the state graph for downstream analysis', () => {
+  test('exploreFrontiersRaw exposes the state graph for downstream analysis', () => {
     // The graph is the raw material for findLivelocks/findStronglyConnectedComponents.
     // Verify it's present and well-formed: the toggle has 2 nodes, each with
     // one labeled successor edge to the other.
     const threads: Thread[] = [{ label: 'toggle', rules: [{ request: { type: 'on' } }, { request: { type: 'off' } }] }]
-    const result = exploreFrontiers({ threads, strategy: 'bfs', maxDepth: 50 })
+    const result = exploreFrontiersRaw({ threads, strategy: 'bfs', maxDepth: 50 })
     expect(result.stateGraph).toBeDefined()
     expect(result.stateGraph.size).toBe(2)
     for (const node of result.stateGraph.values()) {
