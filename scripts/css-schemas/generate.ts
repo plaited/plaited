@@ -2,7 +2,7 @@
  * @module css-schemas/generate
  *
  * Pure CSS property schema generator. Reads CSS property definition data
- * and produces the AJV (JSON Schema) source code for `src/tools/html/css.schemas.ts`.
+ * and produces the AJV (JSON Schema) source code for `src/tools/css.schemas.ts`.
  *
  * @remarks
  * This is a dev-only module used by the `run.ts` script. It is not part of

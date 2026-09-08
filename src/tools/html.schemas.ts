@@ -1,9 +1,9 @@
 import Ajv2020 from 'ajv/dist/2020'
-import { P_FORM, P_SCALE, P_TARGET, P_TRIGGER, SCALE } from '../../controller/controller.constants.ts'
-import { CUSTOM_PROPERTY_REF_PATTERN } from './css.constants.ts'
-import { CSSPropertiesSchema, validateCSSValue } from './css.schemas.ts'
-import { CLASS, STYLE } from './html.constants.ts'
+import { P_FORM, P_SCALE, P_TARGET, P_TRIGGER, SCALE } from '../controller/controller.constants.ts'
+import { CSSPropertiesSchema, CUSTOM_PROPERTY_REF_PATTERN, validateCSSValue } from './css.schemas.ts'
 
+export const CLASS = 'class'
+export const STYLE = 'style'
 /**
  * Shared Ajv instance (draft 2020-12) for HTML/SVG attribute validation.
  * Mirrors the `css.schemas.ts` ajv instance configuration.

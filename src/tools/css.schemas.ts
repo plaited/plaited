@@ -904,6 +904,14 @@ export type CSSProperties = Record<string, string | number>
 const cssValidator = ajv.compile(CSSPropertiesSchema)
 
 /**
+ * Pattern matching CSS custom property references like `var(--my-prop)`.
+ * Inline style strings use these to reference custom properties at runtime.
+ *
+ * @public
+ */
+export const CUSTOM_PROPERTY_REF_PATTERN = /var\(\s*--/
+
+/**
  * Validates one CSS property value against its generated schema.
  * Custom properties ('--*') pass as string/number.
  */

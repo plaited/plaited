@@ -1,0 +1,686 @@
+import { describe, expect, test } from 'bun:test'
+import { P_SCALE, P_TARGET, SCALE, SWAP_MODES } from '../../controller/controller.constants.ts'
+import {
+  htmlRender,
+  htmlScaleCheck,
+  htmlUpdateAttributes,
+  htmlValidateAndEscape,
+  htmlValidateAttributeValue,
+} from '../html.ts'
+
+// ── html-validate-and-escape ──────────────────────────────────────────────
+
+describe('htmlValidateAndEscape — happy path', () => {
+  test('valid HTML with no on* handlers returns the HTML unchanged', async () => {
+    const html = `<div class="card"><p>hello &amp; world</p></div>`
+    const result = await htmlValidateAndEscape({ html })
+    expect(result.isError).toBeFalsy()
+    expect(result.html).toBe(html)
+  })
+})
+
+describe('htmlValidateAndEscape — on* security', () => {
+  test('on* attribute returns isError with tag and attribute', async () => {
+    const result = await htmlValidateAndEscape({ html: `<div onclick="alert(1)">x</div>` })
+    expect(result.isError).toBe(true)
+    expect(result.htmlViolations).toHaveLength(1)
+    expect(result.htmlViolations![0]).toMatchObject({ tag: 'div', attribute: 'onclick' })
+    expect(result.htmlViolations![0]!.message).toContain('onclick')
+  })
+
+  test('data-on is NOT an on* handler (allowed); on-foo IS blocked (starts with on)', async () => {
+    const ok = await htmlValidateAndEscape({ html: `<div data-on="keep">x</div>` })
+    expect(ok.isError).toBeFalsy()
+    expect(ok.html).toBe(`<div data-on="keep">x</div>`)
+
+    const blocked = await htmlValidateAndEscape({ html: `<div on-foo="bar">x</div>` })
+    expect(blocked.isError).toBe(true)
+    expect(blocked.htmlViolations![0]!.attribute).toBe('on-foo')
+  })
+})
+
+describe('htmlValidateAndEscape — schema validation', () => {
+  test('schema-invalid attribute value returns isError', async () => {
+    const result = await htmlValidateAndEscape({ html: `<a href="#" target="_invalid">link</a>` })
+    expect(result.isError).toBe(true)
+    expect(result.htmlViolations).toHaveLength(1)
+    expect(result.htmlViolations![0]).toMatchObject({ tag: 'a', attribute: 'target' })
+  })
+
+  test('schema-valid enum value does not error', async () => {
+    expect((await htmlValidateAndEscape({ html: `<a href="#" target="_blank">link</a>` })).isError).toBeFalsy()
+    expect((await htmlValidateAndEscape({ html: `<input type="text" />` })).isError).toBeFalsy()
+  })
+})
+
+describe('htmlValidateAndEscape — aggregate violations', () => {
+  test('collects violations across multiple elements', async () => {
+    const result = await htmlValidateAndEscape({ html: `<div onclick="a()"><a target="_bad">x</a></div>` })
+    expect(result.isError).toBe(true)
+    expect(result.htmlViolations).toHaveLength(2)
+    const attrs = result.htmlViolations!.map((e) => e.attribute).sort()
+    expect(attrs).toEqual(['onclick', 'target'])
+    expect(result.htmlViolations!.some((e) => e.tag === 'div' && e.attribute === 'onclick')).toBe(true)
+    expect(result.htmlViolations!.some((e) => e.tag === 'a' && e.attribute === 'target')).toBe(true)
+  })
+})
+
+describe('htmlValidateAndEscape — text not escaped', () => {
+  test('text entities are preserved (no double-escaping)', async () => {
+    const html = `<p>Tom &amp; Jerry &lt;raw&gt;</p>`
+    expect((await htmlValidateAndEscape({ html })).html).toBe(html)
+  })
+})
+
+describe('htmlValidateAndEscape — element coverage', () => {
+  test('void and nested elements are validated; valid void HTML passes unchanged', async () => {
+    const html = `<div><img src="x.png" alt="pic" /><br /><span>ok</span></div>`
+    expect((await htmlValidateAndEscape({ html })).html).toBe(html)
+  })
+
+  test('on* on a void element is caught', async () => {
+    const result = await htmlValidateAndEscape({ html: `<img src="x" onerror="alert(1)" />` })
+    expect(result.isError).toBe(true)
+    expect(result.htmlViolations![0]).toMatchObject({ tag: 'img', attribute: 'onerror' })
+  })
+})
+
+describe('htmlValidateAndEscape — attribute escape', () => {
+  test('quote-breakout in a single-quoted attribute is neutralized', async () => {
+    const html = `<div class='" onmouseover="alert(1)'>x</div>`
+    const result = await htmlValidateAndEscape({ html })
+    expect(result.isError).toBeFalsy()
+    expect(result.html).toContain('class="')
+    expect(result.html).not.toMatch(/onmouseover=alert/i)
+    expect(result.html).toContain('&quot; onmouseover=&quot;alert(1)')
+  })
+
+  test('already-escaped attribute entities are preserved (no double-escape)', async () => {
+    const html = `<div class="a &amp; b" data-x="&lt;raw&gt;">hi</div>`
+    expect((await htmlValidateAndEscape({ html })).html).toBe(html)
+  })
+})
+
+describe('htmlValidateAndEscape — combined HTML + CSS violations', () => {
+  test('document with both HTML attribute and CSS violations returns both bags', async () => {
+    const html = [
+      `<html><head>`,
+      `<style>.a { box-sizing: mah-box; }</style>`,
+      `</head><body>`,
+      `<div onclick="alert(1)">x</div>`,
+      `</body></html>`,
+    ].join('\n')
+    const result = await htmlValidateAndEscape({ html })
+    expect(result.isError).toBe(true)
+    expect(result.htmlViolations).toHaveLength(1)
+    expect(result.htmlViolations![0]).toMatchObject({ tag: 'div', attribute: 'onclick' })
+    expect(result.cssViolations).toHaveLength(1)
+    expect(result.cssViolations![0]).toMatchObject({ property: 'box-sizing', value: 'mah-box' })
+  })
+})
+
+describe('htmlValidateAndEscape — CSS validation', () => {
+  test('HTML with no <style> block does not error', async () => {
+    expect((await htmlValidateAndEscape({ html: '<html><body><p>hi</p></body></html>' })).isError).toBeFalsy()
+  })
+
+  test('valid known declarations do not error', async () => {
+    const html = `<style>.a { color: red; box-sizing: content-box; flex-direction: row; }</style>`
+    expect((await htmlValidateAndEscape({ html })).html).toBe(html)
+  })
+
+  test('var() reference on an enum property does not error', async () => {
+    const html = `<style>.a { box-sizing: var(--bs); flex-direction: var( --fd ); }</style>`
+    expect((await htmlValidateAndEscape({ html })).html).toBe(html)
+  })
+
+  test('custom property --* declarations do not error', async () => {
+    const html = `<style>.a { --my-var: 10px; --color: red; }</style>`
+    expect((await htmlValidateAndEscape({ html })).html).toBe(html)
+  })
+
+  test('unknown property names are browser-handled (no error)', async () => {
+    const html = `<style>.a { colr: red; -x-unknown: 1px; }</style>`
+    expect((await htmlValidateAndEscape({ html })).html).toBe(html)
+  })
+
+  test('invalid enum value returns isError with line, property, value', async () => {
+    const result = await htmlValidateAndEscape({ html: `<style>.a { box-sizing: mah-box; }</style>` })
+    expect(result.isError).toBe(true)
+    expect(result.cssViolations).toHaveLength(1)
+    expect(result.cssViolations![0]).toMatchObject({ property: 'box-sizing', value: 'mah-box' })
+    expect(result.cssViolations![0]!.line).toBe(1)
+    expect(result.cssViolations![0]!.message).toContain('box-sizing')
+  })
+
+  test('@media prelude is not mistaken for a declaration; inner decl is validated', async () => {
+    const html = `<style>
+@media (max-width: 600px) {
+  .a { flex-direction: sideways; }
+}
+</style>`
+    const result = await htmlValidateAndEscape({ html })
+    expect(result.isError).toBe(true)
+    expect(result.cssViolations).toHaveLength(1)
+    expect(result.cssViolations![0]).toMatchObject({ property: 'flex-direction', value: 'sideways' })
+    expect(result.cssViolations!.some((e) => e.property === 'max-width')).toBe(false)
+  })
+
+  test('collects all invalid CSS declarations, not just the first', async () => {
+    const result = await htmlValidateAndEscape({
+      html: `<style>.a { box-sizing: mah-box; flex-direction: sideways; }</style>`,
+    })
+    expect(result.isError).toBe(true)
+    expect(result.cssViolations).toHaveLength(2)
+    expect(result.cssViolations!.map((e) => e.property).sort()).toEqual(['box-sizing', 'flex-direction'])
+  })
+
+  test('line numbers are absolute across multiple lines and style blocks', async () => {
+    const html = [
+      `<html><head>`,
+      `<style>.a { box-sizing: bad; }</style>`,
+      `<style>`,
+      `@media (min-width: 1px) {`,
+      `  .b { flex-direction: sideways; }`,
+      `}`,
+      `</style>`,
+      `</head></html>`,
+    ].join('\n')
+    const result = await htmlValidateAndEscape({ html })
+    expect(result.isError).toBe(true)
+    expect(result.cssViolations).toHaveLength(2)
+    const boxErr = result.cssViolations!.find((e) => e.property === 'box-sizing')!
+    const flexErr = result.cssViolations!.find((e) => e.property === 'flex-direction')!
+    expect(boxErr.line).toBe(2)
+    expect(flexErr.line).toBe(5)
+  })
+
+  test('& nesting: declarations inside & selectors are validated', async () => {
+    const html = [
+      `<style>`,
+      `.container {`,
+      `  display: flex;`,
+      `  & .card { box-sizing: mah-box; }`,
+      `}`,
+      `</style>`,
+    ].join('\n')
+    const result = await htmlValidateAndEscape({ html })
+    expect(result.isError).toBe(true)
+    expect(result.cssViolations).toHaveLength(1)
+    expect(result.cssViolations![0]).toMatchObject({ property: 'box-sizing', value: 'mah-box' })
+    expect(result.cssViolations!.some((e) => e.property === 'display')).toBe(false)
+  })
+
+  test('empty <style> and @media with no declarations do not error', async () => {
+    const html = `<style></style><style>@media (max-width: 600px) {}</style>`
+    expect((await htmlValidateAndEscape({ html })).isError).toBeFalsy()
+  })
+})
+
+describe('htmlValidateAndEscape — constructor-equivalent validation', () => {
+  test('on* attribute in input returns isError', async () => {
+    const result = await htmlValidateAndEscape({ html: `<div onclick="alert(1)">x</div>` })
+    expect(result.isError).toBe(true)
+  })
+
+  test('escapes attributes in input — quote-breakout neutralized', async () => {
+    const result = await htmlValidateAndEscape({ html: `<div class='"breakout'>x</div>` })
+    expect(result.isError).toBeFalsy()
+    expect(result.html).toContain('&quot;')
+    expect(result.html).not.toMatch(/onclick|onerror/i)
+  })
+})
+
+// ── html-validate-attribute-value ─────────────────────────────────────────
+
+describe('htmlValidateAttributeValue — on* security', () => {
+  test('on* attribute returns isError', async () => {
+    const result = await htmlValidateAttributeValue({ tag: 'div', attr: 'onclick', val: 'alert(1)' })
+    expect(result.isError).toBe(true)
+    expect(result.htmlViolations![0]).toMatchObject({ tag: 'div', attribute: 'onclick' })
+  })
+})
+
+describe('htmlValidateAttributeValue — schema validation', () => {
+  test('valid p-scale value returns { valid: true }', async () => {
+    const result = await htmlValidateAttributeValue({ tag: 'div', attr: 'p-scale', val: 's3' })
+    expect(result.isError).toBeFalsy()
+    expect(result.valid).toBe(true)
+  })
+
+  test('invalid p-scale value returns isError', async () => {
+    const result = await htmlValidateAttributeValue({ tag: 'div', attr: 'p-scale', val: 's99' })
+    expect(result.isError).toBe(true)
+    expect(result.htmlViolations![0]).toMatchObject({ tag: 'div', attribute: 'p-scale' })
+  })
+})
+
+// ── html-render ───────────────────────────────────────────────────────────
+
+describe('htmlRender — swap modes', () => {
+  test('innerHTML replaces inner content', async () => {
+    const result = await htmlRender({
+      html: `<div ${P_TARGET}="t">old</div>`,
+      target: 't',
+      fragment: '<b>new</b>',
+      swap: SWAP_MODES.innerHTML,
+      id: '1',
+    })
+    expect(result.isError).toBeFalsy()
+    expect(result.html).toBe(`<div ${P_TARGET}="t"><b>new</b></div>`)
+  })
+
+  test('outerHTML replaces the element', async () => {
+    const result = await htmlRender({
+      html: `<p>x</p><div ${P_TARGET}="t">old</div><p>y</p>`,
+      target: 't',
+      fragment: `<b>new</b>`,
+      swap: SWAP_MODES.outerHTML,
+      id: '1',
+    })
+    expect(result.html).toBe(`<p>x</p><b>new</b><p>y</p>`)
+  })
+
+  test('afterbegin inserts at start of inner content', async () => {
+    const result = await htmlRender({
+      html: `<div ${P_TARGET}="t">old</div>`,
+      target: 't',
+      fragment: `<b>first</b>`,
+      swap: SWAP_MODES.afterbegin,
+      id: '1',
+    })
+    expect(result.html).toBe(`<div ${P_TARGET}="t"><b>first</b>old</div>`)
+  })
+
+  test('beforeend inserts at end of inner content', async () => {
+    const result = await htmlRender({
+      html: `<div ${P_TARGET}="t">old</div>`,
+      target: 't',
+      fragment: `<b>last</b>`,
+      swap: SWAP_MODES.beforeend,
+      id: '1',
+    })
+    expect(result.html).toBe(`<div ${P_TARGET}="t">old<b>last</b></div>`)
+  })
+
+  test('beforebegin inserts before the element', async () => {
+    const result = await htmlRender({
+      html: `<div ${P_TARGET}="t">old</div>`,
+      target: 't',
+      fragment: `<b>before</b>`,
+      swap: SWAP_MODES.beforebegin,
+      id: '1',
+    })
+    expect(result.html).toBe(`<b>before</b><div ${P_TARGET}="t">old</div>`)
+  })
+
+  test('afterend inserts after the element', async () => {
+    const result = await htmlRender({
+      html: `<div ${P_TARGET}="t">old</div>`,
+      target: 't',
+      fragment: `<b>after</b>`,
+      swap: SWAP_MODES.afterend,
+      id: '1',
+    })
+    expect(result.html).toBe(`<div ${P_TARGET}="t">old</div><b>after</b>`)
+  })
+})
+
+describe('htmlRender — all-matches targeting', () => {
+  test('two elements with the same p-target both get swapped', async () => {
+    const result = await htmlRender({
+      html: `<div ${P_TARGET}="t">a</div><div ${P_TARGET}="t">b</div>`,
+      target: 't',
+      fragment: 'x',
+      swap: SWAP_MODES.innerHTML,
+      id: '1',
+    })
+    expect(result.html).toBe(`<div ${P_TARGET}="t">x</div><div ${P_TARGET}="t">x</div>`)
+  })
+})
+
+describe('htmlRender — match param', () => {
+  test("default match ('=') requires exact value", async () => {
+    const result = await htmlRender({
+      html: `<div ${P_TARGET}="user">x</div><div ${P_TARGET}="user-name">y</div>`,
+      target: 'user',
+      fragment: 'z',
+      swap: SWAP_MODES.innerHTML,
+      id: '1',
+    })
+    expect(result.html).toBe(`<div ${P_TARGET}="user">z</div><div ${P_TARGET}="user-name">y</div>`)
+  })
+
+  test("match='^=' fills user-name and user-email but not other", async () => {
+    const result = await htmlRender({
+      html: `<div ${P_TARGET}="greeting">old</div><span ${P_TARGET}="user-name">name</span><span ${P_TARGET}="user-email">email</span><span ${P_TARGET}="other">keep</span>`,
+      target: 'user',
+      fragment: 'filled',
+      match: '^=',
+      swap: SWAP_MODES.innerHTML,
+      id: '1',
+    })
+    expect(result.html).toContain(`<span ${P_TARGET}="user-name">filled</span>`)
+    expect(result.html).toContain(`<span ${P_TARGET}="user-email">filled</span>`)
+    expect(result.html).toContain(`<span ${P_TARGET}="other">keep</span>`)
+  })
+
+  test("match='*=' substring matches", async () => {
+    const result = await htmlRender({
+      html: `<div ${P_TARGET}="alpha">a</div><div ${P_TARGET}="zeta">z</div>`,
+      target: 'lph',
+      fragment: 'x',
+      match: '*=',
+      swap: SWAP_MODES.innerHTML,
+      id: '1',
+    })
+    expect(result.html).toBe(`<div ${P_TARGET}="alpha">x</div><div ${P_TARGET}="zeta">z</div>`)
+  })
+
+  test("match='~=' space-list matches one of space-separated tokens", async () => {
+    const result = await htmlRender({
+      html: `<div ${P_TARGET}="a b c">x</div><div ${P_TARGET}="bc">y</div>`,
+      target: 'b',
+      fragment: 'z',
+      match: '~=',
+      swap: SWAP_MODES.innerHTML,
+      id: '1',
+    })
+    expect(result.html).toBe(`<div ${P_TARGET}="a b c">z</div><div ${P_TARGET}="bc">y</div>`)
+  })
+
+  test('zero matches is a no-op — html unchanged, returns { id, target, html }', async () => {
+    const html = `<div ${P_TARGET}="t">keep</div>`
+    const result = await htmlRender({ html, target: 'nope', fragment: 'x', swap: SWAP_MODES.innerHTML, id: '1' })
+    expect(result.isError).toBeFalsy()
+    expect(result.html).toBe(html)
+    expect(result).toEqual({ id: '1', target: 'nope', html })
+  })
+})
+
+describe('htmlRender — output shape', () => {
+  test('render returns { id, target, html } carrying the new state', async () => {
+    const result = await htmlRender({
+      html: `<div ${P_TARGET}="t">old</div>`,
+      target: 't',
+      fragment: 'new',
+      swap: SWAP_MODES.innerHTML,
+      id: 'i1',
+    })
+    expect(result).toEqual({ id: 'i1', target: 't', html: `<div ${P_TARGET}="t">new</div>` })
+  })
+})
+
+describe('htmlRender — stateless threading', () => {
+  test('a render → attrs → render sequence threads each output html into the next', async () => {
+    let html = `<div ${P_TARGET}="t"></div>`
+    html = (
+      await htmlRender({ html, target: 't', fragment: '<span>first</span>', swap: SWAP_MODES.innerHTML, id: '1' })
+    ).html
+    html = (await htmlUpdateAttributes({ html, target: 't', attr: { 'data-n': '1' }, id: '2' })).html
+    const result = await htmlRender({
+      html,
+      target: 't',
+      fragment: '<b>second</b>',
+      swap: SWAP_MODES.beforeend,
+      id: '3',
+    })
+    expect(result.html).toBe(`<div ${P_TARGET}="t" data-n="1"><span>first</span><b>second</b></div>`)
+  })
+})
+
+describe('htmlRender — no stylesheet handling', () => {
+  test('render does not touch a <style> in the document html', async () => {
+    const result = await htmlRender({
+      html: `<style>.x{color:red}</style><div ${P_TARGET}="t">old</div>`,
+      target: 't',
+      fragment: 'new',
+      swap: SWAP_MODES.innerHTML,
+      id: '1',
+    })
+    expect(result.html).toBe(`<style>.x{color:red}</style><div ${P_TARGET}="t">new</div>`)
+  })
+})
+
+describe('htmlRender — payload (fragment) validation', () => {
+  test('on* attribute in fragment returns isError and leaves the document html unchanged', async () => {
+    const html = `<div ${P_TARGET}="t">old</div>`
+    const result = await htmlRender({
+      html,
+      target: 't',
+      fragment: `<div onclick="alert(1)">x</div>`,
+      swap: SWAP_MODES.innerHTML,
+      id: '1',
+    })
+    expect(result.isError).toBe(true)
+    expect(result.html).toBe(html)
+  })
+
+  test('fragment is validated even when no p-target matches', async () => {
+    const html = `<div ${P_TARGET}="t">old</div>`
+    const result = await htmlRender({
+      html,
+      target: 'nope',
+      fragment: `<div onclick="alert(1)">x</div>`,
+      swap: SWAP_MODES.innerHTML,
+      id: '1',
+    })
+    expect(result.isError).toBe(true)
+  })
+
+  test('quote-breakout in fragment attributes is neutralized', async () => {
+    const result = await htmlRender({
+      html: `<div ${P_TARGET}="t">old</div>`,
+      target: 't',
+      fragment: `<b class='"breakout'>new</b>`,
+      swap: SWAP_MODES.innerHTML,
+      id: '1',
+    })
+    expect(result.isError).toBeFalsy()
+    expect(result.html).toContain('&quot;')
+    expect(result.html).not.toMatch(/onclick|onerror/i)
+  })
+
+  test('validates CSS in fragment <style> blocks', async () => {
+    const result = await htmlRender({
+      html: `<div ${P_TARGET}="t">old</div>`,
+      target: 't',
+      fragment: `<style>.a { box-sizing: mah-box; }</style>new`,
+      swap: SWAP_MODES.innerHTML,
+      id: '1',
+    })
+    expect(result.isError).toBe(true)
+  })
+})
+
+// ── html-update-attributes ────────────────────────────────────────────────
+
+describe('htmlUpdateAttributes — updateAttributes rules', () => {
+  test('string set', async () => {
+    const result = await htmlUpdateAttributes({
+      html: `<div ${P_TARGET}="t" data-x="old"></div>`,
+      target: 't',
+      attr: { 'data-x': 'new' },
+      id: '1',
+    })
+    expect(result.isError).toBeFalsy()
+    expect(result.html).toBe(`<div ${P_TARGET}="t" data-x="new"></div>`)
+  })
+
+  test('null + present → removeAttribute', async () => {
+    const result = await htmlUpdateAttributes({
+      html: `<div ${P_TARGET}="t" data-x="old"></div>`,
+      target: 't',
+      attr: { 'data-x': null },
+      id: '1',
+    })
+    expect(result.html).toBe(`<div ${P_TARGET}="t"></div>`)
+  })
+
+  test('null + absent → no-op', async () => {
+    const html = `<div ${P_TARGET}="t"></div>`
+    const result = await htmlUpdateAttributes({ html, target: 't', attr: { 'data-x': null }, id: '1' })
+    expect(result.html).toBe(html)
+  })
+
+  test('BOOLEAN_ATTRS → set bare (present when absent)', async () => {
+    const result = await htmlUpdateAttributes({
+      html: `<input ${P_TARGET}="t"/>`,
+      target: 't',
+      attr: { disabled: true },
+      id: '1',
+    })
+    expect(result.html).toBe(`<input ${P_TARGET}="t" disabled="" />`)
+  })
+
+  test('number coerced to string', async () => {
+    const result = await htmlUpdateAttributes({
+      html: `<div ${P_TARGET}="t"></div>`,
+      target: 't',
+      attr: { 'data-n': 5 },
+      id: '1',
+    })
+    expect(result.html).toBe(`<div ${P_TARGET}="t" data-n="5"></div>`)
+  })
+
+  test('all-matches: same p-target on multiple elements → all updated', async () => {
+    const result = await htmlUpdateAttributes({
+      html: `<div ${P_TARGET}="t"></div><div ${P_TARGET}="t"></div>`,
+      target: 't',
+      attr: { 'data-n': '1' },
+      id: '1',
+    })
+    expect(result.html).toBe(`<div ${P_TARGET}="t" data-n="1"></div><div ${P_TARGET}="t" data-n="1"></div>`)
+  })
+
+  test('match param on attrs (^=)', async () => {
+    const result = await htmlUpdateAttributes({
+      html: `<span ${P_TARGET}="user-name">name</span><span ${P_TARGET}="user-email">email</span><span ${P_TARGET}="other">keep</span>`,
+      target: 'user',
+      match: '^=',
+      attr: { 'data-set': '1' },
+      id: '1',
+    })
+    expect(result.html).toContain(`<span ${P_TARGET}="user-name" data-set="1">name</span>`)
+    expect(result.html).toContain(`<span ${P_TARGET}="user-email" data-set="1">email</span>`)
+    expect(result.html).toContain(`<span ${P_TARGET}="other">keep</span>`)
+  })
+
+  test('zero matches is a no-op — html unchanged, returns { id, target, html }', async () => {
+    const html = `<div ${P_TARGET}="t">keep</div>`
+    const result = await htmlUpdateAttributes({ html, target: 'nope', attr: { 'data-x': '1' }, id: '1' })
+    expect(result.isError).toBeFalsy()
+    expect(result.html).toBe(html)
+    expect(result).toEqual({ id: '1', target: 'nope', html })
+  })
+})
+
+describe('htmlUpdateAttributes — output shape', () => {
+  test('attrs returns { id, target, html } carrying the new state', async () => {
+    const result = await htmlUpdateAttributes({
+      html: `<div ${P_TARGET}="t"></div>`,
+      target: 't',
+      attr: { 'data-n': 9 },
+      id: 'i2',
+    })
+    expect(result).toEqual({ id: 'i2', target: 't', html: `<div ${P_TARGET}="t" data-n="9"></div>` })
+  })
+})
+
+describe('htmlUpdateAttributes — on* and schema validation', () => {
+  test('on* attribute returns isError and leaves the document html unchanged', async () => {
+    const html = `<div ${P_TARGET}="t"></div>`
+    const result = await htmlUpdateAttributes({ html, target: 't', attr: { onclick: 'alert(1)' }, id: '1' })
+    expect(result.isError).toBe(true)
+    expect(result.htmlViolations![0]).toMatchObject({ tag: 'div', attribute: 'onclick' })
+    expect(result.html).toBe(html)
+  })
+
+  test('schema-invalid value returns isError', async () => {
+    const html = `<a ${P_TARGET}="t" href="#"></a>`
+    const result = await htmlUpdateAttributes({ html, target: 't', attr: { target: '_bad' }, id: '1' })
+    expect(result.isError).toBe(true)
+    expect(result.htmlViolations![0]).toMatchObject({ tag: 'a', attribute: 'target' })
+  })
+
+  test('schema-valid enum value is accepted', async () => {
+    const result = await htmlUpdateAttributes({
+      html: `<a ${P_TARGET}="t" href="#"></a>`,
+      target: 't',
+      attr: { target: '_blank' },
+      id: '1',
+    })
+    expect(result.isError).toBeFalsy()
+    expect(result.html).toBe(`<a ${P_TARGET}="t" href="#" target="_blank"></a>`)
+  })
+})
+
+// ── html-scale-check ───────────────────────────────────────────────────────
+
+describe('htmlScaleCheck — into modes (self boundary)', () => {
+  test('target with own p-scale returns that scale', async () => {
+    const result = await htmlScaleCheck({
+      html: `<div ${P_TARGET}="t" ${P_SCALE}="s3">old</div>`,
+      target: 't',
+      swap: SWAP_MODES.innerHTML,
+      id: '1',
+    })
+    expect(result).toEqual({ id: '1', target: 't', effectiveScale: SCALE.s3 })
+  })
+
+  test('target without own p-scale inherits nearest ancestor scale', async () => {
+    const result = await htmlScaleCheck({
+      html: `<section ${P_SCALE}="s5"><article ${P_SCALE}="s3"><span ${P_TARGET}="t">x</span></article></section>`,
+      target: 't',
+      swap: SWAP_MODES.innerHTML,
+      id: '1',
+    })
+    expect(result).toEqual({ id: '1', target: 't', effectiveScale: SCALE.s3 })
+  })
+})
+
+describe('htmlScaleCheck — replace/beside modes (parent boundary)', () => {
+  test('outerHTML uses parent scale, ignores target own p-scale', async () => {
+    const result = await htmlScaleCheck({
+      html: `<section ${P_SCALE}="s5"><span ${P_TARGET}="t" ${P_SCALE}="s1">x</span></section>`,
+      target: 't',
+      swap: SWAP_MODES.outerHTML,
+      id: '1',
+    })
+    expect(result).toEqual({ id: '1', target: 't', effectiveScale: SCALE.s5 })
+  })
+})
+
+describe('htmlScaleCheck — no scale found', () => {
+  test('no p-scale anywhere returns rel', async () => {
+    const result = await htmlScaleCheck({
+      html: `<div><span ${P_TARGET}="t">x</span></div>`,
+      target: 't',
+      swap: SWAP_MODES.innerHTML,
+      id: '1',
+    })
+    expect(result).toEqual({ id: '1', target: 't', effectiveScale: SCALE.rel })
+  })
+
+  test('zero matches returns rel', async () => {
+    const result = await htmlScaleCheck({
+      html: `<div ${P_TARGET}="t">x</div>`,
+      target: 'nope',
+      swap: SWAP_MODES.innerHTML,
+      id: '1',
+    })
+    expect(result).toEqual({ id: '1', target: 'nope', effectiveScale: SCALE.rel })
+  })
+})
+
+describe('htmlScaleCheck — multiple matches', () => {
+  test('most restrictive (lowest rank) across matches wins', async () => {
+    const result = await htmlScaleCheck({
+      html: `<section ${P_SCALE}="s5"><div ${P_TARGET}="t">a</div></section><article ${P_SCALE}="s2"><div ${P_TARGET}="t">b</div></article>`,
+      target: 't',
+      swap: SWAP_MODES.innerHTML,
+      id: '1',
+    })
+    expect(result).toEqual({ id: '1', target: 't', effectiveScale: SCALE.s2 })
+  })
+})

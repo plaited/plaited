@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { CUSTOM_PROPERTY_REF_PATTERN } from '../css.constants.ts'
+import { CUSTOM_PROPERTY_REF_PATTERN } from '../css.schemas.ts'
 import { ajv, validatePStyle, validatePTrigger } from '../html.schemas.ts'
 
 describe('CUSTOM_PROPERTY_REF_PATTERN', () => {
