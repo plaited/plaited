@@ -17,7 +17,7 @@ import type { Client, OAuthClientProvider } from '@modelcontextprotocol/client'
 import type { JSONSchemaType } from 'ajv'
 import type { Keychain } from '../kernel/oauth/keychain.ts'
 import { BunKeychainOAuthProvider, type KeychainOAuthProviderOptions } from '../kernel/oauth/keychain-oauth-provider.ts'
-import { getSharedClient, type McpDiscovery, setPoolDiscovery } from '../kernel/use-plugin-adapter.ts'
+import { getSharedClient } from '../kernel/use-plugin-adapter.ts'
 import { ajv, useTool } from './use-tool.ts'
 
 // ---------------------------------------------------------------------------
@@ -717,11 +717,7 @@ const run = async (input: McpClientInput): Promise<McpClientOutput> => {
       return { mode: 'read-resource', result }
     }
     case 'discover': {
-      // MINIMAL: the connection-level discover cache is write-only here — we
-      // always re-discover and refresh the cache. A refresh-aware mode (or a
-      // TTL) can read getPoolDiscovery later to skip the round-trip.
       const result = await discoverCapabilities(client, timeoutMs)
-      setPoolDiscovery(url, result satisfies McpDiscovery)
       return { mode: 'discover', result }
     }
   }

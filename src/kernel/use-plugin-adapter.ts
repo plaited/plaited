@@ -7,12 +7,11 @@
  * closeSharedClient): one live {@link Client} per server-url, lazily connected
  * on first use and reused across subsequent calls, `close()`d on teardown.
  *
- * The adapter owns **no discovery data** — it holds only a connection-level
- * cache of the last `discover()` result (`discovery`) for the documented entry
- * shape. The `.plaited/discovery.sqlite` store is owned by the `discovery`
- * tool, not here. Population/refresh/search are kernel-thread policy.
+ * The pool owns connection lifecycle only — nothing else. Discovery data is
+ * the `discovery` tool's store (`.plaited/discovery.sqlite`), populated by
+ * kernel-thread policy; the adapter holds no discovery cache.
  *
- * MINIMAL: the cache key is the server-url alone. A second call to the same url
+ * MINIMAL: the pool key is the server-url alone. A second call to the same url
  * with different `headers`/`authProvider` reuses the first connection's request
  * init. Upgrade path: key by url + auth-fingerprint so per-call auth variants
  * get distinct connections.
@@ -27,13 +26,6 @@ import { Client, StreamableHTTPClientTransport } from '@modelcontextprotocol/cli
 // Types
 // ---------------------------------------------------------------------------
 
-/** Capabilities gathered by a `discover` call, cached on the pool entry. */
-export type McpDiscovery = {
-  tools: unknown[]
-  prompts: unknown[]
-  resources: unknown[]
-}
-
 /** Options used to establish (and re-establish) a pooled connection. */
 export type AdapterSessionOptions = {
   headers?: Record<string, string>
@@ -45,8 +37,6 @@ type PoolEntry = {
   client: Client
   /** Resolves to the connected client; shared by concurrent first-callers. */
   connectPromise: Promise<Client>
-  /** Last discover() result cached on the connection (not the discovery store). */
-  discovery?: McpDiscovery
 }
 
 // ---------------------------------------------------------------------------
@@ -94,15 +84,6 @@ export const getSharedClient = async (url: string, options: AdapterSessionOption
     throw err
   }
   return client
-}
-
-/** Read the cached discover() result for a connection, if any. */
-export const getPoolDiscovery = (url: string): McpDiscovery | undefined => pool.get(url)?.discovery
-
-/** Store a discover() result on the connection's pool entry. */
-export const setPoolDiscovery = (url: string, discovery: McpDiscovery): void => {
-  const entry = pool.get(url)
-  if (entry) entry.discovery = discovery
 }
 
 /** Close and drop a single connection from the pool. */
