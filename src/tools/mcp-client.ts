@@ -15,21 +15,14 @@
 
 import type { Client, OAuthClientProvider } from '@modelcontextprotocol/client'
 import type { JSONSchemaType } from 'ajv'
+import type { AdapterSessionOptions, GetClientFn } from '../kernel/kernel.ts'
 import type { Keychain } from '../kernel/oauth/keychain.ts'
 import { BunKeychainOAuthProvider, type KeychainOAuthProviderOptions } from '../kernel/oauth/keychain-oauth-provider.ts'
-import type { AdapterSessionOptions } from '../kernel/use-plugin-adapter.ts'
 import { ajv, useTool } from './use-tool.ts'
 
-// ---------------------------------------------------------------------------
-// Pool injection types
-// ---------------------------------------------------------------------------
-
-/** Pool getter injected at provisioning — the kernel owns the pool closure. */
-export type GetClientFn = (url: string, options: AdapterSessionOptions) => Promise<Client>
-
 // Re-export the injected-fn's options shape so tool consumers don't reach
-// into the kernel for it. Moved to kernel.ts in Slice 2.
-export type { AdapterSessionOptions }
+// into the kernel for it.
+export type { AdapterSessionOptions, GetClientFn }
 
 // ---------------------------------------------------------------------------
 // Internal MCP types

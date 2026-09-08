@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { createConnectionPool } from '../../kernel/use-plugin-adapter.ts'
+import { createConnectionPool } from '../../kernel/kernel.ts'
 import { createMcpClientTool, McpClientInputSchema, McpClientOutputSchema } from '../mcp-client.ts'
 import { ajv } from '../use-tool.ts'
 import { startMcpServer } from './mcp-server-fixture.ts'
