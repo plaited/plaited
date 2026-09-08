@@ -498,3 +498,119 @@ export const createModelTools = ({
 
   return { modelRespond, modelCompact }
 }
+
+// ---------------------------------------------------------------------------
+// Scripted model tools — deterministic canned responses (no fetch)
+// ---------------------------------------------------------------------------
+
+/**
+ * One canned model-respond response. `items` are returned verbatim; `status`
+ * and `usage` flow through unchanged. A canned `function_call` item exercises
+ * the tool-call path without a network.
+ *
+ * @public
+ */
+export type ScriptedResponse = {
+  items: OutputItem[]
+  status: string
+  usage?: Usage
+  error?: OpenResponsesError
+}
+
+/**
+ * The scripted model's response source: a single canned response (repeated
+ * every call), an array advanced one entry per `modelRespond` call (clamped
+ * to the last so over-long turns stay bounded), or a function of
+ * `(input, callIndex)` for stateful scripts.
+ *
+ * @public
+ */
+export type Script =
+  | ScriptedResponse
+  | ScriptedResponse[]
+  | ((input: ModelRespondInput, callIndex: number) => ScriptedResponse | Promise<ScriptedResponse>)
+
+/**
+ * Build the provisioned model tools bound to a {@link Script} instead of a
+ * live endpoint — no `fetch`, no network. Same `{ modelRespond, modelCompact }`
+ * shape (and the same input/output schemas) as {@link createModelTools} so the
+ * turn loop, dispatch bridge, and CLI seam run identically against the
+ * scripted or the live provisioning. Harbor/CI run against the scripted set;
+ * a live `createKernel` swaps in `createModelTools`.
+ *
+ * @public
+ */
+export const createScriptedModelTools = ({
+  script,
+}: {
+  script: Script
+}): { modelRespond: ModelRespondTool; modelCompact: ModelCompactTool } => {
+  let callIndex = 0
+  const resolveScript = async (input: ModelRespondInput, idx: number): Promise<ScriptedResponse> => {
+    if (typeof script === 'function') return script(input, idx)
+    if (Array.isArray(script)) return script[Math.min(idx, script.length - 1)]!
+    return script
+  }
+  const modelRespond = useTool(
+    {
+      name: MODEL_RESPOND_TOOL_NAME,
+      description:
+        'Scripted (deterministic) model-respond — returns a canned response per call with no fetch. ' +
+        'Same input/output shape as the live model-respond; provisioned for dev/CI determinism. ' +
+        'function_call items are data only — the caller dispatches them.',
+      inputSchema: ModelRespondInputSchema,
+      outputSchema: ModelRespondOutputSchema,
+    },
+    async (input, validate): Promise<ModelRespondOutput> => {
+      if (!validate.input(input)) {
+        return {
+          isError: true,
+          message: `invalid input: ${validate.input.errors?.map((e) => `${e.instancePath} ${e.message}`).join('; ')}`,
+        }
+      }
+      const idx = callIndex
+      callIndex += 1
+      const canned = await resolveScript(input, idx)
+      return {
+        items: canned.items,
+        status: canned.status,
+        ...(canned.usage !== undefined && { usage: canned.usage }),
+        ...(canned.error !== undefined && { error: canned.error }),
+      }
+    },
+  )
+  const modelCompact = useTool(
+    {
+      name: MODEL_COMPACT_TOOL_NAME,
+      description: 'Scripted (deterministic) model-compact — returns a canned compaction with no fetch.',
+      inputSchema: ModelCompactInputSchema,
+      outputSchema: ModelCompactOutputSchema,
+    },
+    async (_input, _validate): Promise<ModelCompactOutput> => ({
+      encrypted_content: 'scripted-compaction',
+      usage: { input_tokens: 0, output_tokens: 0, total_tokens: 0 },
+    }),
+  )
+  return { modelRespond, modelCompact }
+}
+
+/**
+ * The default canned model-respond: a single completed assistant message. The
+ * `createKernel()` floor provisioned when no `modelTools` override is supplied —
+ * keeps the CLI seam deterministic with no endpoint configured.
+ *
+ * @public
+ */
+export const DEFAULT_SCRIPTED_RESPONSE: ScriptedResponse = {
+  items: [
+    {
+      id: 'msg_scripted_final',
+      type: 'message',
+      status: 'completed',
+      role: 'assistant',
+      content: [{ type: 'output_text', text: 'OK' }],
+    },
+  ],
+  status: 'completed',
+  usage: { input_tokens: 1, output_tokens: 1, total_tokens: 2 },
+}

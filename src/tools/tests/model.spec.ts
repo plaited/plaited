@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'bun:test'
-import { createModelTools } from '../model.ts'
+import { createModelTools, createScriptedModelTools, DEFAULT_SCRIPTED_RESPONSE } from '../model.ts'
+import type { OutputItem } from '../open-responses.schemas.ts'
 import {
   ASSISTANT_TEXT,
   COMPACT_ENCRYPTED_CONTENT,
@@ -288,5 +289,139 @@ describe('createModelTools factory shape', () => {
     const { modelRespond, modelCompact } = createModelTools({ endpoints: {} })
     expect(modelRespond.name).toBe('model-respond')
     expect(modelCompact.name).toBe('model-compact')
+  })
+})
+
+describe('createScriptedModelTools — deterministic canned model (no fetch)', () => {
+  test('returns both tools with the same names as the live createModelTools', () => {
+    const { modelRespond, modelCompact } = createScriptedModelTools({ script: DEFAULT_SCRIPTED_RESPONSE })
+    expect(modelRespond.name).toBe('model-respond')
+    expect(modelCompact.name).toBe('model-compact')
+  })
+
+  test('a single scripted response repeats on every call (no network, no fetch)', async () => {
+    const { modelRespond } = createScriptedModelTools({ script: DEFAULT_SCRIPTED_RESPONSE })
+    const first = await modelRespond({
+      provider: 'scripted',
+      modelId: 'm',
+      input: [{ type: 'message', role: 'user', content: 'hi' }],
+    })
+    const second = await modelRespond({
+      provider: 'scripted',
+      modelId: 'm',
+      input: [{ type: 'message', role: 'user', content: 'again' }],
+    })
+    expect(first).toEqual(second)
+    expect((first as { status: string }).status).toBe('completed')
+    expect((first as { items: unknown[] }).items).toHaveLength(1)
+  })
+
+  test('an array script advances one entry per call and clamps to the last', async () => {
+    const { modelRespond } = createScriptedModelTools({
+      script: [
+        {
+          items: [
+            {
+              id: 'a',
+              type: 'message',
+              status: 'completed',
+              role: 'assistant',
+              content: [{ type: 'output_text', text: 'first' }],
+            },
+          ],
+          status: 'completed',
+        },
+        {
+          items: [
+            {
+              id: 'b',
+              type: 'message',
+              status: 'completed',
+              role: 'assistant',
+              content: [{ type: 'output_text', text: 'second' }],
+            },
+          ],
+          status: 'completed',
+        },
+      ],
+    })
+    const r1 = await modelRespond({
+      provider: 'scripted',
+      modelId: 'm',
+      input: [{ type: 'message', role: 'user', content: 'x' }],
+    })
+    const r2 = await modelRespond({
+      provider: 'scripted',
+      modelId: 'm',
+      input: [{ type: 'message', role: 'user', content: 'x' }],
+    })
+    const r3 = await modelRespond({
+      provider: 'scripted',
+      modelId: 'm',
+      input: [{ type: 'message', role: 'user', content: 'x' }],
+    })
+    expect((r1 as { items: Array<{ id: string }> }).items[0]!.id).toBe('a')
+    expect((r2 as { items: Array<{ id: string }> }).items[0]!.id).toBe('b')
+    // Third call clamps to the last entry (second) — no out-of-bounds.
+    expect((r3 as { items: Array<{ id: string }> }).items[0]!.id).toBe('b')
+  })
+
+  test('a function_call item is returned as untouched data (the caller dispatches it)', async () => {
+    const { modelRespond } = createScriptedModelTools({
+      script: [{ items: [FUNCTION_CALL] as unknown as OutputItem[], status: 'completed' }],
+    })
+    const out = await modelRespond({
+      provider: 'scripted',
+      modelId: 'm',
+      input: [{ type: 'message', role: 'user', content: 'weather?' }],
+    })
+    const success = out as { items: Array<{ type: string; call_id?: string; name?: string; arguments?: string }> }
+    expect(success.items).toHaveLength(1)
+    expect(success.items[0]?.type).toBe('function_call')
+    expect(success.items[0]?.call_id).toBe(FUNCTION_CALL.call_id)
+    expect(success.items[0]?.name).toBe(FUNCTION_CALL.name)
+    expect(success.items[0]?.arguments).toBe(FUNCTION_CALL.arguments)
+  })
+
+  test('usage flows through unchanged', async () => {
+    const usage = { input_tokens: 7, output_tokens: 9, total_tokens: 16 }
+    const { modelRespond } = createScriptedModelTools({
+      script: {
+        items: [
+          {
+            id: 'm',
+            type: 'message',
+            status: 'completed',
+            role: 'assistant',
+            content: [{ type: 'output_text', text: 'ok' }],
+          },
+        ],
+        status: 'completed',
+        usage,
+      },
+    })
+    const out = await modelRespond({
+      provider: 'scripted',
+      modelId: 'm',
+      input: [{ type: 'message', role: 'user', content: 'x' }],
+    })
+    expect((out as { usage: typeof usage }).usage).toEqual(usage)
+  })
+
+  test('modelCompact returns a canned compaction with no fetch', async () => {
+    const { modelCompact } = createScriptedModelTools({ script: DEFAULT_SCRIPTED_RESPONSE })
+    const out = await modelCompact({
+      provider: 'scripted',
+      modelId: 'm',
+      input: [{ type: 'message', role: 'user', content: 'compact me' }],
+    })
+    expect((out as { encrypted_content: string }).encrypted_content).toBe('scripted-compaction')
+  })
+
+  test('invalid input surfaces as isError (same shape as the live tool)', async () => {
+    const { modelRespond } = createScriptedModelTools({ script: DEFAULT_SCRIPTED_RESPONSE })
+    const out = await modelRespond({ provider: '', modelId: '', input: [] })
+    expect((out as { isError: boolean; message: string }).isError).toBe(true)
+    expect((out as { message: string }).message).toContain('invalid input')
   })
 })
