@@ -1,8 +1,7 @@
 import { stat } from 'node:fs/promises'
 import * as path from 'node:path'
 import type { JSONSchemaType } from 'ajv'
-import * as z from 'zod'
-import { type InputContentPart, InputContentPartSchema } from './responses/open-responses.schemas.ts'
+import { type InputContentPart, InputContentPartSchema } from './open-responses.ts'
 import { formatSize, DEFAULT_MAX_BYTES as MAX_BYTES, type TruncationResult, truncateHead } from './truncate.ts'
 import { useTool } from './use-tool.ts'
 
@@ -335,16 +334,14 @@ type Output = {
   isError?: boolean
 }
 
-// InputContentPart lives once in Zod (responses/). Derive the JSON Schema for
-// the array items so the read tool's outputSchema stays in sync with it
-// automatically — no hand-maintained oneOf. Runtime validation is still AJV
-// (ajv.compile in use-tool). The Zod-derived sub-schema is cast through
-// `unknown` because JSONSchemaType<Output> cannot statically verify a
-// Zod-emitted oneOf; AJV validates the shape at runtime.
-const inputContentPartJsonSchema = z.toJSONSchema(InputContentPartSchema) as Record<string, unknown>
-// z.toJSONSchema emits a top-level $schema; strip it so AJV strict mode accepts
-// the embedded sub-schema (AJV rejects $schema outside the root document).
-delete inputContentPartJsonSchema.$schema
+// InputContentPart lives once in the responses schema module (AJV). Its
+// raw JSON Schema is exposed via `InputContentPartSchema.schema` so the read
+// tool's outputSchema stays in sync with it automatically — no
+// hand-maintained oneOf. Runtime validation is still AJV (ajv.compile in
+// use-tool). The sub-schema is cast through `unknown` because
+// JSONSchemaType<Output> cannot statically verify a discriminated oneOf;
+// AJV validates the shape at runtime.
+const inputContentPartJsonSchema = InputContentPartSchema.schema
 
 // TruncationResult has a nullable-enum field (truncatedBy: 'lines' | 'bytes'
 // | null) that JSONSchemaType cannot statically verify. Define the schema as a

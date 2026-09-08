@@ -1,5 +1,10 @@
 import { describe, expect, test } from 'bun:test'
-import type { KnownStreamEvent, OpenResponsesRequest, OpenResponsesStreamEvent } from '../open-responses.schemas.ts'
+import type {
+  KnownStreamEvent,
+  OpenResponsesRequest,
+  OpenResponsesStreamEvent,
+  UseResponse,
+} from '../open-responses.ts'
 import {
   CompactionItemSchema,
   ErrorSchema,
@@ -12,9 +17,8 @@ import {
   ReasoningTextContentSchema,
   StreamEventLaxSchema,
   UsageSchema,
-} from '../open-responses.schemas.ts'
-import type { UseResponse } from '../use-response.ts'
-import { useResponse } from '../use-response.ts'
+  useResponse,
+} from '../open-responses.ts'
 
 // --- Test double: a scripted adapter ---
 
