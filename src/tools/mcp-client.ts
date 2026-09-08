@@ -17,8 +17,19 @@ import type { Client, OAuthClientProvider } from '@modelcontextprotocol/client'
 import type { JSONSchemaType } from 'ajv'
 import type { Keychain } from '../kernel/oauth/keychain.ts'
 import { BunKeychainOAuthProvider, type KeychainOAuthProviderOptions } from '../kernel/oauth/keychain-oauth-provider.ts'
-import { getSharedClient } from '../kernel/use-plugin-adapter.ts'
+import type { AdapterSessionOptions } from '../kernel/use-plugin-adapter.ts'
 import { ajv, useTool } from './use-tool.ts'
+
+// ---------------------------------------------------------------------------
+// Pool injection types
+// ---------------------------------------------------------------------------
+
+/** Pool getter injected at provisioning — the kernel owns the pool closure. */
+export type GetClientFn = (url: string, options: AdapterSessionOptions) => Promise<Client>
+
+// Re-export the injected-fn's options shape so tool consumers don't reach
+// into the kernel for it. Moved to kernel.ts in Slice 2.
+export type { AdapterSessionOptions }
 
 // ---------------------------------------------------------------------------
 // Internal MCP types
@@ -675,76 +686,80 @@ const discoverCapabilities = async (client: Client, timeoutMs?: number): Promise
 // Tool run
 // ---------------------------------------------------------------------------
 
-const run = async (input: McpClientInput): Promise<McpClientOutput> => {
-  const { url, auth, headers, timeoutMs } = input
-  const options = await resolveSessionOptions({ url, auth, headers, timeoutMs })
-  const client = await getSharedClient(url, options)
+const run =
+  (getClient: GetClientFn) =>
+  async (input: McpClientInput): Promise<McpClientOutput> => {
+    const { url, auth, headers, timeoutMs } = input
+    const options = await resolveSessionOptions({ url, auth, headers, timeoutMs })
+    const client = await getClient(url, options)
 
-  switch (input.mode) {
-    case 'call-tool': {
-      const result = (await withTimeout(timeoutMs, () =>
-        client.callTool({ name: input.tool, arguments: input.args }),
-      )) as McpCallToolResult
-      return { mode: 'call-tool', result }
-    }
-    case 'list-tools': {
-      const result = (await withTimeout(timeoutMs, async () => (await client.listTools()).tools)) as McpTool[]
-      return { mode: 'list-tools', result }
-    }
-    case 'list-prompts': {
-      const result = (await withTimeout(timeoutMs, async () => (await client.listPrompts()).prompts)) as McpPrompt[]
-      return { mode: 'list-prompts', result }
-    }
-    case 'get-prompt': {
-      const result = (await withTimeout(
-        timeoutMs,
-        async () => (await client.getPrompt({ name: input.name, arguments: input.args })).messages,
-      )) as McpPromptMessage[]
-      return { mode: 'get-prompt', result }
-    }
-    case 'list-resources': {
-      const result = (await withTimeout(
-        timeoutMs,
-        async () => (await client.listResources()).resources,
-      )) as McpResource[]
-      return { mode: 'list-resources', result }
-    }
-    case 'read-resource': {
-      const result = (await withTimeout(
-        timeoutMs,
-        async () => (await client.readResource({ uri: input.uri })).contents,
-      )) as McpResourceContent[]
-      return { mode: 'read-resource', result }
-    }
-    case 'discover': {
-      const result = await discoverCapabilities(client, timeoutMs)
-      return { mode: 'discover', result }
+    switch (input.mode) {
+      case 'call-tool': {
+        const result = (await withTimeout(timeoutMs, () =>
+          client.callTool({ name: input.tool, arguments: input.args }),
+        )) as McpCallToolResult
+        return { mode: 'call-tool', result }
+      }
+      case 'list-tools': {
+        const result = (await withTimeout(timeoutMs, async () => (await client.listTools()).tools)) as McpTool[]
+        return { mode: 'list-tools', result }
+      }
+      case 'list-prompts': {
+        const result = (await withTimeout(timeoutMs, async () => (await client.listPrompts()).prompts)) as McpPrompt[]
+        return { mode: 'list-prompts', result }
+      }
+      case 'get-prompt': {
+        const result = (await withTimeout(
+          timeoutMs,
+          async () => (await client.getPrompt({ name: input.name, arguments: input.args })).messages,
+        )) as McpPromptMessage[]
+        return { mode: 'get-prompt', result }
+      }
+      case 'list-resources': {
+        const result = (await withTimeout(
+          timeoutMs,
+          async () => (await client.listResources()).resources,
+        )) as McpResource[]
+        return { mode: 'list-resources', result }
+      }
+      case 'read-resource': {
+        const result = (await withTimeout(
+          timeoutMs,
+          async () => (await client.readResource({ uri: input.uri })).contents,
+        )) as McpResourceContent[]
+        return { mode: 'read-resource', result }
+      }
+      case 'discover': {
+        const result = await discoverCapabilities(client, timeoutMs)
+        return { mode: 'discover', result }
+      }
     }
   }
-}
 
 // ---------------------------------------------------------------------------
-// useTool registration
+// useTool registration — factory; pool injected at provisioning
 // ---------------------------------------------------------------------------
+
+export type McpClientTool = ReturnType<typeof useTool<McpClientInput, McpClientOutput>>
 
 /**
- * Call tools, list capabilities, and interact with remote MCP servers.
- *
- * Seven modes: `call-tool`, `list-tools`, `list-prompts`, `get-prompt`,
- * `list-resources`, `read-resource`, `discover`. Connections are pooled per
- * server-url and reused across calls. Returns remote MCP data only — never
- * writes a store.
+ * Build a provisioned MCP client tool bound to an injected pool getter. The
+ * kernel owns the connection pool closure (see {@link createConnectionPool});
+ * it injects the pool's `getClient` here at provisioning so the tool never
+ * imports a global. The tool never closes a client itself — the pool owns
+ * teardown.
  */
-export const mcpClient = useTool(
-  {
-    name: MCP_CLIENT_TOOL_NAME,
-    description:
-      'Call tools and list capabilities on remote MCP servers. Seven modes: ' +
-      'call-tool, list-tools, list-prompts, get-prompt, list-resources, ' +
-      'read-resource, discover. Connections are pooled per server-url and ' +
-      'reused across calls. Returns remote MCP data only — never writes a store.',
-    inputSchema: McpClientInputSchema,
-    outputSchema: McpClientOutputSchema,
-  },
-  run,
-)
+export const createMcpClientTool = ({ getClient }: { getClient: GetClientFn }): McpClientTool =>
+  useTool(
+    {
+      name: MCP_CLIENT_TOOL_NAME,
+      description:
+        'Call tools and list capabilities on remote MCP servers. Seven modes: ' +
+        'call-tool, list-tools, list-prompts, get-prompt, list-resources, ' +
+        'read-resource, discover. Connections are pooled per server-url and ' +
+        'reused across calls. Returns remote MCP data only — never writes a store.',
+      inputSchema: McpClientInputSchema,
+      outputSchema: McpClientOutputSchema,
+    },
+    run(getClient),
+  )

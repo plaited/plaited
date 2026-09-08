@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
-import { closeAllClients, pooledClientCount } from '../../kernel/use-plugin-adapter.ts'
-import { McpClientInputSchema, McpClientOutputSchema, mcpClient } from '../mcp-client.ts'
+import { createConnectionPool } from '../../kernel/use-plugin-adapter.ts'
+import { createMcpClientTool, McpClientInputSchema, McpClientOutputSchema } from '../mcp-client.ts'
 import { ajv } from '../use-tool.ts'
 import { startMcpServer } from './mcp-server-fixture.ts'
 
@@ -61,6 +61,8 @@ describe('mcp-client tool — schema contract (RED)', () => {
 
 describe('mcp-client tool — seven modes through the shared pool', () => {
   test('round-trips all seven modes against a real in-process MCP server', async () => {
+    const pool = createConnectionPool()
+    const mcpClient = createMcpClientTool({ getClient: pool.getClient })
     const { url, close } = await startMcpServer()
     try {
       // list-tools
@@ -126,37 +128,41 @@ describe('mcp-client tool — seven modes through the shared pool', () => {
       expect(discovered.result.prompts).toHaveLength(1)
       expect(discovered.result.resources).toHaveLength(1)
     } finally {
-      await closeAllClients()
+      await pool.closeAll()
       await close()
     }
   })
 
   test('reuses a single pooled connection across multiple calls', async () => {
+    const pool = createConnectionPool()
+    const mcpClient = createMcpClientTool({ getClient: pool.getClient })
     const { url, close } = await startMcpServer()
     try {
-      expect(pooledClientCount()).toBe(0)
+      expect(pool.size()).toBe(0)
       await mcpClient({ mode: 'list-tools', url })
-      expect(pooledClientCount()).toBe(1)
+      expect(pool.size()).toBe(1)
       await mcpClient({ mode: 'list-prompts', url })
       await mcpClient({ mode: 'discover', url })
       // Same url → still exactly one pooled client.
-      expect(pooledClientCount()).toBe(1)
+      expect(pool.size()).toBe(1)
     } finally {
-      await closeAllClients()
+      await pool.closeAll()
       await close()
     }
-    expect(pooledClientCount()).toBe(0)
+    expect(pool.size()).toBe(0)
   })
 
   test('separate urls get separate pooled connections', async () => {
+    const pool = createConnectionPool()
+    const mcpClient = createMcpClientTool({ getClient: pool.getClient })
     const a = await startMcpServer()
     const b = await startMcpServer()
     try {
       await mcpClient({ mode: 'list-tools', url: a.url })
       await mcpClient({ mode: 'list-tools', url: b.url })
-      expect(pooledClientCount()).toBe(2)
+      expect(pool.size()).toBe(2)
     } finally {
-      await closeAllClients()
+      await pool.closeAll()
       await a.close()
       await b.close()
     }
