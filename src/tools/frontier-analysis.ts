@@ -1167,3 +1167,171 @@ export const exploreFrontiers = useTool(
     }
   },
 )
+
+export type VerifyFrontiersInput = {
+  threads: Thread[]
+  messages?: SelectionTrace[]
+  triggers?: BPEvent[]
+  strategy?: 'bfs' | 'dfs'
+  selectionPolicy?: 'all-enabled' | 'scheduler'
+  maxDepth: number
+  progress?: string[]
+  space?: string
+  instanceId?: string
+}
+
+export type VerifyFrontiersOutput = {
+  status: 'verified' | 'failed' | 'truncated'
+  findings: Array<{ code: 'deadlock'; messages: Trace[] }>
+  report: FrontierReport
+  livelocks: Array<{ code: 'livelock'; states: string[]; progressTypes: string[] }>
+  isError?: boolean
+  message?: string
+}
+
+export const VerifyFrontiersInputSchema = {
+  type: 'object',
+  properties: {
+    threads: threadsJsonSchema,
+    messages: { ...messagesJsonSchema, nullable: true },
+    triggers: {
+      type: 'array',
+      items: BPEventSchema,
+      nullable: true,
+      description: 'external trigger events that may wake pending threads',
+    },
+    strategy: {
+      type: 'string',
+      enum: ['bfs', 'dfs'],
+      nullable: true,
+      default: 'bfs',
+      description: "exploration strategy: 'bfs' (breadth-first) or 'dfs' (depth-first). Default 'bfs'.",
+    },
+    selectionPolicy: {
+      type: 'string',
+      enum: ['all-enabled', 'scheduler'],
+      nullable: true,
+      default: 'all-enabled',
+      description:
+        "'all-enabled' branches on every enabled candidate; 'scheduler' takes only the highest-priority one. Default 'all-enabled'.",
+    },
+    maxDepth: {
+      type: 'integer',
+      minimum: 1,
+      description:
+        'Required. Maximum selection depth. Finite-state programs close their state graph and terminate before this; unbounded-state programs never close — maxDepth bounds them and yields status "truncated" when it cuts off. Never treat truncated as a pass.',
+    },
+    progress: {
+      type: 'array',
+      items: { type: 'string' },
+      nullable: true,
+      description:
+        'Event types that count as progress. When provided, a reachable cycle that never selects a progress event is a livelock (status "failed"). Omit to skip livelock detection (deadlock-only). An empty array flags every cycle as a livelock.',
+    },
+    space: { type: 'string', nullable: true, description: 'space stamp applied to all thread rules' },
+    instanceId: {
+      type: 'string',
+      nullable: true,
+      description: 'instance id stamped on synthetic traces; defaults to a minted ueid("bp_")',
+    },
+  },
+  required: ['threads', 'maxDepth'],
+  additionalProperties: false,
+  description:
+    'Verify a thread set: explore every reachable frontier and derive a verified/failed/truncated status. With the progress spec, also detects livelocks (cycles that never select a progress event).',
+} as unknown as JSONSchemaType<VerifyFrontiersInput>
+
+export const VerifyFrontiersOutputSchema = {
+  type: 'object',
+  properties: {
+    status: {
+      type: 'string',
+      enum: ['verified', 'failed', 'truncated'],
+      description:
+        'the verdict: verified (clean, fully-explored, finding-free), failed (deadlock or livelock found), or truncated (maxDepth cut off — not a pass)',
+    },
+    findings: { type: 'array', items: { type: 'object', additionalProperties: true } },
+    report: {
+      type: 'object',
+      properties: {
+        strategy: { type: 'string', enum: ['bfs', 'dfs'] },
+        selectionPolicy: { type: 'string', enum: ['all-enabled', 'scheduler'] },
+        visitedCount: { type: 'integer' },
+        findingCount: { type: 'integer' },
+        truncated: { type: 'boolean' },
+        maxDepth: { type: 'integer', nullable: true },
+      },
+      required: ['strategy', 'selectionPolicy', 'visitedCount', 'findingCount', 'truncated'],
+      additionalProperties: false,
+    },
+    livelocks: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          code: { type: 'string', enum: ['livelock'] },
+          states: { type: 'array', items: { type: 'string' } },
+          progressTypes: { type: 'array', items: { type: 'string' } },
+        },
+        required: ['code', 'states', 'progressTypes'],
+        additionalProperties: false,
+      },
+    },
+    isError: { type: 'boolean', nullable: true, description: 'true when verification threw unexpectedly' },
+    message: { type: 'string', nullable: true, description: 'error detail when isError' },
+  },
+  required: ['status', 'findings', 'report', 'livelocks'],
+  additionalProperties: false,
+} as unknown as JSONSchemaType<VerifyFrontiersOutput>
+
+/**
+ * Verify a thread set: explore every reachable frontier and derive a
+ * pass/fail/truncated status.
+ *
+ * Wraps the raw verifier. The raw result — `{ status, findings, report,
+ * livelocks }` — is already verdict-shaped and JSON-safe (no Set/Map/generator),
+ * so it crosses the boundary verbatim. Any unexpected throw is caught into
+ * `{ isError, message }` with a `failed` status (never throw into the model
+ * channel).
+ */
+export const verifyFrontiers = useTool(
+  {
+    name: 'verify-frontiers',
+    description:
+      'Verify a thread set across every reachable state — is it deadlock- or livelock-free? Returns verified/failed/truncated. With the progress spec, a reachable cycle that never selects a progress event is a livelock (failed). Never treat truncated as a pass.',
+    inputSchema: VerifyFrontiersInputSchema,
+    outputSchema: VerifyFrontiersOutputSchema,
+  },
+  ({ threads, messages, triggers, strategy, selectionPolicy, maxDepth, progress, space, instanceId }) => {
+    try {
+      const { status, findings, report, livelocks } = verifyFrontiersRaw({
+        threads,
+        messages,
+        triggers,
+        strategy,
+        selectionPolicy,
+        maxDepth,
+        progress,
+        space,
+        instanceId,
+      })
+      return { status, findings, report, livelocks }
+    } catch (err) {
+      return {
+        status: 'failed' as const,
+        findings: [],
+        report: {
+          strategy: strategy ?? 'bfs',
+          selectionPolicy: selectionPolicy ?? 'all-enabled',
+          visitedCount: 0,
+          findingCount: 0,
+          truncated: false,
+          maxDepth,
+        },
+        livelocks: [],
+        isError: true,
+        message: (err as Error).message,
+      }
+    }
+  },
+)

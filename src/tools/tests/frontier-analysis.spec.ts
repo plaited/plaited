@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 import type { Thread } from '../../behavioral/behavioral.types.ts'
-import { exploreFrontiers, replayFrontier, verifyFrontiersRaw } from '../frontier-analysis.ts'
+import { exploreFrontiers, replayFrontier, verifyFrontiers } from '../frontier-analysis.ts'
 
 const threads: Thread[] = [
   { label: 'ticker', rules: [{ request: { type: 'tick' } }], once: true },
@@ -196,25 +196,65 @@ describe('explore-frontiers', () => {
   })
 })
 
-describe('verifyFrontiersRaw', () => {
-  test('returns verified for deadlock-free threads', () => {
-    const result = verifyFrontiersRaw({ threads, strategy: 'bfs', maxDepth: 3 })
+describe('verify-frontiers', () => {
+  test('returns verified for deadlock-free threads', async () => {
+    const result = await verifyFrontiers({ threads, strategy: 'bfs', maxDepth: 3 })
+    expect(result.isError).toBeFalsy()
     expect(result.status).toBe('verified')
     expect(result.findings).toHaveLength(0)
+    expect(result.livelocks).toHaveLength(0)
   })
 
-  test('returns failed when deadlocks found', () => {
+  test('returns failed when deadlocks found', async () => {
     const deadlockThreads: Thread[] = [
       { label: 'requester', rules: [{ request: { type: 'a' } }] },
       { label: 'blocker', rules: [{ block: [{ type: 'a' }] }] },
     ]
-    const result = verifyFrontiersRaw({ threads: deadlockThreads })
+    const result = await verifyFrontiers({ threads: deadlockThreads, maxDepth: 50 })
     expect(result.status).toBe('failed')
     expect(result.findings.length).toBeGreaterThan(0)
   })
 
-  test('returns truncated when maxDepth cuts off exploration', () => {
-    const result = verifyFrontiersRaw({ threads, strategy: 'bfs', maxDepth: 0 })
+  test('returns truncated when maxDepth cuts off exploration', async () => {
+    // maxDepth ≥1 per the schema; depth 1 truncates the two-successor root.
+    const result = await verifyFrontiers({ threads, strategy: 'bfs', maxDepth: 1 })
     expect(result.status).toBe('truncated')
+  })
+
+  test('livelock: a looping program with no progress is failed', async () => {
+    // A ticker requesting `tick` forever. progress=['succeeded'] — the cycle
+    // never selects `succeeded` → livelock → failed.
+    const looping: Thread[] = [{ label: 'ticker', rules: [{ request: { type: 'tick' } }] }]
+    const result = await verifyFrontiers({ threads: looping, progress: ['succeeded'], maxDepth: 50 })
+    expect(result.status).toBe('failed')
+    expect(result.livelocks).toHaveLength(1)
+    expect(result.livelocks[0]!.code).toBe('livelock')
+    expect(result.livelocks[0]!.progressTypes).toEqual(['succeeded'])
+  })
+
+  test('livelock: a looping program whose cycle selects progress is verified', async () => {
+    // A ticker requesting `done` forever. progress=['done'] → the cycle DOES
+    // select a progress event → not a livelock → verified.
+    const looping: Thread[] = [{ label: 'ticker', rules: [{ request: { type: 'done' } }] }]
+    const result = await verifyFrontiers({ threads: looping, progress: ['done'], maxDepth: 50 })
+    expect(result.status).toBe('verified')
+    expect(result.livelocks).toHaveLength(0)
+  })
+
+  test('omitting progress skips livelock detection (deadlock-only)', async () => {
+    // Same looping ticker, no progress spec. No deadlock, not truncated →
+    // verified, livelocks empty (not checked).
+    const looping: Thread[] = [{ label: 'ticker', rules: [{ request: { type: 'tick' } }] }]
+    const result = await verifyFrontiers({ threads: looping, maxDepth: 50 })
+    expect(result.status).toBe('verified')
+    expect(result.livelocks).toHaveLength(0)
+  })
+
+  test('an empty progress set flags every cycle as a livelock', async () => {
+    // progress=[] → nothing counts as progress → any cycle is a livelock.
+    const looping: Thread[] = [{ label: 'ticker', rules: [{ request: { type: 'done' } }] }]
+    const result = await verifyFrontiers({ threads: looping, progress: [], maxDepth: 50 })
+    expect(result.status).toBe('failed')
+    expect(result.livelocks).toHaveLength(1)
   })
 })
