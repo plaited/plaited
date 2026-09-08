@@ -38,6 +38,7 @@ import type {
   Thread,
   Trace,
 } from '../behavioral/behavioral.types.ts'
+import { BPEventSchema } from '../behavioral/behavioral.types.ts'
 import {
   advanceRunningToPending,
   computeFrontier,
@@ -975,6 +976,191 @@ export const replayFrontier = useTool(
         frontier: null,
         stateKey: null,
         pendingCount: null,
+        isError: true,
+        message: (err as Error).message,
+      }
+    }
+  },
+)
+
+// Serialized reachable state in the explored graph. StateNode (module-private)
+// has the identical shape; this is the JSON-public mirror so consumers don't
+// depend on an internal type. StateNode fields are JSON-safe (stateKey, the
+// frontier, step, and successor edges labeled by CandidateBid — no generator
+// or compiled validator).
+export type FrontierStateNode = {
+  stateKey: string
+  frontier: Frontier
+  step: number
+  successors: Array<{ selection: CandidateBid; to: string }>
+}
+
+// Exploration report — shared by the explore-frontiers and verify-frontiers
+// outputs.
+export type FrontierReport = {
+  strategy: 'bfs' | 'dfs'
+  selectionPolicy: 'all-enabled' | 'scheduler'
+  visitedCount: number
+  findingCount: number
+  truncated: boolean
+  maxDepth?: number
+}
+
+// Serialize the internal Map<string, StateNode> to a plain object keyed by
+// stateKey for JSON output. Object.fromEntries preserves Map insertion order
+// (root first), so the step-0 state is Object.values(graph)[0].
+const serializeStateGraph = (graph: Map<string, StateNode>): Record<string, FrontierStateNode> =>
+  Object.fromEntries(graph)
+
+export type ExploreFrontiersInput = {
+  threads: Thread[]
+  messages?: SelectionTrace[]
+  triggers?: BPEvent[]
+  strategy?: 'bfs' | 'dfs'
+  selectionPolicy?: 'all-enabled' | 'scheduler'
+  maxDepth: number
+  space?: string
+  instanceId?: string
+}
+
+export type ExploreFrontiersOutput = {
+  traces: Array<{ messages: Trace[] }>
+  findings: Array<{ code: 'deadlock'; messages: Trace[] }>
+  report: FrontierReport
+  stateGraph: Record<string, FrontierStateNode>
+  isError?: boolean
+  message?: string
+}
+
+export const ExploreFrontiersInputSchema = {
+  type: 'object',
+  properties: {
+    threads: threadsJsonSchema,
+    messages: { ...messagesJsonSchema, nullable: true },
+    triggers: {
+      type: 'array',
+      items: BPEventSchema,
+      nullable: true,
+      description: 'external trigger events that may wake pending threads',
+    },
+    strategy: {
+      type: 'string',
+      enum: ['bfs', 'dfs'],
+      nullable: true,
+      default: 'bfs',
+      description: "exploration strategy: 'bfs' (breadth-first) or 'dfs' (depth-first). Default 'bfs'.",
+    },
+    selectionPolicy: {
+      type: 'string',
+      enum: ['all-enabled', 'scheduler'],
+      nullable: true,
+      default: 'all-enabled',
+      description:
+        "'all-enabled' branches on every enabled candidate; 'scheduler' takes only the highest-priority one. Default 'all-enabled'.",
+    },
+    maxDepth: {
+      type: 'integer',
+      minimum: 1,
+      description:
+        'Required. Maximum selection depth. Finite-state programs close their state graph and terminate before this; unbounded-state programs (e.g. a counter whose detail grows each loop) never close — maxDepth bounds them and sets report.truncated when it cuts off. Never treat truncated as a pass.',
+    },
+    space: { type: 'string', nullable: true, description: 'space stamp applied to all thread rules' },
+    instanceId: {
+      type: 'string',
+      nullable: true,
+      description: 'instance id stamped on synthetic traces; defaults to a minted ueid("bp_")',
+    },
+  },
+  required: ['threads', 'maxDepth'],
+  additionalProperties: false,
+  description:
+    'Enumerate every reachable frontier of a thread set, collecting traces, deadlock findings, and the labeled state graph (serialized to a plain object keyed by stateKey).',
+} as unknown as JSONSchemaType<ExploreFrontiersInput>
+
+export const ExploreFrontiersOutputSchema = {
+  type: 'object',
+  properties: {
+    traces: { type: 'array', items: { type: 'object', additionalProperties: true } },
+    findings: { type: 'array', items: { type: 'object', additionalProperties: true } },
+    report: {
+      type: 'object',
+      properties: {
+        strategy: { type: 'string', enum: ['bfs', 'dfs'] },
+        selectionPolicy: { type: 'string', enum: ['all-enabled', 'scheduler'] },
+        visitedCount: { type: 'integer' },
+        findingCount: { type: 'integer' },
+        truncated: { type: 'boolean' },
+        maxDepth: { type: 'integer', nullable: true },
+      },
+      required: ['strategy', 'selectionPolicy', 'visitedCount', 'findingCount', 'truncated'],
+      additionalProperties: false,
+    },
+    stateGraph: {
+      type: 'object',
+      additionalProperties: true,
+      description:
+        'reachable states keyed by canonical stateKey; each value is { stateKey, frontier, step, successors }',
+    },
+    isError: {
+      type: 'boolean',
+      nullable: true,
+      description: 'true when exploration threw (e.g. an unsupported strategy slipped past the schema)',
+    },
+    message: { type: 'string', nullable: true, description: 'error detail when isError' },
+  },
+  required: ['traces', 'findings', 'report', 'stateGraph'],
+  additionalProperties: false,
+} as unknown as JSONSchemaType<ExploreFrontiersOutput>
+
+/**
+ * Enumerate every reachable frontier of a thread set.
+ *
+ * Wraps the raw explorer: the internal `Map<string, StateNode>` is serialized
+ * to a plain object keyed by stateKey; traces, findings, and report cross
+ * verbatim (all JSON-safe). State-keyed deduplication means finite-state
+ * looping programs terminate without relying on maxDepth. Any throw (an
+ * unsupported strategy slipping past the enum, etc.) is caught into
+ * `{ isError, message }` with empty structural defaults.
+ */
+export const exploreFrontiers = useTool(
+  {
+    name: 'explore-frontiers',
+    description:
+      'Enumerate every reachable frontier of a thread set — traces, deadlock findings, and the labeled state graph (serialized to a plain object keyed by stateKey). maxDepth bounds unbounded-state programs; finite-state loops terminate via state-key dedup. Use to answer "can this deadlock?" across all reachable states, not sampled runs.',
+    inputSchema: ExploreFrontiersInputSchema,
+    outputSchema: ExploreFrontiersOutputSchema,
+  },
+  ({ threads, messages, triggers, strategy, selectionPolicy, maxDepth, space, instanceId }) => {
+    try {
+      const { traces, findings, report, stateGraph } = exploreFrontiersRaw({
+        threads,
+        messages,
+        triggers,
+        strategy,
+        selectionPolicy,
+        maxDepth,
+        space,
+        instanceId,
+      })
+      return {
+        traces,
+        findings,
+        report,
+        stateGraph: serializeStateGraph(stateGraph),
+      }
+    } catch (err) {
+      return {
+        traces: [],
+        findings: [],
+        report: {
+          strategy: strategy ?? 'bfs',
+          selectionPolicy: selectionPolicy ?? 'all-enabled',
+          visitedCount: 0,
+          findingCount: 0,
+          truncated: false,
+          maxDepth,
+        },
+        stateGraph: {},
         isError: true,
         message: (err as Error).message,
       }

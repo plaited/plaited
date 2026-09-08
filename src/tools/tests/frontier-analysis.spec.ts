@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 import type { Thread } from '../../behavioral/behavioral.types.ts'
-import { exploreFrontiersRaw, replayFrontier, verifyFrontiersRaw } from '../frontier-analysis.ts'
+import { exploreFrontiers, replayFrontier, verifyFrontiersRaw } from '../frontier-analysis.ts'
 
 const threads: Thread[] = [
   { label: 'ticker', rules: [{ request: { type: 'tick' } }], once: true },
@@ -80,27 +80,36 @@ describe('replay-frontier', () => {
   })
 })
 
-describe('exploreFrontiersRaw', () => {
-  test('wakes transform-parked threads via matching triggers', () => {
+describe('explore-frontiers', () => {
+  test('wakes transform-parked threads via matching triggers', async () => {
     const transformThreads: Thread[] = [
       { label: 'shaper', rules: [{ transform: [{ type: 'raw', query: '.', target: 'shaped' }] }] },
     ]
-    const result = exploreFrontiersRaw({ threads: transformThreads, triggers: [{ type: 'raw' }] })
-    const root = [...result.stateGraph.values()][0]!
+    const result = await exploreFrontiers({ threads: transformThreads, triggers: [{ type: 'raw' }], maxDepth: 50 })
+    // JSON boundary: stateGraph is a plain object keyed by stateKey (not a Map);
+    // the root is the first-inserted step-0 entry.
+    expect(result.stateGraph).not.toBeInstanceOf(Map)
+    expect(typeof Object.keys(result.stateGraph)[0]).toBe('string')
+    const root = Object.values(result.stateGraph)[0]!
     expect(root.successors.length).toBeGreaterThan(0)
     expect(root.successors[0]!.selection.type).toBe('raw')
   })
 
-  test('leaves transform-parked threads parked for non-matching triggers', () => {
+  test('leaves transform-parked threads parked for non-matching triggers', async () => {
     const transformThreads: Thread[] = [
       { label: 'shaper', rules: [{ transform: [{ type: 'raw', query: '.', target: 'shaped' }] }] },
     ]
-    const result = exploreFrontiersRaw({ threads: transformThreads, triggers: [{ type: 'unrelated' }] })
-    const root = [...result.stateGraph.values()][0]!
+    const result = await exploreFrontiers({
+      threads: transformThreads,
+      triggers: [{ type: 'unrelated' }],
+      maxDepth: 50,
+    })
+    const root = Object.values(result.stateGraph)[0]!
     expect(root.successors).toHaveLength(0)
   })
-  test('bfs explores reachable histories', () => {
-    const result = exploreFrontiersRaw({ threads, strategy: 'bfs', maxDepth: 3 })
+
+  test('bfs explores reachable histories', async () => {
+    const result = await exploreFrontiers({ threads, strategy: 'bfs', maxDepth: 3 })
     expect(result.report.visitedCount).toBeGreaterThan(0)
     expect(result.traces.length).toBe(result.report.visitedCount)
     // All traces should end with a frontier trace
@@ -111,32 +120,39 @@ describe('exploreFrontiersRaw', () => {
     }
   })
 
-  test('dfs explores reachable histories', () => {
-    const result = exploreFrontiersRaw({ threads, strategy: 'dfs', maxDepth: 3 })
+  test('dfs explores reachable histories', async () => {
+    const result = await exploreFrontiers({ threads, strategy: 'dfs', maxDepth: 3 })
     expect(result.report.visitedCount).toBeGreaterThan(0)
   })
 
-  test('finds deadlock', () => {
+  test('finds deadlock', async () => {
     const deadlockThreads: Thread[] = [
       { label: 'requester', rules: [{ request: { type: 'a' } }] },
       { label: 'blocker', rules: [{ block: [{ type: 'a' }] }] },
     ]
-    const result = exploreFrontiersRaw({ threads: deadlockThreads })
+    const result = await exploreFrontiers({ threads: deadlockThreads, maxDepth: 50 })
     expect(result.findings.length).toBeGreaterThan(0)
     expect(result.findings[0]!.code).toBe('deadlock')
     expect(result.report.findingCount).toBe(result.findings.length)
   })
 
-  test('respects maxDepth truncation', () => {
-    const result = exploreFrontiersRaw({ threads, strategy: 'bfs', maxDepth: 0 })
+  test('respects maxDepth truncation', async () => {
+    // maxDepth is required (≥1 per the schema); a depth of 1 cuts off the
+    // two-successor root of the ticker+worker program, so exploration is
+    // truncated.
+    const result = await exploreFrontiers({ threads, strategy: 'bfs', maxDepth: 1 })
     expect(result.report.truncated).toBe(true)
-    // With maxDepth 0, we should have the initial frontier at step 0
     expect(result.report.visitedCount).toBeGreaterThanOrEqual(1)
   })
 
-  test('selectionPolicy: scheduler limits to one enabled candidate per step', () => {
-    const schedulerResult = exploreFrontiersRaw({ threads, strategy: 'bfs', selectionPolicy: 'scheduler', maxDepth: 3 })
-    const allEnabledResult = exploreFrontiersRaw({
+  test('selectionPolicy: scheduler limits to one enabled candidate per step', async () => {
+    const schedulerResult = await exploreFrontiers({
+      threads,
+      strategy: 'bfs',
+      selectionPolicy: 'scheduler',
+      maxDepth: 3,
+    })
+    const allEnabledResult = await exploreFrontiers({
       threads,
       strategy: 'bfs',
       selectionPolicy: 'all-enabled',
@@ -147,14 +163,15 @@ describe('exploreFrontiersRaw', () => {
     expect(allEnabledResult.report.visitedCount).toBeGreaterThan(0)
   })
 
-  test('explores with trigger events that affect pending threads', () => {
+  test('explores with trigger events that affect pending threads', async () => {
     const waitingThreads: Thread[] = [
       { label: 'waiter', rules: [{ waitFor: [{ type: 'ping' }] }, { request: { type: 'ack' } }], once: true },
     ]
-    const result = exploreFrontiersRaw({
+    const result = await exploreFrontiers({
       threads: waitingThreads,
       triggers: [{ type: 'ping' }],
       strategy: 'bfs',
+      maxDepth: 50,
     })
     // The trigger should make 'ping' available, then 'ack' gets requested
     expect(result.report.visitedCount).toBeGreaterThan(0)
@@ -165,12 +182,13 @@ describe('exploreFrontiersRaw', () => {
     expect(hasAck).toBe(true)
   })
 
-  test('ingress trigger events produce successors', () => {
+  test('ingress trigger events produce successors', async () => {
     const blockingThreads: Thread[] = [{ label: 'blocker', rules: [{ block: [{ type: 'signal' }] }], once: true }]
-    const result = exploreFrontiersRaw({
+    const result = await exploreFrontiers({
       threads: blockingThreads,
       triggers: [{ type: 'signal' }],
       strategy: 'bfs',
+      maxDepth: 50,
     })
     // The trigger should find no pending bid affected by 'signal' since
     // block-only threads don't respond to triggers
