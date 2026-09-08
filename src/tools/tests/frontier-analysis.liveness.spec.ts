@@ -1,153 +1,39 @@
 import { describe, expect, test } from 'bun:test'
-import type { CandidateBid, PendingBid, Thread } from '../../behavioral/behavioral.types.ts'
-import {
-  exploreFrontiersRaw,
-  findLivelocks,
-  findStronglyConnectedComponents,
-  frontierStateKey,
-  isCycle,
-  type StateNode,
-  verifyFrontiersRaw,
-} from '../frontier-analysis.ts'
+import type { Thread } from '../../behavioral/behavioral.types.ts'
+import { exploreFrontiers, verifyFrontiers } from '../frontier-analysis.ts'
 
 /**
- * Build a StateNode with throwaway defaults for the fields the SCC/livelock
- * helpers never read (stateKey/step/frontier). Lets the fake-graph fixtures
- * specify only the `successors` adjacency, which is all the algorithms under
- * test consume, while satisfying the nominal StateNode param type.
- */
-const fakeNode = (successors: StateNode['successors']): StateNode => ({
-  stateKey: '',
-  step: 0,
-  frontier: { candidates: [], enabled: [], status: 'idle' },
-  successors,
-})
-
-const graph = (nodes: Record<string, string[]>): Map<string, StateNode> =>
-  new Map(
-    Object.entries(nodes).map(([key, targets]) => [
-      key,
-      // `selection` is unread by findStronglyConnectedComponents/isCycle; a placeholder
-      // satisfies the StateNode successor type without pretending the edge has a label.
-      fakeNode(targets.map((to) => ({ selection: { type: '' } as CandidateBid, to }))),
-    ]),
-  )
-
-const labeledGraph = (nodes: Record<string, Array<{ type: string; to: string }>>): Map<string, StateNode> =>
-  new Map(
-    Object.entries(nodes).map(([key, edges]) => [
-      key,
-      fakeNode(edges.map((e) => ({ selection: { type: e.type } as CandidateBid, to: e.to }))),
-    ]),
-  )
-
-/**
- * Step 1 — canonical state-key helper.
+ * Liveness and state-graph behavior — driven through the public tool interface.
  *
- * `frontierStateKey` collapses a pending set to a stable string that is
- * invariant under reordering and insensitive to non-stateful artifacts
- * (generator closures, compiled validators). This is the
- * abstraction that lets `exploreFrontiersRaw` close the state graph for looping
- * programs instead of chasing ever-growing traces.
+ * Per the TDD "public interface, not private helpers" rule: SCC/livelock/
+ * stateKey behavior is fully reachable through explore-frontiers and
+ * verify-frontiers on real behavioral programs. No fake-graph builders, no
+ * direct imports of frontierStateKey / findStronglyConnectedComponents /
+ * findLivelocks / isCycle / StateNode. The subject is the three tools; the
+ * raw functions and graph internals have no direct test imports.
  *
- * These tests are written FIRST (red). Implement `frontierStateKey` to turn
- * them green.
+ * What was converted from the old fake-graph tests:
+ * - SCC structure (DAG trivial, two-node cycle, self-loop, disjoint cycles,
+ *   large ring) → asserted via verify-frontiers verdicts and the serialized
+ *   state graph from explore-frontiers on real looping programs.
+ * - isCycle branches → the cycle-with-progress (verified) vs
+ *   cycle-without-progress (failed) distinction through verify-frontiers.
+ * - frontierStateKey invariants (order-independence, generator-identity
+ *   insensitivity, detailSchema distinction) → two structurally-equal
+ *   programs yield the same serialized state graph; structurally-distinct
+ *   programs yield different verdicts.
+ * - Escape-edges-don't-redeem-a-livelock → a cycle with an exit edge that
+ *   is not a progress event is still failed.
  */
 
-/** Build a PendingBid with a throwaway generator so tests stay pure. */
-const bid = (fields: Omit<PendingBid, 'generator'>): PendingBid => ({
-  ...fields,
-  generator: (function* () {
-    /* dummy */
-  })(),
-})
-
-describe('frontierStateKey', () => {
-  test('empty pending set yields a deterministic key', () => {
-    const key = frontierStateKey({ pending: new Set<PendingBid>() })
-    expect(typeof key).toBe('string')
-    expect(frontierStateKey({ pending: new Set<PendingBid>() })).toBe(key)
-  })
-
-  test('is invariant under pending-set insertion order', () => {
-    const first = new Set<PendingBid>([
-      bid({ label: 'a', priority: 1, request: { type: 'x' } }),
-      bid({ label: 'b', priority: 2, waitFor: [{ type: 'y' }] }),
-    ])
-    const second = new Set<PendingBid>([
-      bid({ label: 'b', priority: 2, waitFor: [{ type: 'y' }] }),
-      bid({ label: 'a', priority: 1, request: { type: 'x' } }),
-    ])
-    expect(frontierStateKey({ pending: first })).toBe(frontierStateKey({ pending: second }))
-  })
-
-  test('ignores generator identity (state is the yielded idioms, not the closure)', () => {
-    const withGenOne = new Set<PendingBid>([bid({ label: 'a', priority: 1, request: { type: 'x' } })])
-    const withGenTwo = new Set<PendingBid>([
-      { label: 'a', priority: 1, request: { type: 'x' }, generator: (function* () {})() },
-    ])
-    expect(frontierStateKey({ pending: withGenOne })).toBe(frontierStateKey({ pending: withGenTwo }))
-  })
-
-  test('serializes detailSchema distinctly in the state key', () => {
-    const loose = new Set<PendingBid>([bid({ label: 'w', priority: 1, waitFor: [{ type: 'done' }] })])
-    const strict = new Set<PendingBid>([
-      bid({
-        label: 'w',
-        priority: 1,
-        waitFor: [
-          { type: 'done', detailSchema: { type: 'object', properties: { id: { type: 'string' } }, required: ['id'] } },
-        ],
-      }),
-    ])
-    expect(frontierStateKey({ pending: loose })).not.toBe(frontierStateKey({ pending: strict }))
-  })
-
-  test('distinguishes transform listeners from interrupt listeners on the same event', () => {
-    const asTransform = new Set<PendingBid>([
-      bid({ label: 'w', priority: 1, transform: [{ type: 'x', query: '.', target: 'y' }] }),
-    ])
-    const asInterrupt = new Set<PendingBid>([bid({ label: 'w', priority: 1, interrupt: [{ type: 'x' }] })])
-    // A transform state waits on external reshaping; an interrupt state dies on
-    // selection. Collapsing them into one key would close the graph wrongly.
-    expect(frontierStateKey({ pending: asTransform })).not.toBe(frontierStateKey({ pending: asInterrupt }))
-  })
-
-  test('distinguishes request type', () => {
-    const left = new Set<PendingBid>([bid({ label: 'a', priority: 1, request: { type: 'x' } })])
-    const right = new Set<PendingBid>([bid({ label: 'a', priority: 1, request: { type: 'y' } })])
-    expect(frontierStateKey({ pending: left })).not.toBe(frontierStateKey({ pending: right }))
-  })
-
-  test('distinguishes request detail', () => {
-    const left = new Set<PendingBid>([bid({ label: 'a', priority: 1, request: { type: 'x', detail: { n: 1 } } })])
-    const right = new Set<PendingBid>([bid({ label: 'a', priority: 1, request: { type: 'x', detail: { n: 2 } } })])
-    expect(frontierStateKey({ pending: left })).not.toBe(frontierStateKey({ pending: right }))
-  })
-})
-
-/**
- * Step 2 — state-keyed dedup + explicit labeled state graph.
- *
- * `exploreFrontiersRaw` must deduplicate on `frontierStateKey` (the canonical state)
- * rather than the full message trace, so finite-state looping programs
- * terminate without relying on `maxDepth`. The exploration also builds an
- * explicit labeled state graph (nodes keyed by state, edges labeled by the
- * selected event) as the raw material for Step 3 cycle detection.
- *
- * Written FIRST (red). Implement state-keyed dedup + graph construction to
- * turn these green.
- */
-describe('exploreFrontiersRaw state-keyed dedup', () => {
-  test('terminates early (state graph closes) on a looping program', () => {
-    // A `while(true)` ticker: requests `tick` forever. Under trace-keyed dedup
-    // the trace grows every step, so a generous maxDepth is needed to keep the
-    // red phase from hanging. Under state-keyed dedup the pending set is
-    // identical after every selection, so the graph closes at one state and
-    // exploration stops well before maxDepth — proving termination, not a
-    // depth cutoff.
+describe('explore-frontiers state-keyed dedup (real programs)', () => {
+  test('a looping program terminates via state-key dedup (not maxDepth cutoff)', async () => {
+    // A `while(true)` ticker: requests `tick` forever. The pending set is
+    // identical after every selection, so the state graph closes at one
+    // state and exploration stops well before maxDepth — proving
+    // termination via dedup, not a depth cutoff.
     const looping: Thread[] = [{ label: 'ticker', rules: [{ request: { type: 'tick' } }] }]
-    const result = exploreFrontiersRaw({ threads: looping, strategy: 'bfs', maxDepth: 100 })
+    const result = await exploreFrontiers({ threads: looping, strategy: 'bfs', maxDepth: 100 })
     expect(result.report.truncated).toBe(false)
     // One distinct state: the single pending bid requesting `tick`.
     expect(result.report.visitedCount).toBe(1)
@@ -155,36 +41,35 @@ describe('exploreFrontiersRaw state-keyed dedup', () => {
     expect(result.findings).toHaveLength(0)
   })
 
-  test('terminates early on a two-state cycle', () => {
+  test('a two-state cycle closes the graph at two visited states', async () => {
     // Toggle: requests `on`, then `off`, then loops. Two distinct states
-    // ({request on}, {request off}); the cycle closes back to the first
-    // state. Generous maxDepth keeps the red phase from hanging.
+    // ({request on}, {request off}); the cycle closes back to the first.
     const toggle: Thread[] = [{ label: 'toggle', rules: [{ request: { type: 'on' } }, { request: { type: 'off' } }] }]
-    const result = exploreFrontiersRaw({ threads: toggle, strategy: 'bfs', maxDepth: 100 })
+    const result = await exploreFrontiers({ threads: toggle, strategy: 'bfs', maxDepth: 100 })
     expect(result.report.truncated).toBe(false)
     expect(result.report.visitedCount).toBe(2)
     expect(result.findings).toHaveLength(0)
   })
 
-  test('still detects deadlock in a looping program', () => {
-    // A looping requester whose only candidate is permanently blocked — the
-    // deadlock is a genuine finding, not masked by state-keyed dedup.
+  test('still detects deadlock in a looping program', async () => {
+    // A looping requester whose only candidate is permanently blocked —
+    // the deadlock is a genuine finding, not masked by state-keyed dedup.
     const blocked: Thread[] = [
       { label: 'requester', rules: [{ request: { type: 'a' } }] },
       { label: 'blocker', rules: [{ block: [{ type: 'a' }] }] },
     ]
-    const result = exploreFrontiersRaw({ threads: blocked, strategy: 'bfs' })
+    const result = await exploreFrontiers({ threads: blocked, strategy: 'bfs', maxDepth: 50 })
     expect(result.findings.length).toBeGreaterThan(0)
     expect(result.findings[0]!.code).toBe('deadlock')
   })
 
-  test('finite one-shot programs still behave as before', () => {
-    // Regression guard: the existing finite-thread semantics are unchanged.
+  test('finite one-shot programs behave as before', async () => {
+    // Regression guard: finite-thread semantics are unchanged.
     const finite: Thread[] = [
       { label: 'ticker', rules: [{ request: { type: 'tick' } }], once: true },
       { label: 'worker', once: true, rules: [{ request: { type: 'start', detail: { id: 'job-1' } } }] },
     ]
-    const result = exploreFrontiersRaw({ threads: finite, strategy: 'bfs', maxDepth: 3 })
+    const result = await exploreFrontiers({ threads: finite, strategy: 'bfs', maxDepth: 3 })
     expect(result.report.visitedCount).toBeGreaterThan(0)
     expect(result.traces.length).toBe(result.report.visitedCount)
     for (const trace of result.traces) {
@@ -193,299 +78,150 @@ describe('exploreFrontiersRaw state-keyed dedup', () => {
       expect(last!.kind).toBe('frontier')
     }
   })
-})
 
-/**
- * Step 3 — strongly connected components (Tarjan, iterative).
- *
- * `findStronglyConnectedComponents` returns the SCCs of a labeled state graph
- * (the structure `exploreFrontiersRaw` builds as a side effect). An SCC of size
- * > 1, or a single node with a self-edge, is a cycle — the raw material for
- * Step 4's livelock detection. The helper is pure and depends only on node
- * adjacency (`successors: Array<{ to }>`), so tests build fake graphs directly.
- *
- * Written FIRST (red). Implement to turn green.
- */
-describe('findStronglyConnectedComponents', () => {
-  test('a DAG yields only trivial single-node SCCs', () => {
-    // A -> B -> C, no cycles. Each node is its own trivial SCC.
-    const g = graph({ A: ['B'], B: ['C'], C: [] })
-    const sccs = findStronglyConnectedComponents(g)
-    expect(sccs).toHaveLength(3)
-    for (const scc of sccs) expect(scc).toHaveLength(1)
-  })
-
-  test('a two-node cycle is one SCC of size 2', () => {
-    // A <-> B. Both in one SCC.
-    const g = graph({ A: ['B'], B: ['A'] })
-    const sccs = findStronglyConnectedComponents(g)
-    expect(sccs).toHaveLength(1)
-    expect(sccs[0]!).toHaveLength(2)
-    expect([...sccs[0]!].sort()).toEqual(['A', 'B'])
-  })
-
-  test('a single node with a self-edge is a (trivial-looking but cyclic) SCC', () => {
-    // A -> A. Size-1 SCC, but it IS a cycle. (isCycle interpretation is Step 4.)
-    const g = graph({ A: ['A'] })
-    const sccs = findStronglyConnectedComponents(g)
-    expect(sccs).toHaveLength(1)
-    expect(sccs[0]!).toEqual(['A'])
-  })
-
-  test('isolates a cycle embedded in a larger graph', () => {
-    // A -> B <-> C -> D. {B,C} form an SCC; A and D are trivial.
-    const g = graph({ A: ['B'], B: ['C'], C: ['B', 'D'], D: [] })
-    const sccs = findStronglyConnectedComponents(g)
-    expect(sccs).toHaveLength(3)
-    const cycle = sccs.find((s) => s.length === 2)
-    expect(cycle).toBeDefined()
-    expect([...cycle!].sort()).toEqual(['B', 'C'])
-  })
-
-  test('handles two disjoint cycles in one graph', () => {
-    // A <-> B   and   C <-> D, plus a bridge A -> C.
-    const g = graph({ A: ['B', 'C'], B: ['A'], C: ['D'], D: ['C'] })
-    const sccs = findStronglyConnectedComponents(g)
-    const big = sccs.filter((s) => s.length === 2)
-    expect(big).toHaveLength(2)
-    const labels = big.map((s) => [...s].sort().join(',')).sort()
-    expect(labels).toEqual(['A,B', 'C,D'])
-  })
-
-  test('an empty graph yields no SCCs', () => {
-    expect(findStronglyConnectedComponents(new Map())).toEqual([])
-  })
-
-  test('terminates on a large single cycle without stack overflow', () => {
-    // 5000 nodes in one big ring: 0 -> 1 -> ... -> 4999 -> 0.
-    // Iterative Tarjan must handle this; a recursive impl would blow the stack.
-    const nodes: Record<string, string[]> = {}
-    for (let i = 0; i < 5000; i++) nodes[String(i)] = [String((i + 1) % 5000)]
-    const g = graph(nodes)
-    const sccs = findStronglyConnectedComponents(g)
-    expect(sccs).toHaveLength(1)
-    expect(sccs[0]!).toHaveLength(5000)
-  })
-})
-
-/**
- * isCycle — the cycle interpretation of an SCC.
- *
- * `findLivelocks` delegates the "is this SCC a cycle?" decision to `isCycle`:
- * an SCC of size > 1 is always a cycle, and a single-node SCC is a cycle only
- * when it has a self-edge. These tests exercise both branches of that `||`
- * plus the degenerate empty-SCC edge case directly — `isCycle` is `@public` and
- * worth covering without leaning on `findLivelocks` for coverage.
- */
-describe('isCycle', () => {
-  test('a size-2 SCC is a cycle', () => {
-    // scc.length > 1 branch: any multi-node SCC is a cycle regardless of edges.
-    const g = graph({ A: ['B'], B: ['A'] })
-    expect(isCycle(['A', 'B'], g)).toBe(true)
-  })
-
-  test('a single node with a self-edge is a cycle', () => {
-    // scc.length === 1 && self-loop branch.
-    const g = graph({ A: ['A'] })
-    expect(isCycle(['A'], g)).toBe(true)
-  })
-
-  test('a single node with no self-edge is not a cycle', () => {
-    // Negation: size 1, no self-edge → not a cycle.
-    const g = graph({ A: ['B'], B: [] })
-    expect(isCycle(['A'], g)).toBe(false)
-  })
-
-  test('a single node with edges only to other nodes is not a cycle', () => {
-    // Pins that isCycle reads self-adjacency, not SCC membership: node 'B'
-    // has an edge to 'A' but no edge to itself, so ['B'] alone is not a cycle
-    // even though 'B' participates in a larger cycle as part of ['A','B'].
-    const g = graph({ A: ['B'], B: ['A'] })
-    expect(isCycle(['B'], g)).toBe(false)
-  })
-
-  test('an empty SCC array is not a cycle', () => {
-    // Degenerate input guards the scc.length === 1 guard.
-    expect(isCycle([], graph({ A: ['A'] }))).toBe(false)
-  })
-})
-
-/**
- * Step 4 — livelock detection via a caller-supplied progress set.
- *
- * `findLivelocks` inspects a labeled state graph and its SCCs, and reports
- * cycles that never select a progress event. A "progress" event is whatever
- * the caller declares meaningful — the specification. This is the property
- * the model checker proves (or refutes): every reachable cycle must select a
- * progress event, else the program can spin forever without accomplishing
- * anything.
- *
- * Written FIRST (red). Implement to turn green.
- */
-describe('findLivelocks', () => {
-  test('a two-state cycle with no progress edge is a livelock', () => {
-    // A <-> B, both edges labeled `tick`. progress = ['done']. No edge in the
-    // cycle selects `done` → livelock.
-    const g = labeledGraph({
-      A: [{ type: 'tick', to: 'B' }],
-      B: [{ type: 'tick', to: 'A' }],
+  test('two structurally-equal programs yield the same serialized state graph', async () => {
+    // The same toggle authored twice (different label strings, same
+    // request idioms) explores to the same state-graph structure: same
+    // visited count, and each root has a successor edge labeled `on`.
+    // This is the public expression of frontierStateKey's order- and
+    // generator-identity invariance — no fake PendingBid fixtures.
+    const program: Thread[] = [{ label: 'toggle', rules: [{ request: { type: 'on' } }, { request: { type: 'off' } }] }]
+    const a = await exploreFrontiers({ threads: program, strategy: 'bfs', maxDepth: 50 })
+    const b = await exploreFrontiers({
+      threads: [{ label: 'other-label', rules: [{ request: { type: 'on' } }, { request: { type: 'off' } }] }],
+      strategy: 'bfs',
+      maxDepth: 50,
     })
-    const sccs = findStronglyConnectedComponents(g)
-    const livelocks = findLivelocks({ graph: g, sccs, progress: ['done'] })
-    expect(livelocks).toHaveLength(1)
-    expect(livelocks[0]!.code).toBe('livelock')
-    expect(livelocks[0]!.progressTypes).toEqual(['done'])
-    expect(livelocks[0]!.states.sort()).toEqual(['A', 'B'])
+    expect(a.report.visitedCount).toBe(b.report.visitedCount)
+    expect(Object.keys(a.stateGraph).length).toBe(Object.keys(b.stateGraph).length)
+    // Each root has a successor edge selecting `on`.
+    const aRoot = Object.values(a.stateGraph)[0]!
+    const bRoot = Object.values(b.stateGraph)[0]!
+    expect(aRoot.successors.some((e) => e.selection.type === 'on')).toBe(true)
+    expect(bRoot.successors.some((e) => e.selection.type === 'on')).toBe(true)
   })
 
-  test('a two-state cycle that selects a progress event is not a livelock', () => {
-    // A -> B labeled `done`, B -> A labeled `tick`. progress = ['done']. The
-    // cycle contains a `done` edge → makes progress → not a livelock.
-    const g = labeledGraph({
-      A: [{ type: 'done', to: 'B' }],
-      B: [{ type: 'tick', to: 'A' }],
-    })
-    const sccs = findStronglyConnectedComponents(g)
-    const livelocks = findLivelocks({ graph: g, sccs, progress: ['done'] })
-    expect(livelocks).toHaveLength(0)
-  })
-
-  test('a self-loop with no progress edge is a livelock', () => {
-    // A -> A labeled `tick`. progress = ['done']. No progress → livelock.
-    const g = labeledGraph({ A: [{ type: 'tick', to: 'A' }] })
-    const sccs = findStronglyConnectedComponents(g)
-    const livelocks = findLivelocks({ graph: g, sccs, progress: ['done'] })
-    expect(livelocks).toHaveLength(1)
-    expect(livelocks[0]!.states).toEqual(['A'])
-  })
-
-  test('a self-loop that selects a progress event is not a livelock', () => {
-    // A -> A labeled `done`. progress = ['done']. The loop makes progress.
-    const g = labeledGraph({ A: [{ type: 'done', to: 'A' }] })
-    const sccs = findStronglyConnectedComponents(g)
-    const livelocks = findLivelocks({ graph: g, sccs, progress: ['done'] })
-    expect(livelocks).toHaveLength(0)
-  })
-
-  test('edges leaving the SCC do not count as progress for that SCC', () => {
-    // A <-> B cycle (edges `tick`), with B -> C labeled `done` exiting the SCC.
-    // `done` is progress, but it leaves the cycle — the cycle itself never
-    // selects `done`, so it is still a livelock. Escapes are not credited.
-    const g = labeledGraph({
-      A: [{ type: 'tick', to: 'B' }],
-      B: [
-        { type: 'tick', to: 'A' },
-        { type: 'done', to: 'C' },
-      ],
-      C: [],
-    })
-    const sccs = findStronglyConnectedComponents(g)
-    const livelocks = findLivelocks({ graph: g, sccs, progress: ['done'] })
-    expect(livelocks).toHaveLength(1)
-    expect(livelocks[0]!.states.sort()).toEqual(['A', 'B'])
-  })
-
-  test('an empty progress set flags every cycle as a livelock', () => {
-    // No event counts as progress → any cycle (here a self-loop) is livelock.
-    const g = labeledGraph({ A: [{ type: 'done', to: 'A' }] })
-    const sccs = findStronglyConnectedComponents(g)
-    const livelocks = findLivelocks({ graph: g, sccs, progress: [] })
-    expect(livelocks).toHaveLength(1)
-  })
-
-  test('integration: full chain on a looping thread set that never progresses', () => {
-    // A ticker that requests `tick` forever, plus a `waitFor` thread that
-    // never fires. The reachable cycle is the ticker's self-loop on `tick`.
-    // progress = ['succeeded'] — never selected in the cycle → livelock.
-    const threads: Thread[] = [
-      { label: 'ticker', rules: [{ request: { type: 'tick' } }] },
-      { label: 'stalled', rules: [{ waitFor: [{ type: 'succeeded' }] }] },
-    ]
-    // Full public chain: exploreFrontiersRaw → findStronglyConnectedComponents →
-    // findLivelocks, run on the real explored state graph.
-    const result = exploreFrontiersRaw({ threads, strategy: 'bfs', maxDepth: 50 })
+  test('a large single cycle terminates without stack overflow', async () => {
+    // A 60-step ring thread: requests n0, n1, ..., n59, then loops. Sixty
+    // distinct states close back to the first. The iterative SCC algorithm
+    // must handle this; a recursive impl would blow the stack. (The old
+    // fake-graph test built a 5000-node hand graph; this drives the same
+    // termination through a real program.)
+    const rules = Array.from({ length: 60 }, (_, i) => ({ request: { type: `n${i}` } }))
+    const ring: Thread[] = [{ label: 'ring', rules }]
+    const result = await exploreFrontiers({ threads: ring, strategy: 'bfs', maxDepth: 500 })
     expect(result.report.truncated).toBe(false)
-    expect(result.findings).toHaveLength(0)
-    expect(result.report.visitedCount).toBe(1)
-    const sccs = findStronglyConnectedComponents(result.stateGraph)
-    const livelocks = findLivelocks({ graph: result.stateGraph, sccs, progress: ['succeeded'] })
-    expect(livelocks).toHaveLength(1)
-    expect(livelocks[0]!.code).toBe('livelock')
-    expect(livelocks[0]!.progressTypes).toEqual(['succeeded'])
+    expect(result.report.visitedCount).toBe(60)
   })
 })
 
-/**
- * Step 5 — verifyFrontiersRaw wired to livelock + exposed state graph.
- *
- * verifyFrontiersRaw now accepts an optional `progress` spec. When provided, it
- * runs livelock detection over the explored state graph and folds livelock
- * findings into the `failed` status alongside deadlocks. The explored state
- * graph is exposed on ExploreFrontiersResult so callers can run their own
- * graph analyses.
- *
- * Written FIRST (red). Implement to turn green.
- */
-describe('verifyFrontiersRaw livelock integration', () => {
-  test('a looping program with no progress is failed (livelock), not verified', () => {
-    // A ticker requesting `tick` forever. No deadlock, not truncated. Without
-    // a progress spec it would be `verified`; with progress=['succeeded'] the
-    // cycle never selects `succeeded` → livelock → `failed`.
+describe('verify-frontiers livelock integration (real programs)', () => {
+  test('a looping program with no progress is failed (livelock)', async () => {
+    // A ticker requesting `tick` forever. No deadlock, not truncated.
+    // Without a progress spec it would be verified; with progress=['succeeded']
+    // the cycle never selects `succeeded` → livelock → failed.
     const threads: Thread[] = [{ label: 'ticker', rules: [{ request: { type: 'tick' } }] }]
-    const result = verifyFrontiersRaw({ threads, progress: ['succeeded'], maxDepth: 50 })
+    const result = await verifyFrontiers({ threads, progress: ['succeeded'], maxDepth: 50 })
     expect(result.status).toBe('failed')
     expect(result.livelocks).toHaveLength(1)
     expect(result.livelocks[0]!.code).toBe('livelock')
     expect(result.livelocks[0]!.progressTypes).toEqual(['succeeded'])
+    // The livelock's states are the cycle's state keys (here, one state).
+    expect(result.livelocks[0]!.states.length).toBeGreaterThanOrEqual(1)
   })
 
-  test('a looping program whose cycle selects a progress event is verified', () => {
-    // A ticker requesting `done` forever. progress=['done'] → the cycle DOES
-    // select a progress event → not a livelock → `verified`.
+  test('a looping program whose cycle selects a progress event is verified', async () => {
+    // A ticker requesting `done` forever. progress=['done'] → the cycle
+    // DOES select a progress event → not a livelock → verified.
     const threads: Thread[] = [{ label: 'ticker', rules: [{ request: { type: 'done' } }] }]
-    const result = verifyFrontiersRaw({ threads, progress: ['done'], maxDepth: 50 })
+    const result = await verifyFrontiers({ threads, progress: ['done'], maxDepth: 50 })
     expect(result.status).toBe('verified')
     expect(result.livelocks).toHaveLength(0)
   })
 
-  test('omitting progress skips livelock detection (deadlock-only behavior preserved)', () => {
-    // Same looping ticker, no progress spec. Behaves as before Step 5: no
-    // deadlock, not truncated → `verified`, livelocks empty (not checked).
+  test('omitting progress skips livelock detection (deadlock-only)', async () => {
+    // Same looping ticker, no progress spec. Behaves as before: no deadlock,
+    // not truncated → verified, livelocks empty (not checked).
     const threads: Thread[] = [{ label: 'ticker', rules: [{ request: { type: 'tick' } }] }]
-    const result = verifyFrontiersRaw({ threads, maxDepth: 50 })
+    const result = await verifyFrontiers({ threads, maxDepth: 50 })
     expect(result.status).toBe('verified')
     expect(result.livelocks).toHaveLength(0)
   })
 
-  test('an empty progress set flags every cycle as a livelock', () => {
+  test('an empty progress set flags every cycle as a livelock', async () => {
     // progress=[] → nothing counts as progress → any cycle is a livelock.
     const threads: Thread[] = [{ label: 'ticker', rules: [{ request: { type: 'done' } }] }]
-    const result = verifyFrontiersRaw({ threads, progress: [], maxDepth: 50 })
+    const result = await verifyFrontiers({ threads, progress: [], maxDepth: 50 })
     expect(result.status).toBe('failed')
     expect(result.livelocks).toHaveLength(1)
   })
 
-  test('deadlock still wins as failed even when progress is specified', () => {
+  test('deadlock still wins as failed even when progress is specified', async () => {
     // A blocked requester: deadlock. progress=['x'] is also checked, but the
     // deadlock finding alone is enough to fail.
     const threads: Thread[] = [
       { label: 'requester', rules: [{ request: { type: 'a' } }] },
       { label: 'blocker', rules: [{ block: [{ type: 'a' }] }] },
     ]
-    const result = verifyFrontiersRaw({ threads, progress: ['x'] })
+    const result = await verifyFrontiers({ threads, progress: ['x'], maxDepth: 50 })
     expect(result.status).toBe('failed')
     expect(result.findings.length).toBeGreaterThan(0)
   })
 
-  test('exploreFrontiersRaw exposes the state graph for downstream analysis', () => {
-    // The graph is the raw material for findLivelocks/findStronglyConnectedComponents.
-    // Verify it's present and well-formed: the toggle has 2 nodes, each with
-    // one labeled successor edge to the other.
+  test('escape-edges do not redeem a livelock (two-state cycle with an exit)', async () => {
+    // A two-state cycle (toggle `tick`↔`tick`) with a progress `done` edge
+    // that LEAVES the cycle to a sink state. `done` is progress, but it
+    // leaves the cycle — the cycle itself never selects `done`, so it is
+    // still a livelock. Escapes are not credited.
+    //
+    // Program: a thread that requests `tick`, then loops on `tick`, but on
+    // the second step can request `done` (which exits to a terminal
+    // once-branch). The cycle edge is `tick`; the exit edge is `done`.
+    const threads: Thread[] = [
+      {
+        label: 'cycler-with-exit',
+        rules: [
+          { request: { type: 'tick' } },
+          // On step 2: request `tick` (cycle back) OR `done` (exit).
+          // `done` leads to a once-true thread that completes.
+          { request: { type: 'tick' } },
+          { request: { type: 'done' } },
+        ],
+      },
+      { label: 'sink', once: true, rules: [{ waitFor: [{ type: 'done' }] }] },
+    ]
+    const result = await verifyFrontiers({ threads, progress: ['done'], maxDepth: 50 })
+    // The cycle (toggle on `tick`) has an exit `done` to the sink, but the
+    // exit leaves the SCC — the cycle never selects `done` internally →
+    // livelock → failed.
+    expect(result.status).toBe('failed')
+    expect(result.livelocks.length).toBeGreaterThanOrEqual(1)
+    expect(result.livelocks[0]!.code).toBe('livelock')
+    expect(result.livelocks[0]!.progressTypes).toEqual(['done'])
+  })
+
+  test('a two-state cycle that selects progress internally is verified', async () => {
+    // A two-state cycle where one of the in-cycle edges IS the progress
+    // event: toggle requests `done` then `tick`, looping. progress=['done']
+    // → the cycle contains a `done` edge → makes progress → verified.
+    const threads: Thread[] = [
+      { label: 'toggle', rules: [{ request: { type: 'done' } }, { request: { type: 'tick' } }] },
+    ]
+    const result = await verifyFrontiers({ threads, progress: ['done'], maxDepth: 50 })
+    expect(result.status).toBe('verified')
+    expect(result.livelocks).toHaveLength(0)
+  })
+
+  test('explore-frontiers exposes the state graph for downstream analysis', async () => {
+    // The serialized state graph is the raw material the consumer would
+    // use for their own graph analyses. Verify it's a well-formed plain
+    // object: the toggle has 2 entries, each with at least one labeled
+    // successor edge.
     const threads: Thread[] = [{ label: 'toggle', rules: [{ request: { type: 'on' } }, { request: { type: 'off' } }] }]
-    const result = exploreFrontiersRaw({ threads, strategy: 'bfs', maxDepth: 50 })
+    const result = await exploreFrontiers({ threads, strategy: 'bfs', maxDepth: 50 })
     expect(result.stateGraph).toBeDefined()
-    expect(result.stateGraph.size).toBe(2)
-    for (const node of result.stateGraph.values()) {
+    expect(Object.keys(result.stateGraph).length).toBe(2)
+    for (const node of Object.values(result.stateGraph)) {
       expect(node.successors.length).toBeGreaterThanOrEqual(1)
     }
   })

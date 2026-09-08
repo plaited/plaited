@@ -164,7 +164,7 @@ const compileThreads = (
  *
  * @public
  */
-export type TraceRecord = {
+type TraceRecord = {
   messages: Trace[]
 }
 
@@ -173,7 +173,7 @@ export type TraceRecord = {
  *
  * @public
  */
-export type DeadlockFinding = {
+type DeadlockFinding = {
   code: 'deadlock'
   messages: Trace[]
 }
@@ -194,7 +194,7 @@ export type DeadlockFinding = {
  *
  * @public
  */
-export const replayToFrontierRaw = ({
+const replayToFrontierRaw = ({
   threads,
   messages = [],
   space,
@@ -397,7 +397,7 @@ const normalizeListeners = (listener: RegisteredBPListener[] | RegisteredTransfo
  *
  * @public
  */
-export const frontierStateKey = ({ pending }: { pending: Set<PendingBid> }): string =>
+const frontierStateKey = ({ pending }: { pending: Set<PendingBid> }): string =>
   JSON.stringify(
     [...pending]
       .map(({ waitFor, block, interrupt, request, transform, generator: _gen, ...rest }) =>
@@ -421,7 +421,7 @@ export const frontierStateKey = ({ pending }: { pending: Set<PendingBid> }): str
       .sort(),
   )
 
-export type StateNode = {
+type StateNode = {
   stateKey: string
   /** The frontier at this state; Step 3 reads enabled/candidates here. */
   frontier: Frontier
@@ -441,7 +441,7 @@ export type StateNode = {
  *
  * @public
  */
-export const isCycle = (scc: string[], graph: Map<string, StateNode>): boolean =>
+const isCycle = (scc: string[], graph: Map<string, StateNode>): boolean =>
   scc.length > 1 || (scc.length === 1 && graph.get(scc[0]!)!.successors.some((e) => e.to === scc[0]!))
 
 /**
@@ -465,7 +465,7 @@ export const isCycle = (scc: string[], graph: Map<string, StateNode>): boolean =
  *
  * @public
  */
-export const findStronglyConnectedComponents = (graph: Map<string, StateNode>): string[][] => {
+const findStronglyConnectedComponents = (graph: Map<string, StateNode>): string[][] => {
   let index = 0
   const indices = new Map<string, number>()
   const lowlinks = new Map<string, number>()
@@ -546,7 +546,7 @@ export const findStronglyConnectedComponents = (graph: Map<string, StateNode>): 
  *
  * @public
  */
-export type LivelockFinding = {
+type LivelockFinding = {
   code: 'livelock'
   states: string[]
   progressTypes: string[]
@@ -578,7 +578,7 @@ export type LivelockFinding = {
  *
  * @public
  */
-export const findLivelocks = ({
+const findLivelocks = ({
   graph,
   sccs,
   progress,
@@ -617,7 +617,7 @@ export const findLivelocks = ({
  *
  * @public
  */
-export type ExploreFrontiersArgs = {
+type ExploreFrontiersArgs = {
   /** Thread tuples to analyze. */
   threads: Thread[]
   /** Prior trace prefix to replay before exploring. */
@@ -641,7 +641,7 @@ export type ExploreFrontiersArgs = {
  *
  * @public
  */
-export type ExploreFrontiersResult = {
+type ExploreFrontiersResult = {
   traces: TraceRecord[]
   findings: DeadlockFinding[]
   report: {
@@ -670,7 +670,7 @@ type WorkItem = {
  *
  * @public
  */
-export const exploreFrontiersRaw = ({
+const exploreFrontiersRaw = ({
   threads,
   messages = [],
   triggers = [],
@@ -786,14 +786,14 @@ export const exploreFrontiersRaw = ({
  *
  * @public
  */
-export type VerifyFrontiersResult = {
+type VerifyFrontiersResult = {
   status: 'verified' | 'failed' | 'truncated'
   findings: DeadlockFinding[]
   report: ExploreFrontiersResult['report']
   livelocks: LivelockFinding[]
 }
 
-export type VerifyFrontiersArgs = ExploreFrontiersArgs & { progress?: string[] }
+type VerifyFrontiersArgs = ExploreFrontiersArgs & { progress?: string[] }
 
 /**
  * Verifies a thread set by exploring its frontiers and deriving a
@@ -804,7 +804,7 @@ export type VerifyFrontiersArgs = ExploreFrontiersArgs & { progress?: string[] }
  *
  * @public
  */
-export const verifyFrontiersRaw = ({ progress, ...args }: VerifyFrontiersArgs): VerifyFrontiersResult => {
+const verifyFrontiersRaw = ({ progress, ...args }: VerifyFrontiersArgs): VerifyFrontiersResult => {
   const { findings, report, stateGraph } = exploreFrontiersRaw(args)
   const livelocks: LivelockFinding[] = []
   if (progress !== undefined) {
