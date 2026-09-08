@@ -2,163 +2,26 @@
  * Agent-facing MCP client for calling remote MCP servers.
  *
  * @remarks
- * Supports all 7 MCP operations: call-tool, list-tools, list-prompts,
- * get-prompt, list-resources, read-resource, and discover.
+ * A `useTool` unit ({@link useTool}) wrapping the seven MCP client operations:
+ * `call-tool`, `list-tools`, `list-prompts`, `get-prompt`, `list-resources`,
+ * `read-resource`, and `discover`. Connections are pooled in
+ * {@link getSharedClient} (one live `Client` per server-url, reused across
+ * calls); the tool never closes a client itself — the pool owns teardown.
+ *
+ * The tool returns remote MCP data only; it never writes to any store.
  *
  * @packageDocumentation
  */
 
-import { Client } from '@modelcontextprotocol/sdk/client/index.js'
-import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js'
-import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js'
-import * as z from 'zod'
-import { makeCli } from '../cli/cli.ts'
+import type { OAuthClientProvider } from '@modelcontextprotocol/sdk/client/auth.js'
+import type { Client } from '@modelcontextprotocol/sdk/client/index.js'
+import type { OAuthClientInformationMixed, OAuthTokens } from '@modelcontextprotocol/sdk/shared/auth.js'
+import type { JSONSchemaType } from 'ajv'
+import { getSharedClient, type McpDiscovery, setPoolDiscovery } from '../kernel/use-plugin-adapter.ts'
+import { ajv, useTool } from './use-tool.ts'
 
 // ---------------------------------------------------------------------------
-// Zod schemas
-// ---------------------------------------------------------------------------
-
-const remoteMcpSecretSchema = z.object({
-  envVar: z.string().min(1),
-  optional: z.boolean().optional(),
-  description: z.string().optional(),
-})
-
-const tokenPersistenceSchema = z.discriminatedUnion('kind', [
-  z.object({ kind: z.literal('file'), path: z.string().optional() }),
-  z.object({ kind: z.literal('env') }),
-])
-
-const authConfigSchema = z.discriminatedUnion('type', [
-  z.object({ type: z.literal('none') }),
-  z.object({
-    type: z.literal('bearer-env'),
-    token: remoteMcpSecretSchema,
-    headerName: z.string().min(1).optional(),
-    prefix: z.string().optional(),
-  }),
-  z.object({
-    type: z.literal('static-headers'),
-    headers: z.record(z.string(), z.string()),
-  }),
-  z.object({
-    type: z.literal('oauth-client-credentials'),
-    issuer: z.string().url().optional(),
-    tokenUrl: z.string().url(),
-    clientId: remoteMcpSecretSchema,
-    clientSecret: remoteMcpSecretSchema.optional(),
-    scopes: z.array(z.string().min(1)).optional(),
-    audience: z.string().min(1).optional(),
-    resource: z.string().min(1).optional(),
-    clientAuthentication: z.enum(['client_secret_basic', 'client_secret_post', 'none']).optional(),
-    tokenPersistence: tokenPersistenceSchema.optional(),
-  }),
-  z.object({
-    type: z.literal('oauth-refresh-token'),
-    issuer: z.string().url().optional(),
-    tokenUrl: z.string().url(),
-    clientId: remoteMcpSecretSchema,
-    clientSecret: remoteMcpSecretSchema.optional(),
-    refreshToken: remoteMcpSecretSchema,
-    scopes: z.array(z.string().min(1)).optional(),
-    audience: z.string().min(1).optional(),
-    resource: z.string().min(1).optional(),
-    clientAuthentication: z.enum(['client_secret_basic', 'client_secret_post', 'none']).optional(),
-    tokenPersistence: tokenPersistenceSchema.optional(),
-  }),
-])
-
-const modeFields = {
-  auth: authConfigSchema.optional(),
-  headers: z.record(z.string(), z.string()).optional(),
-  timeoutMs: z.number().int().positive().optional(),
-  tokenPersistence: tokenPersistenceSchema.optional(),
-} as const
-
-const callToolModeSchema = z
-  .object({
-    mode: z.literal('call-tool'),
-    url: z.string().min(1),
-    tool: z.string().min(1),
-    args: z.record(z.string(), z.unknown()),
-    ...modeFields,
-  })
-  .describe('Call a tool on a remote MCP server')
-
-const listToolsModeSchema = z
-  .object({ mode: z.literal('list-tools'), url: z.string().min(1), ...modeFields })
-  .describe('List available tools from a remote MCP server')
-
-const listPromptsModeSchema = z
-  .object({ mode: z.literal('list-prompts'), url: z.string().min(1), ...modeFields })
-  .describe('List available prompts from a remote MCP server')
-
-const getPromptModeSchema = z
-  .object({
-    mode: z.literal('get-prompt'),
-    url: z.string().min(1),
-    name: z.string().min(1),
-    args: z.record(z.string(), z.string()).optional(),
-    ...modeFields,
-  })
-  .describe('Get a specific prompt from a remote MCP server')
-
-const listResourcesModeSchema = z
-  .object({ mode: z.literal('list-resources'), url: z.string().min(1), ...modeFields })
-  .describe('List available resources from a remote MCP server')
-
-const readResourceModeSchema = z
-  .object({
-    mode: z.literal('read-resource'),
-    url: z.string().min(1),
-    uri: z.string().min(1),
-    ...modeFields,
-  })
-  .describe('Read a resource from a remote MCP server by URI')
-
-const discoverModeSchema = z
-  .object({ mode: z.literal('discover'), url: z.string().min(1), ...modeFields })
-  .describe('Discover all capabilities from a remote MCP server')
-
-const McpClientInputSchema = z
-  .discriminatedUnion('mode', [
-    callToolModeSchema,
-    listToolsModeSchema,
-    listPromptsModeSchema,
-    getPromptModeSchema,
-    listResourcesModeSchema,
-    readResourceModeSchema,
-    discoverModeSchema,
-  ])
-  .describe('MCP client operation to perform')
-
-const McpClientOutputSchema = z
-  .discriminatedUnion('mode', [
-    z.object({
-      mode: z.literal('call-tool'),
-      result: z.object({
-        content: z.array(z.object({ type: z.string(), text: z.string().optional() }).passthrough()),
-        isError: z.boolean().optional(),
-      }),
-    }),
-    z.object({ mode: z.literal('list-tools'), result: z.array(z.any()) }),
-    z.object({ mode: z.literal('list-prompts'), result: z.array(z.any()) }),
-    z.object({ mode: z.literal('get-prompt'), result: z.array(z.any()) }),
-    z.object({ mode: z.literal('list-resources'), result: z.array(z.any()) }),
-    z.object({ mode: z.literal('read-resource'), result: z.array(z.any()) }),
-    z.object({
-      mode: z.literal('discover'),
-      result: z.object({
-        tools: z.array(z.any()),
-        prompts: z.array(z.any()),
-        resources: z.array(z.any()),
-      }),
-    }),
-  ])
-  .describe('MCP client operation result')
-
-// ---------------------------------------------------------------------------
-// Internal types
+// Internal MCP types
 // ---------------------------------------------------------------------------
 
 type McpContent = { type: string; text?: string; [key: string]: unknown }
@@ -174,6 +37,11 @@ type McpServerCapabilities = {
   prompts: McpPrompt[]
   resources: McpResource[]
 }
+
+// ---------------------------------------------------------------------------
+// Auth types (single source: the Zod schema below)
+// ---------------------------------------------------------------------------
+
 type RemoteMcpSecret = {
   envVar: string
   optional?: boolean
@@ -184,16 +52,8 @@ type RemoteMcpOauthClientAuthentication = 'client_secret_basic' | 'client_secret
 
 type RemoteMcpAuthConfig =
   | { type: 'none' }
-  | {
-      type: 'bearer-env'
-      token: RemoteMcpSecret
-      headerName?: string
-      prefix?: string
-    }
-  | {
-      type: 'static-headers'
-      headers: Record<string, string>
-    }
+  | { type: 'bearer-env'; token: RemoteMcpSecret; headerName?: string; prefix?: string }
+  | { type: 'static-headers'; headers: Record<string, string> }
   | {
       type: 'oauth-client-credentials'
       issuer?: string
@@ -220,30 +80,380 @@ type RemoteMcpAuthConfig =
       tokenPersistence?: RemoteMcpTokenPersistence
     }
 
-type McpSessionOptions = {
+// ---------------------------------------------------------------------------
+// Auth JSON schema — single source for auth-shape validation, compiled once
+// with AJV. The model-facing input schema treats `auth` as a permissive object;
+// the tool validates it at the trust boundary here (no parallel schema source,
+// no Zod). Structural discriminated union on `type` per AGENTS.md.
+// ---------------------------------------------------------------------------
+
+const remoteMcpSecretJsonSchema = {
+  type: 'object',
+  properties: {
+    envVar: { type: 'string', minLength: 1 },
+    optional: { type: 'boolean', nullable: true },
+    description: { type: 'string', nullable: true },
+  },
+  required: ['envVar'],
+  additionalProperties: false,
+} as const
+
+const tokenPersistenceJsonSchema = {
+  type: 'object',
+  oneOf: [
+    {
+      type: 'object',
+      properties: {
+        kind: { type: 'string', const: 'file' },
+        path: { type: 'string', nullable: true },
+      },
+      required: ['kind'],
+      additionalProperties: false,
+    },
+    {
+      type: 'object',
+      properties: { kind: { type: 'string', const: 'env' } },
+      required: ['kind'],
+      additionalProperties: false,
+    },
+  ],
+} as const
+
+const authConfigJsonSchema = {
+  type: 'object',
+  oneOf: [
+    {
+      type: 'object',
+      properties: { type: { type: 'string', const: 'none' } },
+      required: ['type'],
+      additionalProperties: false,
+    },
+    {
+      type: 'object',
+      properties: {
+        type: { type: 'string', const: 'bearer-env' },
+        token: remoteMcpSecretJsonSchema,
+        headerName: { type: 'string', minLength: 1, nullable: true },
+        prefix: { type: 'string', nullable: true },
+      },
+      required: ['type', 'token'],
+      additionalProperties: false,
+    },
+    {
+      type: 'object',
+      properties: {
+        type: { type: 'string', const: 'static-headers' },
+        headers: { type: 'object', additionalProperties: { type: 'string' } },
+      },
+      required: ['type', 'headers'],
+      additionalProperties: false,
+    },
+    {
+      type: 'object',
+      properties: {
+        type: { type: 'string', const: 'oauth-client-credentials' },
+        issuer: { type: 'string', nullable: true },
+        tokenUrl: { type: 'string', minLength: 1 },
+        clientId: remoteMcpSecretJsonSchema,
+        clientSecret: { ...remoteMcpSecretJsonSchema, nullable: true },
+        scopes: { type: 'array', items: { type: 'string', minLength: 1 }, nullable: true },
+        audience: { type: 'string', minLength: 1, nullable: true },
+        resource: { type: 'string', minLength: 1, nullable: true },
+        clientAuthentication: {
+          type: 'string',
+          enum: ['client_secret_basic', 'client_secret_post', 'none'],
+          nullable: true,
+        },
+        tokenPersistence: { ...tokenPersistenceJsonSchema, nullable: true },
+      },
+      required: ['type', 'tokenUrl', 'clientId'],
+      additionalProperties: false,
+    },
+    {
+      type: 'object',
+      properties: {
+        type: { type: 'string', const: 'oauth-refresh-token' },
+        issuer: { type: 'string', nullable: true },
+        tokenUrl: { type: 'string', minLength: 1 },
+        clientId: remoteMcpSecretJsonSchema,
+        clientSecret: { ...remoteMcpSecretJsonSchema, nullable: true },
+        refreshToken: remoteMcpSecretJsonSchema,
+        scopes: { type: 'array', items: { type: 'string', minLength: 1 }, nullable: true },
+        audience: { type: 'string', minLength: 1, nullable: true },
+        resource: { type: 'string', minLength: 1, nullable: true },
+        clientAuthentication: {
+          type: 'string',
+          enum: ['client_secret_basic', 'client_secret_post', 'none'],
+          nullable: true,
+        },
+        tokenPersistence: { ...tokenPersistenceJsonSchema, nullable: true },
+      },
+      required: ['type', 'tokenUrl', 'clientId', 'refreshToken'],
+      additionalProperties: false,
+    },
+  ],
+} as const
+
+const validateAuth = ajv.compile(authConfigJsonSchema)
+
+// ---------------------------------------------------------------------------
+// Tool input / output types (discriminated unions on `mode`)
+// ---------------------------------------------------------------------------
+
+type SharedInputFields = {
+  url: string
+  auth?: RemoteMcpAuthConfig
   headers?: Record<string, string>
-  authProvider?: import('@modelcontextprotocol/sdk/client/auth.js').OAuthClientProvider
   timeoutMs?: number
 }
 
-type McpSessionApi = {
-  listTools: () => Promise<McpTool[]>
-  callTool: (name: string, args: Record<string, unknown>) => Promise<McpCallToolResult>
-  listPrompts: () => Promise<McpPrompt[]>
-  getPrompt: (name: string, args?: Record<string, string>) => Promise<McpPromptMessage[]>
-  listResources: () => Promise<McpResource[]>
-  readResource: (uri: string) => Promise<McpResourceContent[]>
-  discover: () => Promise<McpServerCapabilities>
-  [Symbol.asyncDispose]: () => Promise<void>
-}
+export type McpClientInput =
+  | ({ mode: 'call-tool'; tool: string; args: Record<string, unknown> } & SharedInputFields)
+  | ({ mode: 'list-tools' } & SharedInputFields)
+  | ({ mode: 'list-prompts' } & SharedInputFields)
+  | ({ mode: 'get-prompt'; name: string; args?: Record<string, string> } & SharedInputFields)
+  | ({ mode: 'list-resources' } & SharedInputFields)
+  | ({ mode: 'read-resource'; uri: string } & SharedInputFields)
+  | ({ mode: 'discover' } & SharedInputFields)
+
+export type McpClientOutput =
+  | { mode: 'call-tool'; result: McpCallToolResult }
+  | { mode: 'list-tools'; result: McpTool[] }
+  | { mode: 'list-prompts'; result: McpPrompt[] }
+  | { mode: 'get-prompt'; result: McpPromptMessage[] }
+  | { mode: 'list-resources'; result: McpResource[] }
+  | { mode: 'read-resource'; result: McpResourceContent[] }
+  | { mode: 'discover'; result: McpServerCapabilities }
+
+// ---------------------------------------------------------------------------
+// Tool JSON schemas — hand-written oneOf with `mode` as the discriminator
+// const per branch. JSONSchemaType cannot statically verify a discriminated
+// union, so the whole object is cast through `unknown` — same pattern as
+// read.ts / frontier.ts. AJV validates the shape at runtime. `auth` and
+// `args` are permissive objects here; the tool validates `auth` at the
+// boundary via `authConfigSchema` above (single source).
+// ---------------------------------------------------------------------------
+
+const authJsonSchema = {
+  type: 'object',
+  additionalProperties: true,
+  nullable: true,
+  description: 'auth config — validated at the boundary (none | bearer-env | static-headers | oauth-*)',
+} as const
+
+// Shared optional fields present on every mode branch.
+const sharedInputFields = {
+  auth: authJsonSchema,
+  headers: {
+    type: 'object',
+    additionalProperties: { type: 'string' },
+    nullable: true,
+    description: 'extra HTTP headers to send with MCP requests',
+  },
+  timeoutMs: {
+    type: 'integer',
+    minimum: 1,
+    nullable: true,
+    description: 'per-operation timeout in milliseconds',
+  },
+} as const
+
+export const McpClientInputSchema = {
+  type: 'object',
+  oneOf: [
+    {
+      type: 'object',
+      properties: {
+        mode: { type: 'string', const: 'call-tool' },
+        url: { type: 'string', minLength: 1, description: 'remote MCP server URL' },
+        tool: { type: 'string', minLength: 1, description: 'tool name to call' },
+        args: {
+          type: 'object',
+          additionalProperties: true,
+          description: 'tool arguments — a JSON object, validated at the boundary',
+        },
+        ...sharedInputFields,
+      },
+      required: ['mode', 'url', 'tool', 'args'],
+      additionalProperties: false,
+    },
+    {
+      type: 'object',
+      properties: {
+        mode: { type: 'string', const: 'list-tools' },
+        url: { type: 'string', minLength: 1, description: 'remote MCP server URL' },
+        ...sharedInputFields,
+      },
+      required: ['mode', 'url'],
+      additionalProperties: false,
+    },
+    {
+      type: 'object',
+      properties: {
+        mode: { type: 'string', const: 'list-prompts' },
+        url: { type: 'string', minLength: 1, description: 'remote MCP server URL' },
+        ...sharedInputFields,
+      },
+      required: ['mode', 'url'],
+      additionalProperties: false,
+    },
+    {
+      type: 'object',
+      properties: {
+        mode: { type: 'string', const: 'get-prompt' },
+        url: { type: 'string', minLength: 1, description: 'remote MCP server URL' },
+        name: { type: 'string', minLength: 1, description: 'prompt name' },
+        args: {
+          type: 'object',
+          additionalProperties: { type: 'string' },
+          nullable: true,
+          description: 'prompt arguments',
+        },
+        ...sharedInputFields,
+      },
+      required: ['mode', 'url', 'name'],
+      additionalProperties: false,
+    },
+    {
+      type: 'object',
+      properties: {
+        mode: { type: 'string', const: 'list-resources' },
+        url: { type: 'string', minLength: 1, description: 'remote MCP server URL' },
+        ...sharedInputFields,
+      },
+      required: ['mode', 'url'],
+      additionalProperties: false,
+    },
+    {
+      type: 'object',
+      properties: {
+        mode: { type: 'string', const: 'read-resource' },
+        url: { type: 'string', minLength: 1, description: 'remote MCP server URL' },
+        uri: { type: 'string', minLength: 1, description: 'resource URI to read' },
+        ...sharedInputFields,
+      },
+      required: ['mode', 'url', 'uri'],
+      additionalProperties: false,
+    },
+    {
+      type: 'object',
+      properties: {
+        mode: { type: 'string', const: 'discover' },
+        url: { type: 'string', minLength: 1, description: 'remote MCP server URL' },
+        ...sharedInputFields,
+      },
+      required: ['mode', 'url'],
+      additionalProperties: false,
+    },
+  ],
+  description:
+    'MCP client operation to perform (call-tool | list-tools | list-prompts | get-prompt | list-resources | read-resource | discover).',
+} as unknown as JSONSchemaType<McpClientInput>
+
+const mcpContentJsonSchema = {
+  type: 'object',
+  properties: {
+    type: { type: 'string' },
+    text: { type: 'string', nullable: true },
+  },
+  required: ['type'],
+  additionalProperties: true,
+} as const
+
+export const McpClientOutputSchema = {
+  type: 'object',
+  oneOf: [
+    {
+      type: 'object',
+      properties: {
+        mode: { type: 'string', const: 'call-tool' },
+        result: {
+          type: 'object',
+          properties: {
+            content: { type: 'array', items: mcpContentJsonSchema },
+            isError: { type: 'boolean', nullable: true },
+          },
+          required: ['content'],
+          additionalProperties: true,
+        },
+      },
+      required: ['mode', 'result'],
+      additionalProperties: false,
+    },
+    {
+      type: 'object',
+      properties: {
+        mode: { type: 'string', const: 'list-tools' },
+        result: { type: 'array', items: { type: 'object', additionalProperties: true } },
+      },
+      required: ['mode', 'result'],
+      additionalProperties: false,
+    },
+    {
+      type: 'object',
+      properties: {
+        mode: { type: 'string', const: 'list-prompts' },
+        result: { type: 'array', items: { type: 'object', additionalProperties: true } },
+      },
+      required: ['mode', 'result'],
+      additionalProperties: false,
+    },
+    {
+      type: 'object',
+      properties: {
+        mode: { type: 'string', const: 'get-prompt' },
+        result: { type: 'array', items: { type: 'object', additionalProperties: true } },
+      },
+      required: ['mode', 'result'],
+      additionalProperties: false,
+    },
+    {
+      type: 'object',
+      properties: {
+        mode: { type: 'string', const: 'list-resources' },
+        result: { type: 'array', items: { type: 'object', additionalProperties: true } },
+      },
+      required: ['mode', 'result'],
+      additionalProperties: false,
+    },
+    {
+      type: 'object',
+      properties: {
+        mode: { type: 'string', const: 'read-resource' },
+        result: { type: 'array', items: { type: 'object', additionalProperties: true } },
+      },
+      required: ['mode', 'result'],
+      additionalProperties: false,
+    },
+    {
+      type: 'object',
+      properties: {
+        mode: { type: 'string', const: 'discover' },
+        result: {
+          type: 'object',
+          properties: {
+            tools: { type: 'array', items: { type: 'object', additionalProperties: true } },
+            prompts: { type: 'array', items: { type: 'object', additionalProperties: true } },
+            resources: { type: 'array', items: { type: 'object', additionalProperties: true } },
+          },
+          required: ['tools', 'prompts', 'resources'],
+          additionalProperties: true,
+        },
+      },
+      required: ['mode', 'result'],
+      additionalProperties: false,
+    },
+  ],
+  description: 'MCP client operation result, discriminated by mode.',
+} as unknown as JSONSchemaType<McpClientOutput>
 
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
 
+export const MCP_CLIENT_TOOL_NAME = 'mcp-client'
 const DEFAULT_BEARER_PREFIX = 'Bearer'
 const TOKEN_EXPIRY_SKEW_MS = 30_000
-const CLIENT_INFO = { name: 'plaited', version: '0.0.0' }
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -275,11 +485,11 @@ const encodeBasicAuth = (username: string, password: string) =>
 
 const getScopeString = (scopes?: string[]) => (scopes && scopes.length > 0 ? scopes.join(' ') : undefined)
 
-type InMemoryOAuthTokens = import('@modelcontextprotocol/sdk/shared/auth.js').OAuthTokens & {
+type InMemoryOAuthTokens = OAuthTokens & {
   expiresAtMs?: number
 }
 
-const withExpiry = (tokens: import('@modelcontextprotocol/sdk/shared/auth.js').OAuthTokens): InMemoryOAuthTokens => ({
+const withExpiry = (tokens: OAuthTokens): InMemoryOAuthTokens => ({
   ...tokens,
   expiresAtMs: tokens.expires_in === undefined ? undefined : Date.now() + tokens.expires_in * 1000,
 })
@@ -289,7 +499,13 @@ const isAccessTokenFresh = (tokens: InMemoryOAuthTokens | undefined) =>
   (tokens?.expiresAtMs === undefined || tokens.expiresAtMs - Date.now() > TOKEN_EXPIRY_SKEW_MS)
 
 // ---------------------------------------------------------------------------
-// Token persistence (file-backed)
+// Token persistence (file-backed).
+//
+// MINIMAL: file persistence under ~/.plaited/mcp/tokens/<host>.json. Upgrade
+// path (Slice C): replace with a BunKeychainOAuthProvider backed by
+// Bun.secrets and upgrade to the v2 OAuthClientProvider shape (issuer-keyed
+// clientInformation(ctx), state()/saveDiscoveryState/discoveryState(),
+// validateResourceURL with RFC 9207 iss validation).
 // ---------------------------------------------------------------------------
 
 const readPersistedRefreshToken = async (
@@ -369,7 +585,7 @@ const buildOAuthRequest = async (
 const exchangeOAuthTokens = async (
   auth: Extract<RemoteMcpAuthConfig, { type: 'oauth-client-credentials' | 'oauth-refresh-token' }>,
   refreshTokenOverride?: string,
-): Promise<import('@modelcontextprotocol/sdk/shared/auth.js').OAuthTokens> => {
+): Promise<OAuthTokens> => {
   const { headers, params } = await buildOAuthRequest(auth, refreshTokenOverride)
   const response = await fetch(auth.tokenUrl, {
     method: 'POST',
@@ -382,18 +598,18 @@ const exchangeOAuthTokens = async (
     throw new Error(`OAuth token request failed (${response.status}): ${body}`)
   }
 
-  const json = (await response.json()) as Partial<import('@modelcontextprotocol/sdk/shared/auth.js').OAuthTokens>
+  const json = (await response.json()) as Partial<OAuthTokens>
   if (!json.access_token || !json.token_type) {
     throw new Error('OAuth token response missing access_token or token_type')
   }
 
-  return json as import('@modelcontextprotocol/sdk/shared/auth.js').OAuthTokens
+  return json as OAuthTokens
 }
 
 const createOAuthProvider = (
   auth: Extract<RemoteMcpAuthConfig, { type: 'oauth-client-credentials' | 'oauth-refresh-token' }>,
   url: string,
-): import('@modelcontextprotocol/sdk/client/auth.js').OAuthClientProvider => {
+): OAuthClientProvider => {
   let cachedTokens: InMemoryOAuthTokens | undefined
   let loadedPersisted = false
   let persistedRefreshToken: string | undefined
@@ -441,15 +657,13 @@ const createOAuthProvider = (
         scope: getScopeString(auth.scopes),
       }
     },
-    clientInformation: async (): Promise<
-      import('@modelcontextprotocol/sdk/shared/auth.js').OAuthClientInformationMixed | undefined
-    > => {
+    clientInformation: async (): Promise<OAuthClientInformationMixed | undefined> => {
       const clientId = await resolveRequiredSecret(auth.clientId, 'OAuth client ID')
       const clientSecret = auth.clientSecret ? await resolveEnvSecret(auth.clientSecret) : undefined
       return { client_id: clientId, ...(clientSecret ? { client_secret: clientSecret } : {}) }
     },
     tokens: () => ensureTokens(),
-    saveTokens: async (tokens: import('@modelcontextprotocol/sdk/shared/auth.js').OAuthTokens) => {
+    saveTokens: async (tokens: OAuthTokens) => {
       const newRefresh = tokens.refresh_token ?? cachedTokens?.refresh_token
       cachedTokens = withExpiry({ ...tokens, ...(newRefresh ? { refresh_token: newRefresh } : {}) })
       if (auth.type === 'oauth-refresh-token' && tokens.refresh_token) {
@@ -471,10 +685,16 @@ const createOAuthProvider = (
 }
 
 // ---------------------------------------------------------------------------
-// Auth resolution
+// Auth + session-option resolution
 // ---------------------------------------------------------------------------
 
-const resolveAuth = async (config: RemoteMcpAuthConfig, url: string): Promise<McpSessionOptions> => {
+type ResolvedSessionOptions = {
+  headers?: Record<string, string>
+  authProvider?: OAuthClientProvider
+  timeoutMs?: number
+}
+
+const resolveAuth = async (config: RemoteMcpAuthConfig, url: string): Promise<ResolvedSessionOptions> => {
   switch (config.type) {
     case 'none':
       return {}
@@ -493,150 +713,136 @@ const resolveAuth = async (config: RemoteMcpAuthConfig, url: string): Promise<Mc
   }
 }
 
-const resolveSessionOptions = async (input: Record<string, unknown>): Promise<McpSessionOptions> => {
-  const options: McpSessionOptions = {}
-  if (input.headers) options.headers = { ...(input.headers as Record<string, string>) }
-  if (input.timeoutMs) options.timeoutMs = input.timeoutMs as number
+const resolveSessionOptions = async (input: {
+  url: string
+  auth?: RemoteMcpAuthConfig
+  headers?: Record<string, string>
+  timeoutMs?: number
+}): Promise<ResolvedSessionOptions> => {
+  const options: ResolvedSessionOptions = {}
+  if (input.headers) options.headers = { ...input.headers }
+  if (input.timeoutMs) options.timeoutMs = input.timeoutMs
   if (input.auth) {
-    const authOptions = await resolveAuth(input.auth as RemoteMcpAuthConfig, input.url as string)
-    if (authOptions.headers) {
-      options.headers = { ...options.headers, ...authOptions.headers }
+    // Boundary validation — the model-facing schema is permissive; this is the
+    // single source (authConfigJsonSchema, AJV-compiled) that defines the auth
+    // shape. No Zod, no parallel schema source.
+    if (!validateAuth(input.auth)) {
+      throw new Error(`Invalid auth config: ${ajv.errorsText(validateAuth.errors)}`)
     }
-    if (authOptions.authProvider) {
-      options.authProvider = authOptions.authProvider
-    }
+    const validated = input.auth as RemoteMcpAuthConfig
+    const authOptions = await resolveAuth(validated, input.url)
+    if (authOptions.headers) options.headers = { ...options.headers, ...authOptions.headers }
+    if (authOptions.authProvider) options.authProvider = authOptions.authProvider
   }
   return options
 }
 
 // ---------------------------------------------------------------------------
-// Session management
+// Operation helpers (operate on a pooled client; never close it)
 // ---------------------------------------------------------------------------
 
-const createTransport = (url: string, options: McpSessionOptions): Transport =>
-  new StreamableHTTPClientTransport(new URL(url), {
-    requestInit: options.headers ? { headers: options.headers } : undefined,
-    authProvider: options.authProvider,
-  })
-
-const createSession = async (url: string, options: McpSessionOptions): Promise<McpSessionApi> => {
-  const client = new Client(CLIENT_INFO)
-  await client.connect(createTransport(url, options))
-
-  const withTimeout = <T>(fn: () => Promise<T>): Promise<T> => {
-    if (!options.timeoutMs) return fn()
-    return new Promise<T>((resolve, reject) => {
-      const signal = AbortSignal.timeout(options.timeoutMs!)
-      signal.addEventListener(
-        'abort',
-        () => reject(new Error(`MCP operation timed out after ${options.timeoutMs}ms`)),
-        { once: true },
-      )
-      fn().then(resolve, reject)
+const withTimeout = <T>(timeoutMs: number | undefined, fn: () => Promise<T>): Promise<T> => {
+  if (!timeoutMs) return fn()
+  return new Promise<T>((resolve, reject) => {
+    const signal = AbortSignal.timeout(timeoutMs)
+    signal.addEventListener('abort', () => reject(new Error(`MCP operation timed out after ${timeoutMs}ms`)), {
+      once: true,
     })
-  }
+    fn().then(resolve, reject)
+  })
+}
 
-  const close = async () => {
-    try {
-      await client.close()
-    } catch {
-      /* best-effort */
+const discoverCapabilities = async (client: Client, timeoutMs?: number): Promise<McpServerCapabilities> => {
+  const [tools, prompts, resources] = await Promise.allSettled([
+    withTimeout(timeoutMs, async () => (await client.listTools()).tools),
+    withTimeout(timeoutMs, async () => (await client.listPrompts()).prompts),
+    withTimeout(timeoutMs, async () => (await client.listResources()).resources),
+  ])
+  return {
+    tools: tools.status === 'fulfilled' ? (tools.value as McpTool[]) : [],
+    prompts: prompts.status === 'fulfilled' ? (prompts.value as McpPrompt[]) : [],
+    resources: resources.status === 'fulfilled' ? (resources.value as McpResource[]) : [],
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Tool run
+// ---------------------------------------------------------------------------
+
+const run = async (input: McpClientInput): Promise<McpClientOutput> => {
+  const { url, auth, headers, timeoutMs } = input
+  const options = await resolveSessionOptions({ url, auth, headers, timeoutMs })
+  const client = await getSharedClient(url, options)
+
+  switch (input.mode) {
+    case 'call-tool': {
+      const result = (await withTimeout(timeoutMs, () =>
+        client.callTool({ name: input.tool, arguments: input.args }),
+      )) as McpCallToolResult
+      return { mode: 'call-tool', result }
+    }
+    case 'list-tools': {
+      const result = (await withTimeout(timeoutMs, async () => (await client.listTools()).tools)) as McpTool[]
+      return { mode: 'list-tools', result }
+    }
+    case 'list-prompts': {
+      const result = (await withTimeout(timeoutMs, async () => (await client.listPrompts()).prompts)) as McpPrompt[]
+      return { mode: 'list-prompts', result }
+    }
+    case 'get-prompt': {
+      const result = (await withTimeout(
+        timeoutMs,
+        async () => (await client.getPrompt({ name: input.name, arguments: input.args })).messages,
+      )) as McpPromptMessage[]
+      return { mode: 'get-prompt', result }
+    }
+    case 'list-resources': {
+      const result = (await withTimeout(
+        timeoutMs,
+        async () => (await client.listResources()).resources,
+      )) as McpResource[]
+      return { mode: 'list-resources', result }
+    }
+    case 'read-resource': {
+      const result = (await withTimeout(
+        timeoutMs,
+        async () => (await client.readResource({ uri: input.uri })).contents,
+      )) as McpResourceContent[]
+      return { mode: 'read-resource', result }
+    }
+    case 'discover': {
+      // MINIMAL: the connection-level discover cache is write-only here — we
+      // always re-discover and refresh the cache. A refresh-aware mode (or a
+      // TTL) can read getPoolDiscovery later to skip the round-trip.
+      const result = await discoverCapabilities(client, timeoutMs)
+      setPoolDiscovery(url, result satisfies McpDiscovery)
+      return { mode: 'discover', result }
     }
   }
-
-  return {
-    listTools: () => withTimeout(async () => (await client.listTools()).tools),
-    callTool: (name, args) =>
-      withTimeout(async () => (await client.callTool({ name, arguments: args })) as McpCallToolResult),
-    listPrompts: () => withTimeout(async () => (await client.listPrompts()).prompts),
-    getPrompt: (name, args) =>
-      withTimeout(async () => (await client.getPrompt({ name, arguments: args })).messages as McpPromptMessage[]),
-    listResources: () => withTimeout(async () => (await client.listResources()).resources),
-    readResource: (uri) =>
-      withTimeout(async () => (await client.readResource({ uri })).contents as McpResourceContent[]),
-    discover: () =>
-      withTimeout(async () => {
-        const [tools, prompts, resources] = await Promise.allSettled([
-          client.listTools(),
-          client.listPrompts(),
-          client.listResources(),
-        ])
-        return {
-          tools: tools.status === 'fulfilled' ? tools.value.tools : [],
-          prompts: prompts.status === 'fulfilled' ? prompts.value.prompts : [],
-          resources: resources.status === 'fulfilled' ? resources.value.resources : [],
-        }
-      }),
-    [Symbol.asyncDispose]: close,
-  }
 }
 
 // ---------------------------------------------------------------------------
-// Generic MCP fetch helper
+// useTool registration
 // ---------------------------------------------------------------------------
 
-const mcpFetch = async <T>(
-  url: string,
-  method: (session: McpSessionApi) => Promise<T>,
-  options: McpSessionOptions,
-): Promise<T> => {
-  const session = await createSession(url, options)
-  try {
-    return await method(session)
-  } finally {
-    await session[Symbol.asyncDispose]()
-  }
-}
-
-// ---------------------------------------------------------------------------
-// CLI dispatch
-// ---------------------------------------------------------------------------
-
-const run = async (input: unknown): Promise<z.infer<typeof McpClientOutputSchema>> => {
-  const parsed = McpClientInputSchema.parse(input)
-  const options = await resolveSessionOptions(parsed as Record<string, unknown>)
-
-  switch (parsed.mode) {
-    case 'call-tool':
-      return {
-        mode: 'call-tool',
-        result: await mcpFetch(parsed.url, (s) => s.callTool(parsed.tool, parsed.args), options),
-      }
-    case 'list-tools':
-      return { mode: 'list-tools', result: await mcpFetch(parsed.url, (s) => s.listTools(), options) }
-    case 'list-prompts':
-      return { mode: 'list-prompts', result: await mcpFetch(parsed.url, (s) => s.listPrompts(), options) }
-    case 'get-prompt':
-      return {
-        mode: 'get-prompt',
-        result: await mcpFetch(parsed.url, (s) => s.getPrompt(parsed.name, parsed.args), options),
-      }
-    case 'list-resources':
-      return { mode: 'list-resources', result: await mcpFetch(parsed.url, (s) => s.listResources(), options) }
-    case 'read-resource':
-      return { mode: 'read-resource', result: await mcpFetch(parsed.url, (s) => s.readResource(parsed.uri), options) }
-    case 'discover':
-      return { mode: 'discover', result: await mcpFetch(parsed.url, (s) => s.discover(), options) }
-  }
-}
-
-export const mcpClientCli = makeCli({
-  name: 'mcp-client',
-  inputSchema: McpClientInputSchema,
-  outputSchema: McpClientOutputSchema,
-  help: [
-    'Call tools, list capabilities, and interact with remote MCP servers.',
-    '',
-    'Modes:',
-    '  call-tool        Call a tool on a remote MCP server',
-    '  list-tools       List available tools from a remote MCP server',
-    '  list-prompts     List available prompts from a remote MCP server',
-    '  get-prompt       Get a specific prompt from a remote MCP server',
-    '  list-resources   List available resources from a remote MCP server',
-    '  read-resource    Read a resource from a remote MCP server',
-    '  discover         Discover all capabilities from a remote MCP server',
-    '',
-    'Each mode accepts optional auth, headers, timeoutMs, and tokenPersistence fields.',
-  ].join('\n'),
+/**
+ * Call tools, list capabilities, and interact with remote MCP servers.
+ *
+ * Seven modes: `call-tool`, `list-tools`, `list-prompts`, `get-prompt`,
+ * `list-resources`, `read-resource`, `discover`. Connections are pooled per
+ * server-url and reused across calls. Returns remote MCP data only — never
+ * writes a store.
+ */
+export const mcpClient = useTool(
+  {
+    name: MCP_CLIENT_TOOL_NAME,
+    description:
+      'Call tools and list capabilities on remote MCP servers. Seven modes: ' +
+      'call-tool, list-tools, list-prompts, get-prompt, list-resources, ' +
+      'read-resource, discover. Connections are pooled per server-url and ' +
+      'reused across calls. Returns remote MCP data only — never writes a store.',
+    inputSchema: McpClientInputSchema,
+    outputSchema: McpClientOutputSchema,
+  },
   run,
-})
+)

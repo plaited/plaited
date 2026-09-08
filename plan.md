@@ -74,6 +74,73 @@ escapes; validation is Bun test.
 
 ## Decision Log
 
+### 2026-09-07 — MCP/skill discovery: search-mediated progressive disclosure
+
+Unified architecture for surfacing remote MCP tools and local skills to the
+agent. Both domains follow the agentskills.io three-tier progressive-
+disclosure pattern (catalog → full instructions → bundled resources), but
+**search-on-demand** replaces the spec's recommended static catalog-in-system-
+prompt. The model searches a SQLite store by description, picks a candidate,
+then loads full info through the relevant client tool. This scales to large /
+dynamic pools without rebuilding a static catalog per session, at the cost of
+one search round-trip before activation — and the orchestration moves into
+kernel behavioral threads, which is the plan's intended shape (tools are dumb
+primitives, threads orchestrate).
+
+The spec deviation (search-on-demand vs static catalog) is **deliberate**, not
+an oversight to "fix" later by adding a catalog "for simplicity."
+
+**Three stateless built-in `src/tools/` units, all take their target as input**
+(no tool owns shared discovery data; no tool calls another tool):
+
+- **`mcp-client`** — Phase 3 conversion of the existing CLI to `useTool`. Seven
+  modes survive (`call-tool`/`list-tools`/`list-prompts`/`get-prompt`/
+  `list-resources`/`read-resource`/`discover`). Input `{mode, url, tool, args,
+  auth, ...}`. Returns remote MCP data only — never writes a store.
+- **`skill-client`** (new) — reimplemented from the agentskills.io spec +
+  `src/cli/markdown.ts` as **reference only** (no import, no export-helpers
+  refactor; own frontmatter parsing). Modes: `discover` (scan
+  `.agents/skills/` project + user level, parse frontmatter → records),
+  `read-skill` (load SKILL.md body), `list-resources` (enumerate bundled files).
+- **`discovery`** (new) — `{mode, dbPath, ...}`. Full CRUD + search over
+  `.plaited/discovery.sqlite` (`bun:sqlite`), unified `kind: 'mcp-tool' | 'skill'`
+  rows. **The only tool that touches the store file.** Population, refresh, and
+  search are kernel-thread policy via this tool — not adapter provisioning.
+
+**Adapter role narrows to the pi-extension pattern** (connection pool + OAuth +
+tardown), matching `youdotcom-oss/minimax-m3-deepsearchqa-skill-eval`'s
+`extension.ts`: a live `Client` per server-url lazily connected and reused across
+calls, `close()`d on teardown. The adapter owns **no discovery data**.
+
+**MCP SDK clarification:** the 2024-09-03 "Drop MCP SDK" decision was about the
+**server** side (`new McpServer`, `use-mcp-server.ts`, dropped in favor of
+AJV/`useTool`). The **client** SDK stays — `Client`,
+`StreamableHTTPClientTransport`, `OAuthClientProvider` from
+`@modelcontextprotocol/client`. This is consistent with "the agent uses MCP to
+talk to remote servers" and does not contradict the AJV/`useTool` local-tool
+story.
+
+**OAuth:** `BunKeychainOAuthProvider` (per the sketch) — refresh tokens and
+client info to `Bun.secrets` (OS keychain) instead of the current
+`~/.plaited/mcp/tokens/<host>.json` file persistence. **Upgrade to the v2
+`OAuthClientProvider` shape** (issuer-keyed `clientInformation(ctx)`,
+`state()`/`saveDiscoveryState`/`discoveryState()`, `validateResourceURL`) — the
+current `createOAuthProvider` implements the old interface and lacks RFC 9207
+`iss` validation and issuer-binding. One provider per server-url, reused across
+process restarts (keychain persists; the connection doesn't, but reconnect
+reads tokens back).
+
+**Surfacing:** neither single-tool nor multi-tool — search-mediated, on-demand.
+The Phase 2/7 "built-in tools only, packs never contribute tools" invariant
+stays intact: remote MCP tools are never registered as first-class tools.
+
+**`use-plugin-adaptert.ts` → `use-plugin-adapter.ts`** rename (file is empty).
+
+**Discovery store is NOT git-backed** — local SQLite, just what the tool allows.
+Distinct from Phase 4's git-backed trace-log persistence. The store is
+regenerable (re-scan filesystem, re-discover servers); committing it bloats the
+repo and risks staleness.
+
 ### 2024-09-03 — Build sequence: tools → lock runtime → small kernel
 
 - **Sequence:** (1) finish `src/tools/` (MCP `useMCPServer` tools), (2) lock
@@ -261,20 +328,15 @@ escapes; validation is Bun test.
 
 ## Open Questions
 
-- **Where does the `ToolDescriptor` dispatch registry live when provisioning
-  moves inside the kernel?** Likely the `registerKernel` closure, populated by
-  the provisioning handler, read by the `respond` handler — same as today, just
-  populated differently. Needs confirmation.
-- **How does the provisioning handler get triggered?** `space.created`?
-  `plugin.loaded`? Both? What's the ingress event, and who emits it?
-- **Does the provisioning handler also handle the `tools`/`excludeTools`
-  filtering, or does that happen before the tool list reaches the handler?**
-- **Gate location drift — RESOLVED (2024-09-03).** Gate moves out of the
-  engine (see Decision Log). The in-engine `useAddThread` gate is reverted;
-  the kernel will call `verifyFrontiers` (the function, in-process) before
-  provisioning, with configurable `maxDepth` + retry on `truncated`. Phase 5.5
-  Layer 1 text now matches the decision (gate in `src/agent/`, not engine) — no
-  phase fold needed; the drift was the code, now reverted.
+- **Discovery tool schema + kernel progressive-disclosure thread shape.** The
+  three tools' mode/input schemas (`mcp-client` 7 modes, `skill-client` 3 modes,
+  `discovery` CRUD+search) and the behavioral thread that drives the
+  search→pick→load loop still need concrete specification before
+  implementation. Order: schemas first (they're the tool contracts), then the
+  thread.
+- **`mcp-client`/`markdown` CLI→`useTool` conversion + adapter pool** is the
+  Phase 3 conversion deliverable (resolved above); the discovery store +
+  `skill-client` + `discovery` tool is net-new — new phase (resolved above).
 - **Tool wiring drift — RESOLVED (2024-09-03).** MCP SDK dropped. Tool
   convention is `useTool` (`src/tools/use-tool.ts`): a factory taking
   `{ name, description, inputSchema, outputSchema, run }` where each tool writes
@@ -292,6 +354,14 @@ escapes; validation is Bun test.
   the next conversion target. Phase 5.5 Layer 2 text specified `defineTool`;
   the landed name is `useTool` but the shape matches — minor phase-text fold
   pending.
+- **Where does the `ToolDescriptor` dispatch registry live when provisioning
+  moves inside the kernel?** Likely the `registerKernel` closure, populated by
+  the provisioning handler, read by the `respond` handler — same as today, just
+  populated differently. Needs confirmation.
+- **How does the provisioning handler get triggered?** `space.created`?
+  `plugin.loaded`? Both? What's the ingress event, and who emits it?
+- **Does the provisioning handler also handle the `tools`/`excludeTools`
+  filtering, or does that happen before the tool list reaches the handler?**
 - **How does the small kernel consume `useTrace`?** Direction set (2024-09-03):
   `useTrace` async callbacks ARE the action channel — a listener filtered on a
   selected event type does the side effect and `trigger`s results back; the
