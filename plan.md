@@ -333,10 +333,15 @@ repo and risks staleness.
   `discovery` CRUD+search) and the behavioral thread that drives the
   search→pick→load loop still need concrete specification before
   implementation. Order: schemas first (they're the tool contracts), then the
-  thread.
+  thread. **Schemas RESOLVED (2026-09-07, Phase 3.5 Slices A–E):** all three
+  tools landed as `useTool` units with hand-written AJV `oneOf` discriminated
+  unions on `mode` (cast through `unknown` as `JSONSchemaType` — read.ts/
+  frontier.ts precedent; no Zod). The behavioral thread is the remaining
+  deferred work (Phase 3.5 Slice F, recorded below).
 - **`mcp-client`/`markdown` CLI→`useTool` conversion + adapter pool** is the
   Phase 3 conversion deliverable (resolved above); the discovery store +
-  `skill-client` + `discovery` tool is net-new — new phase (resolved above).
+  `skill-client` + `discovery` tool is net-new — new phase (**Phase 3.5**,
+  resolved 2026-09-07; Slices A–E delivered, Slice F deferred).
 - **Tool wiring drift — RESOLVED (2024-09-03).** MCP SDK dropped. Tool
   convention is `useTool` (`src/tools/use-tool.ts`): a factory taking
   `{ name, description, inputSchema, outputSchema, run }` where each tool writes
@@ -806,6 +811,92 @@ the agent (Phase 6); the only surviving CLI machinery is the entry + `makeCli`.
 `tool.result`, malformed blocked); they provision at root and into a space;
 `src/cli/` is gone; the four tools' prior behaviors are reachable through the agent
 (not as standalone subcommands).
+
+---
+
+## Phase 3.5 — MCP/skill discovery: search-mediated progressive disclosure (tools)
+
+**Goal:** three stateless built-in `src/tools/` units + a shared adapter
+connection pool, so the kernel can orchestrate a search→pick→load
+progressive-disclosure loop over remote MCP tools and local skills. Implements
+the 2026-09-07 Decision Log entry. The tools are dumb primitives; the smarts
+live in a kernel behavioral thread (Slice F, deferred — recorded below).
+
+**Scope split:** the tool primitives (Slices A–E) are delivered; provisioning
++ the orchestration thread (Slice F) is a **separate, separately-tackled** body
+of work, not folded into this phase's deliverables.
+
+**Deliverables (delivered):**
+
+- **Slice A+B — `mcp-client` useTool + adapter pool.** Converted
+  `src/tools/mcp-client.ts` from `makeCli` to the `useTool` shape
+  (`{ name, description, inputSchema, outputSchema, run }`, concrete
+  `Input`/`Output`). All seven modes survive (`call-tool`/`list-tools`/
+  `list-prompts`/`get-prompt`/`list-resources`/`read-resource`/`discover`) as a
+  7-branch `oneOf` on `mode` (hand-written AJV, cast through `unknown` as
+  `JSONSchemaType`). `src/cli/mcp-client.ts` untouched (read-only reference).
+  Connections route through `src/kernel/use-plugin-adapter.ts` (renamed from
+  the empty `use-plugin-adaptert.ts`): `Map<serverUrl, { client,
+  connectPromise, discovery }>` lazily connected, evicted on connect failure,
+  closed on teardown — the pi-extension `getSharedClient`+
+  `session_shutdown`→`closeSharedClient` pattern. The adapter owns no discovery
+  data.
+- **Slice C — v2 keychain OAuth provider.** `BunKeychainOAuthProvider`
+  (`src/kernel/oauth/`) implements the v2 `OAuthClientProvider` shape from
+  `@modelcontextprotocol/client`: issuer-keyed `clientInformation(ctx)`/
+  `tokens(ctx)`/`saveTokens(tokens,ctx)`/`saveClientInformation(ci,ctx)`,
+  `state()`/`saveDiscoveryState`/`discoveryState`, `validateResourceURL`
+  (RFC 8707 origin binding → `IssuerMismatchError`), `invalidateCredentials(scope)`,
+  `prepareTokenRequest`/`addClientAuthentication`. Refresh tokens + client info
+  persist to the OS keychain via `Bun.secrets` (`BunKeychain`; `InMemoryKeychain`
+  is the test double — the only mocked boundary). The hand-rolled
+  `buildOAuthRequest`/`exchangeOAuthTokens`/file persistence under
+  `~/.plaited/mcp/tokens/` are deleted; the v2 SDK's `auth()` orchestrator does
+  RFC 9728 discovery + the token exchange. One provider per server-url, reused
+  across process restarts. The adapter pool migrated to the v2
+  `@modelcontextprotocol/client` `Client` + `StreamableHTTPClientTransport`.
+- **Slice D — `skill-client` useTool (new).** Three modes (`discover`/`read-skill`/
+  `list-resources`) mapping to the agentskills.io tiers (metadata → full
+  instructions → bundled-resource preview). Own frontmatter parsing (no import
+  from `src/cli/markdown.ts`); lenient validation per spec (warn-but-load on
+  name/dir mismatch + length; skip+warn on unparseable YAML + missing/empty
+  description); project-level overrides user-level on name collision.
+  `src/cli/markdown.ts` untouched (read-only reference).
+- **Slice E — `discovery` useTool (new).** Five modes (CRUD + `search`) over
+  `.plaited/discovery.sqlite` (`bun:sqlite`), unified `kind: 'mcp-tool' |
+  'skill'` rows (`id`, `name`, `description`, `handle`, `metadata_json`,
+  `updated_at`). The only tool that touches the store. `dbPath` is
+  **provisioner-injected** via `createDiscoveryTool({ dbPath })` — deliberately
+  absent from the model-facing schema, so a model-supplied `dbPath` is rejected
+  at the boundary (`additionalProperties: false`). Not git-backed — local
+  SQLite, regenerable.
+
+**Deferred — Slice F (separate body of work):**
+
+- Provision the three primitives via `src/kernel/provision-defaults.ts` so they
+  are reachable through the agent. Resolve `.plaited/discovery.sqlite`
+  (discovery `dbPath`) and the MCP OAuth keychain against the project root.
+- The kernel progressive-disclosure behavioral thread driving the loop:
+  `mcp-client discover` / `skill-client discover` → `discovery create/update`
+  (persist); `discovery search(query)` → candidates (tier 1); model picks →
+  `mcp-client call-tool` or `skill-client read-skill` (tier 2); continue.
+  Expressed as `waitFor`/`request`/`trigger` over the fixed built-in tool set
+  (plaited-runtime skill patterns). Tools stay dumb.
+- Until Slice F lands the three primitives are built, tested, and importable but
+  **dormant** — not wired into any provisioner or the agent loop.
+
+**Invariants holding:** the Phase 2/7 "built-in tools only" invariant is intact —
+the three primitives are (will be) provisioned, but discovered remote MCP tools
+are **never** registered as first-class tools. State this positively so a
+reviewer doesn't "fix" it wrong. No static skill catalog in the system prompt
+(the deliberate deviation from agentskills.io Step 3 — marked `MINIMAL`). The
+store is not git-backed (distinct from Phase 4's git-backed trace logs).
+
+**Done when (Slices A–E):** `bun --bun tsc --noEmit` clean on the changed
+surface; `rg "from '.*cli/mcp-client|from '.*cli/markdown" src/tools/
+src/kernel/` empty; targeted tests per slice green (55 total: mcp-client 12,
+keychain 9, skill-client 15, discovery 19). Slice F has its own done-when under
+its separate tackling.
 
 ---
 
