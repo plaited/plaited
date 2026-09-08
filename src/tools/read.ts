@@ -1,7 +1,7 @@
 import { stat } from 'node:fs/promises'
 import * as path from 'node:path'
 import type { JSONSchemaType } from 'ajv'
-import { type InputContentPart, InputContentPartSchema } from './open-responses.ts'
+import { type InputContentPart, InputContentPartSchema } from './open-responses.schemas.ts'
 import { formatSize, DEFAULT_MAX_BYTES as MAX_BYTES, type TruncationResult, truncateHead } from './truncate.ts'
 import { useTool } from './use-tool.ts'
 

@@ -1,10 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import type {
-  KnownStreamEvent,
-  OpenResponsesRequest,
-  OpenResponsesStreamEvent,
-  UseResponse,
-} from '../open-responses.ts'
+import type { KnownStreamEvent, OpenResponsesStreamEvent } from '../open-responses.schemas.ts'
 import {
   CompactionItemSchema,
   ErrorSchema,
@@ -17,18 +12,7 @@ import {
   ReasoningTextContentSchema,
   StreamEventLaxSchema,
   UsageSchema,
-  useResponse,
-} from '../open-responses.ts'
-
-// --- Test double: a scripted adapter ---
-
-function scriptedAdapter(events: KnownStreamEvent[]): UseResponse {
-  return async function* (_req: OpenResponsesRequest) {
-    for (const ev of events) {
-      yield ev
-    }
-  }
-}
+} from '../open-responses.schemas.ts'
 
 // --- Scenario 1: happy text turn ---
 const happyEvents: KnownStreamEvent[] = [
@@ -180,24 +164,6 @@ const unknownEventEvents: OpenResponsesStreamEvent[] = [
 // ================================================================
 // Tests
 // ================================================================
-
-describe('useResponse factory', () => {
-  test('rejects empty provider', () => {
-    expect(() => useResponse({ provider: '', respond: async function* () {} })).toThrow(
-      'provider must be a non-empty string',
-    )
-  })
-
-  test('accepts valid provider and returns frozen adapter', () => {
-    const adapter = useResponse({
-      provider: 'test',
-      respond: async function* () {},
-    })
-    expect(adapter.provider).toBe('test')
-    expect(typeof adapter.respond).toBe('function')
-    expect(Object.isFrozen(adapter)).toBe(true)
-  })
-})
 
 describe('schema validation — request', () => {
   test('valid request parses successfully', () => {
@@ -432,11 +398,9 @@ describe('stream event scenarios', () => {
     expect(JSON.parse(fullArgs)).toEqual({ location: 'Paris' })
   })
 
-  test('failed response consumed without thrown error', async () => {
-    const adapter = scriptedAdapter(failedEvents)
-    const stream = await adapter({ model: { provider: 'test', modelId: 'm' }, input: [] })
+  test('failed response consumed without thrown error', () => {
     const collected: KnownStreamEvent[] = []
-    for await (const ev of stream) {
+    for (const ev of failedEvents) {
       const parsed = KnownStreamEventSchema.parse(ev)
       collected.push(parsed)
     }
@@ -485,25 +449,5 @@ describe('stream event scenarios', () => {
       expect(parsed.usage?.output_tokens).toBe(200)
       expect(parsed.usage?.total_tokens).toBe(4700)
     }
-  })
-})
-
-describe('scripted adapter through useResponse', () => {
-  test('consumes full happy path stream via adapter', async () => {
-    const adapter = useResponse({ provider: 'test-double', respond: scriptedAdapter(happyEvents) })
-    expect(adapter.provider).toBe('test-double')
-
-    const stream = await adapter.respond({
-      model: { provider: 'test-double', modelId: 'm' },
-      input: [{ type: 'message', role: 'user', content: 'Hi' }],
-    })
-    const collected: KnownStreamEvent[] = []
-    for await (const ev of stream) {
-      const parsed = KnownStreamEventSchema.parse(ev)
-      collected.push(parsed)
-    }
-    expect(collected).toHaveLength(5)
-    expect(collected[0]!.type).toBe('response.output_item.added')
-    expect(collected[collected.length - 1]!.type).toBe('response.completed')
   })
 })

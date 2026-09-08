@@ -6,7 +6,7 @@ import {
   InputTextContentSchema,
   MessageItemParamSchema,
   VideoContentSchema,
-} from '../open-responses.ts'
+} from '../open-responses.schemas.ts'
 
 // ================================================================
 // Input content parts — schema validation
