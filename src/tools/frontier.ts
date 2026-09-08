@@ -8,9 +8,13 @@
  *
  * ## Entry points
  *
- * - {@link replayToFrontierRaw} — replay one concrete event-selection trace
- * - {@link exploreFrontiersRaw} — enumerate reachable histories, find deadlocks
- * - {@link verifyFrontiersRaw} — derive a pass/fail/truncated status from exploration
+ * - {@link frontierReplay} — replay one concrete event-selection trace
+ * - {@link frontierExplore} — enumerate reachable histories, find deadlocks
+ * - {@link frontierVerify} — derive a pass/fail/truncated status from exploration
+ *
+ * The raw algorithm functions (`replayToFrontierRaw`, `exploreFrontiersRaw`,
+ * `verifyFrontiersRaw`) and the graph internals are module-private; the tools
+ * above are the public surface.
  *
  * ## Trace kind filters
  *
