@@ -18,9 +18,13 @@
  *
  * ## Trace kind filters
  *
- * - {@link isSelectionTrace}
- * - {@link isFrontierTrace}
- * - {@link isDeadlockTrace}
+ * Frontier tools discriminate {@link Trace} messages by their `kind`
+ * field (values from {@link TRACE_MESSAGE_KINDS}). The three kinds they
+ * filter on:
+ *
+ * - {@link SelectionTrace} — a concrete event selection
+ * - {@link FrontierTrace} — the frontier at a step
+ * - {@link DeadlockTrace} — a deadlock at a step
  *
  * @packageDocumentation
  */
