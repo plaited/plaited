@@ -16,9 +16,8 @@
     "plaited": "./bin/plaited.ts"
   },
   "type": "module",
-  "main": "./main.ts",
   "exports": {
-    ".": "./src/main.ts",
+    "./tools": "./src/tools.ts",
     "./controller": "./src/controller.ts",
     "./utils": "./src/utils.ts"
   },

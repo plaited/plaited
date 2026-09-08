@@ -49,14 +49,19 @@ escapes; validation is Bun test.
   `src/main/tests/*` from deleted modules. The new gate/tool files are type-clean
   in isolation. Tool spec files (`bash.spec.ts`, `edit.spec.ts`, `find.spec.ts`,
   `binary.spec.ts`) have pre-existing `result: unknown` type-narrowing issues.
-- **zod→AJV test cleanup batch (open):** 9 tsc errors + 1 runtime failure in
-  `src/main/tests/` from zod types/validators leaking into fixtures that now
-  expect AJV/JSON-schema shapes — `transform.spec.ts` ×7 (`Record<string,unknown>`
-  vs `JsonObject`), `frontier-analysis.spec.ts:13` (`Trace[]` mismatch),
-  `frontier-analysis.liveness.spec.ts:99` (stale premise: passes a Zod schema to
-  a `detailSchema: Record<string,unknown>` field — needs rewriting to a
-  JSON-schema literal, not a cast), `match-listener.spec.ts:639` (runtime:
-  `prefixItems` 2020-12 keyword). Shared root cause; batch in one pass, don't split.
+- **zod→AJV test cleanup batch — mostly RESOLVED (2024-09-03).** tsc exits 0
+  (all 9 type errors cleared). `transform.spec.ts` fixed by widening the
+  `dispatch` signature to `transformed: JsonObject` (one honest cast at the
+  `jqEval` boundary, not 7 callsite casts). `frontier-analysis.spec.ts:13` and
+  `.liveness.spec.ts:99` fixed earlier (trace literal + JSON-schema literal).
+  **1 runtime failure remains:** `src/behavioral/tests/match-listener.spec.ts:596`
+  — `prefixItems keyword compiles and matches` expects `log` to be
+  `['task','ack']` but receives `['task']` (the consumer doesn't resume on the
+  `task` event, so `ack` never fires). Likely an AJV `prefixItems` 2020-12
+  keyword validation issue in `detailSchema` matching — the sibling test
+  (`prefixItems enforces tuple ordering`) passes, so the keyword is recognized;
+  the matching path for `items: [42, 'hello']` against `prefixItems:
+  [{type:'number'},{type:'string'}]` may be the bug. Open; not from this refactor.
 - **Active area (revised 2024-09-03):** finish the **`src/tools/`** surface first,
   then lock the runtime, then build a **small kernel** that completes the agent
   harness. The kernel uses the **MCP tool approach** (`useMCPServer` tools, not
@@ -270,12 +275,23 @@ escapes; validation is Bun test.
   provisioning, with configurable `maxDepth` + retry on `truncated`. Phase 5.5
   Layer 1 text now matches the decision (gate in `src/agent/`, not engine) — no
   phase fold needed; the drift was the code, now reverted.
-- **Tool wiring drift — RESOLVED (2024-09-03).** Drop the MCP SDK; tools
-  become `defineTool`-style units with AJV/JSON-Schema (the plan's Phase 2
-  shape). `verify_frontiers` and the other tools convert from `useMCPServer`
-  to the new registrar. Phase 5.5 Layer 2 text (which specified `defineTool`)
-  now matches — no phase fold needed; the drift was the `useMCPServer` code,
-  now being reverted.
+- **Tool wiring drift — RESOLVED (2024-09-03).** MCP SDK dropped. Tool
+  convention is `useTool` (`src/tools/use-tool.ts`): a factory taking
+  `{ name, description, inputSchema, outputSchema, run }` where each tool writes
+  a concrete `type Input` / `type Output` and annotates
+  `inputSchema: JSONSchemaType<Input>` / `outputSchema: JSONSchemaType<Output>`
+  — the `behavioral.types.ts` pattern extended to tools. The generic `TInput`
+  threads the already-checked type into `run`'s param (no `as` cast at the
+  trust boundary). `run` also receives a `validate` object (compiled AJV
+  validators for input/output) for handlers that want runtime re-validation;
+  currently unused by `ls.ts`. Error path: optional `message?`/`isError?`
+  fields on `Output` (same object, not a union — matches `binary.ts`/
+  `verify-frontiers.ts`; `JSONSchemaType<Output>` over a union breaks ajv's
+  inference, optionals don't). `ls.ts` is the reference conversion; `find.ts`
+  (has a `glob`/`pattern` duplicate-schema drift bug the new shape kills) is
+  the next conversion target. Phase 5.5 Layer 2 text specified `defineTool`;
+  the landed name is `useTool` but the shape matches — minor phase-text fold
+  pending.
 - **How does the small kernel consume `useTrace`?** Direction set (2024-09-03):
   `useTrace` async callbacks ARE the action channel — a listener filtered on a
   selected event type does the side effect and `trigger`s results back; the
