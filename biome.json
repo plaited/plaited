@@ -92,7 +92,15 @@
       }
     },
     {
-      "includes": ["src/**/tests/**/*", "scripts/**/*", "skills/**/*", "src/cli/**/*", "bin/*", "src/cli/**"],
+      "includes": [
+        "src/**/tests/**/*",
+        "scripts/**/*",
+        "skills/**/*",
+        "src/cli/**/*",
+        "bin/*",
+        "src/cli/**",
+        "tasks/**/tests/**/*"
+      ],
       "linter": {
         "rules": {
           "suspicious": {
