@@ -1,13 +1,13 @@
 import { describe, expect, test } from 'bun:test'
 import type { Thread } from '../../behavioral/behavioral.types.ts'
-import { exploreFrontiers, replayFrontier, verifyFrontiers } from '../frontier-analysis.ts'
+import { frontierExplore, frontierReplay, frontierVerify } from '../frontier.ts'
 
 const threads: Thread[] = [
   { label: 'ticker', rules: [{ request: { type: 'tick' } }], once: true },
   { label: 'worker', once: true, rules: [{ request: { type: 'start', detail: { id: 'job-1' } } }] },
 ]
 
-describe('replay-frontier', () => {
+describe('frontier-replay', () => {
   test('replays a known selection trace, returning frontier + stateKey + pendingCount', async () => {
     const messages = [
       {
@@ -18,7 +18,7 @@ describe('replay-frontier', () => {
         selected: { priority: 0, type: 'tick' },
       },
     ]
-    const result = await replayFrontier({ threads, messages })
+    const result = await frontierReplay({ threads, messages })
 
     // tick completes (once: true), worker (start) remains pending
     expect(result.isError).toBeFalsy()
@@ -36,7 +36,7 @@ describe('replay-frontier', () => {
 
   test('returns idle frontier when no threads request events', async () => {
     const idleThreads: Thread[] = [{ label: 'quiet', rules: [{ waitFor: [{ type: 'never' }] }], once: true }]
-    const result = await replayFrontier({ threads: idleThreads })
+    const result = await frontierReplay({ threads: idleThreads })
     expect(result.frontier!.status).toBe('idle')
     expect(typeof result.stateKey).toBe('string')
     expect(result.pendingCount).toBe(1)
@@ -47,13 +47,13 @@ describe('replay-frontier', () => {
       { label: 'requester', rules: [{ request: { type: 'a' } }] },
       { label: 'blocker', rules: [{ block: [{ type: 'a' }] }] },
     ]
-    const result = await replayFrontier({ threads: blockedThreads })
+    const result = await frontierReplay({ threads: blockedThreads })
     expect(result.frontier!.status).toBe('deadlock')
     expect(result.frontier!.enabled).toHaveLength(0)
   })
 
   test('handles empty trace messages', async () => {
-    const result = await replayFrontier({ threads })
+    const result = await frontierReplay({ threads })
     expect(result.frontier!.status).toBe('ready')
     expect(result.frontier!.enabled).toHaveLength(2)
   })
@@ -71,7 +71,7 @@ describe('replay-frontier', () => {
         selected: { priority: 0, type: 'nope' },
       },
     ]
-    const result = await replayFrontier({ threads, messages })
+    const result = await frontierReplay({ threads, messages })
     expect(result.isError).toBe(true)
     expect(typeof result.message).toBe('string')
     expect(result.frontier).toBeNull()
@@ -80,12 +80,12 @@ describe('replay-frontier', () => {
   })
 })
 
-describe('explore-frontiers', () => {
+describe('frontier-explore', () => {
   test('wakes transform-parked threads via matching triggers', async () => {
     const transformThreads: Thread[] = [
       { label: 'shaper', rules: [{ transform: [{ type: 'raw', query: '.', target: 'shaped' }] }] },
     ]
-    const result = await exploreFrontiers({ threads: transformThreads, triggers: [{ type: 'raw' }], maxDepth: 50 })
+    const result = await frontierExplore({ threads: transformThreads, triggers: [{ type: 'raw' }], maxDepth: 50 })
     // JSON boundary: stateGraph is a plain object keyed by stateKey (not a Map);
     // the root is the first-inserted step-0 entry.
     expect(result.stateGraph).not.toBeInstanceOf(Map)
@@ -99,7 +99,7 @@ describe('explore-frontiers', () => {
     const transformThreads: Thread[] = [
       { label: 'shaper', rules: [{ transform: [{ type: 'raw', query: '.', target: 'shaped' }] }] },
     ]
-    const result = await exploreFrontiers({
+    const result = await frontierExplore({
       threads: transformThreads,
       triggers: [{ type: 'unrelated' }],
       maxDepth: 50,
@@ -109,7 +109,7 @@ describe('explore-frontiers', () => {
   })
 
   test('bfs explores reachable histories', async () => {
-    const result = await exploreFrontiers({ threads, strategy: 'bfs', maxDepth: 3 })
+    const result = await frontierExplore({ threads, strategy: 'bfs', maxDepth: 3 })
     expect(result.report.visitedCount).toBeGreaterThan(0)
     expect(result.traces.length).toBe(result.report.visitedCount)
     // All traces should end with a frontier trace
@@ -121,7 +121,7 @@ describe('explore-frontiers', () => {
   })
 
   test('dfs explores reachable histories', async () => {
-    const result = await exploreFrontiers({ threads, strategy: 'dfs', maxDepth: 3 })
+    const result = await frontierExplore({ threads, strategy: 'dfs', maxDepth: 3 })
     expect(result.report.visitedCount).toBeGreaterThan(0)
   })
 
@@ -130,7 +130,7 @@ describe('explore-frontiers', () => {
       { label: 'requester', rules: [{ request: { type: 'a' } }] },
       { label: 'blocker', rules: [{ block: [{ type: 'a' }] }] },
     ]
-    const result = await exploreFrontiers({ threads: deadlockThreads, maxDepth: 50 })
+    const result = await frontierExplore({ threads: deadlockThreads, maxDepth: 50 })
     expect(result.findings.length).toBeGreaterThan(0)
     expect(result.findings[0]!.code).toBe('deadlock')
     expect(result.report.findingCount).toBe(result.findings.length)
@@ -140,19 +140,19 @@ describe('explore-frontiers', () => {
     // maxDepth is required (≥1 per the schema); a depth of 1 cuts off the
     // two-successor root of the ticker+worker program, so exploration is
     // truncated.
-    const result = await exploreFrontiers({ threads, strategy: 'bfs', maxDepth: 1 })
+    const result = await frontierExplore({ threads, strategy: 'bfs', maxDepth: 1 })
     expect(result.report.truncated).toBe(true)
     expect(result.report.visitedCount).toBeGreaterThanOrEqual(1)
   })
 
   test('selectionPolicy: scheduler limits to one enabled candidate per step', async () => {
-    const schedulerResult = await exploreFrontiers({
+    const schedulerResult = await frontierExplore({
       threads,
       strategy: 'bfs',
       selectionPolicy: 'scheduler',
       maxDepth: 3,
     })
-    const allEnabledResult = await exploreFrontiers({
+    const allEnabledResult = await frontierExplore({
       threads,
       strategy: 'bfs',
       selectionPolicy: 'all-enabled',
@@ -167,7 +167,7 @@ describe('explore-frontiers', () => {
     const waitingThreads: Thread[] = [
       { label: 'waiter', rules: [{ waitFor: [{ type: 'ping' }] }, { request: { type: 'ack' } }], once: true },
     ]
-    const result = await exploreFrontiers({
+    const result = await frontierExplore({
       threads: waitingThreads,
       triggers: [{ type: 'ping' }],
       strategy: 'bfs',
@@ -184,7 +184,7 @@ describe('explore-frontiers', () => {
 
   test('ingress trigger events produce successors', async () => {
     const blockingThreads: Thread[] = [{ label: 'blocker', rules: [{ block: [{ type: 'signal' }] }], once: true }]
-    const result = await exploreFrontiers({
+    const result = await frontierExplore({
       threads: blockingThreads,
       triggers: [{ type: 'signal' }],
       strategy: 'bfs',
@@ -196,9 +196,9 @@ describe('explore-frontiers', () => {
   })
 })
 
-describe('verify-frontiers', () => {
+describe('frontier-verify', () => {
   test('returns verified for deadlock-free threads', async () => {
-    const result = await verifyFrontiers({ threads, strategy: 'bfs', maxDepth: 3 })
+    const result = await frontierVerify({ threads, strategy: 'bfs', maxDepth: 3 })
     expect(result.isError).toBeFalsy()
     expect(result.status).toBe('verified')
     expect(result.findings).toHaveLength(0)
@@ -210,14 +210,14 @@ describe('verify-frontiers', () => {
       { label: 'requester', rules: [{ request: { type: 'a' } }] },
       { label: 'blocker', rules: [{ block: [{ type: 'a' }] }] },
     ]
-    const result = await verifyFrontiers({ threads: deadlockThreads, maxDepth: 50 })
+    const result = await frontierVerify({ threads: deadlockThreads, maxDepth: 50 })
     expect(result.status).toBe('failed')
     expect(result.findings.length).toBeGreaterThan(0)
   })
 
   test('returns truncated when maxDepth cuts off exploration', async () => {
     // maxDepth ≥1 per the schema; depth 1 truncates the two-successor root.
-    const result = await verifyFrontiers({ threads, strategy: 'bfs', maxDepth: 1 })
+    const result = await frontierVerify({ threads, strategy: 'bfs', maxDepth: 1 })
     expect(result.status).toBe('truncated')
   })
 
@@ -225,7 +225,7 @@ describe('verify-frontiers', () => {
     // A ticker requesting `tick` forever. progress=['succeeded'] — the cycle
     // never selects `succeeded` → livelock → failed.
     const looping: Thread[] = [{ label: 'ticker', rules: [{ request: { type: 'tick' } }] }]
-    const result = await verifyFrontiers({ threads: looping, progress: ['succeeded'], maxDepth: 50 })
+    const result = await frontierVerify({ threads: looping, progress: ['succeeded'], maxDepth: 50 })
     expect(result.status).toBe('failed')
     expect(result.livelocks).toHaveLength(1)
     expect(result.livelocks[0]!.code).toBe('livelock')
@@ -236,7 +236,7 @@ describe('verify-frontiers', () => {
     // A ticker requesting `done` forever. progress=['done'] → the cycle DOES
     // select a progress event → not a livelock → verified.
     const looping: Thread[] = [{ label: 'ticker', rules: [{ request: { type: 'done' } }] }]
-    const result = await verifyFrontiers({ threads: looping, progress: ['done'], maxDepth: 50 })
+    const result = await frontierVerify({ threads: looping, progress: ['done'], maxDepth: 50 })
     expect(result.status).toBe('verified')
     expect(result.livelocks).toHaveLength(0)
   })
@@ -245,7 +245,7 @@ describe('verify-frontiers', () => {
     // Same looping ticker, no progress spec. No deadlock, not truncated →
     // verified, livelocks empty (not checked).
     const looping: Thread[] = [{ label: 'ticker', rules: [{ request: { type: 'tick' } }] }]
-    const result = await verifyFrontiers({ threads: looping, maxDepth: 50 })
+    const result = await frontierVerify({ threads: looping, maxDepth: 50 })
     expect(result.status).toBe('verified')
     expect(result.livelocks).toHaveLength(0)
   })
@@ -253,7 +253,7 @@ describe('verify-frontiers', () => {
   test('an empty progress set flags every cycle as a livelock', async () => {
     // progress=[] → nothing counts as progress → any cycle is a livelock.
     const looping: Thread[] = [{ label: 'ticker', rules: [{ request: { type: 'done' } }] }]
-    const result = await verifyFrontiers({ threads: looping, progress: [], maxDepth: 50 })
+    const result = await frontierVerify({ threads: looping, progress: [], maxDepth: 50 })
     expect(result.status).toBe('failed')
     expect(result.livelocks).toHaveLength(1)
   })

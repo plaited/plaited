@@ -404,7 +404,7 @@ const frontierStateKey = ({ pending }: { pending: Set<PendingBid> }): string =>
         JSON.stringify({
           ...rest,
           // request is field-picked to { type, detail, space } so non-trace
-          // fields never enter the state key (frontier-analysis invariant).
+          // fields never enter the state key (frontier invariant).
           ...(request && {
             request: {
               space: request.space,
@@ -897,14 +897,14 @@ const messagesJsonSchema = {
   description: 'selection-trace prefix: { kind: "selection", timestamp, instanceId, step, selected: CandidateBid }[]',
 } as const
 
-export type ReplayFrontierInput = {
+export type FrontierReplayInput = {
   threads: Thread[]
   messages?: SelectionTrace[]
   space?: string
   instanceId?: string
 }
 
-export type ReplayFrontierOutput = {
+export type FrontierReplayOutput = {
   frontier: Frontier | null
   stateKey: string | null
   pendingCount: number | null
@@ -912,7 +912,7 @@ export type ReplayFrontierOutput = {
   message?: string
 }
 
-export const ReplayFrontierInputSchema = {
+export const FrontierReplayInputSchema = {
   type: 'object',
   properties: {
     threads: threadsJsonSchema,
@@ -927,9 +927,9 @@ export const ReplayFrontierInputSchema = {
   required: ['threads'],
   additionalProperties: false,
   description: 'Replay one concrete event-selection trace against a thread set and return the resulting frontier.',
-} as unknown as JSONSchemaType<ReplayFrontierInput>
+} as unknown as JSONSchemaType<FrontierReplayInput>
 
-export const ReplayFrontierOutputSchema = {
+export const FrontierReplayOutputSchema = {
   type: 'object',
   properties: {
     frontier: { ...frontierJsonSchema, nullable: true, description: 'the resulting frontier; null on error' },
@@ -944,7 +944,7 @@ export const ReplayFrontierOutputSchema = {
   },
   required: ['frontier', 'stateKey', 'pendingCount'],
   additionalProperties: false,
-} as unknown as JSONSchemaType<ReplayFrontierOutput>
+} as unknown as JSONSchemaType<FrontierReplayOutput>
 
 /**
  * Replay one concrete event-selection trace and return the resulting frontier.
@@ -955,13 +955,13 @@ export const ReplayFrontierOutputSchema = {
  * throws — the tool catches it and returns `{ isError: true, message }` so the
  * throw never crosses the model channel.
  */
-export const replayFrontier = useTool(
+export const frontierReplay = useTool(
   {
-    name: 'replay-frontier',
+    name: 'frontier-replay',
     description:
       'Replay one concrete event-selection trace against a thread set and return the resulting frontier, the canonical pending-state key, and the pending-bid count. Use to inspect a known event sequence and prove it was valid — a disabled selection returns isError instead of throwing.',
-    inputSchema: ReplayFrontierInputSchema,
-    outputSchema: ReplayFrontierOutputSchema,
+    inputSchema: FrontierReplayInputSchema,
+    outputSchema: FrontierReplayOutputSchema,
   },
   ({ threads, messages, space, instanceId }) => {
     try {
@@ -995,7 +995,7 @@ export type FrontierStateNode = {
   successors: Array<{ selection: CandidateBid; to: string }>
 }
 
-// Exploration report — shared by the explore-frontiers and verify-frontiers
+// Exploration report — shared by the frontier-explore and frontier-verify
 // outputs.
 export type FrontierReport = {
   strategy: 'bfs' | 'dfs'
@@ -1012,7 +1012,7 @@ export type FrontierReport = {
 const serializeStateGraph = (graph: Map<string, StateNode>): Record<string, FrontierStateNode> =>
   Object.fromEntries(graph)
 
-export type ExploreFrontiersInput = {
+export type FrontierExploreInput = {
   threads: Thread[]
   messages?: SelectionTrace[]
   triggers?: BPEvent[]
@@ -1023,7 +1023,7 @@ export type ExploreFrontiersInput = {
   instanceId?: string
 }
 
-export type ExploreFrontiersOutput = {
+export type FrontierExploreOutput = {
   traces: Array<{ messages: Trace[] }>
   findings: Array<{ code: 'deadlock'; messages: Trace[] }>
   report: FrontierReport
@@ -1032,7 +1032,7 @@ export type ExploreFrontiersOutput = {
   message?: string
 }
 
-export const ExploreFrontiersInputSchema = {
+export const FrontierExploreInputSchema = {
   type: 'object',
   properties: {
     threads: threadsJsonSchema,
@@ -1075,9 +1075,9 @@ export const ExploreFrontiersInputSchema = {
   additionalProperties: false,
   description:
     'Enumerate every reachable frontier of a thread set, collecting traces, deadlock findings, and the labeled state graph (serialized to a plain object keyed by stateKey).',
-} as unknown as JSONSchemaType<ExploreFrontiersInput>
+} as unknown as JSONSchemaType<FrontierExploreInput>
 
-export const ExploreFrontiersOutputSchema = {
+export const FrontierExploreOutputSchema = {
   type: 'object',
   properties: {
     traces: { type: 'array', items: { type: 'object', additionalProperties: true } },
@@ -1110,7 +1110,7 @@ export const ExploreFrontiersOutputSchema = {
   },
   required: ['traces', 'findings', 'report', 'stateGraph'],
   additionalProperties: false,
-} as unknown as JSONSchemaType<ExploreFrontiersOutput>
+} as unknown as JSONSchemaType<FrontierExploreOutput>
 
 /**
  * Enumerate every reachable frontier of a thread set.
@@ -1122,13 +1122,13 @@ export const ExploreFrontiersOutputSchema = {
  * unsupported strategy slipping past the enum, etc.) is caught into
  * `{ isError, message }` with empty structural defaults.
  */
-export const exploreFrontiers = useTool(
+export const frontierExplore = useTool(
   {
-    name: 'explore-frontiers',
+    name: 'frontier-explore',
     description:
       'Enumerate every reachable frontier of a thread set — traces, deadlock findings, and the labeled state graph (serialized to a plain object keyed by stateKey). maxDepth bounds unbounded-state programs; finite-state loops terminate via state-key dedup. Use to answer "can this deadlock?" across all reachable states, not sampled runs.',
-    inputSchema: ExploreFrontiersInputSchema,
-    outputSchema: ExploreFrontiersOutputSchema,
+    inputSchema: FrontierExploreInputSchema,
+    outputSchema: FrontierExploreOutputSchema,
   },
   ({ threads, messages, triggers, strategy, selectionPolicy, maxDepth, space, instanceId }) => {
     try {
@@ -1168,7 +1168,7 @@ export const exploreFrontiers = useTool(
   },
 )
 
-export type VerifyFrontiersInput = {
+export type FrontierVerifyInput = {
   threads: Thread[]
   messages?: SelectionTrace[]
   triggers?: BPEvent[]
@@ -1180,7 +1180,7 @@ export type VerifyFrontiersInput = {
   instanceId?: string
 }
 
-export type VerifyFrontiersOutput = {
+export type FrontierVerifyOutput = {
   status: 'verified' | 'failed' | 'truncated'
   findings: Array<{ code: 'deadlock'; messages: Trace[] }>
   report: FrontierReport
@@ -1189,7 +1189,7 @@ export type VerifyFrontiersOutput = {
   message?: string
 }
 
-export const VerifyFrontiersInputSchema = {
+export const FrontierVerifyInputSchema = {
   type: 'object',
   properties: {
     threads: threadsJsonSchema,
@@ -1239,9 +1239,9 @@ export const VerifyFrontiersInputSchema = {
   additionalProperties: false,
   description:
     'Verify a thread set: explore every reachable frontier and derive a verified/failed/truncated status. With the progress spec, also detects livelocks (cycles that never select a progress event).',
-} as unknown as JSONSchemaType<VerifyFrontiersInput>
+} as unknown as JSONSchemaType<FrontierVerifyInput>
 
-export const VerifyFrontiersOutputSchema = {
+export const FrontierVerifyOutputSchema = {
   type: 'object',
   properties: {
     status: {
@@ -1282,7 +1282,7 @@ export const VerifyFrontiersOutputSchema = {
   },
   required: ['status', 'findings', 'report', 'livelocks'],
   additionalProperties: false,
-} as unknown as JSONSchemaType<VerifyFrontiersOutput>
+} as unknown as JSONSchemaType<FrontierVerifyOutput>
 
 /**
  * Verify a thread set: explore every reachable frontier and derive a
@@ -1294,13 +1294,13 @@ export const VerifyFrontiersOutputSchema = {
  * `{ isError, message }` with a `failed` status (never throw into the model
  * channel).
  */
-export const verifyFrontiers = useTool(
+export const frontierVerify = useTool(
   {
-    name: 'verify-frontiers',
+    name: 'frontier-verify',
     description:
       'Verify a thread set across every reachable state — is it deadlock- or livelock-free? Returns verified/failed/truncated. With the progress spec, a reachable cycle that never selects a progress event is a livelock (failed). Never treat truncated as a pass.',
-    inputSchema: VerifyFrontiersInputSchema,
-    outputSchema: VerifyFrontiersOutputSchema,
+    inputSchema: FrontierVerifyInputSchema,
+    outputSchema: FrontierVerifyOutputSchema,
   },
   ({ threads, messages, triggers, strategy, selectionPolicy, maxDepth, progress, space, instanceId }) => {
     try {

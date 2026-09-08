@@ -1,23 +1,23 @@
 import { describe, expect, test } from 'bun:test'
 import type { Thread } from '../../behavioral/behavioral.types.ts'
-import { exploreFrontiers, verifyFrontiers } from '../frontier-analysis.ts'
+import { frontierExplore, frontierVerify } from '../frontier.ts'
 
 /**
  * Liveness and state-graph behavior — driven through the public tool interface.
  *
  * Per the TDD "public interface, not private helpers" rule: SCC/livelock/
- * stateKey behavior is fully reachable through explore-frontiers and
- * verify-frontiers on real behavioral programs. No fake-graph builders, no
+ * stateKey behavior is fully reachable through frontier-explore and
+ * frontier-verify on real behavioral programs. No fake-graph builders, no
  * direct imports of frontierStateKey / findStronglyConnectedComponents /
  * findLivelocks / isCycle / StateNode. The subject is the three tools; the
  * raw functions and graph internals have no direct test imports.
  *
  * What was converted from the old fake-graph tests:
  * - SCC structure (DAG trivial, two-node cycle, self-loop, disjoint cycles,
- *   large ring) → asserted via verify-frontiers verdicts and the serialized
- *   state graph from explore-frontiers on real looping programs.
+ *   large ring) → asserted via frontier-verify verdicts and the serialized
+ *   state graph from frontier-explore on real looping programs.
  * - isCycle branches → the cycle-with-progress (verified) vs
- *   cycle-without-progress (failed) distinction through verify-frontiers.
+ *   cycle-without-progress (failed) distinction through frontier-verify.
  * - frontierStateKey invariants (order-independence, generator-identity
  *   insensitivity, detailSchema distinction) → two structurally-equal
  *   programs yield the same serialized state graph; structurally-distinct
@@ -26,14 +26,14 @@ import { exploreFrontiers, verifyFrontiers } from '../frontier-analysis.ts'
  *   is not a progress event is still failed.
  */
 
-describe('explore-frontiers state-keyed dedup (real programs)', () => {
+describe('frontier-explore state-keyed dedup (real programs)', () => {
   test('a looping program terminates via state-key dedup (not maxDepth cutoff)', async () => {
     // A `while(true)` ticker: requests `tick` forever. The pending set is
     // identical after every selection, so the state graph closes at one
     // state and exploration stops well before maxDepth — proving
     // termination via dedup, not a depth cutoff.
     const looping: Thread[] = [{ label: 'ticker', rules: [{ request: { type: 'tick' } }] }]
-    const result = await exploreFrontiers({ threads: looping, strategy: 'bfs', maxDepth: 100 })
+    const result = await frontierExplore({ threads: looping, strategy: 'bfs', maxDepth: 100 })
     expect(result.report.truncated).toBe(false)
     // One distinct state: the single pending bid requesting `tick`.
     expect(result.report.visitedCount).toBe(1)
@@ -45,7 +45,7 @@ describe('explore-frontiers state-keyed dedup (real programs)', () => {
     // Toggle: requests `on`, then `off`, then loops. Two distinct states
     // ({request on}, {request off}); the cycle closes back to the first.
     const toggle: Thread[] = [{ label: 'toggle', rules: [{ request: { type: 'on' } }, { request: { type: 'off' } }] }]
-    const result = await exploreFrontiers({ threads: toggle, strategy: 'bfs', maxDepth: 100 })
+    const result = await frontierExplore({ threads: toggle, strategy: 'bfs', maxDepth: 100 })
     expect(result.report.truncated).toBe(false)
     expect(result.report.visitedCount).toBe(2)
     expect(result.findings).toHaveLength(0)
@@ -58,7 +58,7 @@ describe('explore-frontiers state-keyed dedup (real programs)', () => {
       { label: 'requester', rules: [{ request: { type: 'a' } }] },
       { label: 'blocker', rules: [{ block: [{ type: 'a' }] }] },
     ]
-    const result = await exploreFrontiers({ threads: blocked, strategy: 'bfs', maxDepth: 50 })
+    const result = await frontierExplore({ threads: blocked, strategy: 'bfs', maxDepth: 50 })
     expect(result.findings.length).toBeGreaterThan(0)
     expect(result.findings[0]!.code).toBe('deadlock')
   })
@@ -69,7 +69,7 @@ describe('explore-frontiers state-keyed dedup (real programs)', () => {
       { label: 'ticker', rules: [{ request: { type: 'tick' } }], once: true },
       { label: 'worker', once: true, rules: [{ request: { type: 'start', detail: { id: 'job-1' } } }] },
     ]
-    const result = await exploreFrontiers({ threads: finite, strategy: 'bfs', maxDepth: 3 })
+    const result = await frontierExplore({ threads: finite, strategy: 'bfs', maxDepth: 3 })
     expect(result.report.visitedCount).toBeGreaterThan(0)
     expect(result.traces.length).toBe(result.report.visitedCount)
     for (const trace of result.traces) {
@@ -86,8 +86,8 @@ describe('explore-frontiers state-keyed dedup (real programs)', () => {
     // This is the public expression of frontierStateKey's order- and
     // generator-identity invariance — no fake PendingBid fixtures.
     const program: Thread[] = [{ label: 'toggle', rules: [{ request: { type: 'on' } }, { request: { type: 'off' } }] }]
-    const a = await exploreFrontiers({ threads: program, strategy: 'bfs', maxDepth: 50 })
-    const b = await exploreFrontiers({
+    const a = await frontierExplore({ threads: program, strategy: 'bfs', maxDepth: 50 })
+    const b = await frontierExplore({
       threads: [{ label: 'other-label', rules: [{ request: { type: 'on' } }, { request: { type: 'off' } }] }],
       strategy: 'bfs',
       maxDepth: 50,
@@ -109,19 +109,19 @@ describe('explore-frontiers state-keyed dedup (real programs)', () => {
     // termination through a real program.)
     const rules = Array.from({ length: 60 }, (_, i) => ({ request: { type: `n${i}` } }))
     const ring: Thread[] = [{ label: 'ring', rules }]
-    const result = await exploreFrontiers({ threads: ring, strategy: 'bfs', maxDepth: 500 })
+    const result = await frontierExplore({ threads: ring, strategy: 'bfs', maxDepth: 500 })
     expect(result.report.truncated).toBe(false)
     expect(result.report.visitedCount).toBe(60)
   })
 })
 
-describe('verify-frontiers livelock integration (real programs)', () => {
+describe('frontier-verify livelock integration (real programs)', () => {
   test('a looping program with no progress is failed (livelock)', async () => {
     // A ticker requesting `tick` forever. No deadlock, not truncated.
     // Without a progress spec it would be verified; with progress=['succeeded']
     // the cycle never selects `succeeded` → livelock → failed.
     const threads: Thread[] = [{ label: 'ticker', rules: [{ request: { type: 'tick' } }] }]
-    const result = await verifyFrontiers({ threads, progress: ['succeeded'], maxDepth: 50 })
+    const result = await frontierVerify({ threads, progress: ['succeeded'], maxDepth: 50 })
     expect(result.status).toBe('failed')
     expect(result.livelocks).toHaveLength(1)
     expect(result.livelocks[0]!.code).toBe('livelock')
@@ -134,7 +134,7 @@ describe('verify-frontiers livelock integration (real programs)', () => {
     // A ticker requesting `done` forever. progress=['done'] → the cycle
     // DOES select a progress event → not a livelock → verified.
     const threads: Thread[] = [{ label: 'ticker', rules: [{ request: { type: 'done' } }] }]
-    const result = await verifyFrontiers({ threads, progress: ['done'], maxDepth: 50 })
+    const result = await frontierVerify({ threads, progress: ['done'], maxDepth: 50 })
     expect(result.status).toBe('verified')
     expect(result.livelocks).toHaveLength(0)
   })
@@ -143,7 +143,7 @@ describe('verify-frontiers livelock integration (real programs)', () => {
     // Same looping ticker, no progress spec. Behaves as before: no deadlock,
     // not truncated → verified, livelocks empty (not checked).
     const threads: Thread[] = [{ label: 'ticker', rules: [{ request: { type: 'tick' } }] }]
-    const result = await verifyFrontiers({ threads, maxDepth: 50 })
+    const result = await frontierVerify({ threads, maxDepth: 50 })
     expect(result.status).toBe('verified')
     expect(result.livelocks).toHaveLength(0)
   })
@@ -151,7 +151,7 @@ describe('verify-frontiers livelock integration (real programs)', () => {
   test('an empty progress set flags every cycle as a livelock', async () => {
     // progress=[] → nothing counts as progress → any cycle is a livelock.
     const threads: Thread[] = [{ label: 'ticker', rules: [{ request: { type: 'done' } }] }]
-    const result = await verifyFrontiers({ threads, progress: [], maxDepth: 50 })
+    const result = await frontierVerify({ threads, progress: [], maxDepth: 50 })
     expect(result.status).toBe('failed')
     expect(result.livelocks).toHaveLength(1)
   })
@@ -163,7 +163,7 @@ describe('verify-frontiers livelock integration (real programs)', () => {
       { label: 'requester', rules: [{ request: { type: 'a' } }] },
       { label: 'blocker', rules: [{ block: [{ type: 'a' }] }] },
     ]
-    const result = await verifyFrontiers({ threads, progress: ['x'], maxDepth: 50 })
+    const result = await frontierVerify({ threads, progress: ['x'], maxDepth: 50 })
     expect(result.status).toBe('failed')
     expect(result.findings.length).toBeGreaterThan(0)
   })
@@ -190,7 +190,7 @@ describe('verify-frontiers livelock integration (real programs)', () => {
       },
       { label: 'sink', once: true, rules: [{ waitFor: [{ type: 'done' }] }] },
     ]
-    const result = await verifyFrontiers({ threads, progress: ['done'], maxDepth: 50 })
+    const result = await frontierVerify({ threads, progress: ['done'], maxDepth: 50 })
     // The cycle (toggle on `tick`) has an exit `done` to the sink, but the
     // exit leaves the SCC — the cycle never selects `done` internally →
     // livelock → failed.
@@ -207,18 +207,18 @@ describe('verify-frontiers livelock integration (real programs)', () => {
     const threads: Thread[] = [
       { label: 'toggle', rules: [{ request: { type: 'done' } }, { request: { type: 'tick' } }] },
     ]
-    const result = await verifyFrontiers({ threads, progress: ['done'], maxDepth: 50 })
+    const result = await frontierVerify({ threads, progress: ['done'], maxDepth: 50 })
     expect(result.status).toBe('verified')
     expect(result.livelocks).toHaveLength(0)
   })
 
-  test('explore-frontiers exposes the state graph for downstream analysis', async () => {
+  test('frontier-explore exposes the state graph for downstream analysis', async () => {
     // The serialized state graph is the raw material the consumer would
     // use for their own graph analyses. Verify it's a well-formed plain
     // object: the toggle has 2 entries, each with at least one labeled
     // successor edge.
     const threads: Thread[] = [{ label: 'toggle', rules: [{ request: { type: 'on' } }, { request: { type: 'off' } }] }]
-    const result = await exploreFrontiers({ threads, strategy: 'bfs', maxDepth: 50 })
+    const result = await frontierExplore({ threads, strategy: 'bfs', maxDepth: 50 })
     expect(result.stateGraph).toBeDefined()
     expect(Object.keys(result.stateGraph).length).toBe(2)
     for (const node of Object.values(result.stateGraph)) {
