@@ -63,6 +63,7 @@
     ]
   },
   "dependencies": {
+    "@daytonaio/sdk": "^0.211.2",
     "@modelcontextprotocol/client": "^2.0.0",
     "ajv": "8.20.0"
   },
