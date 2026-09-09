@@ -24,21 +24,21 @@ parts and the recipe is:
 6. If improved → keep the commit, advance the branch. If worse → `git reset`.
 7. Loop forever.
 
-Where plaited fits: the **"run experiment"** step captures a trace via
+Where behavioral fits: the **"run experiment"** step captures a trace via
 `useTrace` (the agent run, with its behavioral coordination layer observed);
-the **"measure"** and **"decide"** steps consume that trace. plaited supplies
+the **"measure"** and **"decide"** steps consume that trace. behavioral supplies
 the capture and (optionally) the divergence analysis; the **loop, the one
 metric, the fixed budget, and the keep/discard rule are the consumer's** —
-plaited does not ship the loop.
+behavioral does not ship the loop.
 
-## Public surface (import from `plaited`)
+## Public surface (import from `@behavioral/sh`)
 
 ```ts
 import {
   behavioral,
   type UseTrace,
   type SendTrace,
-} from 'plaited'
+} from '@behavioral/sh'
 ```
 
 `useTrace` and `sendTrace` are returned by `behavioral()`. `Trace` is the
@@ -56,7 +56,7 @@ the [frontier-analysis](./frontier-analysis.md) functions.
 | Need | Use |
 |------|-----|
 | Capture each experiment's run as a trace | `behavioral<T>()` + `useTrace` (listener receives `Trace \| T`) + `sendTrace` (injects `T`). Same capture wiring as eval. |
-| Measure the run via a deterministic metric | Consumer code reading the captured trace (token count, tool-call count, BP-health counts, a domain metric). plaited supplies no metric. |
+| Measure the run via a deterministic metric | Consumer code reading the captured trace (token count, tool-call count, BP-health counts, a domain metric). behavioral supplies no metric. |
 | Analyze the mutated program's reachable branches between iterations | `exploreFrontiers` / `verifyFrontiers` over the program's `Thread[]`. Optional — only if the mutation changes the behavioral program and you want to know what it can now reach. |
 | Decide keep/discard | Consumer code: compare this iteration's metric to the last kept one. The selection function is the hill-climb. |
 
@@ -73,7 +73,7 @@ from run-start to budget-elapsed or terminal result. The sink is whatever the
 an append to a running log the analyzer reads.
 
 ```ts
-import { behavioral } from 'plaited'
+import { behavioral } from '@behavioral/sh'
 
 type AgentEvent =
   | { kind: 'tool_call'; timestamp: number; tool: string }
@@ -106,7 +106,7 @@ async function runOneExperiment(
 ```
 
 The loop, the keep/discard rule, and the `measure` function are the
-consumer's — plaited supplies the capture, not the hill-climb.
+consumer's — behavioral supplies the capture, not the hill-climb.
 
 ## Intake (use `grill-me`)
 
@@ -142,7 +142,7 @@ The hill-climb stalls when the agent finds a small improvement whose every
 neighbor is worse — a local optimum far from global. Karpathy's mitigations:
 restart from different starting seeds, add randomization to the mutation
 step, or run multiple loops in parallel from different starts. This isn't a
-plaited concern — plaited supplies the capture, not the search — but surface
+behavioral concern — behavioral supplies the capture, not the search — but surface
 it at intake so the engineer builds a stall-detector (e.g. N iterations with
 no kept improvement → restart) rather than letting the loop spin forever.
 
@@ -164,7 +164,7 @@ move impl files.
 
 ```bash
 # Step 1 — resolve the specifier to its backing file (barrel)
-bun -e 'console.log(Bun.resolveSync("plaited", process.cwd()+"/"))'
+bun -e 'console.log(Bun.resolveSync("@behavioral/sh", process.cwd()+"/"))'
 # → /path/to/src/main.ts
 
 # Step 2 — read the barrel to find the backing module that exports your symbol
@@ -175,7 +175,7 @@ bun -e 'console.log(Bun.resolveSync("plaited", process.cwd()+"/"))'
 # Pick the module that declares the symbol you need (e.g. src/main/behavioral.ts)
 
 # Step 3 — enumerate the backing module's symbols with documentSymbol
-plaited typescript-lsp '{"mode":"execute","file":"<resolved-path>","requests":[{"method":"textDocument/documentSymbol","params":{"textDocument":{"uri":"file://<resolved-path>"}}}]}'
+behavioral typescript-lsp '{"mode":"execute","file":"<resolved-path>","requests":[{"method":"textDocument/documentSymbol","params":{"textDocument":{"uri":"file://<resolved-path>"}}}]}'
 ```
 
 Fetch any export's TSDoc with `hover` using the position from the

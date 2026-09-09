@@ -1,29 +1,29 @@
 ---
-name: plaited-framework
+name: behavioral
 description: >
-  Plaited behavioral-programming runtime and UI layer — b-threads, triggers,
+  Behavioral-programming runtime and UI layer — b-threads, triggers,
   handlers, the controller/custom-element protocol, SSR/renderer, frontier
   analysis, behavioral eval capture, autoresearch hill-climbs, and OKF
   knowledge bundles. Use when creating, reading, updating, or deleting code
-  where plaited is a declared dependency or where the work is in the Plaited
+  where @behavioral/sh is a declared dependency or where the work is in the behavioral
   repo itself.
 license: ISC
-compatibility: Requires bun and the plaited CLI
+compatibility: Requires bun and the behavioral CLI
 allowed-tools: Bash Read
 ---
 
-# Plaited Framework
+# Behavioral Framework
 
-Reference for an agent assisting an engineer working on the Plaited
+Reference for an agent assisting an engineer working on the behavioral
 behavioral-programming runtime and its UI layer. This skill routes you to
 the right operator surface for the task. The detailed reference material
 lives in `references/`; load it on demand per the route table below.
 
 ## When to use this skill
 
-Use this skill when the task involves the Plaited **runtime** or **UI layer**
-and you're working in a project where `plaited` is a declared dependency or
-in the Plaited repo itself. Specifically:
+Use this skill when the task involves the behavioral **runtime** or **UI layer**
+and you're working in a project where `@behavioral/sh` is a declared dependency or
+in the behavioral repo itself. Specifically:
 
 - Wiring **behavioral programs** — b-threads, triggers, handlers, the
   super-step model, deadlock/livelock analysis.
@@ -37,7 +37,7 @@ in the Plaited repo itself. Specifically:
   on Structural IA, CSS custom properties, and `@scope`/`:host()`/`::part()`
   modes.
 
-For the `plaited` CLI tools (`markdown`, `git-context`, `mcp-client`,
+For the `behavioral` CLI tools (`markdown`, `git-context`, `mcp-client`,
 `typescript-lsp`), use their standalone skills — they are not
 framework-specific and ship with the CLI itself.
 
@@ -59,21 +59,21 @@ only when the task calls for it.
 
 ## Related standalone skills
 
-These are generic `plaited` CLI tools, not framework-specific. Use their
+These are generic `behavioral` CLI tools, not framework-specific. Use their
 own skills directly:
 
-- **`markdown`** — `plaited markdown` (extract-links, validate-links with
+- **`markdown`** — `behavioral markdown` (extract-links, validate-links with
   `rootRelative`, frontmatter).
-- **`git-context`** — `plaited git-context` (structured Git context before
+- **`git-context`** — `behavioral git-context` (structured Git context before
   editing/committing).
-- **`mcp-client`** — `plaited mcp-client` (discovering and calling remote
+- **`mcp-client`** — `behavioral mcp-client` (discovering and calling remote
   MCP servers, authoring MCP-backed skills).
-- **`typescript-lsp`** — `plaited typescript-lsp` (type-aware codebase
+- **`typescript-lsp`** — `behavioral typescript-lsp` (type-aware codebase
   analysis via LSP — hover, references, symbols).
 
 ## Repo conventions
 
 Follow `AGENTS.md` for repo conventions (Bun APIs, conventional commits,
 file naming, no-index, minimal-implementation, testing). This skill routes
-you to the right Plaited operator surface; `AGENTS.md` owns the workflow
+you to the right behavioral operator surface; `AGENTS.md` owns the workflow
 rules.

@@ -1,7 +1,7 @@
 # Renderer
 
 Reference for an agent assisting an engineer in wiring up server-side
-rendering for a Plaited app. The `Renderer` is the SSR counterpart to the
+rendering for a behavioral app. The `Renderer` is the SSR counterpart to the
 browser-side [`Controller`](./controller.md): where the Controller applies
 `render`/`attrs` (plus `dispatch_custom_event`/`navigate`) to a live DOM over
 a WebSocket, the Renderer applies `render`/`attrs` to an HTML string held in
@@ -11,8 +11,8 @@ memory, synchronously, in a Bun process. The pair is the UI layer driven by a
 ## Public surface
 
 `Renderer` (class) and `RendererResult` (type) are reachable via type-only
-imports from the package root (`plaited`). The `Renderer` class is exported
-as a type via `export type *` — use `import type { Renderer } from 'plaited'`
+imports from the package root (`@behavioral/sh`). The `Renderer` class is exported
+as a type via `export type *` — use `import type { Renderer } from '@behavioral/sh'`
 for the instance type. `RendererResult` is also a type-only re-export from
 the package root. The class is not a value-level export from any public
 specifier; construct it from its source file or the integrating package.
@@ -109,7 +109,7 @@ refactors that move impl files.
 
 ```bash
 # Step 1 — resolve the specifier to its backing file (barrel)
-bun -e 'console.log(Bun.resolveSync("plaited", process.cwd()+"/"))'
+bun -e 'console.log(Bun.resolveSync("@behavioral/sh", process.cwd()+"/"))'
 # → /path/to/src/main.ts
 
 # Step 2 — read the barrel to find the backing module that exports your symbol
@@ -120,7 +120,7 @@ bun -e 'console.log(Bun.resolveSync("plaited", process.cwd()+"/"))'
 # Pick the module that declares the symbol you need (e.g. src/main/renderer.ts)
 
 # Step 3 — enumerate the backing module's symbols with documentSymbol
-plaited typescript-lsp '{"mode":"execute","file":"<resolved-path>","requests":[{"method":"textDocument/documentSymbol","params":{"textDocument":{"uri":"file://<resolved-path>"}}}]}'
+behavioral typescript-lsp '{"mode":"execute","file":"<resolved-path>","requests":[{"method":"textDocument/documentSymbol","params":{"textDocument":{"uri":"file://<resolved-path>"}}}]}'
 ```
 
 `documentSymbol` returns each symbol in the backing module with its kind
@@ -131,7 +131,7 @@ from the output (no hardcoded line numbers).
 
 ```bash
 # Step 4 — fetch one symbol's TSDoc and type (use range.start from Step 3 as the position)
-plaited typescript-lsp '{"mode":"execute","file":"<resolved-path>","requests":[{"method":"textDocument/hover","params":{"textDocument":{"uri":"file://<resolved-path>"},"position":{"line":0,"character":0}}}]}'
+behavioral typescript-lsp '{"mode":"execute","file":"<resolved-path>","requests":[{"method":"textDocument/hover","params":{"textDocument":{"uri":"file://<resolved-path>"},"position":{"line":0,"character":0}}}]}'
 ```
 
 Returns the `/** ... */` block plus the resolved type signature — the deeper

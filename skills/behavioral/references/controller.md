@@ -1,7 +1,7 @@
 # Controller
 
 Reference for an agent assisting an engineer in wiring up the browser side
-of a Plaited multi-page app. The `Controller` is the browser-side counterpart
+of a behavioral multi-page app. The `Controller` is the browser-side counterpart
 to the server-side [`Renderer`](./renderer.md): where the Renderer applies
 `render`/`attrs` to an HTML string in memory, the Controller applies the same
 commands — plus `dispatch_custom_event` and `navigate` — to a live DOM, over a
@@ -10,9 +10,9 @@ WebSocket to the serving agent. The pair together is the UI layer driven by a
 
 ## Public surface
 
-`Controller` is exported via the `plaited/controller` specifier. Construct one
+`Controller` is exported via the `@behavioral/sh/controller` specifier. Construct one
 instance per page, loaded as an async module script in `<head>`. (The UI
-layer is consumed via its plugin context, not via `plaited` root imports —
+layer is consumed via its plugin context, not via `@behavioral/sh` root imports —
 reach the class from the integrating package.)
 
 The constructor takes lifecycle hooks and optional extensions:
@@ -29,7 +29,7 @@ new Controller({
 
 ## The push model
 
-This is the load-bearing concept: a Plaited page is **push-based**, not
+This is the load-bearing concept: a behavioral page is **push-based**, not
 pull-based. The controller does not fetch state and render client-side; it
 opens a WebSocket to its serving agent and applies server-pushed messages:
 
@@ -87,7 +87,7 @@ refactors that move impl files.
 
 ```bash
 # Step 1 — resolve the specifier to its backing file (barrel)
-bun -e 'console.log(Bun.resolveSync("plaited/controller", process.cwd()+"/"))'
+bun -e 'console.log(Bun.resolveSync("@behavioral/sh/controller", process.cwd()+"/"))'
 # → /path/to/src/controller.ts
 
 # Step 2 — read the barrel to find the backing module that exports your symbol
@@ -96,7 +96,7 @@ bun -e 'console.log(Bun.resolveSync("plaited/controller", process.cwd()+"/"))'
 # Pick the module that declares the symbol you need (e.g. src/controller/controller.ts)
 
 # Step 3 — enumerate the backing module's symbols with documentSymbol
-plaited typescript-lsp '{"mode":"execute","file":"<resolved-path>","requests":[{"method":"textDocument/documentSymbol","params":{"textDocument":{"uri":"file://<resolved-path>"}}}]}'
+behavioral typescript-lsp '{"mode":"execute","file":"<resolved-path>","requests":[{"method":"textDocument/documentSymbol","params":{"textDocument":{"uri":"file://<resolved-path>"}}}]}'
 ```
 
 `documentSymbol` returns each symbol in the backing module with its kind
@@ -107,7 +107,7 @@ from the output (no hardcoded line numbers).
 
 ```bash
 # Step 4 — fetch one symbol's TSDoc and type (use range.start from Step 3 as the position)
-plaited typescript-lsp '{"mode":"execute","file":"<resolved-path>","requests":[{"method":"textDocument/hover","params":{"textDocument":{"uri":"file://<resolved-path>"},"position":{"line":0,"character":0}}}]}'
+behavioral typescript-lsp '{"mode":"execute","file":"<resolved-path>","requests":[{"method":"textDocument/hover","params":{"textDocument":{"uri":"file://<resolved-path>"},"position":{"line":0,"character":0}}}]}'
 ```
 
 Returns the `/** ... */` block plus the resolved type signature — the deeper

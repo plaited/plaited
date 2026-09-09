@@ -1,6 +1,6 @@
 # Eval
 
-Reference for an agent assisting an engineer in wiring up Plaited's
+Reference for an agent assisting an engineer in wiring up behavioral's
 behavioral-program **eval capture** primitives. These tools answer: *how do I
 capture an agent run (with or without a behavioral coordination layer) into a
 trace I can later grade, and — for behavioral agents — how do I analyze the
@@ -11,7 +11,7 @@ hill-climb use (capture a small experiment, analyze the trace, mutate, repeat
 on a fixed budget), see [Auto-research](./autoresearch.md) — same primitives,
 different purpose.
 
-## Public surface (import from `plaited`)
+## Public surface (import from `@behavioral/sh`)
 
 ```ts
 import {
@@ -19,7 +19,7 @@ import {
   type UseTrace,
   type SendTrace,
   type TraceListener,
-} from 'plaited'
+} from '@behavioral/sh'
 ```
 
 `useTrace` and `sendTrace` are returned by `behavioral()` (the frozen public
@@ -29,7 +29,7 @@ consumers can type their own listeners and extension events.
 `Trace` is the engine's closed discriminated union of trace kinds
 (`selection`, `frontier`, `pending_bids`, `deadlock`, `trigger_error`,
 `add_thread_error`, `interrupt`, `transform`). It is not directly importable from
-`'plaited'` — use `useTrace((msg) => ...)` with inference, and let the
+`'behavioral'` — use `useTrace((msg) => ...)` with inference, and let the
 listener parameter type narrow by `msg.kind`.
 
 `TraceBase` is the structural contract for consumer-supplied extensions:
@@ -47,23 +47,23 @@ For divergence analysis over a captured run, also import the
 |------|-----|
 | Observe a behavioral program's own execution (logging/debugging) | `behavioral()` + `useTrace`; default `T = never`, no `sendTrace`. Listener receives only `Trace`. |
 | Capture a behavioral agent's run *plus* agent-lifecycle events for grading | `behavioral<T>()` + `useTrace` (listener receives `Trace \| T`) + `sendTrace` (injects `T`). Define `T` extending `TraceBase`. |
-| Grade a linear run over an outcome | Post-hoc grader over the captured trace. plaited supplies **no grading code** — the consumer's grader reads the trace and emits a result. |
+| Grade a linear run over an outcome | Post-hoc grader over the captured trace. behavioral supplies **no grading code** — the consumer's grader reads the trace and emits a result. |
 | Analyze reachable branches of a behavioral agent's run (divergence) | `exploreFrontiers` / `verifyFrontiers` over captured `Thread[]` + messages. See [frontier-analysis](./frontier-analysis.md). |
 
 The first row is the base case: behavioral as a logging/observation utility
 for its own execution. The second extends it with agent events. The third and
-fourth are what you do with the captured trace *after* the run — plaited's
+fourth are what you do with the captured trace *after* the run — behavioral's
 role ends at capture (and, for divergence, at analysis).
 
 ## The capture wiring
 
 The capture layer is always a `useTrace` listener. What the listener does
-with each event is the consumer's choice — the callback is the sink. plaited
+with each event is the consumer's choice — the callback is the sink. behavioral
 does not prescribe JSONL, a database, a socket, or any particular store. The
 callback writes wherever the consumer wants.
 
 ```ts
-import { behavioral } from 'plaited'
+import { behavioral } from '@behavioral/sh'
 
 // 1. Define the agent-lifecycle events you want to capture alongside the
 //    engine's Trace variants. The structural constraint is
@@ -119,7 +119,7 @@ shape the capture wiring and differ by eval:
   The flush trigger is where the capture callback hands the accumulated events
   to whatever comes next (a grader, a file write, a socket send).
 - **Sink** — where does the `useTrace` callback write? File, socket, DB, in-memory,
-  stdout. plaited doesn't know or care; the callback handles it.
+  stdout. behavioral doesn't know or care; the callback handles it.
 - **Retention** — for eval, are all trials kept, or only failures, or a sample?
   The keep/discard rule is the consumer's.
 - **Analysis target** — post-hoc outcome grading (grade what the agent produced),
@@ -150,7 +150,7 @@ run. For a plain agent (no behavioral layer), there are no threads and
 
 ## Grading is beyond this package
 
-plaited supplies the capture primitives (`useTrace`, `sendTrace`) and, for
+behavioral supplies the capture primitives (`useTrace`, `sendTrace`) and, for
 behavioral agents, the divergence-analysis primitive (`frontier-analysis`).
 It supplies **no grading code**. Graders are consumer-authored and run
 wherever the consumer chose to sink the trace:
@@ -159,7 +159,7 @@ wherever the consumer chose to sink the trace:
   metrics over `kind` counts, token/cost aggregation). The consumer's code, in
   the consumer's chosen language/store.
 - **LLM-rubric** — a subprocess grader that reads the trace and asks a judge
-  model. The consumer authors the grader; plaited does not ship a grader
+  model. The consumer authors the grader; behavioral does not ship a grader
   contract or IO helpers.
 - **Hybrid** — deterministic pre-filter + LLM-rubric on the survivors.
 
@@ -189,7 +189,7 @@ move impl files.
 
 ```bash
 # Step 1 — resolve the specifier to its backing file (barrel)
-bun -e 'console.log(Bun.resolveSync("plaited", process.cwd()+"/"))'
+bun -e 'console.log(Bun.resolveSync("@behavioral/sh", process.cwd()+"/"))'
 # → /path/to/src/main.ts
 
 # Step 2 — read the barrel to find the backing module that exports your symbol
@@ -200,7 +200,7 @@ bun -e 'console.log(Bun.resolveSync("plaited", process.cwd()+"/"))'
 # Pick the module that declares the symbol you need (e.g. src/main/behavioral.ts)
 
 # Step 3 — enumerate the backing module's symbols with documentSymbol
-plaited typescript-lsp '{"mode":"execute","file":"<resolved-path>","requests":[{"method":"textDocument/documentSymbol","params":{"textDocument":{"uri":"file://<resolved-path>"}}}]}'
+behavioral typescript-lsp '{"mode":"execute","file":"<resolved-path>","requests":[{"method":"textDocument/documentSymbol","params":{"textDocument":{"uri":"file://<resolved-path>"}}}]}'
 ```
 
 `documentSymbol` returns each symbol in the backing module with its kind
@@ -211,7 +211,7 @@ from the output (no hardcoded line numbers).
 
 ```bash
 # Step 4 — fetch one symbol's TSDoc and type (use range.start from Step 3 as the position)
-plaited typescript-lsp '{"mode":"execute","file":"<resolved-path>","requests":[{"method":"textDocument/hover","params":{"textDocument":{"uri":"file://<resolved-path>"},"position":{"line":0,"character":0}}}]}'
+behavioral typescript-lsp '{"mode":"execute","file":"<resolved-path>","requests":[{"method":"textDocument/hover","params":{"textDocument":{"uri":"file://<resolved-path>"},"position":{"line":0,"character":0}}}]}'
 ```
 
 Returns the `/** ... */` block plus the resolved type signature — the deeper

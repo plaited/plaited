@@ -1,6 +1,6 @@
 # Design spec (consensus surface)
 
-Reference for an agent assisting in the design of Plaited's design-system
+Reference for an agent assisting in the design of behavioral's design-system
 specification — a derivative of [DESIGN.md] re-grounded on Rachel Jaffe's
 [Structural IA] to move beyond atomic visual styling into a full structural
 + expressive system an agent can use to build interfaces. This document is
@@ -18,7 +18,7 @@ spec is written from it.
 ## Destination
 
 **Locked** — the effort's destination is a **hand-off spec**: a new
-DESIGN.md-derivative format spec for the Plaited framework, handed off for
+DESIGN.md-derivative format spec for the behavioral framework, handed off for
 implementation and iteration. The map ends when every decision needed to
 *write* that spec is made; the prose itself gets written *after* the map, by
 whoever does the work. The destination fixes scope, so it was settled
@@ -75,13 +75,13 @@ side; the functional vocabulary lives in the thread layer, which the spec
 
 ## Decisions locked
 
-1. **Plaited-bound (normative).** The spec *requires* Plaited's HTML-first
+1. **behavioral-bound (normative).** The spec *requires* behavioral's HTML-first
    substrate as part of its contract — `@scope`, Declarative Shadow DOM,
    CSS custom properties, the `p-*` attribute surface. Portability to
-   non-Plaited runtimes is out of scope for the *mechanism*. The
+   non-behavioral runtimes is out of scope for the *mechanism*. The
    *functional vocabulary* (affordances/feedback/patterns) is deliberately
    substrate-neutral in its *description* (see [Functional flow](#functional-flow))
-   so a non-Plaited consumer with a similar trigger→logic→render loop can
+   so a non-behavioral consumer with a similar trigger→logic→render loop can
    consume the same vocabulary through its own channel.
 
 2. **Attribute prefix is `p-*`.** `b-scale` joins the existing `b-trigger` /
@@ -181,8 +181,8 @@ terms:
   The same logic drives both — the vocabulary is the constant; the substrate
   is the variable.
 
-A Plaited agent recognizes its own flow (behavioral threads, Renderer,
-Controller, BPEvents) in this shape; a non-Plaited agent with a similar
+A behavioral agent recognizes its own flow (behavioral threads, Renderer,
+Controller, BPEvents) in this shape; a non-behavioral agent with a similar
 trigger→logic→render loop recognizes *its* flow. The spec names none of the
 mechanism — only the shape and the vocabulary that flows through it.
 
@@ -230,7 +230,7 @@ flow, so the same thread drives both.
 
 ## Structural scale
 
-**Locked** — Plaited's codebase already defines the structural axis:
+**Locked** — behavioral's codebase already defines the structural axis:
 
 ```ts
 // src/main/html.constants.ts
@@ -479,7 +479,7 @@ top-down: function → structure → expression.
 | Original DESIGN.md | Effect | Status |
 |---|---|---|
 | **Design Tokens (frontmatter)** — grouped dot-notation, `{ref}` syntax, `components:` map | Transformed: flat `--*`→value map + `affordances:` / `feedback:` / `patterns:` maps; `var()` replaces `{ref}`; **no `components:` token block** | Transformed (kept) |
-| **Overview** | Reframed for Plaited/HTML-first + two-phase usage + functional flow | Keep |
+| **Overview** | Reframed for Behavioral/HTML-first + two-phase usage + functional flow | Keep |
 | **Colors** | Prose; tokens live as `--color-*` in frontmatter | Keep |
 | **Typography** | Keep; `font-size`/`line-height` couple to scale-implied density via `calc`/`em` | Keep |
 | **Layout** | Reframe: density (from scale) × relationship-multipliers + regions, not grid + T-shirt scale | Keep (reframed) |
@@ -501,7 +501,7 @@ patterns + functional vocabulary dissolve).
 
 ## Substrate facts (gathered from the codebase)
 
-These were looked up rather than grilled — they are facts about how Plaited
+These were looked up rather than grilled — they are facts about how Behavioral
 actually works, not decisions.
 
 | Surface | What it does | Relevance |

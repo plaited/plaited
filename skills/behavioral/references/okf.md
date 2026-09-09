@@ -1,7 +1,7 @@
 # OKF — Open Knowledge Format
 
 Reference for an agent assisting an engineer in **authoring, validating, and
-maintaining an OKF knowledge bundle** using the Plaited framework's CLIs. OKF
+maintaining an OKF knowledge bundle** using the behavioral framework's CLIs. OKF
 (Open Knowledge Format, v0.2) is an open, human- and agent-friendly format for
 *knowledge*: a directory tree of markdown files with YAML frontmatter. The
 specification is external and self-contained — this reference does not restate
@@ -11,7 +11,7 @@ this repo so an agent can drive OKF without bespoke tooling.
 > **Source of truth:** the OKF spec at
 > `GoogleCloudPlatform/knowledge-catalog` (`okf/SPEC.md`) defines the format.
 > When this reference and the spec disagree, the spec wins. This document says
-> *how to use `plaited markdown` against OKF*, not what OKF is.
+> *how to use `behavioral markdown` against OKF*, not what OKF is.
 
 ## What OKF is, in one paragraph
 
@@ -24,12 +24,12 @@ history). Provenance (`sources`), trust (`generated`/`verified`), lifecycle
 frontmatter families. Conformance (spec §11) is three checks; everything else
 is producer discretion. The format is static and diffable by design.
 
-## The static half maps onto `plaited markdown`
+## The static half maps onto `behavioral markdown`
 
 OKF's conformance and authoring surface is exactly what
-[`plaited markdown`](../../markdown/SKILL.md) provides. No new CLI is needed.
+[`behavioral markdown`](../../markdown/SKILL.md) provides. No new CLI is needed.
 
-| OKF need | `plaited markdown` mode | Notes |
+| OKF need | `behavioral markdown` mode | Notes |
 |----------|-------------------------|-------|
 | Parse a concept's frontmatter (conformance §11.1, §11.2) | `frontmatter` | Returns the object; agent checks `type` non-empty |
 | Build the bundle's cross-link graph (spec §6) | `extract-links` | Local link targets with display text |
@@ -44,13 +44,13 @@ OKF §6.1 recommends **bundle-relative** links beginning with `/`:
 See the [customers table](/tables/customers.md) for the join key.
 ```
 
-`plaited markdown validate-links` treats a leading `/` as the filesystem root
+`behavioral markdown validate-links` treats a leading `/` as the filesystem root
 by default (standard `path.resolve` semantics). For OKF, pass
 `rootRelative: true` and `directory` = the bundle root, so `/tables/customers.md`
 resolves against the bundle:
 
 ```bash
-plaited markdown '{
+behavioral markdown '{
   "mode": "validate-links",
   "directory": "./bundle",
   "markdownBody": "See [customers](/tables/customers.md) and [gone](/tables/gone.md)",
@@ -70,11 +70,11 @@ A bundle is conformant with OKF v0.2 if:
 2. Every frontmatter block has a non-empty `type`.
 3. `index.md` / `log.md`, when present, follow §8 / §9 structure.
 
-An agent checks this with a tree walk plus `plaited markdown`:
+An agent checks this with a tree walk plus `behavioral markdown`:
 
 1. **Enumerate** the bundle with `Bun.Glob('**/*.md')` (or `find`), separating
    reserved filenames (`index.md`, `log.md`) from concept documents.
-2. **Parse** each concept with `plaited markdown '{"mode":"frontmatter",...}'`.
+2. **Parse** each concept with `behavioral markdown '{"mode":"frontmatter",...}'`.
    A `null` frontmatter result means no frontmatter block → fails §11.1.
 3. **Check `type`** on each parsed frontmatter: must be present and non-empty
    → §11.2. Unknown `type` values are conformant; consumers MUST tolerate them.
@@ -95,7 +95,7 @@ Conformance is a floor, not a ceiling.
 
 These are all optional; their absence is meaningful (an unverified concept is
 distinguishable from a verified one). When authoring or upgrading a concept,
-populate them per spec §5–§7. `plaited markdown frontmatter` returns the raw
+populate them per spec §5–§7. `behavioral markdown frontmatter` returns the raw
 object; the agent interprets these fields downstream.
 
 - **`type`** (required) — short string; consumers route/filter on it. Example
@@ -135,7 +135,7 @@ The full runtime protocol, attester ABI, and attestation lifecycle are
 What this means for an agent:
 
 - **Authoring** an Attested Computation concept is static: write the frontmatter
-  and the `# Computation` fence/file. `plaited markdown frontmatter` validates
+  and the `# Computation` fence/file. `behavioral markdown frontmatter` validates
   the metadata is parseable; the agent checks the §10 fields are present and
   internally consistent (`runtime` present, `parameters` typed, `executor` and
   `attester` `resource` paths resolve). Nothing runs.
@@ -155,7 +155,7 @@ What this means for an agent:
   needs attestation per run. Both exist.
 
 Do not try to run an Attested Computation by shelling out from
-`plaited markdown`. The CLI handles the static contract; the runtime is
+`behavioral markdown`. The CLI handles the static contract; the runtime is
 behavioral.
 
 ## Authoring loop
@@ -166,7 +166,7 @@ behavioral.
 2. **Write each concept** — frontmatter (`type` required; populate the
    families above as applicable) + markdown body. Use bundle-relative `/`
    links for cross-concept references (§6.1 recommendation).
-3. **Self-check with `plaited markdown`** —
+3. **Self-check with `behavioral markdown`** —
    `frontmatter` to confirm each concept parses and has `type`;
    `validate-links` with `rootRelative: true`, `directory` = bundle root, to
    surface broken cross-links.
@@ -190,7 +190,7 @@ them for the engineer, not to gate the bundle.
 
 ## See also
 
-- [Markdown](../../markdown/SKILL.md) — the `plaited markdown` CLI this reference drives,
+- [Markdown](../../markdown/SKILL.md) — the `behavioral markdown` CLI this reference drives,
   including the `rootRelative` flag for bundle-relative `/` links.
 - [Behavioral](./behavioral.md) — the runtime for the §10 attestation
   lifecycle that OKF deliberately leaves out of the bundle.

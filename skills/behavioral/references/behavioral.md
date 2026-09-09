@@ -1,6 +1,6 @@
 # Behavioral
 
-Reference for an agent assisting an engineer in wiring up the Plaited
+Reference for an agent assisting an engineer in wiring up the Behavioral
 behavioral-programming runtime — the event-coordination layer that b-threads
 run inside. A behavioral program coordinates b-threads via the super-step
 model: each step, pending threads' `request`s are collected as candidates,
@@ -9,12 +9,12 @@ candidate is selected, threads waiting/requesting/interrupted by it are
 resumed, and the next step runs. If no unblocked candidate exists the
 program halts until an external `trigger` arrives.
 
-## Public surface (import from `plaited`)
+## Public surface (import from `@behavioral/sh`)
 
 The runtime API is re-exported from the package root:
 
 ```ts
-import { behavioral } from 'plaited'
+import { behavioral } from '@behavioral/sh'
 import type {
   AddHandler,
   AddThread,
@@ -27,7 +27,7 @@ import type {
   UseAddThread,
   UseTrace,
   UseTrigger,
-} from 'plaited'
+} from '@behavioral/sh'
 ```
 
 `behavioral()` returns an immutable API object with five hooks. The deeper
@@ -150,7 +150,7 @@ refactors that move impl files.
 
 ```bash
 # Step 1 — resolve the specifier to its backing file (barrel)
-bun -e 'console.log(Bun.resolveSync("plaited", process.cwd()+"/"))'
+bun -e 'console.log(Bun.resolveSync("@behavioral/sh", process.cwd()+"/"))'
 # → /path/to/src/main.ts
 
 # Step 2 — read the barrel to find the backing module that exports your symbol
@@ -161,7 +161,7 @@ bun -e 'console.log(Bun.resolveSync("plaited", process.cwd()+"/"))'
 # Pick the module that declares the symbol you need (e.g. src/main/behavioral.ts)
 
 # Step 3 — enumerate the backing module's symbols with documentSymbol
-plaited typescript-lsp '{"mode":"execute","file":"<resolved-path>","requests":[{"method":"textDocument/documentSymbol","params":{"textDocument":{"uri":"file://<resolved-path>"}}}]}'
+behavioral typescript-lsp '{"mode":"execute","file":"<resolved-path>","requests":[{"method":"textDocument/documentSymbol","params":{"textDocument":{"uri":"file://<resolved-path>"}}}]}'
 ```
 
 `documentSymbol` returns each symbol in the backing module with its kind
@@ -172,7 +172,7 @@ from the output (no hardcoded line numbers).
 
 ```bash
 # Step 4 — fetch one symbol's TSDoc and type (use range.start from Step 3 as the position)
-plaited typescript-lsp '{"mode":"execute","file":"<resolved-path>","requests":[{"method":"textDocument/hover","params":{"textDocument":{"uri":"file://<resolved-path>"},"position":{"line":0,"character":0}}}]}'
+behavioral typescript-lsp '{"mode":"execute","file":"<resolved-path>","requests":[{"method":"textDocument/hover","params":{"textDocument":{"uri":"file://<resolved-path>"},"position":{"line":0,"character":0}}}]}'
 ```
 
 Returns the `/** ... */` block plus the resolved type signature — the deeper
@@ -195,7 +195,7 @@ mix up:
 
 ## See also
 
-- [`plaited typescript-lsp --help`](../../typescript-lsp/SKILL.md) — the LSP CLI
+- [`behavioral typescript-lsp --help`](../../typescript-lsp/SKILL.md) — the LSP CLI
   used by the going-deeper workflow.
 - [Frontier analysis](./frontier-analysis.md) — deadlock/livelock verification
   over the closed state graph of a behavioral program.
