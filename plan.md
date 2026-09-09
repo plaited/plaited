@@ -69,10 +69,11 @@ ingress + a plugin-shipped behavior surface.
   (1) fill the default plugin content (`plugin.json` `sh.behavioral` extension
   + `mcp.json` you-web); (2) author the real **core thread** in `threads/` (the
   loop's subject); (3) kernel primitives to run an arbitrary thread + capture
-  the trace/exhaust per run; (4) define the task-success metric (Q8/C, OPEN);
-  (5) install `@daytonaio/sdk` + provision OpenRouter. Then the autoresearch
-  loop script (Q8/A). Also still open: the public-event ingress registry
-  (Q1/B); Slice F (provision discovery primitives); the dev server (Q5).
+  the trace/exhaust per run; (4) define the task-success metric (Q8/C,
+  RESOLVED — Q8/F); (5) install `@daytonaio/sdk` + provision OpenRouter. Then
+  the autoresearch loop script (Q8/A). Also still open: the public-event
+  ingress registry (Q1/B); Slice F (provision discovery primitives); the dev
+  server (Q5).
 - **Known pre-existing test failures (not from recent work):** controller
   specs (Playwright browser-launch timeouts in this env). The
   `match-listener.spec.ts:596` `prefixItems` failure is **resolved** — it was
@@ -115,6 +116,12 @@ ingress + a plugin-shipped behavior surface.
   thread (today `runTurn` is hardcoded to `TURN_LOOP_THREAD`) and to capture
   the trace/exhaust per run; (4) define the second signal (Q8/C); (5) install
   `@daytonaio/sdk` + provision OpenRouter. Then the loop script.
+- Q8/F — **The task-success metric (Q8/C) is resolved.** Per-candidate
+  keep/discard gate: `frontier-verify` (safety — no deadlock/livelock) AND
+  `frontier-replay` over a reference trace reaches the target frontier
+  (usefulness). Both pure functions of thread data. A Harbor task eval is the
+  outer task-level signal (later). This is the autoresearch "fixed metric" —
+  the loop is a hill-climb gated on proof, not a scalar score.
 
 ### 2026-09-07 — Generative-UI dev server (no TUI); space semantics
 
@@ -525,12 +532,13 @@ repo and risks staleness.
 
 ## Open Questions
 
-- **The autoresearch loop's task-success metric (Q8/C).** `frontier-verify`
-  proves a candidate thread can't deadlock/livelock (safety), but not that it
-  accomplishes its task (usefulness). What is the fixed second signal the loop
-  optimizes? Candidates: the turn completes / a task eval passes / a
-  frontier-replay reaches a target state. This is the autoresearch "fixed
-  metric" — the real design decision before the loop script (Q8/E step 4).
+- **The autoresearch loop's task-success metric (Q8/C) — RESOLVED (2026-09-09).**
+  The per-candidate keep/discard gate is **`frontier-verify` (safety) AND
+  `frontier-replay` over a reference trace reaching the target frontier
+  (usefulness)** — both pure functions of thread data (deterministic, no model
+  in the gate), making the loop a true hill-climb. A Harbor task eval is the
+  outer task-level check (later, not blocking the per-candidate gate). See
+  Decision Log Q8/F.
 
 - **Discovery tool schema + kernel progressive-disclosure thread shape.** The
   three tools' mode/input schemas (`mcp-client` 7 modes, `skill-client` 3 modes,

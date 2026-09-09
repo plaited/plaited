@@ -1,34 +1,20 @@
-import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
-import { WebStandardStreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js'
-import type { ZodRawShapeCompat } from '@modelcontextprotocol/sdk/server/zod-compat.js'
-import { z } from 'zod'
+import type { FetchLike } from '@modelcontextprotocol/client'
+import { createMcpHandler, McpServer } from '@modelcontextprotocol/server'
+import * as z from 'zod'
 
 /**
- * Spin a real in-process MCP server over loopback HTTP and return its URL +
- * a close hook. Backs MCP client tool tests with a real SDK server + real
- * HTTP transport rather than mocking the client SDK.
+ * Create the test MCP server — registers the echo tool, greet prompt, and
+ * note resource used by the mcp-client test suite.
  */
-export const startMcpServer = async (): Promise<{ url: string; close: () => Promise<void> }> => {
-  // Sessionful mode: one transport instance serves many requests across
-  // sessions. The client opens one session and reuses it for every mode call.
-  const transport = new WebStandardStreamableHTTPServerTransport({
-    sessionIdGenerator: () => crypto.randomUUID(),
-    enableJsonResponse: true,
-  })
-
+const createTestServer = (): McpServer => {
   const server = new McpServer({ name: 'behavioral-test-server', version: '0.0.0' })
-
-  // MINIMAL: the SDK's registerTool/registerPrompt argsSchema accepts a Zod
-  // raw shape, but the installed zod (v4) optional schemas don't statically
-  // satisfy the SDK's AnySchema union under verbatimModuleSyntax. Cast the
-  // small shapes through the SDK's compat type — these are test fixtures, not
-  // framework code.
-  const echoShape = { message: z.string().optional() } as unknown as ZodRawShapeCompat
-  const greetShape = { name: z.string().optional() } as unknown as ZodRawShapeCompat
 
   server.registerTool(
     'echo',
-    { description: 'Echo back the message argument as text.', inputSchema: echoShape },
+    {
+      description: 'Echo back the message argument as text.',
+      inputSchema: z.object({ message: z.string().optional() }),
+    },
     async (args: { message?: string }) => ({
       content: [{ type: 'text', text: `echo:${args.message ?? ''}` }],
     }),
@@ -36,7 +22,10 @@ export const startMcpServer = async (): Promise<{ url: string; close: () => Prom
 
   server.registerPrompt(
     'greet',
-    { description: 'A greeting prompt.', argsSchema: greetShape },
+    {
+      description: 'A greeting prompt.',
+      argsSchema: z.object({ name: z.string().optional() }),
+    },
     async (args: { name?: string }) => ({
       messages: [{ role: 'user', content: { type: 'text', text: `hello ${args.name ?? 'world'}` } }],
     }),
@@ -51,19 +40,31 @@ export const startMcpServer = async (): Promise<{ url: string; close: () => Prom
     }),
   )
 
-  await server.connect(transport)
+  return server
+}
 
-  const httpServer = Bun.serve({
-    port: 0,
-    fetch: async (request) => transport.handleRequest(request),
-  })
+/**
+ * Spin an in-process MCP server (no port, no socket) and return a fetch
+ * function + close hook. Backs MCP client tool tests with a real SDK server
+ * + real handler.fetch transport rather than a loopback HTTP server.
+ *
+ * The returned `url` is a synthetic identifier for pool keying — the
+ * `fetch` function routes requests directly through the handler without
+ * touching the network.
+ */
+export const startMcpServer = async (): Promise<{
+  url: string
+  fetch: FetchLike
+  close: () => Promise<void>
+}> => {
+  const handler = createMcpHandler(() => createTestServer())
 
   return {
-    url: `http://localhost:${httpServer.port}/mcp`,
+    url: `in-process://mcp-${crypto.randomUUID()}`,
+    fetch: (input: string | URL, init?: RequestInit) => handler.fetch(new Request(input, init)),
     close: async () => {
-      httpServer.stop(true)
       try {
-        await server.close()
+        await handler.close()
       } catch {
         /* best-effort */
       }

@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'bun:test'
+import type { FetchLike } from '@modelcontextprotocol/client'
 import { createConnectionPool } from '../../kernel/kernel.ts'
 import { createMcpClientTool, McpClientInputSchema, McpClientOutputSchema } from '../mcp-client.ts'
 import { ajv } from '../use-tool.ts'
@@ -62,8 +63,10 @@ describe('mcp-client tool — schema contract (RED)', () => {
 describe('mcp-client tool — seven modes through the shared pool', () => {
   test('round-trips all seven modes against a real in-process MCP server', async () => {
     const pool = createConnectionPool()
-    const mcpClient = createMcpClientTool({ getClient: pool.getClient })
-    const { url, close } = await startMcpServer()
+    const { url, fetch, close } = await startMcpServer()
+    const wrappedGetClient: typeof pool.getClient = (u, opts) =>
+      pool.getClient(u, { ...opts, fetch: fetch as FetchLike })
+    const mcpClient = createMcpClientTool({ getClient: wrappedGetClient })
     try {
       // list-tools
       const tools = (await mcpClient({ mode: 'list-tools', url })) as { mode: string; result: { name: string }[] }
@@ -135,8 +138,10 @@ describe('mcp-client tool — seven modes through the shared pool', () => {
 
   test('reuses a single pooled connection across multiple calls', async () => {
     const pool = createConnectionPool()
-    const mcpClient = createMcpClientTool({ getClient: pool.getClient })
-    const { url, close } = await startMcpServer()
+    const { url, fetch, close } = await startMcpServer()
+    const wrappedGetClient: typeof pool.getClient = (u, opts) =>
+      pool.getClient(u, { ...opts, fetch: fetch as FetchLike })
+    const mcpClient = createMcpClientTool({ getClient: wrappedGetClient })
     try {
       expect(pool.size()).toBe(0)
       await mcpClient({ mode: 'list-tools', url })
@@ -154,9 +159,18 @@ describe('mcp-client tool — seven modes through the shared pool', () => {
 
   test('separate urls get separate pooled connections', async () => {
     const pool = createConnectionPool()
-    const mcpClient = createMcpClientTool({ getClient: pool.getClient })
     const a = await startMcpServer()
     const b = await startMcpServer()
+    const wrap =
+      (fetch: FetchLike): typeof pool.getClient =>
+      (u, opts) =>
+        pool.getClient(u, { ...opts, fetch })
+    const mcpClient = createMcpClientTool({
+      getClient: (u, opts) => {
+        if (u === a.url) return wrap(a.fetch)(u, opts)
+        return wrap(b.fetch)(u, opts)
+      },
+    })
     try {
       await mcpClient({ mode: 'list-tools', url: a.url })
       await mcpClient({ mode: 'list-tools', url: b.url })

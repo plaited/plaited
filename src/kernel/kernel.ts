@@ -14,7 +14,12 @@
  * @packageDocumentation
  */
 
-import { Client, type OAuthClientProvider, StreamableHTTPClientTransport } from '@modelcontextprotocol/client'
+import {
+  Client,
+  type FetchLike,
+  type OAuthClientProvider,
+  StreamableHTTPClientTransport,
+} from '@modelcontextprotocol/client'
 import { TRACE_MESSAGE_KINDS } from '../behavioral/behavioral.constants.ts'
 import { behavioral } from '../behavioral/behavioral.ts'
 import type { BPEvent, Disconnect } from '../behavioral/behavioral.types.ts'
@@ -35,6 +40,12 @@ export type AdapterSessionOptions = {
   headers?: Record<string, string>
   authProvider?: OAuthClientProvider
   timeoutMs?: number
+  /**
+   * Custom fetch implementation for the transport. When provided (e.g. by
+   * test fixtures using an in-process handler), no real network socket is
+   * opened — requests route directly through the handler's fetch method.
+   */
+  fetch?: FetchLike
 }
 
 type PoolEntry = {
@@ -92,6 +103,7 @@ export const createConnectionPool = (): ConnectionPool => {
     const transport = new StreamableHTTPClientTransport(new URL(url), {
       requestInit: options.headers ? { headers: options.headers } : undefined,
       authProvider: options.authProvider,
+      ...(options.fetch ? { fetch: options.fetch } : {}),
     })
     const connectPromise = client.connect(transport).then(() => client)
     pool.set(url, { client, connectPromise })
@@ -163,6 +175,9 @@ export type KernelOptions = {
   provider?: string
   /** Model id routed to the provisioned model tools. */
   modelId?: string
+  /** Custom fetch for the MCP transport — test fixtures inject an in-process
+   *  handler.fetch so no real network socket is opened. */
+  poolFetch?: FetchLike
 }
 
 /** Kernel engine surface: shared state + provisioned tools + lifecycle + turn. */
@@ -327,7 +342,11 @@ const runTurnImpl = ({
  */
 export const createKernel = (options: KernelOptions = {}): Kernel => {
   const pool = createConnectionPool()
-  const mcpClient = createMcpClientTool({ getClient: pool.getClient })
+  const poolFetch = options.poolFetch
+  const mcpClient = createMcpClientTool({
+    getClient: (url, sessionOpts) =>
+      pool.getClient(url, { ...sessionOpts, ...(poolFetch ? { fetch: poolFetch } : {}) }),
+  })
   const modelTools = options.modelTools ?? createScriptedModelTools({ script: DEFAULT_SCRIPTED_RESPONSE })
   const dispatch = createDispatchBridge({
     tools: options.dispatchTools ?? { read: read as unknown as DispatchableTool },
