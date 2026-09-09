@@ -161,5 +161,5 @@ mix up:
 
 ## See also
 
-- [`behavioral typescript-lsp --help`](../../typescript-lsp/SKILL.md) — the LSP CLI
+- `behavioral typescript-lsp --help` — the LSP CLI
   used by the going-deeper workflow.

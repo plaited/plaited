@@ -195,7 +195,7 @@ mix up:
 
 ## See also
 
-- [`behavioral typescript-lsp --help`](../../typescript-lsp/SKILL.md) — the LSP CLI
+- `behavioral typescript-lsp --help` — the LSP CLI
   used by the going-deeper workflow.
 - [Frontier analysis](./frontier-analysis.md) — deadlock/livelock verification
   over the closed state graph of a behavioral program.

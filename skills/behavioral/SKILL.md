@@ -37,9 +37,9 @@ in the behavioral repo itself. Specifically:
   on Structural IA, CSS custom properties, and `@scope`/`:host()`/`::part()`
   modes.
 
-For the `behavioral` CLI tools (`markdown`, `git-context`, `mcp-client`,
-`typescript-lsp`), use their standalone skills — they are not
-framework-specific and ship with the CLI itself.
+The `behavioral` CLI also ships `markdown`, `git-context`, and `typescript-lsp`
+commands (registered in `bin/behavioral.ts`). They are general-purpose tools,
+not framework-specific — run `behavioral <tool> --help` for usage.
 
 ## Route table
 
@@ -57,19 +57,20 @@ only when the task calls for it.
 | OKF knowledge bundles — authoring, validation, §11 conformance, attested computations | [`references/okf.md`](./references/okf.md) |
 | Design-system spec — DESIGN.md derivative, Structural IA, custom properties, `@scope`/`:host()`/`::part()`, scale + affordances/feedback (in-progress consensus surface) | [`references/design-spec.md`](./references/design-spec.md) |
 
-## Related standalone skills
+## CLI tools shipped by behavioral
 
-These are generic `behavioral` CLI tools, not framework-specific. Use their
-own skills directly:
+These commands are registered in `bin/behavioral.ts` and are not specific to
+the behavioral runtime. Use `behavioral <tool> --help` for full usage:
 
-- **`markdown`** — `behavioral markdown` (extract-links, validate-links with
-  `rootRelative`, frontmatter).
+- **`markdown`** — `behavioral markdown` (extract-links, validate-links,
+  frontmatter). Used by the OKF reference for bundle-relative link validation.
 - **`git-context`** — `behavioral git-context` (structured Git context before
   editing/committing).
-- **`mcp-client`** — `behavioral mcp-client` (discovering and calling remote
-  MCP servers, authoring MCP-backed skills).
 - **`typescript-lsp`** — `behavioral typescript-lsp` (type-aware codebase
-  analysis via LSP — hover, references, symbols).
+  analysis via LSP — hover, references, symbols). Used by the going-deeper
+  workflow in several references below.
+- **`mcp-client`** — `behavioral mcp-client` (discovering and calling remote
+  MCP servers).
 
 ## Repo conventions
 

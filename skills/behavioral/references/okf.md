@@ -27,7 +27,7 @@ is producer discretion. The format is static and diffable by design.
 ## The static half maps onto `behavioral markdown`
 
 OKF's conformance and authoring surface is exactly what
-[`behavioral markdown`](../../markdown/SKILL.md) provides. No new CLI is needed.
+`behavioral markdown` provides. No new CLI is needed.
 
 | OKF need | `behavioral markdown` mode | Notes |
 |----------|-------------------------|-------|
@@ -60,7 +60,7 @@ behavioral markdown '{
 
 Output preserves the original `/tables/customers.md` text in both `present` and
 `missing`, so an engineer can locate the link in the source verbatim. See
-[Markdown](../../markdown/SKILL.md) for the full semantics of the flag.
+[Markdown] for the full semantics of the flag.
 
 ## Conformance check (spec §11) as an agent procedure
 
@@ -190,7 +190,7 @@ them for the engineer, not to gate the bundle.
 
 ## See also
 
-- [Markdown](../../markdown/SKILL.md) — the `behavioral markdown` CLI this reference drives,
+- `behavioral markdown` — the CLI this reference drives,
   including the `rootRelative` flag for bundle-relative `/` links.
 - [Behavioral](./behavioral.md) — the runtime for the §10 attestation
   lifecycle that OKF deliberately leaves out of the bundle.
