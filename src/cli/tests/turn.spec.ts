@@ -104,7 +104,7 @@ describe('behavioral turn — CLI seam (Harbor hook)', () => {
     expect(code).toBe(2)
   })
 
-  test('exits 2 on a Zod validation failure (missing prompt)', async () => {
+  test('exits 2 on a AJV validation failure (missing prompt)', async () => {
     const { code } = await runTurnCli('{"space":"s"}')
     expect(code).toBe(2)
   })

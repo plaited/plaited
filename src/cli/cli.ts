@@ -9,7 +9,15 @@
  */
 
 import { resolve } from 'node:path'
-import * as z from 'zod'
+import type { JSONSchemaType, ValidateFunction } from 'ajv'
+import Ajv2020 from 'ajv/dist/2020'
+
+/**
+ * AJV instance for CLI validation — `useDefaults: true` applies JSON Schema
+ * `default` values so optional fields with defaults behave like Zod's
+ * `.default(...)`. Otherwise identical to the shared tools AJV.
+ */
+const cliAjv = new Ajv2020({ strict: true, validateSchema: true, strictRequired: false, useDefaults: true })
 
 /**
  * Parsed CLI flags shared by JSON-in / JSON-out commands.
@@ -31,32 +39,33 @@ export type CliFlags = {
  *
  * @public
  */
+
 export type CliOptions = {
   name: string
-  outputSchema: z.ZodType
+  outputSchema: object
   help: string
 }
 
 /**
  * Parsed CLI request data returned by `parseCliRequest`.
  *
- * @template TSchema - Input schema used to validate the request body.
+ * @template T - Input type validated by the JSON Schema.
  * @property input - Parsed input payload.
  * @property flags - Parsed CLI flags.
  *
  * @public
  */
-export type ParsedCliRequest<TSchema extends z.ZodType> = {
-  input: z.infer<TSchema>
+export type ParsedCliRequest<T> = {
+  input: T
   flags: CliFlags
 }
 
-type CliHandlerConfig<TInputSchema extends z.ZodType, TOutput, TName extends string = string> = {
+type CliHandlerConfig<TInput, TOutput, TName extends string = string> = {
   name: TName
-  inputSchema: TInputSchema
-  outputSchema: z.ZodType<TOutput>
+  inputSchema: JSONSchemaType<TInput>
+  outputSchema: JSONSchemaType<TOutput>
   help: string
-  run: (input: z.infer<TInputSchema>, flags: CliFlags) => Promise<TOutput> | TOutput
+  run: (input: TInput, flags: CliFlags) => Promise<TOutput> | TOutput
 }
 
 type CliRouterConfig = {
@@ -127,26 +136,26 @@ const parseJsonInput = (rawInput: string): unknown => {
   }
 }
 
-const printSchema = (schema: z.ZodType): void => {
-  console.log(JSON.stringify(z.toJSONSchema(schema), null, 2))
+const printSchema = (schema: unknown): void => {
+  console.log(JSON.stringify(schema, null, 2))
 }
 
 /**
  * Parses and validates a JSON CLI request with shared flag handling.
  *
- * @template TSchema - Input schema used to validate the request payload.
+ * @template T - Input type validated by the JSON Schema.
  * @param args - Raw command-line arguments after the command name.
- * @param schema - Zod schema used to validate the input payload.
+ * @param schema - JSON Schema used to validate the input payload.
  * @param options - Command metadata used for usage text and output validation.
  * @returns Parsed request input plus shared CLI flags.
  *
  * @public
  */
-export const parseCliRequest = async <TSchema extends z.ZodType>(
+export const parseCliRequest = async <T>(
   args: string[],
-  schema: TSchema,
+  schema: JSONSchemaType<T>,
   options: CliOptions,
-): Promise<ParsedCliRequest<TSchema>> => {
+): Promise<ParsedCliRequest<T>> => {
   if (args.includes('--help') || args.includes('-h')) {
     console.error(buildUsage(options))
     process.exit(0)
@@ -168,14 +177,15 @@ export const parseCliRequest = async <TSchema extends z.ZodType>(
     process.exit(2)
   }
 
-  const parsed = schema.safeParse(parseJsonInput(rawInput))
-  if (!parsed.success) {
-    console.error(JSON.stringify(parsed.error.issues, null, 2))
+  const validate = cliAjv.compile(schema) as ValidateFunction<T>
+  const data = parseJsonInput(rawInput)
+  if (!validate(data)) {
+    console.error(JSON.stringify(validate.errors, null, 2))
     process.exit(2)
   }
 
   return {
-    input: parsed.data,
+    input: data,
     flags: {
       dryRun: args.includes('--dry-run'),
     },
@@ -185,19 +195,15 @@ export const parseCliRequest = async <TSchema extends z.ZodType>(
 /**
  * Parses and validates a JSON CLI request, returning only the input payload.
  *
- * @template TSchema - Input schema used to validate the request payload.
+ * @template T - Input type validated by the JSON Schema.
  * @param args - Raw command-line arguments after the command name.
- * @param schema - Zod schema used to validate the input payload.
+ * @param schema - JSON Schema used to validate the input payload.
  * @param options - Command metadata used for usage text and output validation.
  * @returns Parsed CLI input.
  *
  * @public
  */
-export const parseCli = async <TSchema extends z.ZodType>(
-  args: string[],
-  schema: TSchema,
-  options: CliOptions,
-): Promise<z.infer<TSchema>> => {
+export const parseCli = async <T>(args: string[], schema: JSONSchemaType<T>, options: CliOptions): Promise<T> => {
   const { input } = await parseCliRequest(args, schema, options)
   return input
 }
@@ -205,20 +211,21 @@ export const parseCli = async <TSchema extends z.ZodType>(
 /**
  * Creates a JSON-in / JSON-out CLI handler with shared parsing and validation.
  *
- * @template TInputSchema - Input schema type for the command.
+ * @template TInput - Input type for the command.
  * @template TOutput - Output type produced by the command handler.
+ * @template TName - Command name string literal.
  * @param config - Command metadata, validation schemas, and execution callback.
  * @returns CLI handler that parses input, validates output, and prints JSON.
  *
  * @public
  */
-export const makeCli = <TInputSchema extends z.ZodType, TOutput, TName extends string>({
+export const makeCli = <TInput, TOutput, TName extends string>({
   name,
   inputSchema,
   outputSchema,
   help,
   run,
-}: CliHandlerConfig<TInputSchema, TOutput, TName>): { [K in TName]: (args: string[]) => Promise<void> } =>
+}: CliHandlerConfig<TInput, TOutput, TName>): { [K in TName]: (args: string[]) => Promise<void> } =>
   ({
     [name]: async (args: string[]): Promise<void> => {
       const { input, flags } = await parseCliRequest(args, inputSchema, {
@@ -244,13 +251,13 @@ export const makeCli = <TInputSchema extends z.ZodType, TOutput, TName extends s
 
       const result = (await run(input, flags)) as TOutput
 
-      const parsed = outputSchema.safeParse(result)
-      if (!parsed.success) {
-        console.error(JSON.stringify(parsed.error.issues, null, 2))
+      const validateOutput = cliAjv.compile(outputSchema) as ValidateFunction<TOutput>
+      if (!validateOutput(result)) {
+        console.error(JSON.stringify(validateOutput.errors, null, 2))
         process.exit(1)
       }
 
-      console.log(JSON.stringify(parsed.data, null, 2))
+      console.log(JSON.stringify(result, null, 2))
     },
   }) as { [K in TName]: (args: string[]) => Promise<void> }
 
@@ -262,18 +269,18 @@ export const makeCli = <TInputSchema extends z.ZodType, TOutput, TName extends s
  * Parses `process.argv`, handles `--help`, `--dry-run`, `--schema`, and runs the handler.
  * Uses the script filename as the display name in usage text.
  *
- * @template TInputSchema - Input schema type for the script.
+ * @template TInput - Input type for the script.
  * @template TOutput - Output type produced by the script handler.
  * @param config - Input schema, output schema, help text, and run handler.
  *
  * @public
  */
-export const defineScript = async <TInputSchema extends z.ZodType, TOutput>({
+export const defineScript = async <TInput, TOutput>({
   inputSchema,
   outputSchema,
   help,
   run,
-}: Omit<CliHandlerConfig<TInputSchema, TOutput>, 'name'>): Promise<void> => {
+}: Omit<CliHandlerConfig<TInput, TOutput>, 'name'>): Promise<void> => {
   const scriptName = process.argv[1]?.split('/').pop()?.split('.').shift() ?? 'script'
   const args = process.argv.slice(2)
 
@@ -300,13 +307,13 @@ export const defineScript = async <TInputSchema extends z.ZodType, TOutput>({
 
   const result = (await run(input, flags)) as TOutput
 
-  const parsed = outputSchema.safeParse(result)
-  if (!parsed.success) {
-    console.error(JSON.stringify(parsed.error.issues, null, 2))
+  const validateOutput = cliAjv.compile(outputSchema) as ValidateFunction<TOutput>
+  if (!validateOutput(result)) {
+    console.error(JSON.stringify(validateOutput.errors, null, 2))
     process.exit(1)
   }
 
-  console.log(JSON.stringify(parsed.data, null, 2))
+  console.log(JSON.stringify(result, null, 2))
 }
 
 export const makeCliRouter =

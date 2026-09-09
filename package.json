@@ -65,8 +65,6 @@
   "dependencies": {
     "@modelcontextprotocol/client": "^2.0.0",
     "@modelcontextprotocol/sdk": "^1.29.0",
-    "@modelcontextprotocol/server": "^2.0.0",
-    "zod": "4.5.4",
     "ajv": "8.20.0"
   },
   "devDependencies": {
@@ -74,6 +72,7 @@
     "@commitlint/cli": "21.2.2",
     "@commitlint/config-conventional": "21.2.2",
     "@earendil-works/pi-coding-agent": "0.82.1",
+    "@modelcontextprotocol/server": "^2.0.0",
     "@playwright/cli": "^0.1.17",
     "@types/bun": "^1.4.1",
     "@webref/css": "^8.7.4",
@@ -82,6 +81,7 @@
     "cz-conventional-changelog": "3.3.0",
     "format-package": "8.0.0",
     "lint-staged": "17.4.1",
-    "typescript": "7.0.2"
+    "typescript": "7.0.2",
+    "zod": "4.5.4"
   }
 }

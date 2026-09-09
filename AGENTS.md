@@ -177,9 +177,10 @@ and let `useTool` compile both with the shared `ajv` instance (`src/tools/use-to
 structural schemas (`oneOf` branches, strict `additionalProperties: false` at every level) so
 constraints are explicit and JSON-schema replay contracts stay aligned. Do not hand-maintain a
 parallel Zod shape alongside an AJV one.
-**CLI schema reflection uses Zod.** The `makeCliRouter`/`parseCli` framework in `src/cli/cli.ts`
-reflects command schemas via `--schema input|output` and uses Zod for that reflection only — it is
-the one Zod surface; the tools surface above is AJV.
+**CLI schema reflection uses AJV.** The `makeCliRouter`/`parseCli` framework in `src/cli/cli.ts`
+reflects command schemas via `--schema input|output` — schemas are `JSONSchemaType<T>` objects,
+so reflection is `JSON.stringify(schema)`. The CLI AJV instance (`useDefaults: true`) matches
+Zod's `.default()` behavior; otherwise it is identical to the shared tools AJV.
 **Arrow functions** — `const fn = () =>` over `function fn()`.
 **Object params >2 args** — `fn({ a, b, c }: { ... })`.
 **Private fields** — `#field` (ES2022) not `private field`.

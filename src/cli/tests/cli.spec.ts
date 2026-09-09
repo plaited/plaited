@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 import * as path from 'node:path'
-import * as z from 'zod'
+import type { JSONSchemaType } from 'ajv'
 import { parseCli, parseCliRequest } from '../cli.ts'
 
 // Absolute path to src/cli.ts for bun -e subprocess imports. Bun resolves
@@ -8,12 +8,23 @@ import { parseCli, parseCliRequest } from '../cli.ts'
 // the process cwd, so the eval code must import via an absolute path.
 const cliPath = path.resolve(import.meta.dir, '../cli.ts')
 
-const TestSchema = z.object({
-  name: z.string(),
-  value: z.number(),
-})
+const TestSchema = {
+  type: 'object',
+  properties: {
+    name: { type: 'string' },
+    value: { type: 'number' },
+  },
+  required: ['name', 'value'],
+  additionalProperties: false,
+} as unknown as JSONSchemaType<{ name: string; value: number }>
 
-const testOpts = { name: 'test-tool', outputSchema: z.object({}), help: 'test command' }
+const EmptySchema = {
+  type: 'object',
+  properties: {},
+  additionalProperties: false,
+} as unknown as JSONSchemaType<unknown>
+
+const testOpts = { name: 'test-tool', outputSchema: EmptySchema, help: 'test command' }
 
 describe('Router-level flags (subprocess)', () => {
   test('--version prints the version and exits 0', async () => {
@@ -91,7 +102,7 @@ describe('parseCliRequest', () => {
   test('captures the dry-run flag alongside parsed input', async () => {
     const result = await parseCliRequest(['{"name":"test","value":42}', '--dry-run'], TestSchema, {
       name: 'test-tool',
-      outputSchema: z.object({}),
+      outputSchema: EmptySchema,
       help: 'test',
     })
 
@@ -106,7 +117,7 @@ describe('CLI parsing (subprocess)', () => {
       [
         'bun',
         '-e',
-        `import { parseCli } from '${cliPath}'; import * as z from 'zod'; await parseCli(['--help'], z.object({}), { name: 'test', outputSchema: z.object({}), help: 'test' })`,
+        `import { parseCli } from '${cliPath}'; await parseCli(['--help'], { type: 'object', properties: {}, additionalProperties: false } as any, { name: 'test', outputSchema: { type: 'object', properties: {}, additionalProperties: false } as any, help: 'test' })`,
       ],
       { stdout: 'pipe', stderr: 'pipe' },
     )
@@ -119,7 +130,7 @@ describe('CLI parsing (subprocess)', () => {
       [
         'bun',
         '-e',
-        `import { parseCli } from '${cliPath}'; import * as z from 'zod'; await parseCli(['--schema', 'input'], z.object({ name: z.string() }), { name: 'test', outputSchema: z.object({}), help: 'test' })`,
+        `import { parseCli } from '${cliPath}'; await parseCli(['--schema', 'input'], { type: 'object', properties: { name: { type: 'string' } }, required: ['name'], additionalProperties: false } as any, { name: 'test', outputSchema: { type: 'object', properties: {}, additionalProperties: false } as any, help: 'test' })`,
       ],
       { stdout: 'pipe', stderr: 'pipe' },
     )
@@ -136,7 +147,7 @@ describe('CLI parsing (subprocess)', () => {
       [
         'bun',
         '-e',
-        `import { parseCli } from '${cliPath}'; import * as z from 'zod'; await parseCli(['--schema', 'output'], z.object({ input: z.string() }), { name: 'test', outputSchema: z.object({ result: z.number() }), help: 'test' })`,
+        `import { parseCli } from '${cliPath}'; await parseCli(['--schema', 'output'], { type: 'object', properties: { input: { type: 'string' } }, required: ['input'], additionalProperties: false } as any, { name: 'test', outputSchema: { type: 'object', properties: { result: { type: 'number' } }, required: ['result'], additionalProperties: false } as any, help: 'test' })`,
       ],
       { stdout: 'pipe', stderr: 'pipe' },
     )
@@ -152,7 +163,7 @@ describe('CLI parsing (subprocess)', () => {
       [
         'bun',
         '-e',
-        `import { parseCli } from '${cliPath}'; import * as z from 'zod'; await parseCli(['--schema', 'bad'], z.object({}), { name: 'test', outputSchema: z.object({}), help: 'test' })`,
+        `import { parseCli } from '${cliPath}'; await parseCli(['--schema', 'bad'], { type: 'object', properties: {}, additionalProperties: false } as any, { name: 'test', outputSchema: { type: 'object', properties: {}, additionalProperties: false } as any, help: 'test' })`,
       ],
       { stdout: 'pipe', stderr: 'pipe' },
     )
@@ -165,7 +176,7 @@ describe('CLI parsing (subprocess)', () => {
       [
         'bun',
         '-e',
-        `import { parseCli } from '${cliPath}'; import * as z from 'zod'; await parseCli(['not-json'], z.object({}), { name: 'test', outputSchema: z.object({}), help: 'test' })`,
+        `import { parseCli } from '${cliPath}'; await parseCli(['not-json'], { type: 'object', properties: {}, additionalProperties: false } as any, { name: 'test', outputSchema: { type: 'object', properties: {}, additionalProperties: false } as any, help: 'test' })`,
       ],
       { stdout: 'pipe', stderr: 'pipe' },
     )
@@ -173,12 +184,12 @@ describe('CLI parsing (subprocess)', () => {
     expect(await proc.exited).toBe(2)
   })
 
-  test('exits 2 on Zod validation failure', async () => {
+  test('exits 2 on AJV validation failure', async () => {
     const proc = Bun.spawn(
       [
         'bun',
         '-e',
-        `import { parseCli } from '${cliPath}'; import * as z from 'zod'; await parseCli(['{"bad":true}'], z.object({ name: z.string() }), { name: 'test', outputSchema: z.object({}), help: 'test' })`,
+        `import { parseCli } from '${cliPath}'; await parseCli(['{"bad":true}'], { type: 'object', properties: { name: { type: 'string' } }, required: ['name'], additionalProperties: false } as any, { name: 'test', outputSchema: { type: 'object', properties: {}, additionalProperties: false } as any, help: 'test' })`,
       ],
       { stdout: 'pipe', stderr: 'pipe' },
     )
@@ -191,7 +202,7 @@ describe('CLI parsing (subprocess)', () => {
       [
         'bun',
         '-e',
-        `import { parseCli } from '${cliPath}'; import * as z from 'zod'; await parseCli([], z.object({}), { name: 'test', outputSchema: z.object({}), help: 'test' })`,
+        `import { parseCli } from '${cliPath}'; await parseCli([], { type: 'object', properties: {}, additionalProperties: false } as any, { name: 'test', outputSchema: { type: 'object', properties: {}, additionalProperties: false } as any, help: 'test' })`,
       ],
       { stdout: 'pipe', stderr: 'pipe' },
     )
@@ -206,11 +217,11 @@ describe('makeCli', () => {
       [
         'bun',
         '-e',
-        `import { makeCli } from '${cliPath}'; import * as z from 'zod';
+        `import { makeCli } from '${cliPath}';
         const cli = makeCli({
           name: 'test',
-          inputSchema: z.object({ value: z.string() }),
-          outputSchema: z.object({ echoed: z.string() }),
+          inputSchema: { type: 'object', properties: { value: { type: 'string' } }, required: ['value'], additionalProperties: false } as any,
+          outputSchema: { type: 'object', properties: { echoed: { type: 'string' } }, required: ['echoed'], additionalProperties: false } as any,
           help: 'test command',
           run: async (input) => ({ echoed: input.value }),
         });
@@ -229,11 +240,11 @@ describe('makeCli', () => {
       [
         'bun',
         '-e',
-        `import { makeCli } from '${cliPath}'; import * as z from 'zod';
+        `import { makeCli } from '${cliPath}';
         const cli = makeCli({
           name: 'test',
-          inputSchema: z.object({ value: z.string() }),
-          outputSchema: z.object({ echoed: z.string() }),
+          inputSchema: { type: 'object', properties: { value: { type: 'string' } }, required: ['value'], additionalProperties: false } as any,
+          outputSchema: { type: 'object', properties: { echoed: { type: 'string' } }, required: ['echoed'], additionalProperties: false } as any,
           help: 'test command',
           run: async () => { throw new Error('should not run') },
         });
@@ -256,11 +267,11 @@ describe('makeCli', () => {
       [
         'bun',
         '-e',
-        `import { makeCli } from '${cliPath}'; import * as z from 'zod';
+        `import { makeCli } from '${cliPath}';
         const cli = makeCli({
           name: 'test',
-          inputSchema: z.object({ value: z.string() }),
-          outputSchema: z.object({ echoed: z.string() }),
+          inputSchema: { type: 'object', properties: { value: { type: 'string' } }, required: ['value'], additionalProperties: false } as any,
+          outputSchema: { type: 'object', properties: { echoed: { type: 'string' } }, required: ['echoed'], additionalProperties: false } as any,
           help: 'test command',
           run: async (input) => input,
         });
@@ -279,11 +290,11 @@ describe('makeCli', () => {
       [
         'bun',
         '-e',
-        `import { makeCli } from '${cliPath}'; import * as z from 'zod';
+        `import { makeCli } from '${cliPath}';
         const cli = makeCli({
           name: 'test',
-          inputSchema: z.object({ value: z.string() }),
-          outputSchema: z.object({ echoed: z.string() }),
+          inputSchema: { type: 'object', properties: { value: { type: 'string' } }, required: ['value'], additionalProperties: false } as any,
+          outputSchema: { type: 'object', properties: { echoed: { type: 'string' } }, required: ['echoed'], additionalProperties: false } as any,
           help: 'test command',
           run: async (input) => input,
         });

@@ -11,38 +11,98 @@
  * @internal
  */
 
-import * as z from 'zod'
+import type { JSONSchemaType } from 'ajv'
 import { createKernel } from '../kernel/kernel.ts'
 import { makeCli } from './cli.ts'
 
-const TurnCliInputSchema = z
-  .object({
-    space: z.string().min(1).describe('space/scope label for the turn'),
-    prompt: z.string().min(1).describe('the user prompt to run the turn against'),
-  })
-  .strict()
-  .describe('Turn CLI input — run one scripted model turn from a prompt to a JSON result')
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
 
-const UsageSchema = z
-  .object({
-    input_tokens: z.number().int().nonnegative(),
-    output_tokens: z.number().int().nonnegative(),
-    total_tokens: z.number().int().nonnegative(),
-  })
-  .describe('Token usage from the last model-respond round')
+type TurnCliInput = {
+  space: string
+  prompt: string
+}
 
-const TurnCliOutputSchema = z
-  .object({
-    ok: z.literal(true).describe('the turn executed'),
-    space: z.string().describe('the space the turn ran in'),
-    status: z.enum(['completed', 'incomplete', 'failed']).describe('turn outcome'),
-    items: z
-      .array(z.record(z.string(), z.unknown()))
-      .describe('full trajectory — user prompt + model outputs + tool-call outputs'),
-    iterations: z.number().int().nonnegative().describe('number of model-respond rounds'),
-    usage: UsageSchema.optional().describe('token usage from the last round, when reported'),
-  })
-  .describe('Turn CLI output — the turn result, deterministic against the scripted model')
+type Usage = {
+  input_tokens: number
+  output_tokens: number
+  total_tokens: number
+}
+
+type TurnCliOutput = {
+  ok: true
+  space: string
+  status: 'completed' | 'incomplete' | 'failed'
+  items: Record<string, unknown>[]
+  iterations: number
+  usage?: Usage
+}
+
+// ---------------------------------------------------------------------------
+// JSON Schemas (AJV — matching useTool's convention)
+// ---------------------------------------------------------------------------
+
+const TurnCliInputSchema = {
+  type: 'object',
+  properties: {
+    space: { type: 'string', minLength: 1, description: 'space/scope label for the turn' },
+    prompt: {
+      type: 'string',
+      minLength: 1,
+      description: 'the user prompt to run the turn against',
+    },
+  },
+  required: ['space', 'prompt'],
+  additionalProperties: false,
+  description: 'Turn CLI input — run one scripted model turn from a prompt to a JSON result',
+} as unknown as JSONSchemaType<TurnCliInput>
+
+const UsageSchema = {
+  type: 'object',
+  properties: {
+    input_tokens: { type: 'integer', minimum: 0 },
+    output_tokens: { type: 'integer', minimum: 0 },
+    total_tokens: { type: 'integer', minimum: 0 },
+  },
+  required: ['input_tokens', 'output_tokens', 'total_tokens'],
+  additionalProperties: false,
+  description: 'Token usage from the last model-respond round',
+} as unknown as JSONSchemaType<Usage>
+
+const TurnCliOutputSchema = {
+  type: 'object',
+  properties: {
+    ok: { type: 'boolean', const: true, description: 'the turn executed' },
+    space: { type: 'string', description: 'the space the turn ran in' },
+    status: {
+      type: 'string',
+      enum: ['completed', 'incomplete', 'failed'],
+      description: 'turn outcome',
+    },
+    items: {
+      type: 'array',
+      items: {
+        type: 'object',
+        additionalProperties: true,
+      },
+      description: 'full trajectory — user prompt + model outputs + tool-call outputs',
+    },
+    iterations: {
+      type: 'integer',
+      minimum: 0,
+      description: 'number of model-respond rounds',
+    },
+    usage: {
+      ...UsageSchema,
+      nullable: true,
+      description: 'token usage from the last round, when reported',
+    },
+  },
+  required: ['ok', 'space', 'status', 'items', 'iterations'],
+  additionalProperties: false,
+  description: 'Turn CLI output — the turn result, deterministic against the scripted model',
+} as unknown as JSONSchemaType<TurnCliOutput>
 
 export const turnCli = makeCli({
   name: 'turn',

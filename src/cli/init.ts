@@ -17,7 +17,7 @@
  */
 
 import * as path from 'node:path'
-import * as z from 'zod'
+import type { JSONSchemaType } from 'ajv'
 import { makeCli } from './cli.ts'
 
 // ---------------------------------------------------------------------------
@@ -27,43 +27,92 @@ import { makeCli } from './cli.ts'
 const PLUGIN_SOURCE_DIR = path.resolve(import.meta.dir, '../plugin')
 
 // ---------------------------------------------------------------------------
-// Zod schemas (CLI framework — Zod for --schema reflection)
+// Types
 // ---------------------------------------------------------------------------
 
-const YouWebSchema = z
-  .object({
-    apiKey: z.string().nullable().optional(),
-    oauth: z.boolean().optional(),
-  })
-  .strict()
-  .describe('you-web auth config — apiKey for headless, oauth for interactive, or neither for unresolved')
+type InitCliInput = {
+  scope: 'user' | 'project'
+  force: boolean
+  'you-web'?: { apiKey?: string | null; oauth?: boolean }
+}
 
-const InitCliInputSchema = z
-  .object({
-    scope: z.enum(['user', 'project']).default('user'),
-    force: z.boolean().default(false),
-    'you-web': YouWebSchema.optional(),
-  })
-  .strict()
-  .describe('Init CLI input — install the default behavioral plugin and configure auth')
+type InitCliOutput = {
+  installed: string
+  scope: 'user' | 'project'
+  auth: 'apiKey' | 'oauth' | 'unresolved'
+  force: boolean
+}
 
-const InitCliOutputSchema = z
-  .object({
-    installed: z.string(),
-    scope: z.enum(['user', 'project']),
-    auth: z.enum(['apiKey', 'oauth', 'unresolved']),
-    force: z.boolean(),
-  })
-  .strict()
-  .describe('Init CLI output — the install path, auth resolution, and force flag')
+type InitError = {
+  isError: true
+  message: string
+}
 
-const InitErrorSchema = z
-  .object({
-    isError: z.literal(true),
-    message: z.string(),
-  })
-  .strict()
-  .describe('Init CLI error output')
+// ---------------------------------------------------------------------------
+// JSON Schemas (AJV — matching useTool's convention)
+// ---------------------------------------------------------------------------
+
+const YouWebSchema = {
+  type: 'object',
+  properties: {
+    apiKey: { type: 'string', nullable: true, description: 'API key for headless auth' },
+    oauth: { type: 'boolean', description: 'enable interactive OAuth flow' },
+  },
+  additionalProperties: false,
+  description: 'you-web auth config — apiKey for headless, oauth for interactive, or neither for unresolved',
+} as unknown as JSONSchemaType<{ apiKey?: string | null; oauth?: boolean }>
+
+const InitCliInputSchema = {
+  type: 'object',
+  properties: {
+    scope: {
+      type: 'string',
+      enum: ['user', 'project'],
+      default: 'user',
+      description: 'installation scope — user (~/.agents) or project (<cwd>/.agents)',
+    },
+    force: {
+      type: 'boolean',
+      default: false,
+      description: 'overwrite an existing install (loses edits to the installed copy)',
+    },
+    'you-web': YouWebSchema,
+  },
+  additionalProperties: false,
+  description: 'Init CLI input — install the default behavioral plugin and configure auth',
+} as unknown as JSONSchemaType<InitCliInput>
+
+const InitCliOutputSchema = {
+  type: 'object',
+  properties: {
+    installed: { type: 'string', description: 'absolute path to the installed plugin directory' },
+    scope: { type: 'string', enum: ['user', 'project'], description: 'installation scope' },
+    auth: {
+      type: 'string',
+      enum: ['apiKey', 'oauth', 'unresolved'],
+      description: 'resolved auth method',
+    },
+    force: { type: 'boolean', description: 'whether the install was forced' },
+  },
+  required: ['installed', 'scope', 'auth', 'force'],
+  additionalProperties: false,
+  description: 'Init CLI output — the install path, auth resolution, and force flag',
+} as unknown as JSONSchemaType<InitCliOutput>
+
+const InitErrorSchema = {
+  type: 'object',
+  properties: {
+    isError: { type: 'boolean', const: true, description: 'marks an error result' },
+    message: { type: 'string', description: 'human-readable error message' },
+  },
+  required: ['isError', 'message'],
+  additionalProperties: false,
+  description: 'Init CLI error output',
+} as unknown as JSONSchemaType<InitError>
+
+const InitCliOutputUnionSchema = {
+  oneOf: [InitCliOutputSchema, InitErrorSchema],
+} as unknown as JSONSchemaType<InitCliOutput | InitError>
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -121,9 +170,7 @@ const storeApiKey = async (apiKey: string): Promise<void> => {
 // Run
 // ---------------------------------------------------------------------------
 
-const run = async (
-  input: z.infer<typeof InitCliInputSchema>,
-): Promise<z.infer<typeof InitCliOutputSchema> | z.infer<typeof InitErrorSchema>> => {
+const run = async (input: InitCliInput): Promise<InitCliOutput | InitError> => {
   const targetDir = resolveScopeDir(input.scope)
 
   if (await pluginExists(targetDir)) {
@@ -164,7 +211,7 @@ const run = async (
 export const initCli = makeCli({
   name: 'init',
   inputSchema: InitCliInputSchema,
-  outputSchema: z.union([InitCliOutputSchema, InitErrorSchema]),
+  outputSchema: InitCliOutputUnionSchema,
   help: [
     'First-time setup — install the default behavioral plugin and configure you-web auth.',
     '',
