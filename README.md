@@ -1,29 +1,33 @@
-![behavioral sovereign agent node framework: generative UI, self-evolving agents, ATProto distribution and discovery, and memory, provenance, and verifiable work](assets/banner.svg)
+# @behavioral/sh
 
-# behavioral
-
-The behavioral framework — behavioral-programming runtime, SSR Renderer, browser
-Controller, HTML/CSS schemas, validation utils, and CLI.
+A behavioral agent harness — a neuro-symbolic, self-improving agent built on the
+behavioral-programming runtime. The agent ships with an irreducible coordination floor
+(the behavioral engine + the turn loop) and grows by composing plugins: everything above the
+kernel is a plugin (`plugin.json`), and the agent improves as behaviors, tools, and skills are
+added to or removed from a space. Neural generation proposes; symbolic verification disposes; the
+exhaust is the teacher.
 
 ## Repository Map
 
-- `src/` — the framework (runtime, schemas, Renderer/Controller, CLI)
-- `skills/` — published reference skills (`plaited-framework`, `design`, `git-context`, `markdown`, `mcp-client`, `typescript-lsp`)
+- `src/kernel/` — the coordination floor: `behavioral()`, threads, dispatch bridge, OAuth
+- `src/tools/` — agent tools as stateless `useTool` units (AJV `JSONSchemaType` schemas);
+  `plugin-loader.ts` parses `plugin.json`
+- `src/behavioral/` — the behavioral runtime (types, constants, utils)
+- `src/controller/` — the browser Controller + delegated listener + swap boundary
+- `src/cli/` — the `behavioral` CLI (`makeCliRouter`/`parseCli`); commands registered in `bin/behavioral.ts`
+- `src/utils/` — shared pure utilities
+- `tasks/` — Harbor skill-authoring task specs (challenge content; not shipped)
+- `skills/` — published reference skills
 - `.agents/skills/` — workspace-installed skills
-- `research/` — research briefs (`atproto-content-sites`, `mcp-apps`, Spatiotemporal Composability paper)
-- `prompts/` — implementation prompts
-- `scripts/` — repo setup and package-maintenance shell glue
-- `bin/` — CLI entry point
-- `assets/` — brand assets
-
+- `bin/behavioral.ts` — CLI entry point
 
 ## Public API
 
-Imported as `@behavioral/sh`. Three entry points:
+Imported as `@behavioral/sh`:
 
 ```ts
-// Main entry — behavioral runtime, Renderer, validation utils, frontier analysis
-import { Renderer, validateAndEscapeHtml, validateAttributeValue, ValidationError } from '@behavioral/sh'
+// Tools — useTool, plugin-loader, the tool fleet
+import { useTool } from '@behavioral/sh/tools'
 
 // Controller — browser-side controller bootstrap
 import { Controller } from '@behavioral/sh/controller'
@@ -32,37 +36,13 @@ import { Controller } from '@behavioral/sh/controller'
 import { keyMirror, deepEqual } from '@behavioral/sh/utils'
 ```
 
-## What's here
+## Plugin model
 
-- `src/main/` — behavioral runtime, Renderer (SSR), message schemas, HTML/CSS
-  schemas, `html-rewriter.utils.ts` (validation utils), `swap-boundary.ts`
-  (scale-check classifier), frontier analysis
-- `src/controller/` — browser Controller (WebSocket-driven, applies
-  `render`/`attrs`/`dispatch_custom_event`/`navigate`/`scale_check` to the live DOM)
-- `src/cli/` — `behavioral` CLI (`git-context`, `markdown`, `mcp-client`,
-  `typescript-lsp`)
-- `src/utils/` — shared utilities
-- `bin/behavioral.ts` — CLI entry point
-
-## scaleCheck (advisory b-scale guidance)
-
-`b-scale` is advisory structural metadata, not a runtime-enforced invariant.
-The framework exposes a read-only `scaleCheck` pre-flight (Renderer method +
-Controller `scale_check` WS message) that returns the effective structural
-boundary a `render` target lives in, so a server-side b-thread can generate
-content that respects the boundary before rendering. See the
-`plaited-framework` skill's `design-spec.md` → Structural scale for the rule.
-
-## Validation utilities (for b-threads and pi plugins)
-
-The server-side b-program is the validation edge — the Controller trusts what
-the server sent. Two substrate-neutral utilities are exported for pre-flighting
-dynamic HTML before it crosses the WebSocket to the browser:
-
-- `validateAndEscapeHtml(html)` — HTMLRewriter pass validating HTML attributes
-  + CSS, returning the escaped HTML string
-- `validateAttributeValue({ tag, attr, val })` — `on*` blocklist + per-tag
-  schema `safeParse`, throws `ValidationError` on failure
+A plugin is a directory conforming to [Agent Plugins v1](https://agent-plugins.org/): a required
+`plugin.json` manifest, an optional `skills/` of Agent Skills, an optional `mcp.json` declaring
+MCP servers, and a reverse-domain `sh.behavioral/` extension namespace for behavioral-owned
+declarations (threads, models, per-space gating). The kernel is the stable floor beneath it; the
+policy layer above is minimal and improvable.
 
 ## Development
 

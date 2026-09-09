@@ -16,7 +16,6 @@ environment variables. Avoid brittle nested shell quoting for authenticated call
 **Web research:** use the `you` skill for web search, research, and content extraction when
 repo-local evidence is insufficient or current external context is needed.
 
-
 # Workflow
 
 ## Git as Context
@@ -44,8 +43,8 @@ because test runs leave a gitignored `__snapshots__/` dir) followed by
 **Prefer a commit message file for multi-line commits** (`git commit -F /tmp/message.txt`) so body
 wrapping is visible before hooks run. Use repeated `-m` flags only for short body lines already
 checked to be 100 chars or less.
-**Do not retry a failed commit with the same message shape** after commitlint rejects it. Rewrite the
-message with wrapped body lines first.
+**Do not retry a failed commit with the same message shape** after commitlint rejects it. Rewrite
+the message with wrapped body lines first.
 
 **Git lock recovery:** if `/.git/index.lock` is present, first assume an interrupted or overlapping
 Git operation rather than corruption. Check that no Git process is still running, then remove the
@@ -63,58 +62,52 @@ and preserve every required heading exactly.
 
 ## Code Quality Gate
 
-Before committing code, always choose validation based on area of effect.
-
-Use Bun as the default test runner for repo validation commands.
+Before committing code, choose validation based on area of effect. Bun is the default test runner.
 
 Minimum gate:
 1. `bun --bun tsc --noEmit`
 2. targeted tests for the changed surface
 
-Use broader validation when:
-- runtime behavior changes
-- tool behavior changes
-- schemas or validators change
-- shared infrastructure changes
-- the area of effect is broad or uncertain
+Use broader validation when runtime behavior, tool behavior, schemas/validators, shared
+infrastructure, or any broad/uncertain surface changes. Use the minimum gate when the change is
+tightly bounded and verified by inspection or code search, or is path-only rename, link/reference
+cleanup, wording-only docs/skills text, or another edit that does not materially change executable
+behavior. If you choose targeted tests, state the scope and why the narrower gate suffices.
 
-Use the minimum gate when:
-- the change is tightly bounded and verified by file inspection or code search
-- only a small, clearly isolated executable surface changed
-- the change is path-only rename, link/reference cleanup, wording-only docs/skills text,
-  or another edit that does not materially change executable behavior
-
-If you choose targeted tests instead of the full suite, state the scope and why the narrower
-gate is sufficient.
-
-Broader validation is still area-aware. It does not mean “run unrelated tests.”
-Examples:
-- if `skills/<name>/scripts` changed, run that skill's tests plus any shared `src/` tests those
-  scripts depend on
-- if a `src/<feature>` CLI command changed, run that feature's tests plus CLI/schema tests as needed
-- if only `src/ui/` changed, run the relevant UI test surfaces
-- if shared code changed and the impact is broad or unclear, expand test coverage until the
-  affected surface is credibly covered
+Broader validation is still area-aware — it does not mean "run unrelated tests." Examples: if
+`skills/<name>/scripts` changed, run that skill's tests plus shared `src/` tests those scripts
+depend on; if a `src/<feature>` CLI command changed, run that feature's tests plus CLI/schema
+tests; if only `src/controller/` changed, run the controller test surfaces; if shared code changed
+and the impact is broad or unclear, expand coverage until the affected surface is credibly covered.
 
 `docs:` and `chore:` commits may skip executable validation when they do not change behavior.
 
 ## Directory Boundaries
 
-**`src/`** — Framework code that ships with the package: runtime modules, schemas, types, and
-stable CLI-backed features.
-**CLI features** — Prefer a `makeCli` JSON-in/JSON-out command exported through the owning
-`src/<feature>/` module and registered in `bin/behavioral.ts`.
-**`scripts/`** — Repo setup and package-maintenance shell glue.
-**`skills/`** — Implementation patterns and skill-local tools. Skill scripts, prompts,
-references, tests, and assets stay under their skill directory.
+**`src/kernel/`** — the irreducible coordination floor: `behavioral()`, threads, the dispatch
+bridge, OAuth. Not removable; without it there is no turn cycle, no spec-event streaming, no tool
+dispatch.
+**`src/tools/`** — agent tools as stateless `useTool` units (`src/tools/use-tool.ts`), each with
+AJV `JSONSchemaType` input/output schemas. `plugin-loader.ts` parses `plugin.json`; the rest
+(`read`, `bash`, `edit`, `write`, `grep`, `find`, `ls`, `html`, `frontier`, `model`, `mcp-client`,
+`skill-client`, `discovery`) are the tool fleet.
+**`src/behavioral/`** — the behavioral runtime: types, constants, utils.
+**`src/controller/`** — the browser Controller, delegated listener, swap boundary.
+**`src/cli/`** — the `behavioral` CLI framework (`makeCliRouter`/`parseCli`) and its commands,
+registered in `bin/behavioral.ts`.
+**`src/utils/`** — shared pure utilities.
+**`tasks/`** — Harbor skill-authoring task specs (challenge content; not shipped, not a plugin).
+**`scripts/`** — repo setup and package-maintenance shell glue.
+**`skills/`** — published reference skills.
+**`.agents/skills/`** — workspace-installed skills.
 
-**Operator surface** — Stable agent/operator features should be discoverable through
-`behavioral --schema` and invokable as `behavioral <command> '<json>'`.
+**CLI features** — a `makeCli` JSON-in/JSON-out command is exported through its `src/cli/<feature>.ts`
+module and registered in `bin/behavioral.ts`. Invoke as `behavioral <command> '<json>'`; each
+command supports `--schema <input|output>`, `--dry-run`, `--help`.
 
 ## GitHub CLI
 
 **Always use `gh` for GitHub URLs** — `gh api`, `gh pr view`, `gh issue view`. Never WebFetch for GitHub content.
-
 
 # Context Repository
 
@@ -131,7 +124,6 @@ references, tests, and assets stay under their skill directory.
 **When sources conflict:** Code + git history wins. Update the stale doc.
 
 **Keep docs in sync:** When code changes affect docs, update in the same commit.
-
 
 # Module Organization
 
@@ -152,10 +144,9 @@ references, tests, and assets stay under their skill directory.
 
 **File organization:**
 - `feature.types.ts` — types only
-- `feature.schemas.ts` — Zod schemas + `z.output<>` types
+- `feature.schemas.ts` — `JSONSchemaType<T>` schemas + AJV-compiled validators
 - `feature.constants.ts` — constants
 - `feature.ts` — main implementation
-
 
 # Testing
 
@@ -167,31 +158,28 @@ references, tests, and assets stay under their skill directory.
 **Run:** choose tests by affected surface. Do not run unrelated areas just to satisfy a blanket rule.
 Expand test coverage when the impact is broad, shared, or uncertain.
 
-
 # Accuracy
 
 **95% confidence threshold** — report uncertainty rather than guess.
 **Verification first** — read files before stating implementation details.
 **When uncertain:** state the discrepancy, explain why, present to user. Never invent solutions.
-**TypeScript verification** — use the `lsp` tool for type-aware analysis (hover, references, definitions, symbols, exports, find).
-
+**TypeScript verification** — use the `lsp` skill for type-aware analysis (hover, references, definitions, symbols, exports, find).
 
 # Core Conventions
 
 **Type over interface** — `type User = {` not `interface User {`
-**No any** — use `unknown` with type guards. At external boundaries (`JSON.parse`,
-file/network/IPC/event-detail payloads), validate with Zod `.parse()` rather than
-`as` casts; `z.output<typeof MySchema>` gives the static type for free. Trust the
-parsed value downstream.
+**No any** — use `unknown` with type guards. At external boundaries (file/network/IPC/event-detail
+payloads), validate with AJV: define a `JSONSchemaType<T>` and compile with `ajv.compile` (see
+`useTool` in `src/tools/use-tool.ts`). Trust the validated value downstream.
 **PascalCase types** — schemas get `Schema` suffix.
-**CLI schema semantics** — any Zod schema exposed through CLI `--schema input|output` must use
-`.describe(...)` on the top-level schema and meaningful fields so agent consumers get semantic context.
-**Avoid `superRefine` for core schema shape** — prefer structural schemas (discriminated unions,
-`oneOf`-equivalent branches, and strict object composition) so constraints are explicit, type narrowing
-is reliable, and JSON-schema replay contracts stay aligned.
-**Avoid parallel schema sources** — do not hand-maintain raw JSON-schema objects alongside equivalent
-Zod schemas. Prefer deriving JSON Schema from Zod (`z.toJSONSchema(...)`) unless an external consumer
-requires a specific non-emitted JSON shape.
+**Schemas are AJV, not Zod, on the tools surface.** Define tool input/output as `JSONSchemaType<T>`
+and let `useTool` compile both with the shared `ajv` instance (`src/tools/use-tool.ts`). Prefer
+structural schemas (`oneOf` branches, strict `additionalProperties: false` at every level) so
+constraints are explicit and JSON-schema replay contracts stay aligned. Do not hand-maintain a
+parallel Zod shape alongside an AJV one.
+**CLI schema reflection uses Zod.** The `makeCliRouter`/`parseCli` framework in `src/cli/cli.ts`
+reflects command schemas via `--schema input|output` and uses Zod for that reflection only — it is
+the one Zod surface; the tools surface above is AJV.
 **Arrow functions** — `const fn = () =>` over `function fn()`.
 **Object params >2 args** — `fn({ a, b, c }: { ... })`.
 **Private fields** — `#field` (ES2022) not `private field`.
@@ -201,8 +189,6 @@ requires a specific non-emitted JSON shape.
 inside `addHandler`/feedback handlers unless explicitly converting a known domain failure into a
 normal result event. Let behavioral publish `feedback_error` snapshots for handler failures.
 **Mermaid diagrams only** — no ASCII box-drawing.
-**Skill checks** — use `behavioral skills` for skill discovery, validation, and registry checks. Do
-not invent standalone skill validators unless the repo exposes them.
 
 ## Minimal-Implementation Directive
 
@@ -211,9 +197,9 @@ Before writing code, resolve the task at the FIRST step that holds:
    Say so in one sentence and stop.
 2. Does something already in THIS codebase do it? Reuse it. Read before you write;
    re-implementing a helper that lives three files over is the most common waste.
-   Check `src/utils.ts` first (`keyMirror`, `deepEqual`, `isTypeOf`, `trueTypeOf`,
-   `ueid`, case conversion, `htmlEscape`, `wait`); use `behavioral typescript-lsp`
-   to explore its exports when uncertain.
+   Check `src/utils.ts` first (`keyMirror`, `deepEqual`, `isTypeOf`, `trueTypeOf`, `ueid`,
+   case conversion, `htmlEscape`, `wait`); read `src/utils.ts` (it re-exports `src/utils/`) to
+   explore its exports when uncertain.
 3. Does the standard library or the runtime/platform already do it? (`<input type="date">`, a DB
    unique constraint, a CSS rule.) Use it.
 4. Does an already-installed dependency do it? Use it. Do not add a new dependency for something
@@ -238,45 +224,15 @@ so "later" is greppable instead of forgotten.
 
 Prefer direct callsite wiring when logic is local, stable, and used once.
 
-- Do not add wrapper helpers that only rename or pass through one existing function.
-- Do not extract one-off shell commands, single-use event handlers, or small runtime checks into
-  local helpers just to "clean up" the callsite. Keep them inline unless the extraction removes
-  real duplication or improves correctness.
-- Do not replace a short set of direct event registrations with forwarding maps, event lists,
-  or similar indirection unless there is a demonstrated maintenance benefit.
-- Keep runtime boundary code explicit at callsites:
-  - IPC handlers
-  - event emitter wiring
-  - path resolution at security-sensitive boundaries
-  - process/worker lifecycle wiring
-- Prefer tests that exercise the real runtime boundary (process, IPC, event, lifecycle behavior)
-  over helper-only tests that bypass the contract.
-- Small abstractions are justified only when they remove real duplication across multiple
-  callsites, materially improve correctness, encode a real domain concept, or improve testing
-  without hiding the runtime contract.
-
-Preferred:
-```ts
-emitter.on(SESSION_EVENTS.stdout, onStdout);
-const contextDbPath = resolveRelativePath({ cwd, path: '.behavioral/context.sqlite' });
-process.on('message', (raw) => {
-  const parsed = parseIpcMessage(raw);
-  if (!parsed) return;
-  handleMessage(parsed);
-});
-```
-
-Discouraged:
-```ts
-const resolveContextDbPath = (cwd: string) =>
-  resolveRelativePath({ cwd, path: '.behavioral/context.sqlite' });
-EVENT_FORWARDERS.forEach(({ event, handler }) => emitter.on(event, handler));
-test('parse helper', () => expect(parseMessage(raw)).toEqual(parsed));
-```
-
-# Skill Pointers
-
-**TSDoc** — use `code-documentation` skill for conventions when writing/editing TSDoc.
-**BP patterns** — use `behavioral-runtime` skill when implementing behavioral programs.
-**UI development/testing** — use `behavioral-ui` for controller protocol, custom
-elements, SSR, and the three-layer UI test strategy.
+- Do not add wrapper helpers that only rename or pass through one existing function; do not
+  extract one-off shell commands, single-use handlers, or small runtime checks into local
+  helpers just to "clean up" a callsite. Inline unless the extraction removes real duplication or
+  improves correctness.
+- Do not replace a short set of direct event registrations with forwarding maps or event
+  lists unless there is a demonstrated maintenance benefit.
+- Keep runtime boundary code explicit at callsites: IPC handlers, event-emitter wiring, path
+  resolution at security-sensitive boundaries, process/worker lifecycle wiring.
+- Prefer tests that exercise the real runtime boundary (process, IPC, event, lifecycle) over
+  helper-only tests that bypass the contract. Small abstractions are justified only when they
+  remove real cross-callsite duplication, materially improve correctness, encode a real domain
+  concept, or improve testing without hiding the runtime contract.
