@@ -193,6 +193,9 @@ export type Generator = (currentThread: Thread) => Promise<Thread>
 /** A promote function: write the promoted candidate host-side. */
 export type Promote = (candidate: Thread) => Promise<void>
 
+/** A gate function: evaluate a candidate. Defaults to {@link gateCandidate}. */
+export type Gate = (input: GateInput) => Promise<GateResult>
+
 /** Configuration for {@link runAutoresearchLoop}. */
 export type LoopConfig = {
   /** The current mutable-surface thread (read at the start). */
@@ -211,6 +214,8 @@ export type LoopConfig = {
   promote: Promote
   /** Target predicate (defaults to progressive-disclosure). */
   targetPredicate?: (stateGraph: Record<string, FrontierStateNode>) => boolean
+  /** Gate function (defaults to {@link gateCandidate}). Injectable for the Daytona wrapper — the gate runs in the sandbox. */
+  gate?: Gate
 }
 
 /** One iteration's results-log entry. */
@@ -248,6 +253,7 @@ export const runAutoresearchLoop = async ({
   generator,
   promote,
   targetPredicate,
+  gate = gateCandidate,
 }: LoopConfig): Promise<LoopResult> => {
   const iterations: LoopEntry[] = []
 
@@ -257,7 +263,7 @@ export const runAutoresearchLoop = async ({
     const candidate = await generator(currentThread)
 
     // 3. Gate the candidate.
-    const gateResult = await gateCandidate({
+    const gateResult = await gate({
       candidate,
       triggers,
       maxDepth,
