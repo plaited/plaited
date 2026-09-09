@@ -56,6 +56,14 @@ import { useTool } from './use-tool.ts'
  * never accepted from tool input.
  */
 export type ModelEndpointConfig = {
+  /**
+   * The full base URL the operation paths append to. The tool appends only
+   * the operation path (`/responses`, `/responses/compact`) — no `/v1/`
+   * prefix is added. A host-root endpoint (e.g. `http://localhost:3000`)
+   * yields `http://localhost:3000/responses`; a base-with-path endpoint
+   * (e.g. `https://openrouter.ai/api/v1`) yields
+   * `https://openrouter.ai/api/v1/responses`.
+   */
   url: string
   apiKey?: string
   headers?: Record<string, string>
@@ -296,7 +304,7 @@ export const ModelCompactInputSchema = {
   required: ['provider', 'modelId', 'input'],
   additionalProperties: false,
   description:
-    'Compact a conversation via the endpoint /v1/responses/compact. Returns encrypted_content ' +
+    'Compact a conversation via the endpoint /responses/compact. Returns encrypted_content ' +
     'to pass back as a compaction input item on the next respond call.',
 } as unknown as JSONSchemaType<ModelCompactInput>
 
@@ -426,7 +434,7 @@ export const createModelTools = ({
         return { isError: true, message: `[Error: unknown provider "${input.provider}"]` }
       }
       try {
-        const res = await fetch(joinUrl(endpoint.url, '/v1/responses'), {
+        const res = await fetch(joinUrl(endpoint.url, '/responses'), {
           method: 'POST',
           headers: buildHeaders(endpoint),
           body: JSON.stringify(buildRespondBody(input)),
@@ -453,7 +461,7 @@ export const createModelTools = ({
     {
       name: MODEL_COMPACT_TOOL_NAME,
       description:
-        'Compact a conversation via the endpoint /v1/responses/compact. Returns encrypted_content ' +
+        'Compact a conversation via the endpoint /responses/compact. Returns encrypted_content ' +
         'to pass back as a compaction input item on the next respond call.',
       inputSchema: ModelCompactInputSchema,
       outputSchema: ModelCompactOutputSchema,
@@ -472,7 +480,7 @@ export const createModelTools = ({
       try {
         const body: Record<string, unknown> = { model: input.modelId, input: input.input }
         if (input.promptCacheKey !== undefined) body.prompt_cache_key = input.promptCacheKey
-        const res = await fetch(joinUrl(endpoint.url, '/v1/responses/compact'), {
+        const res = await fetch(joinUrl(endpoint.url, '/responses/compact'), {
           method: 'POST',
           headers: buildHeaders(endpoint),
           body: JSON.stringify(body),

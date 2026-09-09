@@ -244,7 +244,7 @@ describe('model-compact', () => {
       })
       // Wire request hit the compact endpoint with the spec body shape.
       const recorded = server.requests[0]!
-      expect(recorded.path).toBe('/v1/responses/compact')
+      expect(recorded.path).toBe('/responses/compact')
       expect((recorded.body as { model?: string }).model).toBe('mock-model')
       expect((recorded.body as { prompt_cache_key?: string }).prompt_cache_key).toBe('cache-test')
     } finally {
@@ -255,7 +255,7 @@ describe('model-compact', () => {
   test('missing-model fixture contract: 400 structured error body', async () => {
     const server = await startOpenResponsesServer()
     try {
-      const res = await fetch(`${server.url}/v1/responses/compact`, {
+      const res = await fetch(`${server.url}/responses/compact`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ input: [{ type: 'message', role: 'user', content: 'Compact this.' }] }),
@@ -423,5 +423,98 @@ describe('createScriptedModelTools — deterministic canned model (no fetch)', (
     const out = await modelRespond({ provider: '', modelId: '', input: [] })
     expect((out as { isError: boolean; message: string }).isError).toBe(true)
     expect((out as { message: string }).message).toContain('invalid input')
+  })
+})
+
+describe('model-respond — endpoint URL join (base-with-path)', () => {
+  test('appends /responses to a base-with-path endpoint (no double /v1)', async () => {
+    const server = await startOpenResponsesServer()
+    try {
+      // Simulate a base-with-path endpoint (like OpenRouter's
+      // https://openrouter.ai/api/v1) by appending a path to the fixture URL.
+      const baseUrlWith = `${server.url}/api/v1`
+      const { modelRespond } = createModelTools({ endpoints: { mock: { url: baseUrlWith } } })
+      const out = await modelRespond({
+        provider: 'mock',
+        modelId: 'mock-model',
+        input: [{ type: 'message', role: 'user', content: 'Say hello' }],
+      })
+      const success = out as { items: unknown[]; status: string; isError?: boolean }
+      expect(success.isError).toBeUndefined()
+      expect(success.status).toBe('completed')
+      // The fixture recorded the request at /api/v1/responses (not
+      // /api/v1/v1/responses — the old double-append bug).
+      const recorded = server.requests[0]!
+      expect(recorded.path).toBe('/api/v1/responses')
+    } finally {
+      await server.close()
+    }
+  })
+
+  test('appends /responses/compact to a base-with-path endpoint', async () => {
+    const server = await startOpenResponsesServer()
+    try {
+      const baseUrlWith = `${server.url}/api/v1`
+      const { modelCompact } = createModelTools({ endpoints: { mock: { url: baseUrlWith } } })
+      const out = await modelCompact({
+        provider: 'mock',
+        modelId: 'mock-model',
+        input: [{ type: 'message', role: 'user', content: 'Compact this.' }],
+      })
+      expect((out as { encrypted_content: string }).encrypted_content).toBe(COMPACT_ENCRYPTED_CONTENT)
+      const recorded = server.requests[0]!
+      expect(recorded.path).toBe('/api/v1/responses/compact')
+    } finally {
+      await server.close()
+    }
+  })
+
+  test('host-root base still works (no path prefix)', async () => {
+    const server = await startOpenResponsesServer()
+    try {
+      const { modelRespond } = createModelTools({ endpoints: { mock: { url: server.url } } })
+      const out = await modelRespond({
+        provider: 'mock',
+        modelId: 'mock-model',
+        input: [{ type: 'message', role: 'user', content: 'Say hello' }],
+      })
+      const success = out as { items: unknown[]; status: string; isError?: boolean }
+      expect(success.isError).toBeUndefined()
+      expect(success.status).toBe('completed')
+      const recorded = server.requests[0]!
+      expect(recorded.path).toBe('/responses')
+    } finally {
+      await server.close()
+    }
+  })
+
+  test('tolerates a leading reasoning item (reasoning model output)', async () => {
+    const server = await startOpenResponsesServer({ withReasoning: true })
+    try {
+      // Simulate a reasoning model (GLM-style): first output item is a message
+      // with reasoning_text content, then a message with output_text content.
+      const { modelRespond } = createModelTools({ endpoints: { mock: { url: server.url } } })
+      const out = await modelRespond({
+        provider: 'mock',
+        modelId: 'mock-model',
+        input: [{ type: 'message', role: 'user', content: 'Say OK' }],
+      })
+      const success = out as {
+        items: Array<{ type: string; content?: Array<{ type: string; text?: string }> }>
+        status: string
+        isError?: boolean
+      }
+      expect(success.isError).toBeUndefined()
+      expect(success.status).toBe('completed')
+      // Two items: reasoning first, then the assistant message.
+      expect(success.items).toHaveLength(2)
+      expect(success.items[0]?.type).toBe('message')
+      expect(success.items[0]?.content?.[0]?.type).toBe('reasoning_text')
+      expect(success.items[1]?.type).toBe('message')
+      expect(success.items[1]?.content?.[0]?.type).toBe('output_text')
+      expect(success.items[1]?.content?.[0]?.text).toBe(ASSISTANT_TEXT)
+    } finally {
+      await server.close()
+    }
   })
 })

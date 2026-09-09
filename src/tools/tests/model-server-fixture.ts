@@ -12,19 +12,19 @@
  * suite's `getMockResponse` shape minus the phase fields.
  *
  * Behavior contract:
- * - POST /v1/responses, no `tools`, stream falsy → JSON ResponseResource
+ * - POST /responses, no `tools`, stream falsy → JSON ResponseResource
  *   (completed message item + usage).
- * - POST /v1/responses with non-empty `tools` → JSON ResponseResource whose
+ * - POST /responses with non-empty `tools` → JSON ResponseResource whose
  *   output is a single function_call item (the suite's tool-calling template).
- * - POST /v1/responses with `stream: true` → SSE:
+ * - POST /responses with `stream: true` → SSE:
  *   output_item.added → output_text.delta ×2 → output_item.done →
  *   response.completed (usage) → data: [DONE].
- * - POST /v1/responses whose input mentions {@link FAILURE_MARKER} → SSE:
+ * - POST /responses whose input mentions {@link FAILURE_MARKER} → SSE:
  *   output_item.added → response.failed → data: [DONE].
- * - POST /v1/responses with empty `input` → 400 structured error body.
- * - POST /v1/responses/compact without `model` → 400 structured error body
+ * - POST /responses with empty `input` → 400 structured error body.
+ * - POST /responses/compact without `model` → 400 structured error body
  *   (the suite's compact-missing-model template).
- * - POST /v1/responses/compact otherwise → response.compaction resource with
+ * - POST /responses/compact otherwise → response.compaction resource with
  *   a compaction item (encrypted_content) + usage.
  * - When `apiKey` is configured, requests must carry
  *   `Authorization: Bearer <apiKey>` or get a 401 structured error body.
@@ -35,6 +35,7 @@
 
 export const FAILURE_MARKER = 'trigger-failure'
 
+export const REASONING_TEXT = 'Let me think about this'
 export const MOCK_RESPONSE_ID = 'resp_mock_001'
 export const ASSISTANT_TEXT = 'Hello from mock'
 export const FUNCTION_CALL = {
@@ -80,6 +81,14 @@ const assistantMessageItem = (text: string) => ({
   content: [{ type: 'output_text', text }],
 })
 
+const reasoningMessageItem = (text: string) => ({
+  id: 'msg_mock_reasoning',
+  type: 'message',
+  status: 'completed',
+  role: 'assistant',
+  content: [{ type: 'reasoning_text', text }],
+})
+
 const mockResponse = (model: string, output: unknown[]) => ({
   id: MOCK_RESPONSE_ID,
   object: 'response',
@@ -105,7 +114,13 @@ const json = (body: unknown): Response => Response.json(body)
  * Start the loopback fixture. `apiKey` turns on bearer-auth enforcement for
  * every route.
  */
-export const startOpenResponsesServer = async ({ apiKey }: { apiKey?: string } = {}): Promise<OpenResponsesFixture> => {
+export const startOpenResponsesServer = async ({
+  apiKey,
+  withReasoning,
+}: {
+  apiKey?: string
+  withReasoning?: boolean
+} = {}): Promise<OpenResponsesFixture> => {
   const requests: RecordedRequest[] = []
 
   const server = Bun.serve({
@@ -132,7 +147,7 @@ export const startOpenResponsesServer = async ({ apiKey }: { apiKey?: string } =
       }
       const inputText = JSON.stringify(typed.input ?? [])
 
-      if (pathname === '/v1/responses') {
+      if (pathname === '/responses' || pathname.endsWith('/responses')) {
         if (typeof typed.model !== 'string' || typed.model.length === 0) {
           return jsonError(400, 'invalid_request_error', 'model is required')
         }
@@ -198,10 +213,13 @@ export const startOpenResponsesServer = async ({ apiKey }: { apiKey?: string } =
             },
           ])
         }
-        return json(mockResponse(typed.model, [assistantMessageItem(ASSISTANT_TEXT)]))
+        const output = withReasoning
+          ? [reasoningMessageItem(REASONING_TEXT), assistantMessageItem(ASSISTANT_TEXT)]
+          : [assistantMessageItem(ASSISTANT_TEXT)]
+        return json(mockResponse(typed.model, output))
       }
 
-      if (pathname === '/v1/responses/compact') {
+      if (pathname === '/responses/compact' || pathname.endsWith('/responses/compact')) {
         if (typeof typed.model !== 'string' || typed.model.length === 0) {
           return jsonError(400, 'invalid_request_error', 'model is required')
         }
