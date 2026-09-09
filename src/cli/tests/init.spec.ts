@@ -1,0 +1,182 @@
+import { describe, expect, test } from 'bun:test'
+import * as path from 'node:path'
+
+const repoRoot = path.resolve(import.meta.dir, '../../..')
+const binPath = path.join(repoRoot, 'bin/behavioral.ts')
+
+const runInit = async (args: string[], cwd = repoRoot): Promise<{ code: number; stdout: string; stderr: string }> => {
+  const proc = Bun.spawn(['bun', binPath, 'init', ...args], {
+    stdout: 'pipe',
+    stderr: 'pipe',
+    cwd,
+  })
+  const [stdout, stderr, code] = await Promise.all([
+    new Response(proc.stdout).text(),
+    new Response(proc.stderr).text(),
+    proc.exited,
+  ])
+  return { code, stdout, stderr }
+}
+
+describe('behavioral init', () => {
+  test('--help exits 0 and documents force', async () => {
+    const { code, stderr } = await runInit(['--help'])
+    expect(code).toBe(0)
+    expect(stderr).toContain('Usage: init')
+    expect(stderr).toContain('force')
+  })
+
+  test('--schema input emits the input JSON schema with scope, force, you-web', async () => {
+    const { code, stdout } = await runInit(['--schema', 'input'])
+    expect(code).toBe(0)
+    const schema = JSON.parse(stdout)
+    expect(schema.type).toBe('object')
+    expect(schema.properties).toHaveProperty('scope')
+    expect(schema.properties).toHaveProperty('force')
+    expect(schema.properties).toHaveProperty('you-web')
+  })
+
+  test('installs to project scope and copies plugin.json + skills/ + mcp.json', async () => {
+    const tmpDir = path.resolve((await Bun.$`mktemp -d`.quiet().text()).trim())
+    try {
+      const { code, stdout } = await runInit([JSON.stringify({ scope: 'project', 'you-web': { apiKey: 'k' } })], tmpDir)
+      expect(code).toBe(0)
+      const result = JSON.parse(stdout)
+      expect(result.scope).toBe('project')
+      expect(result.force).toBe(false)
+      expect(result.installed).toContain('.agents/plugins/behavioral')
+      expect(await Bun.file(path.join(result.installed, 'plugin.json')).exists()).toBe(true)
+      expect(await Bun.file(path.join(result.installed, 'mcp.json')).exists()).toBe(true)
+      expect(await Bun.file(path.join(result.installed, 'skills', 'behavioral', 'SKILL.md')).exists()).toBe(true)
+    } finally {
+      await Bun.$`rm -rf ${tmpDir}`.quiet().nothrow()
+    }
+  })
+})
+
+test('re-run without force returns isError', async () => {
+  const tmpDir = path.resolve((await Bun.$`mktemp -d`.quiet().text()).trim())
+  try {
+    const first = await runInit([JSON.stringify({ scope: 'project', 'you-web': { apiKey: 'k' } })], tmpDir)
+    expect(first.code).toBe(0)
+    const second = await runInit([JSON.stringify({ scope: 'project', 'you-web': { apiKey: 'k' } })], tmpDir)
+    expect(second.code).toBe(0)
+    const result = JSON.parse(second.stdout)
+    expect(result.isError).toBe(true)
+    expect(result.message).toContain('force')
+  } finally {
+    await Bun.$`rm -rf ${tmpDir}`.quiet().nothrow()
+  }
+})
+
+test('re-run with force overwrites and reports force: true', async () => {
+  const tmpDir = path.resolve((await Bun.$`mktemp -d`.quiet().text()).trim())
+  try {
+    const first = await runInit([JSON.stringify({ scope: 'project', 'you-web': { apiKey: 'k1' } })], tmpDir)
+    expect(first.code).toBe(0)
+    const second = await runInit(
+      [JSON.stringify({ scope: 'project', force: true, 'you-web': { apiKey: 'k2' } })],
+      tmpDir,
+    )
+    expect(second.code).toBe(0)
+    const result = JSON.parse(second.stdout)
+    expect(result.isError).toBeUndefined()
+    expect(result.force).toBe(true)
+  } finally {
+    await Bun.$`rm -rf ${tmpDir}`.quiet().nothrow()
+  }
+})
+
+test('installed plugin parses via the conformant plugin-loader', async () => {
+  const tmpDir = path.resolve((await Bun.$`mktemp -d`.quiet().text()).trim())
+  try {
+    const { code, stdout } = await runInit([JSON.stringify({ scope: 'project', 'you-web': { apiKey: 'k' } })], tmpDir)
+    expect(code).toBe(0)
+    const result = JSON.parse(stdout)
+    const { pluginLoader } = await import('../../tools/plugin-loader.ts')
+    const manifest = await pluginLoader({ path: 'plugin.json', cwd: result.installed })
+    expect('isError' in manifest).toBe(false)
+    if (!('isError' in manifest)) {
+      expect(manifest.name).toBe('behavioral')
+      expect(manifest.skills).toContain('behavioral')
+      expect(manifest.mcps).toHaveProperty('you-web')
+    }
+  } finally {
+    await Bun.$`rm -rf ${tmpDir}`.quiet().nothrow()
+  }
+})
+
+test('auth is unresolved when no apiKey and oauth is false', async () => {
+  const tmpDir = path.resolve((await Bun.$`mktemp -d`.quiet().text()).trim())
+  try {
+    const { code, stdout } = await runInit([JSON.stringify({ scope: 'project', 'you-web': { oauth: false } })], tmpDir)
+    expect(code).toBe(0)
+    const result = JSON.parse(stdout)
+    expect(result.auth).toBe('unresolved')
+  } finally {
+    await Bun.$`rm -rf ${tmpDir}`.quiet().nothrow()
+  }
+})
+
+test('auth is apiKey when apiKey is present', async () => {
+  const tmpDir = path.resolve((await Bun.$`mktemp -d`.quiet().text()).trim())
+  try {
+    const { code, stdout } = await runInit(
+      [JSON.stringify({ scope: 'project', 'you-web': { apiKey: 'my-key' } })],
+      tmpDir,
+    )
+    expect(code).toBe(0)
+    const result = JSON.parse(stdout)
+    expect(result.auth).toBe('apiKey')
+  } finally {
+    await Bun.$`rm -rf ${tmpDir}`.quiet().nothrow()
+  }
+})
+
+test('auth is oauth when you-web is present without apiKey or oauth flag', async () => {
+  const tmpDir = path.resolve((await Bun.$`mktemp -d`.quiet().text()).trim())
+  try {
+    const { code, stdout } = await runInit([JSON.stringify({ scope: 'project', 'you-web': {} })], tmpDir)
+    expect(code).toBe(0)
+    const result = JSON.parse(stdout)
+    expect(result.auth).toBe('oauth')
+  } finally {
+    await Bun.$`rm -rf ${tmpDir}`.quiet().nothrow()
+  }
+})
+
+test('--dry-run shows the request without installing', async () => {
+  const tmpDir = path.resolve((await Bun.$`mktemp -d`.quiet().text()).trim())
+  try {
+    const { code, stdout } = await runInit(
+      [JSON.stringify({ scope: 'project', 'you-web': { apiKey: 'k' } }), '--dry-run'],
+      tmpDir,
+    )
+    expect(code).toBe(0)
+    const result = JSON.parse(stdout)
+    expect(result.command).toBe('init')
+    expect(result.input.scope).toBe('project')
+    expect(result.dryRun).toBe(true)
+    // Nothing should have been installed
+    expect(await Bun.file(path.join(tmpDir, '.agents', 'plugins', 'behavioral', 'plugin.json')).exists()).toBe(false)
+  } finally {
+    await Bun.$`rm -rf ${tmpDir}`.quiet().nothrow()
+  }
+})
+
+test('init command is registered in the router --schema listing', async () => {
+  const proc = Bun.spawn(['bun', binPath, '--schema'], {
+    stdout: 'pipe',
+    stderr: 'pipe',
+    cwd: repoRoot,
+  })
+  const [out, , code] = await Promise.all([
+    new Response(proc.stdout).text(),
+    new Response(proc.stderr).text(),
+    proc.exited,
+  ])
+  expect(code).toBe(0)
+  const listing = JSON.parse(out) as { commands: string[] }
+  expect(listing.commands).toContain('init')
+  expect(listing.commands).toContain('turn')
+})
