@@ -5,7 +5,7 @@
   "description": "Behavioral agent harness — a neuro-symbolic, self-improving agent built on the behavioral-programming runtime.",
   "author": { "name": "behavioral.sh" },
   "homepage": "https://behavioral.sh",
-  "repository": "https://github.com/behavioral-sh/behavioral",
+  "repository": "https://github.com/plaited/behavioral",
   "license": "ISC",
   "keywords": [
     "behavioral-programming",

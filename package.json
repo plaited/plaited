@@ -8,10 +8,10 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/behavioral-sh/behavioral.git"
+    "url": "git+https://github.com/plaited/behavioral.git"
   },
   "bugs": {
-    "url": "https://github.com/behavioral-sh/behavioral/issues"
+    "url": "https://github.com/plaited/behavioral/issues"
   },
   "homepage": "https://behavioral.sh",
   "keywords": [
