@@ -9,48 +9,50 @@ candidate is selected, threads waiting/requesting/interrupted by it are
 resumed, and the next step runs. If no unblocked candidate exists the
 program halts until an external `trigger` arrives.
 
-## Public surface (import from `@behavioral/sh`)
+## Public surface
 
-The runtime API is re-exported from the package root:
+The engine lives in-repo at `src/behavioral/behavioral.ts` (with types in
+`behavioral.types.ts`, constants in `behavioral.constants.ts`, utils in
+`behavioral.utils.ts`). It is **not** a public package export — there is no
+root `@behavioral/sh` export (the package exports only `./tools`,
+`./controller`, `./utils`). Import it from its source path:
 
 ```ts
-import { behavioral } from '@behavioral/sh'
+import { behavioral } from '../../behavioral/behavioral.ts'
 import type {
-  AddHandler,
-  AddThread,
+  BPEvent,
   Disconnect,
-  Handler,
-  SendTrace,
-  TraceListener,
-  Trigger,
-  UseAddHandler,
+  Thread,
+  Trace,
   UseAddThread,
-  UseTrace,
   UseTrigger,
-} from '@behavioral/sh'
+  UseTrace,
+} from '../../behavioral/behavioral.types.ts'
 ```
 
-`behavioral()` returns an immutable API object with five hooks. The deeper
-engine internals (`computeFrontier`, `advanceRunningToPending`, the
-`Registered*` types, the `*Schema` validators) are not part of the consumer surface — see
-[Going deeper](#going-deeper) for how to reach them.
+`behavioral()` returns a frozen API object with **three hooks** — no
+`useAddHandler`, no `sendTrace`, no generic type parameter:
+
+```ts
+const { useAddThread, useTrigger, useTrace } = behavioral({ instanceId?: string })
+```
 
 Threads are JSON objects: `{ label: string, rules: Idioms[], once?: true }`.
 Each idiom is one sync point with `request` (propose an event), `waitFor`
-(block until an event), `block` (forbid an event), and/or `interrupt`
-(terminate the thread on an event). `detailSchema` on listeners is JSON
-Schema, compiled at registration.
+(block until an event), `block` (forbid an event), `interrupt` (terminate the
+thread on an event), and/or `transform` (match, hand off to external
+reshaping, re-enter via a `target` event). `detailSchema` on listeners is
+JSON Schema (draft 2020-12), compiled at registration.
 
-## The five hooks
+## The three hooks
 
-`const { useAddThread, useTrigger, useAddHandler, useTrace, sendTrace } = behavioral()`
+`const { useAddThread, useTrigger, useTrace } = behavioral()`
 
-| Hook | Returns | Use when |
-|------|---------|----------|
+| Hook | Signature | Use when |
+|------|-----------|----------|
 | `useAddThread(space?)` | `(args: Thread) => void` | Register a b-thread (`{ label, rules, once? }`). Optional `space` stamps all the thread's idioms. |
 | `useTrigger(space?)` | `(event: BPEvent) => void` | Inject an external event. Triggered events have highest priority (0) and can be blocked. Initiates a new super-step. |
 | `useTrace(listener)` | `Disconnect` | Observe internal state traces emitted after each event selection. Does not affect execution. |
-| `sendTrace(arg)` | `void` | Publish a custom trace to all `useTrace` listeners (for host/extension integration). |
 
 ### `useAddThread` — registering threads
 
@@ -72,7 +74,7 @@ A thread is an object with `label`, `rules` (an array of `Idioms` sync points),
 and optional `once`. Without `once`, the thread loops its `rules` indefinitely;
 with `once: true`, it runs through the rules once and completes. The `label`
 identifies the thread in traces. Invalid thread arguments (failing
-`ThreadScehama`, or an un-compilable `detailSchema`) are surfaced as an
+`ThreadSchema`, or an un-compilable `detailSchema`) are surfaced as an
 `add_thread_error` trace, not a throw — the thread simply isn't added.
 
 ### `useTrigger` — injecting events
@@ -83,119 +85,146 @@ trigger({ type: 'kickoff' })
 ```
 
 Triggered events behave like a one-shot thread requesting the event at
-priority 0. They are subject to `block` like any request. Triggers are how
-external systems (UI, network, timers) drive the program.
+priority 0. They are subject to `block` like any request. An event that fails
+`BPEvent` validation is rejected at the ingress boundary and surfaced as a
+`trigger_error` trace (not a throw). Triggers are how external systems (UI,
+network, timers) drive the program.
 
-### `useAddHandler` — side effects
+### `useTrace` — observation and the action channel
 
 ```ts
-const addHandler = useAddHandler()
-const disconnect = addHandler('task', ({ detail, payload, disconnect }) => {
-  console.log('task selected', detail)
-  // disconnect() to unsubscribe; throw → surfaces as feedback_error trace
+const disconnect = useTrace((msg: Trace) => {
+  // msg is the engine's closed Trace union — narrow by `kind`:
+  //   'pending_bids' | 'frontier' | 'selection' | 'deadlock'
+  //   'trigger_error' | 'add_thread_error' | 'interrupt' | 'transform'
 })
 ```
 
-Handlers fire after the event is selected and published. A handler that
-throws is caught and published as a `feedback_error` trace; it does not
-abort the super-step. Pass `once: true` as the third arg to auto-disconnect
-after the first match. `payload` carries the opaque non-JSON side-channel
-(File, Blob, FormData) if one was supplied on the triggering event — `detail`
-stays JSON.
+`useTrace` subscribes a listener receiving one `Trace` per step. The listener
+may be sync or async (`void | Promise<void>`); **the engine never awaits
+it.** Each listener return value is absorbed by `Promise.resolve(...)` with a
+rejection handler attached, so a rejecting promise never breaks the
+super-step. A listener that throws synchronously is caught and logged via
+`console.error('[behavioral] trace listener ...')` — listener failures are
+**log-only**, never published as traces.
 
-### `useTrace` and `sendTrace` — observation
+#### The action-channel pattern (replaces `useAddHandler`)
+
+There is no `useAddHandler` hook. Side effects — tool dispatch, I/O, model
+calls — are performed by `useTrace` listeners that observe `selection`
+traces and act outside the super-step, then **re-enter the engine via
+`trigger`**. The kernel's dispatch bridge is the canonical implementation
+(`src/kernel/kernel.ts`):
 
 ```ts
+// The action channel: fire on selection, do async I/O, re-enter via trigger.
 const disconnect = useTrace((msg) => {
-  // msg is inferred as the engine's Trace union: pending_bids | frontier |
-  // selection | deadlock | trigger_error | add_thread_error | interrupt |
-  // transform (narrow by `kind`)
+  if (msg.kind !== 'selection') return
+  void bridge(msg.selected.type) // async I/O outside the super-step
+})
+
+// Re-entry is deferred past the current super-step so the bridge never
+// re-enters the engine synchronously from inside a listener.
+const fire = (event: BPEvent): void => {
+  queueMicrotask(() => trigger({ ...event, space }))
+}
+```
+
+The contract:
+
+- The listener filters on `msg.kind === 'selection'` and reads
+  `msg.selected.type` to decide what to do.
+- Async work happens **after** the listener returns — the engine continues the
+  super-step without waiting.
+- Results re-enter via `trigger`, deferred with `queueMicrotask` so the
+  action channel never re-enters the engine synchronously from inside a
+  `sendTrace` listener call.
+- Tool/I/O failures return as **data** (`isError: true` on the output) and
+  drive a `turn.end` or recovery trigger — they never throw into the space.
+- A listener throw is `console.error`'d and swallowed — it cannot corrupt the
+  program.
+
+This is why "self-modification can't break confluence": the action channel is
+an observer of the trace, not a participant in the super-step. Adding or
+removing a listener never changes which event the arbiter selects.
+
+## The `transform` idiom — declarative pure-data reshape
+
+The fifth idiom is `transform`: a declarative, pure-data reshape that fires
+**inside** the super-step, complementary to the async action-listener pattern
+above (which does I/O outside it). A transform listener matches an event like
+`waitFor`/`block`/`interrupt` (same `type` + optional `detailSchema`/`detailMatch`),
+but instead of pausing or forbidding, it declares a reshape contract the
+external host executes:
+
+```ts
+addThread({
+  label: 'shaper',
+  rules: [{
+    transform: [{
+      type: 'order',          // match this selected event
+      detailSchema: { ... },  // optional JSON Schema guard
+      query: '.order',        // applied to selected.detail (e.g. a jq expression)
+      target: 'ship',         // re-enter the engine with this event type
+    }],
+  }],
 })
 ```
 
-`useTrace` subscribes a `TraceListener` receiving one trace per step. Unparametrized
-`behavioral()` types messages as `Trace` (the engine's discriminated union of
-trace variants; narrow by `kind`). To receive custom trace shapes your program
-emits alongside the engine's, parametrize `behavioral<MyTrace>()` — `MyTrace`
-must structurally satisfy `{ kind: string; timestamp: number }` (the
-`TraceBase` constraint, an internal type; you don't need to import it — TS
-checks the constraint structurally). The listener then receives `Trace | MyTrace`.
-`sendTrace(arg)` publishes a value of your `MyTrace` to all listeners — for
-host/extension code that needs to inject observation events alongside the
-engine's own traces.
+Shape (`TransformListener` in `behavioral.types.ts`): a `BPListener` plus
+`query` (string) and `target` (string). When a matching event is selected,
+the engine emits a `transform` trace carrying `transformers: { query, target,
+thread }[]` **immediately before** the `selection` trace, then resumes the
+thread (a transform match wakes the thread like a `waitFor` match). The
+engine does **no I/O** — it only publishes the contract. External code reads
+the `transform` trace, evaluates each `query` over `selected.detail`, and
+re-enters via `trigger({ type: target, detail })` — or, for multiple targets,
+fans out via `addThread` (one request thread per target).
+
+This is a two-phase loop: **prime** (the `transform` trace carries the
+contracts) then **execute** (the immediately following `selection` trace
+carries the payload). The reference implementation is
+`src/behavioral/tests/transform.spec.ts`. Honest caveat: today only that test
+loop consumes the trace — the kernel-side consumer is not yet wired, so there
+is no production host applying `query` → `target` yet. The trace contract is
+stable; the host is what's missing.
+
+## The trace union
+
+`Trace` is a closed discriminated union (narrow by `kind`). The kinds:
+
+| `kind` | Carries | When |
+|--------|---------|------|
+| `pending_bids` | `step`, `threads` (serialized pending set) | Before event selection each step |
+| `frontier` | `step`, `status`, `candidates`, `enabled` | After computing the frontier |
+| `selection` | `step`, `selected` (the chosen candidate) | When an event is selected |
+| `deadlock` | `step` | Candidates exist but all are blocked |
+| `interrupt` | `selected`, `threadLabel`, `step` | A thread was terminated by an interrupt |
+| `transform` | `step`, `transformers` | A transform listener matched; external code applies `query` → `target` |
+| `add_thread_error` | `error` (AJV errors), `space?` | `useAddThread` rejected invalid args / un-compilable `detailSchema` |
+| `trigger_error` | `error` (AJV errors), `space?` | `useTrigger` rejected an invalid `BPEvent` |
+
+The two error kinds are the engine's only failure surfaces, and both are
+**traces, not throws** — invalid input is reported as data and the program
+keeps running. There is no `feedback_error` trace.
 
 ## A common wiring mistake to avoid
 
 Forgetting to `trigger` after adding threads. `useAddThread` registers a
 thread but does **not** start a super-step on its own; the program pauses
-until a `trigger` arrives (or until a registered thread's own `request`
-becomes selectable, which still needs a running super-step to begin). A
-common symptom: threads are added, nothing happens. The fix is almost always
-a missing `trigger({ type: '...' })` to kick off the first super-step.
+until a `trigger` arrives. A common symptom: threads are added, nothing
+happens. The fix is almost always a missing `trigger({ type: '...' })` to
+kick off the first super-step.
 
-The second common mistake: expecting `useAddHandler` handlers to fire on
-`trigger`. Handlers fire on **selected** events — a triggered event that is
-`block`ed by an active thread is never selected and never reaches handlers.
-Check the `frontier` trace's `enabled` list to confirm the event wasn't
-filtered out.
-
-## Going deeper
-
-The public surface above is importable. Deeper internals are reachable by
-resolving the public specifier to its backing file and inspecting with the
-TypeScript LSP CLI — no hardcoded source paths, so the examples survive
-refactors that move impl files.
-
-### Resolve the specifier and enumerate exports
-
-```bash
-# Step 1 — resolve the specifier to its backing file (barrel)
-bun -e 'console.log(Bun.resolveSync("@behavioral/sh", process.cwd()+"/"))'
-# → /path/to/src/main.ts
-
-# Step 2 — read the barrel to find the backing module that exports your symbol
-# The barrel re-exports: export * from './main/behavioral.ts'
-#                       export type * from './main/behavioral.types.ts'
-#                       export { ... } from './main/frontier-analysis.ts'
-#                       export * from './main/renderer.ts'
-# Pick the module that declares the symbol you need (e.g. src/main/behavioral.ts)
-
-# Step 3 — enumerate the backing module's symbols with documentSymbol
-behavioral typescript-lsp '{"mode":"execute","file":"<resolved-path>","requests":[{"method":"textDocument/documentSymbol","params":{"textDocument":{"uri":"file://<resolved-path>"}}}]}'
-```
-
-`documentSymbol` returns each symbol in the backing module with its kind
-and `range.start` location — hover the symbol you want using the position
-from the output (no hardcoded line numbers).
-
-### Fetch one symbol's TSDoc and type
-
-```bash
-# Step 4 — fetch one symbol's TSDoc and type (use range.start from Step 3 as the position)
-behavioral typescript-lsp '{"mode":"execute","file":"<resolved-path>","requests":[{"method":"textDocument/hover","params":{"textDocument":{"uri":"file://<resolved-path>"},"position":{"line":0,"character":0}}}]}'
-```
-
-Returns the `/** ... */` block plus the resolved type signature — the deeper
-"what it does / how to debug it" content for the symbol.
-
-### Getting the position right (common mistakes)
-
-`hover` requires `position`; `documentSymbol` does not. These are easy to
-mix up:
-
-✓ `hover` with `position` → the TSDoc at that symbol.
-✗ `hover` **without** `position` → empty/whole-file result, not an error.
-✗ `documentSymbol` **with** `position` → ignored; still returns all symbols.
-
-`method` lives inside `requests[]`, not at the top level:
-
-✓ `{"mode":"execute","file":"...","requests":[{"method":"textDocument/hover","params":{...}}]}`
-✗ `{"mode":"execute","file":"...","method":"textDocument/hover"}` → `method` is
-  silently dropped and the request does nothing.
+The second common mistake: expecting side effects to fire on `trigger`. The
+action channel fires on **selected** events — a triggered event that is
+`block`ed by an active thread is never selected and never reaches the
+`selection` trace. Check the `frontier` trace's `enabled` list to confirm the
+event wasn't filtered out.
 
 ## See also
 
-- `behavioral typescript-lsp --help` — the LSP CLI
-  used by the going-deeper workflow.
 - [Frontier analysis](./frontier-analysis.md) — deadlock/livelock verification
   over the closed state graph of a behavioral program.
+- [Controller](./controller.md) — the browser-side message applier and the
+  stateless SSR html tools (one UI-layer reference).

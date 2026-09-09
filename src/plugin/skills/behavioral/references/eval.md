@@ -11,44 +11,39 @@ hill-climb use (capture a small experiment, analyze the trace, mutate, repeat
 on a fixed budget), see [Auto-research](./autoresearch.md) — same primitives,
 different purpose.
 
-## Public surface (import from `@behavioral/sh`)
+## Public surface
+
+The capture primitive is `useTrace`, returned by `behavioral()` (in-repo at
+`src/behavioral/behavioral.ts` — not a public package export; there is no
+root `@behavioral/sh` export). The engine returns three hooks:
+`{ useAddThread, useTrigger, useTrace }`.
 
 ```ts
-import {
-  behavioral,
-  type UseTrace,
-  type SendTrace,
-  type TraceListener,
-} from '@behavioral/sh'
+import { behavioral } from '../../behavioral/behavioral.ts'
+import type { Trace, UseTrace } from '../../behavioral/behavioral.types.ts'
 ```
 
-`useTrace` and `sendTrace` are returned by `behavioral()` (the frozen public
-API object), not imported directly. The type aliases above are re-exported so
-consumers can type their own listeners and extension events.
+`useTrace` subscribes a listener receiving the engine's **closed** `Trace`
+union (`selection`, `frontier`, `pending_bids`, `deadlock`, `trigger_error`,
+`add_thread_error`, `interrupt`, `transform` — narrow by `kind`). There is
+no generic type parameter on `behavioral()` and no `sendTrace` hook — the
+`Trace` union is closed; you cannot inject custom trace kinds into the
+engine's stream. Agent-lifecycle events (tool calls, messages) are captured
+by the consumer's own side-channel (the agent SDK's subscription),
+correlated with engine traces by timestamp.
 
-`Trace` is the engine's closed discriminated union of trace kinds
-(`selection`, `frontier`, `pending_bids`, `deadlock`, `trigger_error`,
-`add_thread_error`, `interrupt`, `transform`). It is not directly importable from
-`'behavioral'` — use `useTrace((msg) => ...)` with inference, and let the
-listener parameter type narrow by `msg.kind`.
-
-`TraceBase` is the structural contract for consumer-supplied extensions:
-`{ kind: string; timestamp: number }` plus kind-specific fields. It is not
-an importable type — use the structural shape inline or infer it from
-`behavioral<T>()` where `T extends { kind: string; timestamp: number }`.
-
-For divergence analysis over a captured run, also import the
-[frontier-analysis](./frontier-analysis.md) functions (`exploreFrontiers`,
-`verifyFrontiers`, `replayToFrontier`).
+For divergence analysis over a captured run, also use the
+[frontier-analysis](./frontier-analysis.md) tools (`frontier-explore`,
+`frontier-verify`, `frontier-replay`) over the captured `Thread[]` + messages.
 
 ## When to use which
 
 | Need | Use |
 |------|-----|
-| Observe a behavioral program's own execution (logging/debugging) | `behavioral()` + `useTrace`; default `T = never`, no `sendTrace`. Listener receives only `Trace`. |
-| Capture a behavioral agent's run *plus* agent-lifecycle events for grading | `behavioral<T>()` + `useTrace` (listener receives `Trace \| T`) + `sendTrace` (injects `T`). Define `T` extending `TraceBase`. |
+| Observe a behavioral program's own execution (logging/debugging) | `behavioral()` + `useTrace`. Listener receives the closed `Trace` union. |
+| Capture a behavioral agent's run *plus* agent-lifecycle events for grading | `behavioral()` + `useTrace` (engine traces) **and** the agent SDK's own subscription (agent events), correlated by timestamp. The engine's `Trace` union is closed — there is no `sendTrace` to inject agent events into it. |
 | Grade a linear run over an outcome | Post-hoc grader over the captured trace. behavioral supplies **no grading code** — the consumer's grader reads the trace and emits a result. |
-| Analyze reachable branches of a behavioral agent's run (divergence) | `exploreFrontiers` / `verifyFrontiers` over captured `Thread[]` + messages. See [frontier-analysis](./frontier-analysis.md). |
+| Analyze reachable branches of a behavioral agent's run (divergence) | `frontier-explore` / `frontier-verify` over captured `Thread[]` + messages. See [frontier-analysis](./frontier-analysis.md). |
 
 The first row is the base case: behavioral as a logging/observation utility
 for its own execution. The second extends it with agent events. The third and
@@ -60,49 +55,42 @@ role ends at capture (and, for divergence, at analysis).
 The capture layer is always a `useTrace` listener. What the listener does
 with each event is the consumer's choice — the callback is the sink. behavioral
 does not prescribe JSONL, a database, a socket, or any particular store. The
-callback writes wherever the consumer wants.
+callback writes wherever the consumer wants. The engine's `Trace` union is
+closed (no `sendTrace`), so agent-lifecycle events are captured via the agent
+SDK's own subscription and written to the same sink, correlated with engine
+traces by timestamp.
 
 ```ts
-import { behavioral } from '@behavioral/sh'
+import { behavioral } from '../../behavioral/behavioral.ts'
 
-// 1. Define the agent-lifecycle events you want to capture alongside the
-//    engine's Trace variants. The structural constraint is
-//    { kind: string; timestamp: number } — define it inline, don't import it.
-type AgentEvent =
-  | { kind: 'tool_call'; timestamp: number; tool: string; args: unknown }
-  | { kind: 'agent_message'; timestamp: number; content: string }
-  | { kind: 'agent_error'; timestamp: number; message: string }
+// 1. Construct the program. No generic parameter — the Trace union is closed.
+const program = behavioral()
+const { useTrace, useAddThread, useTrigger } = program
 
-// 2. Construct the program with your extension type. Default T = never omits
-//    this and the listener receives only Trace.
-const program = behavioral<AgentEvent>()
-const { useTrace, sendTrace, useAddThread, useTrigger } = program
-
-// 3. Subscribe a capture listener. It receives Trace | AgentEvent — engine
-//    traces and your injected agent events in one stream, in publication order.
+// 2. Subscribe a capture listener. It receives the engine's Trace variants
+//    in publication order.
 const events = []
 useTrace((msg) => {
   events.push(msg)
   // ...or write to a file, socket, DB, stdout — the callback is the sink.
 })
 
-// 4. From the agent SDK's lifecycle callbacks (pi session.subscribe, Claude
-//    Code hooks, etc.), call sendTrace to inject agent events into the same
-//    stream the capture listener reads. sendTrace accepts ONLY AgentEvent —
-//    engine Trace variants are rejected by the type system.
+// 3. From the agent SDK's lifecycle callbacks (pi session.subscribe, Claude
+//    Code hooks, etc.), write agent events to the SAME sink directly — they
+//    do NOT flow through the engine's trace stream (there is no sendTrace).
+//    Correlate by timestamp.
 //
 //   session.subscribe((e) => {
 //     if (e.type === 'tool_execution_end') {
-//       sendTrace({ kind: 'tool_call', timestamp: Date.now(), tool: e.toolName, args: e.input })
+//       events.push({ kind: 'tool_call', timestamp: Date.now(), tool: e.toolName, args: e.input })
 //     }
 //   })
 ```
 
-The behavioral program itself (threads, triggers, feedback handlers) is wired
-with `useAddThread` / `useTrigger` / `useAddHandler` as usual — see
-[behavioral](./behavioral.md). The capture layer is orthogonal: it observes
-the program's execution via `useTrace` and bridges the agent SDK's lifecycle
-into the same stream via `sendTrace`.
+The behavioral program itself (threads, triggers) is wired with `useAddThread`
+/ `useTrigger` as usual — see [behavioral](./behavioral.md). The capture layer
+is orthogonal: it observes the program's execution via `useTrace` and bridges
+the agent SDK's lifecycle into the same sink via the SDK's own subscription.
 
 ## What constitutes a trace? (intake)
 
@@ -128,9 +116,9 @@ shape the capture wiring and differ by eval:
 
 ## The `Thread[]` capture concern (behavioral agents only)
 
-`useTrace` gives you the **messages** (the trace stream). `frontier-analysis`
-needs the **threads** that produced those messages — `exploreFrontiers` and
-`verifyFrontiers` take a `Thread[]` plus a `messages` trace. If the agent runs
+`useTrace` gives you the **messages** (the trace stream). frontier-analysis
+needs the **threads** that produced those messages — `frontier-explore` and
+`frontier-verify` take a `Thread[]` plus a `messages` trace. If the agent runs
 a behavioral program and you want divergence grading later, persist the
 `Thread[]` definition at capture time, alongside the trace:
 
@@ -150,8 +138,8 @@ run. For a plain agent (no behavioral layer), there are no threads and
 
 ## Grading is beyond this package
 
-behavioral supplies the capture primitives (`useTrace`, `sendTrace`) and, for
-behavioral agents, the divergence-analysis primitive (`frontier-analysis`).
+behavioral supplies the capture primitives (`useTrace`) and, for
+behavioral agents, the divergence-analysis tools (`frontier-analysis`).
 It supplies **no grading code**. Graders are consumer-authored and run
 wherever the consumer chose to sink the trace:
 
@@ -180,49 +168,16 @@ analysis; if it does, capture `Thread[]` alongside the trace. If it doesn't
 
 ## Going deeper
 
-The capture primitives (`useTrace`, `sendTrace`) are reachable by resolving
-the public specifier to its backing file and inspecting with the TypeScript
-LSP CLI — no hardcoded source paths, so the examples survive refactors that
-move impl files.
-
-### Resolve the specifier and enumerate exports
-
-```bash
-# Step 1 — resolve the specifier to its backing file (barrel)
-bun -e 'console.log(Bun.resolveSync("@behavioral/sh", process.cwd()+"/"))'
-# → /path/to/src/main.ts
-
-# Step 2 — read the barrel to find the backing module that exports your symbol
-# The barrel re-exports: export * from './main/behavioral.ts'
-#                       export type * from './main/behavioral.types.ts'
-#                       export { ... } from './main/frontier-analysis.ts'
-#                       export * from './main/renderer.ts'
-# Pick the module that declares the symbol you need (e.g. src/main/behavioral.ts)
-
-# Step 3 — enumerate the backing module's symbols with documentSymbol
-behavioral typescript-lsp '{"mode":"execute","file":"<resolved-path>","requests":[{"method":"textDocument/documentSymbol","params":{"textDocument":{"uri":"file://<resolved-path>"}}}]}'
-```
-
-`documentSymbol` returns each symbol in the backing module with its kind
-and `range.start` location — hover the symbol you want using the position
-from the output (no hardcoded line numbers).
-
-### Fetch one symbol's TSDoc and type
-
-```bash
-# Step 4 — fetch one symbol's TSDoc and type (use range.start from Step 3 as the position)
-behavioral typescript-lsp '{"mode":"execute","file":"<resolved-path>","requests":[{"method":"textDocument/hover","params":{"textDocument":{"uri":"file://<resolved-path>"},"position":{"line":0,"character":0}}}]}'
-```
-
-Returns the `/** ... */` block plus the resolved type signature — the deeper
-"what it does / how to debug it" content for the symbol.
-
-`position` is 0-indexed. Get the exact line from `documentSymbol` output (its
-`range.start` is also 0-indexed), not by counting in your editor. `hover`
-requires `position`; `documentSymbol` does not.
+The capture primitive (`useTrace`) lives in-repo at
+`src/behavioral/behavioral.ts`, with the `Trace` union and hook types in
+`src/behavioral/behavioral.types.ts`. Read those files directly — the engine
+is not a public package export (there is no root `@behavioral/sh` export),
+so there is no specifier to resolve. The kernel's dispatch bridge
+(`src/kernel/kernel.ts`) is the canonical `useTrace` action-channel
+implementation.
 
 ## See also
 
 - [frontier-analysis](./frontier-analysis.md) — divergence analysis over a captured `Thread[]` + messages.
 - [Auto-research](./autoresearch.md) — the iterative hill-climb use of the same capture primitives.
-- [behavioral](./behavioral.md) — wiring the behavioral program itself (`useAddThread`, `useTrigger`, `useAddHandler`).
+- [behavioral](./behavioral.md) — wiring the behavioral program itself (`useAddThread`, `useTrigger`, `useTrace`).

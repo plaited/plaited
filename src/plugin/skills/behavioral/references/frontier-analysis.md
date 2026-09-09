@@ -5,83 +5,154 @@ behavioral-program verification tools. These tools answer two questions
 across **every reachable state** of a behavioral program, not just sampled
 runs: *can it deadlock?* and *can it spin forever without making progress?*
 
-## Public surface (import from `@behavioral/sh`)
+## Public surface
 
-The consumer API is re-exported from the package root:
+Frontier analysis is three `useTool` units that live in-repo at
+`src/tools/frontier.ts`. Their input/output schemas are re-exported via the
+`@behavioral/sh/tools` package export; the tool **instances** and the
+`Frontier*Input` / `Frontier*Output` types are in-repo only (not public
+package exports):
 
 ```ts
+// Schemas (public package export)
 import {
-  replayToFrontier,
-  exploreFrontiers,
-  verifyFrontiers,
-  type ExploreFrontiersArgs,
-  type ExploreFrontiersResult,
-  type VerifyFrontiersArgs,
-  type VerifyFrontiersResult,
-  type DeadlockFinding,
-  type LivelockFinding,
-  type TraceRecord,
-} from '@behavioral/sh'
+  FrontierReplayInputSchema,
+  FrontierReplayOutputSchema,
+  FrontierExploreInputSchema,
+  FrontierExploreOutputSchema,
+  FrontierVerifyInputSchema,
+  FrontierVerifyOutputSchema,
+  type UseTool,
+  useTool,
+} from '@behavioral/sh/tools'
+
+// Tool instances + types (in-repo source)
+import {
+  frontierReplay,
+  frontierExplore,
+  frontierVerify,
+  type FrontierReplayInput,
+  type FrontierReplayOutput,
+  type FrontierExploreInput,
+  type FrontierExploreOutput,
+  type FrontierVerifyInput,
+  type FrontierVerifyOutput,
+} from '../../tools/frontier.ts'
 ```
 
-Everything below is reachable from this import. (Deeper graph internals —
-`findStronglyConnectedComponents`, `findLivelocks`, `frontierStateKey`,
-`StateNode` — are **not** re-exported from `@behavioral/sh`; see
-[Going deeper](#going-deeper) for how to reach them.)
+The raw algorithm functions (`replayToFrontierRaw`, `exploreFrontiersRaw`,
+`verifyFrontiersRaw`) and the graph internals (`frontierStateKey`,
+`findStronglyConnectedComponents`, `findLivelocks`, `StateNode`) are
+**module-private** — the three tools below are the only public surface.
 
-Threads are JSON objects: `{ label: string, rules: Idioms[], once?: true }`. Each
-idiom is one sync point with `request` (propose an event), `waitFor` (block
-until an event), `block` (forbid an event), and/or `interrupt` (terminate the
-thread on an event). `detailSchema` on listeners is JSON Schema, compiled at
-registration.
+Threads are JSON objects: `{ label: string, rules: Idioms[], once?: true }`.
+Each idiom is one sync point with `request` (propose an event), `waitFor`
+(block until an event), `block` (forbid an event), and/or `interrupt`
+(terminate the thread on an event). `detailSchema` on listeners is JSON
+Schema, compiled at registration.
 
-## When to use which function
+## When to use which tool
 
-| Need | Use |
-|------|-----|
-| Inspect one known event sequence and the frontier that follows | `replayToFrontier` |
-| Enumerate reachable histories, find deadlocks, get the state graph | `exploreFrontiers` |
-| Pass/fail/truncated summary — "is this program deadlock- or livelock-free?" | `verifyFrontiers` |
+| Need | Tool name |
+|------|-----------|
+| Inspect one known event sequence and the frontier that follows | `frontier-replay` |
+| Enumerate reachable histories, find deadlocks, get the state graph | `frontier-explore` |
+| Pass/fail/truncated verdict — "is this program deadlock- or livelock-free?" | `frontier-verify` |
 
-**`replayToFrontier`** replays a concrete selection trace and returns the
-resulting pending set and frontier. Use it first when you already have a
-suspected event sequence (e.g. from a trace dump). It **throws** if a
-selection wasn't enabled at its step — so a successful replay proves the
-sequence was valid.
+**`frontier-replay`** replays a concrete selection trace and returns the
+resulting frontier, the canonical pending-state key, and the pending-bid
+count. Use it first when you already have a suspected event sequence (e.g.
+from a trace dump). If a selection wasn't enabled at its step, the tool
+returns `{ isError: true, message }` instead of throwing — a successful
+replay proves the sequence was valid.
 
-**`exploreFrontiers`** enumerates every reachable state by replaying all
+**`frontier-explore`** enumerates every reachable state by replaying all
 event-selection branches. State-keyed deduplication means **finite-state
 looping programs terminate** without relying on `maxDepth`: the graph closes
-once every distinct pending-set state has been visited. `maxDepth` bounds
-only genuinely infinite-state programs and sets `report.truncated` honestly
-when it cuts off. Returns traces, deadlock findings, and the labeled
-`stateGraph` for downstream analysis.
+once every distinct pending-set state has been visited. `maxDepth` (required)
+bounds only genuinely infinite-state programs and sets `report.truncated`
+honestly when it cuts off. Returns traces, deadlock findings, the report,
+and the labeled `stateGraph` (serialized to a plain object keyed by
+`stateKey`) for downstream analysis.
 
-**`verifyFrontiers`** is the high-level verdict. It runs `exploreFrontiers`
-and derives a `verified` / `failed` / `truncated` status. With the optional
-`progress` spec it also runs livelock detection: a cycle that never selects
-a progress event is a livelock.
+**`frontier-verify`** is the high-level verdict. It runs the exploration and
+derives a `verified` / `failed` / `truncated` status. With the optional
+`progress` spec it also runs livelock detection: a cycle that never selects a
+progress event is a livelock.
 
-### `verifyFrontiers` — the progress spec
+## The tools
+
+### `frontier-replay`
 
 ```ts
-import { verifyFrontiers } from '@behavioral/sh'
-
-const result = verifyFrontiers({
-  threads,
-  progress: ['succeeded', 'completed'], // event types that count as progress
-  maxDepth: 50,
+const out = frontierReplay({
+  threads,        // Thread[] — required
+  messages,       // SelectionTrace[] — selection prefix to replay (optional)
+  space,          // space stamp applied to all thread rules (optional)
+  instanceId,     // stamped on synthetic traces; defaults to ueid('bp_') (optional)
 })
-// result.status: 'verified' | 'failed' | 'truncated'
-// result.findings: DeadlockFinding[]   (deadlocks)
-// result.livelocks: LivelockFinding[]  (cycles with no progress event)
+// out: { frontier, stateKey, pendingCount } on success
+//      { frontier: null, stateKey: null, pendingCount: null, isError, message } on a disabled selection
 ```
+
+`frontier` is the resulting frontier (`{ status, candidates, enabled }`);
+`stateKey` is the canonical string key for the pending set; `pendingCount` is
+the number of pending bids. The pending `Set` (with generator closures) is
+serialized away — only JSON-safe values cross the boundary.
+
+### `frontier-explore`
+
+```ts
+const out = frontierExplore({
+  threads,          // Thread[] — required
+  messages,         // SelectionTrace[] — prior trace prefix (optional)
+  triggers,         // BPEvent[] — external triggers that may wake pending threads (optional)
+  strategy,         // 'bfs' | 'dfs' — default 'bfs' (optional)
+  selectionPolicy,  // 'all-enabled' | 'scheduler' — default 'all-enabled' (optional)
+  maxDepth,         // number — REQUIRED. Bounds unbounded-state programs.
+  space,            // space stamp (optional)
+  instanceId,       // stamped on synthetic traces (optional)
+})
+// out: { traces, findings, report, stateGraph }
+//      traces:  Array<{ messages: Trace[] }>  — one per reachable state
+//      findings: Array<{ code: 'deadlock', messages: Trace[] }>
+//      report:   { strategy, selectionPolicy, visitedCount, findingCount, truncated, maxDepth? }
+//      stateGraph: Record<stateKey, { stateKey, frontier, step, successors }>
+```
+
+`selectionPolicy: 'all-enabled'` branches on every enabled candidate;
+`'scheduler'` takes only the highest-priority one (mirrors the engine's
+priority-queue selection). The `stateGraph` is the serialized `Map<string,
+StateNode>` — object form keyed by `stateKey`, insertion-ordered (root state
+first).
+
+### `frontier-verify`
+
+```ts
+const out = frontierVerify({
+  threads,          // Thread[] — required
+  messages,         // SelectionTrace[] (optional)
+  triggers,         // BPEvent[] (optional)
+  strategy,         // 'bfs' | 'dfs' — default 'bfs' (optional)
+  selectionPolicy,  // 'all-enabled' | 'scheduler' — default 'all-enabled' (optional)
+  maxDepth,         // number — REQUIRED.
+  progress,         // string[] — event types that count as progress (optional)
+  space,            // space stamp (optional)
+  instanceId,       // stamped on synthetic traces (optional)
+})
+// out: { status, findings, report, livelocks }
+//      status:    'verified' | 'failed' | 'truncated'
+//      findings:  Array<{ code: 'deadlock', messages: Trace[] }>
+//      livelocks: Array<{ code: 'livelock', states: string[], progressTypes: string[] }>
+//      report:    same shape as frontier-explore's report
+```
+
+### The `progress` spec
 
 The `progress` distinction matters when diagnosing results:
 
-- **Omit `progress`** → livelock is **not checked**; only deadlocks. Same
-  behavior as before livelock support existed. Use this when you only care
-  about deadlock-freedom.
+- **Omit `progress`** → livelock is **not checked**; only deadlocks. Use this
+  when you only care about deadlock-freedom.
 - **`progress: []`** (empty array) → **nothing** counts as progress, so
   every reachable cycle is a livelock. Rarely what you want; useful as a
   "find every cycle" probe.
@@ -97,69 +168,18 @@ verifier gave up before proving anything.
 
 ## A common wiring mistake to avoid
 
-Calling `verifyFrontiers` (or `exploreFrontiers`) **without `maxDepth`** on a
+Calling `frontier-verify` (or `frontier-explore`) **without `maxDepth`** on a
 program with unbounded state (e.g. a thread that requests an event with a
 counter `detail` that grows each loop) will not terminate — the state graph
-never closes. For finite-state programs (all `once: true`, or loops with
-bounded `detail`) you can safely omit `maxDepth`. For anything else, set
-`maxDepth` and treat `truncated` as "needs a bound or an abstraction," not a
-failure of the tool.
-
-## Going deeper
-
-The public surface above is importable. Deeper internals are reachable by
-resolving the public specifier to its backing file and inspecting with the
-TypeScript LSP CLI — no hardcoded source paths, so the examples survive
-refactors that move impl files.
-
-### Resolve the specifier and enumerate exports
-
-```bash
-# Step 1 — resolve the specifier to its backing file (barrel)
-bun -e 'console.log(Bun.resolveSync("@behavioral/sh", process.cwd()+"/"))'
-# → /path/to/src/main.ts
-
-# Step 2 — read the barrel to find the backing module that exports your symbol
-# The barrel re-exports: export * from './main/behavioral.ts'
-#                       export type * from './main/behavioral.types.ts'
-#                       export { exploreFrontiers, ... } from './main/frontier-analysis.ts'
-#                       export * from './main/renderer.ts'
-# Pick the module that declares the symbol you need (e.g. src/main/frontier-analysis.ts)
-
-# Step 3 — enumerate the backing module's symbols with documentSymbol
-behavioral typescript-lsp '{"mode":"execute","file":"<resolved-path>","requests":[{"method":"textDocument/documentSymbol","params":{"textDocument":{"uri":"file://<resolved-path>"}}}]}'
-```
-
-`documentSymbol` returns each symbol in the backing module with its kind
-and `range.start` location — hover the symbol you want using the position
-from the output (no hardcoded line numbers).
-
-### Fetch one symbol's TSDoc and type
-
-```bash
-# Step 4 — fetch one symbol's TSDoc and type (use range.start from Step 3 as the position)
-behavioral typescript-lsp '{"mode":"execute","file":"<resolved-path>","requests":[{"method":"textDocument/hover","params":{"textDocument":{"uri":"file://<resolved-path>"},"position":{"line":0,"character":0}}}]}'
-```
-
-Returns the `/** ... */` block plus the resolved type signature — the deeper
-"what it does / how to debug it" content for the symbol.
-
-### Getting the position right (common mistakes)
-
-`hover` requires `position`; `documentSymbol` does not. These are easy to
-mix up:
-
-✓ `hover` with `position` → the TSDoc at that symbol.
-✗ `hover` **without** `position` → empty/whole-file result, not an error.
-✗ `documentSymbol` **with** `position` → ignored; still returns all symbols.
-
-`method` lives inside `requests[]`, not at the top level:
-
-✓ `{"mode":"execute","file":"...","requests":[{"method":"textDocument/hover","params":{...}}]}`
-✗ `{"mode":"execute","file":"...","method":"textDocument/hover"}` → `method` is
-  silently dropped and the request does nothing.
+never closes. `maxDepth` is **required** on both tools for this reason. For
+finite-state programs (all `once: true`, or loops with bounded `detail`) the
+graph closes via state-key dedup and the tool terminates before `maxDepth`.
+For anything else, set `maxDepth` and treat `truncated` as "needs a bound or
+an abstraction," not a failure of the tool.
 
 ## See also
 
-- `behavioral typescript-lsp --help` — the LSP CLI
-  used by the going-deeper workflow.
+- [behavioral](./behavioral.md) — the runtime whose `Trace` union these tools
+  filter on, and the `Thread` shape they take.
+- [eval](./eval.md) — capturing a run's `Thread[]` + messages for later
+  frontier analysis.

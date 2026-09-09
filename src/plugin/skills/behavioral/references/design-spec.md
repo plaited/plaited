@@ -181,8 +181,8 @@ terms:
   The same logic drives both — the vocabulary is the constant; the substrate
   is the variable.
 
-A behavioral agent recognizes its own flow (behavioral threads, Renderer,
-Controller, BPEvents) in this shape; a non-behavioral agent with a similar
+A behavioral agent recognizes its own flow (behavioral threads, the html
+SSR tools, Controller, BPEvents) in this shape; a non-behavioral agent with a similar
 trigger→logic→render loop recognizes *its* flow. The spec names none of the
 mechanism — only the shape and the vocabulary that flows through it.
 
@@ -252,9 +252,9 @@ spec adopts this scale vocabulary as a **fixed enum** (not per-project
 frontmatter): S1–S6 + `rel` + ranks.
 
 **Advisory, not enforced.** The nesting constraint is a **generation-layer
-convention**, not a runtime invariant. The Renderer and Controller do not
+convention**, not a runtime invariant. The html tools and Controller do not
 throw on scale violations. Instead, the framework exposes a pre-flight
-`scaleCheck` operation (Renderer method + Controller `scale_check` WS message)
+`scale_check` operation (`html-scale-check` SSR tool + Controller `scale_check` WS message)
 that returns the effective structural boundary a `render` target lives in, so
 an agent can generate content that respects the boundary before rendering. The
 rule: **into** modes (`afterbegin`, `beforeend`, `innerHTML`) read the target's
@@ -392,7 +392,7 @@ inside the shadow).
 
 The agent reads template files and composes one into another; it can patch a
 template's *outer* attributes inflight — change the default `b-target`,
-append a `b-trigger` — during SSR (Renderer) or before a Controller render.
+append a `b-trigger` — during SSR (html tools) or before a Controller render.
 So the **light-DOM shell** of a template instance is mutable by the
 agent/Controller; the **shadow interior** is the hardened, self-styling
 part. A `button.html` template "comes with its styling baked in" via DSD;
@@ -506,11 +506,11 @@ actually works, not decisions.
 
 | Surface | What it does | Relevance |
 |---------|--------------|-----------|
-| **Renderer** (SSR, `src/main/renderer.ts`) | HTML-string in → `#html` buffer → `HTMLRewriter` mutations on `[b-target]` → HTML-string out. Synchronous, no live DOM. Styling lives as inline `<style>` tags in the HTML. | The spec's styling vehicle is inline `<style>`; SSR pre-renders with no JS. |
-| **Controller** (browser, `src/controller/controller.ts`) | WebSocket-push-driven; binds `b-trigger`/`b-form` in light DOM; applies `render`/`attrs`/`dispatch_custom_event`/`navigate`. Swaps fragments via `<template>` + `setHTMLUnsafe`. User events emit `ui_event` BPEvents (`{type, detail: getAttributes(element)}`). | The Controller touches only the **light DOM**. The same `render`/`attrs` BPEvents drive both SSR (Renderer) and CSR (Controller) — the vocabulary flows through both unchanged. |
+| **html tools** (SSR, `src/tools/html.ts`) | HTML-string in → `HTMLRewriter` mutations on `[b-target]` → HTML-string out. Stateless (no `#html` buffer — `html` is both input and output). Styling lives as inline `<style>` tags in the HTML. | The spec's styling vehicle is inline `<style>`; SSR pre-renders with no JS. |
+| **Controller** (browser, `src/controller/controller.ts`) | WebSocket-push-driven; binds `b-trigger`/`b-form` in light DOM; applies `render`/`attrs`/`dispatch_custom_event`/`navigate`/`scale_check`. Swaps fragments via `<template>` + `setHTMLUnsafe`. User events emit `ui_event` BPEvents (`{type, detail: getAttributes(element)}`). | The Controller touches only the **light DOM**. The same `render`/`attrs` BPEvents drive both SSR (html tools) and CSR (Controller) — the vocabulary flows through both unchanged. |
 | **Snapshot** | `#sendSnapshot` uses `document.documentElement.getHTML({ serializableShadowRoots: true })`. | **Declarative Shadow DOM is first-class and round-trips** through snapshots. |
 | **`b-scale` / `SCALE` / `SCALE_RANK`** (`src/main/html.constants.ts`) | `B_SCALE = 'b-scale'`; `SCALE = keyMirror('s1'..'s6','rel')`; `SCALE_RANK = { s1:1 … s6:6, rel:0 }`. Old `template.ts` enforced: higher scale cannot nest inside lower; `rel` is scale-less (rank 0, nests anywhere). | The structural axis already exists in the codebase. The spec adopts it as a fixed enum + nesting constraint. `b-scale` is the only spec attribute in HTML. |
-| **BPEvent shape** | One currency across the agent↔browser boundary: `render`/`attrs`/`dispatch_custom_event`/`navigate` (agent→browser) and `ui_event`/`snapshot`/`error`/`success` (browser→agent). | The functional flow (trigger→logic→render) is *already* the behavioral runtime's shape. Threads orchestrating BPEvents *are* loops; *how* they orchestrate *is* the mechanic. The spec names this shape substrate-neutrally; the framework executes it. |
+| **BPEvent shape** | One currency across the agent↔browser boundary: `render`/`attrs`/`dispatch_custom_event`/`navigate`/`scale_check` (agent→browser) and `ui_event`/`snapshot`/`error`/`success`/`scale_check_result`/`form_submit` (browser→agent). | The functional flow (trigger→logic→render) is *already* the behavioral runtime's shape. Threads orchestrating BPEvents *are* loops; *how* they orchestrate *is* the mechanic. The spec names this shape substrate-neutrally; the framework executes it. |
 
 ## Web-platform facts (gathered from MDN)
 
@@ -564,7 +564,6 @@ resolved — dropped, replaced by affordances/feedback vocabulary.)*
 
 ## See also
 
-- [Controller](./controller.md) — the browser side; why the Controller only
-  touches the light DOM and why `b-target`/`b-trigger` live there.
-- [Renderer](./renderer.md) — the SSR side; HTML-string in/out and the
-  inline `<style>` styling model.
+- [Controller](./controller.md) — the UI-layer reference; both the browser
+  Controller and the stateless SSR html tools (HTML-string in/out, the
+  inline `<style>` styling model).

@@ -31,33 +31,31 @@ the capture and (optionally) the divergence analysis; the **loop, the one
 metric, the fixed budget, and the keep/discard rule are the consumer's** —
 behavioral does not ship the loop.
 
-## Public surface (import from `@behavioral/sh`)
+## Public surface
+
+The capture primitive is `useTrace`, returned by `behavioral()` (in-repo at
+`src/behavioral/behavioral.ts` — not a public package export; there is no
+root `@behavioral/sh` export). The engine returns three hooks:
+`{ useAddThread, useTrigger, useTrace }`. The `Trace` union is closed — there
+is no generic parameter and no `sendTrace`; agent-lifecycle events are
+captured via the agent SDK's own subscription, correlated with engine traces
+by timestamp.
 
 ```ts
-import {
-  behavioral,
-  type UseTrace,
-  type SendTrace,
-} from '@behavioral/sh'
+import { behavioral } from '../../behavioral/behavioral.ts'
+import type { Trace } from '../../behavioral/behavioral.types.ts'
 ```
 
-`useTrace` and `sendTrace` are returned by `behavioral()`. `Trace` is the
-engine's closed discriminated union — not directly importable; use inference
-via `useTrace((msg) => ...)`. The structural constraint for extension events
-is `{ kind: string; timestamp: number }` — define it inline, not as an
-imported type.
-
-For analyzing the
-reachable branches of a mutated program (optional — see below), also import
-the [frontier-analysis](./frontier-analysis.md) functions.
+For analyzing the reachable branches of a mutated program (optional — see
+below), also use the [frontier-analysis](./frontier-analysis.md) tools.
 
 ## When to use which
 
 | Need | Use |
 |------|-----|
-| Capture each experiment's run as a trace | `behavioral<T>()` + `useTrace` (listener receives `Trace \| T`) + `sendTrace` (injects `T`). Same capture wiring as eval. |
+| Capture each experiment's run as a trace | `behavioral()` + `useTrace` (listener receives the closed `Trace` union). Agent-lifecycle events captured via the agent SDK's own subscription. Same capture wiring as eval. |
 | Measure the run via a deterministic metric | Consumer code reading the captured trace (token count, tool-call count, BP-health counts, a domain metric). behavioral supplies no metric. |
-| Analyze the mutated program's reachable branches between iterations | `exploreFrontiers` / `verifyFrontiers` over the program's `Thread[]`. Optional — only if the mutation changes the behavioral program and you want to know what it can now reach. |
+| Analyze the mutated program's reachable branches between iterations | `frontier-explore` / `frontier-verify` over the program's `Thread[]`. Optional — only if the mutation changes the behavioral program and you want to know what it can now reach. |
 | Decide keep/discard | Consumer code: compare this iteration's metric to the last kept one. The selection function is the hill-climb. |
 
 The capture row is identical to eval's — the *primitives* don't know whether
@@ -73,11 +71,7 @@ from run-start to budget-elapsed or terminal result. The sink is whatever the
 an append to a running log the analyzer reads.
 
 ```ts
-import { behavioral } from '@behavioral/sh'
-
-type AgentEvent =
-  | { kind: 'tool_call'; timestamp: number; tool: string }
-  | { kind: 'agent_message'; timestamp: number; content: string }
+import { behavioral } from '../../behavioral/behavioral.ts'
 
 // Per-iteration: construct, capture, run, measure, decide.
 async function runOneExperiment(
@@ -85,15 +79,16 @@ async function runOneExperiment(
   triggers: Array<{ type: string }>,
   budgetMs: number,
 ): Promise<{ events: Array<{ kind: string; timestamp: number }>; metric: number }> {
-  const program = behavioral<AgentEvent>()
-  const { useTrace, sendTrace, useAddThread, useTrigger } = program
+  const program = behavioral()
+  const { useTrace, useAddThread, useTrigger } = program
 
   const events = []
   useTrace((msg) => { events.push(msg) })  // callback is the sink
 
   for (const t of threads) useAddThread()(t)
   for (const trig of triggers) useTrigger()(trig)
-  // ...wire the agent SDK's lifecycle to sendTrace as in eval.md...
+  // ...capture agent-lifecycle events via the agent SDK's own subscription,
+  //    written to the same `events` sink, correlated by timestamp...
 
   // Fixed budget — the experiment ends when the budget elapses OR the run
   // terminates, whichever is first.
@@ -132,7 +127,7 @@ before wiring:
   the feedback channel — decide it at intake.
 - **Divergence analysis between iterations?** If the mutation changes the
   behavioral program (thread rules, not just the agent's prompt), the
-  reachable branches may change. Optionally run `exploreFrontiers` on the
+  reachable branches may change. Optionally run `frontier-explore` on the
   mutated `Thread[]` to surface new deadlocks or livelocks the mutation
   introduced. Skip if the mutation doesn't touch the behavioral layer.
 
@@ -157,30 +152,13 @@ and decides keep/discard immediately; the trace is feedback, not an artifact.
 
 ## Going deeper
 
-The capture primitives (`useTrace`, `sendTrace`) are reachable by resolving
-the public specifier to its backing file and inspecting with the TypeScript
-LSP CLI — no hardcoded source paths, so the examples survive refactors that
-move impl files.
-
-```bash
-# Step 1 — resolve the specifier to its backing file (barrel)
-bun -e 'console.log(Bun.resolveSync("@behavioral/sh", process.cwd()+"/"))'
-# → /path/to/src/main.ts
-
-# Step 2 — read the barrel to find the backing module that exports your symbol
-# The barrel re-exports: export * from './main/behavioral.ts'
-#                       export type * from './main/behavioral.types.ts'
-#                       export { ... } from './main/frontier-analysis.ts'
-#                       export * from './main/renderer.ts'
-# Pick the module that declares the symbol you need (e.g. src/main/behavioral.ts)
-
-# Step 3 — enumerate the backing module's symbols with documentSymbol
-behavioral typescript-lsp '{"mode":"execute","file":"<resolved-path>","requests":[{"method":"textDocument/documentSymbol","params":{"textDocument":{"uri":"file://<resolved-path>"}}}]}'
-```
-
-Fetch any export's TSDoc with `hover` using the position from the
-`documentSymbol` output. `position` is 0-indexed; get the exact line from
-`documentSymbol` output (`range.start` is also 0-indexed).
+The capture primitive (`useTrace`) lives in-repo at
+`src/behavioral/behavioral.ts`, with the `Trace` union in
+`src/behavioral/behavioral.types.ts`. Read those files directly — the engine
+is not a public package export (there is no root `@behavioral/sh` export),
+so there is no specifier to resolve. The kernel's dispatch bridge
+(`src/kernel/kernel.ts`) is the canonical `useTrace` action-channel
+implementation.
 
 For divergence analysis between iterations, see
 [frontier-analysis](./frontier-analysis.md).

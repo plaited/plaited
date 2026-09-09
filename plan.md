@@ -266,7 +266,7 @@ ingress + a plugin-shipped behavior surface.
 - Q2/A — **The default plugin consolidates to a single skill, renamed
   `behavioral`.** `skills/plaited-framework/` becomes `skills/behavioral/`
   (SKILL.md + its references: behavioral, frontier-analysis, controller,
-  renderer, eval, okf, autoresearch, design-spec). It is the one skill the
+  eval, autoresearch, design-spec). It is the one skill the
   default plugin carries — the guide to working in/on the plaited behavioral
   harness.
 - Q2/B — **The other skills leave the repo.** `git-context`, `markdown`,
