@@ -783,9 +783,9 @@ describe('plugin-loader — error cases', () => {
 // ---------------------------------------------------------------------------
 
 describe('plugin-loader — real default plugin', () => {
-  test('parses the repo-root default plugin clean', async () => {
-    const repoRoot = `${import.meta.dir}/../../..`
-    const resolved = path.resolve(repoRoot)
+  test('parses the src/plugin default plugin clean', async () => {
+    const pluginDir = `${import.meta.dir}/../../../src/plugin`
+    const resolved = path.resolve(pluginDir)
     const result = await run(resolved)
     expect(validateOutput(result)).toBe(true)
     expect(ok(result)).toBe(true)
