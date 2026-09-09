@@ -552,6 +552,44 @@ describe('plugin-loader — sh.behavioral extension', () => {
     }
   })
 
+  test('reads the OpenRouter model entry (base-with-path endpoint URL)', async () => {
+    const dir = await tempDir()
+    try {
+      await makePlugin(dir, {
+        pluginJson: {
+          $schema: PLUGIN_SCHEMA,
+          name: 'test-plugin',
+          extensions: {
+            'sh.behavioral': {
+              models: [
+                {
+                  provider: 'openrouter',
+                  modelId: 'z-ai/glm-5.3-flash',
+                  endpointUrl: 'https://openrouter.ai/api/v1',
+                  apiKeyRef: 'openrouter',
+                  locality: 'cloud',
+                },
+              ],
+            },
+          },
+        },
+      })
+      const result = await run(dir)
+      expect(ok(result)).toBe(true)
+      expect(manifest(result).models).toEqual([
+        {
+          provider: 'openrouter',
+          modelId: 'z-ai/glm-5.3-flash',
+          endpointUrl: 'https://openrouter.ai/api/v1',
+          apiKeyRef: 'openrouter',
+          locality: 'cloud',
+        },
+      ])
+    } finally {
+      await Bun.$`rm -rf ${dir}`.quiet().nothrow()
+    }
+  })
+
   test('reads mcps gating from extensions.sh.behavioral', async () => {
     const dir = await tempDir()
     try {

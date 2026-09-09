@@ -491,8 +491,9 @@ describe('model-respond — endpoint URL join (base-with-path)', () => {
   test('tolerates a leading reasoning item (reasoning model output)', async () => {
     const server = await startOpenResponsesServer({ withReasoning: true })
     try {
-      // Simulate a reasoning model (GLM-style): first output item is a message
-      // with reasoning_text content, then a message with output_text content.
+      // Simulate a reasoning model (GLM/OpenRouter-style): first output item
+      // is a type:'reasoning' item with reasoning_text content, then a
+      // type:'message' item with output_text content.
       const { modelRespond } = createModelTools({ endpoints: { mock: { url: server.url } } })
       const out = await modelRespond({
         provider: 'mock',
@@ -508,13 +509,90 @@ describe('model-respond — endpoint URL join (base-with-path)', () => {
       expect(success.status).toBe('completed')
       // Two items: reasoning first, then the assistant message.
       expect(success.items).toHaveLength(2)
-      expect(success.items[0]?.type).toBe('message')
+      expect(success.items[0]?.type).toBe('reasoning')
       expect(success.items[0]?.content?.[0]?.type).toBe('reasoning_text')
       expect(success.items[1]?.type).toBe('message')
       expect(success.items[1]?.content?.[0]?.type).toBe('output_text')
       expect(success.items[1]?.content?.[0]?.text).toBe(ASSISTANT_TEXT)
     } finally {
       await server.close()
+    }
+  })
+})
+
+describe('model-respond — reasoning item tolerance (OpenRouter/GLM)', () => {
+  test('tolerates a leading reasoning output item (type: reasoning) + provider extras', async () => {
+    const server = await startOpenResponsesServer({ withReasoning: true })
+    try {
+      const { modelRespond } = createModelTools({ endpoints: { mock: { url: server.url } } })
+      const out = await modelRespond({
+        provider: 'mock',
+        modelId: 'mock-model',
+        input: [{ type: 'message', role: 'user', content: 'Say OK' }],
+      })
+      const success = out as {
+        items: Array<{ type: string; content?: Array<{ type: string }> }>
+        status: string
+        isError?: boolean
+      }
+      expect(success.isError).toBeUndefined()
+      expect(success.status).toBe('completed')
+      expect(success.items).toHaveLength(2)
+    } finally {
+      await server.close()
+    }
+  })
+})
+
+describe('model-respond — provider usage extras tolerance', () => {
+  test('tolerates provider extras on the usage object (input_tokens_details, cost)', async () => {
+    const server = Bun.serve({
+      port: 0,
+      fetch: async () =>
+        Response.json({
+          id: 'resp_usage_test',
+          object: 'response',
+          status: 'completed',
+          model: 'test-model',
+          output: [
+            {
+              id: 'msg_usage',
+              type: 'message',
+              status: 'completed',
+              role: 'assistant',
+              content: [{ type: 'output_text', text: 'OK' }],
+            },
+          ],
+          usage: {
+            input_tokens: 14,
+            output_tokens: 72,
+            total_tokens: 86,
+            input_tokens_details: { cached_tokens: 0 },
+            output_tokens_details: { reasoning_tokens: 69 },
+            cost: 0.0000381,
+          },
+          error: null,
+        }),
+    })
+    try {
+      const { modelRespond } = createModelTools({ endpoints: { mock: { url: `http://localhost:${server.port}` } } })
+      const out = await modelRespond({
+        provider: 'mock',
+        modelId: 'test-model',
+        input: [{ type: 'message', role: 'user', content: 'Say OK' }],
+      })
+      const success = out as {
+        items: unknown[]
+        status: string
+        usage?: { total_tokens: number; input_tokens_details?: unknown }
+        isError?: boolean
+      }
+      expect(success.isError).toBeUndefined()
+      expect(success.status).toBe('completed')
+      expect(success.usage?.total_tokens).toBe(86)
+      expect(success.usage?.input_tokens_details).toBeDefined()
+    } finally {
+      server.stop(true)
     }
   })
 })

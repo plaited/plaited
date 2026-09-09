@@ -81,12 +81,13 @@ const assistantMessageItem = (text: string) => ({
   content: [{ type: 'output_text', text }],
 })
 
-const reasoningMessageItem = (text: string) => ({
-  id: 'msg_mock_reasoning',
-  type: 'message',
+const reasoningItem = (text: string) => ({
+  id: 'rs_mock_001',
+  type: 'reasoning',
   status: 'completed',
-  role: 'assistant',
   content: [{ type: 'reasoning_text', text }],
+  summary: [],
+  format: 'unknown',
 })
 
 const mockResponse = (model: string, output: unknown[]) => ({
@@ -214,7 +215,7 @@ export const startOpenResponsesServer = async ({
           ])
         }
         const output = withReasoning
-          ? [reasoningMessageItem(REASONING_TEXT), assistantMessageItem(ASSISTANT_TEXT)]
+          ? [reasoningItem(REASONING_TEXT), assistantMessageItem(ASSISTANT_TEXT)]
           : [assistantMessageItem(ASSISTANT_TEXT)]
         return json(mockResponse(typed.model, output))
       }

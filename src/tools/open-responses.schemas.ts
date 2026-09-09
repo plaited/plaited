@@ -127,7 +127,7 @@ export const OutputTextContentSchema = makeSchema<OutputTextContent>({
     annotations: { type: 'array' },
   },
   required: ['type', 'text'],
-  additionalProperties: false,
+  additionalProperties: true,
 })
 /** @public */
 export type OutputTextContent = {
@@ -141,7 +141,7 @@ export const ReasoningTextContentSchema = makeSchema<ReasoningTextContent>({
   type: 'object',
   properties: { type: { const: 'reasoning_text' }, text: { type: 'string' } },
   required: ['type', 'text'],
-  additionalProperties: false,
+  additionalProperties: true,
 })
 /** @public */
 export type ReasoningTextContent = {
@@ -172,7 +172,7 @@ export const MessageItemSchema = makeSchema<MessageItem>({
     content: { type: 'array', items: contentPartSchema },
   },
   required: ['id', 'type', 'status', 'role', 'content'],
-  additionalProperties: false,
+  additionalProperties: true,
 })
 /** @public */
 export type MessageItem = {
@@ -181,6 +181,27 @@ export type MessageItem = {
   status: ItemStatus
   role: MessageRole
   content: ContentPart[]
+}
+
+/** @public */
+export const ReasoningItemSchema = makeSchema<ReasoningItem>({
+  type: 'object',
+  properties: {
+    type: { const: 'reasoning' },
+    id: { type: 'string' },
+    status: { type: 'string', enum: itemStatusEnum },
+    content: { type: 'array', items: contentPartSchema },
+  },
+  required: ['id', 'type', 'status', 'content'],
+  additionalProperties: true,
+})
+/** @public */
+export type ReasoningItem = {
+  id: string
+  type: 'reasoning'
+  status: ItemStatus
+  content: ContentPart[]
+  [key: string]: unknown
 }
 
 /** @public */
@@ -252,6 +273,7 @@ export type CompactionItem = {
 const outputItemSchema = {
   oneOf: [
     MessageItemSchema.schema,
+    ReasoningItemSchema.schema,
     FunctionCallItemSchema.schema,
     FunctionCallOutputItemSchema.schema,
     CompactionItemSchema.schema,
@@ -260,7 +282,7 @@ const outputItemSchema = {
 /** @public */
 export const OutputItemSchema = makeSchema<OutputItem>(outputItemSchema)
 /** @public */
-export type OutputItem = MessageItem | FunctionCallItem | FunctionCallOutputItem | CompactionItem
+export type OutputItem = MessageItem | ReasoningItem | FunctionCallItem | FunctionCallOutputItem | CompactionItem
 
 // ----------------------------------------------------------------
 // Input-side content parts (message.content entries for user messages)

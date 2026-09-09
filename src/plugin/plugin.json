@@ -18,7 +18,15 @@
   ],
   "extensions": {
     "sh.behavioral": {
-      "models": [],
+      "models": [
+        {
+          "provider": "openrouter",
+          "modelId": "z-ai/glm-5.3-flash",
+          "endpointUrl": "https://openrouter.ai/api/v1",
+          "apiKeyRef": "openrouter",
+          "locality": "cloud"
+        }
+      ],
       "mcps": { "include": ["you-web"] },
       "threads": { "include": [] },
       "spaces": {}
