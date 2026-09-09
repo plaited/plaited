@@ -614,7 +614,7 @@ export const HtmlRenderOutputSchema = {
  * original input `html` unchanged, even when no `[b-target]` element matches
  * (security: never silently accept a dangerous payload). Targets all matches
  * (mirroring `querySelectorAll`): the `match` operator interpolates into
- * `[p-target${match}"${target}"]`, and `HTMLRewriter.on` fires the handler for
+ * `[b-target${match}"${target}"]`, and `HTMLRewriter.on` fires the handler for
  * every match. Zero matches leaves the document unchanged.
  *
  * The tools are stateless: `html` is both the input document and the output's
