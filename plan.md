@@ -27,52 +27,249 @@ escapes; validation is Bun test.
 
 ## Current State
 
-- **Landed:** `defineTool` factory (`src/agent/define-tool.ts`) wires tool
-  handler + structural guard thread (full-envelope block on invalid detail).
-  `registerKernel` (`src/agent/kernel.ts`) owns the turn loop, dispatch bridge,
-  spec-valid `function_call_output` (id + status via `ueid()`), items store.
-  `useBehavioral` consumer interface (`src/agent/use-behavioral.ts`) for
-  pack-contributed behaviors. `Handler<T>` has no self-removal `disconnect`
-  (caller-held `Disconnect` only). Tool pack data in `src/tools/` (read, bash,
-  edit, write, grep, find, ls, binary) with JSON Schema + pure `run`.
-  **`verify_frontiers` MCP tool** in `src/tools/verify-frontiers.ts`: verdict-only,
-  policy-free wrapper over `verifyFrontiers` (`useMCPServer` pattern, trust-boundary
-  via `validateThread`) — covers `src/tools/tests/verify-frontiers.spec.ts`.
-  **Registration gate reverted from the engine** (2024-09-03): the in-engine
-  `useAddThread` `verifyFrontiers` gate is removed; the gate moves to the kernel
-  (calls the function in-process before provisioning, configurable `maxDepth` +
-  retry on `truncated`). `src/main/tests/add-thread-gate.spec.ts` is dead — slated
-  for deletion.
-- **In-flight:** `src/agent/**` mid-refactor (zod→AJV, `tool.types.ts` deleted,
-  `provision-defaults.ts` default-import mismatch, `behavioral.types.ts` gone) —
-  `bun --bun tsc --noEmit` fails across `src/agent/`, `src/main.ts`, and several
-  `src/main/tests/*` from deleted modules. The new gate/tool files are type-clean
-  in isolation. Tool spec files (`bash.spec.ts`, `edit.spec.ts`, `find.spec.ts`,
-  `binary.spec.ts`) have pre-existing `result: unknown` type-narrowing issues.
-- **zod→AJV test cleanup batch — mostly RESOLVED (2024-09-03).** tsc exits 0
-  (all 9 type errors cleared). `transform.spec.ts` fixed by widening the
-  `dispatch` signature to `transformed: JsonObject` (one honest cast at the
-  `jqEval` boundary, not 7 callsite casts). `frontier-analysis.spec.ts:13` and
-  `.liveness.spec.ts:99` fixed earlier (trace literal + JSON-schema literal).
-  **1 runtime failure remains:** `src/behavioral/tests/match-listener.spec.ts:596`
-  — `prefixItems keyword compiles and matches` expects `log` to be
-  `['task','ack']` but receives `['task']` (the consumer doesn't resume on the
-  `task` event, so `ack` never fires). Likely an AJV `prefixItems` 2020-12
-  keyword validation issue in `detailSchema` matching — the sibling test
-  (`prefixItems enforces tuple ordering`) passes, so the keyword is recognized;
-  the matching path for `items: [42, 'hello']` against `prefixItems:
-  [{type:'number'},{type:'string'}]` may be the bug. Open; not from this refactor.
-- **Active area (revised 2024-09-03):** finish the **`src/tools/`** surface first,
-  then lock the runtime, then build a **small kernel** that completes the agent
-  harness. The kernel uses the **MCP tool approach** (`useMCPServer` tools, not
-  the old `defineTool`/`addHandler` dispatch), is **controlled by behavioral
-  threads**, and **makes use of the new `transform` idiom** (the daemon-side
-  jq-style reshape: a matched event's `detail` is passed through `query` and
-  re-emitted as `target` — `behavioral.utils.ts:127`, `behavioral.schemas.ts:153`).
-  Provisioning-as-event-driven-handler is deferred until the kernel rebuild; the
-  old `src/agent/kernel.ts` (built on `addHandler`) is being replaced, not patched.
+The agent runs a turn end-to-end. The tools surface is complete; the kernel
+floor exists; the daemon model is dropped in favor of cold invocation + gated
+ingress + a plugin-shipped behavior surface.
+
+- **Tools (`src/tools/`) — landed, all `useTool` units.** File tools (`read`,
+  `bash`, `edit`, `write`, `grep`, `find`, `ls`), frontier tools
+  (`frontier-replay`/`frontier-explore`/`frontier-verify`), html tools
+  (`html-validate-and-escape`, `html-validate-attribute-value`, `html-render`,
+  `html-update-attributes`, `html-scale-check`), and the Open Responses
+  endpoint tools (`model-respond`, `model-compact`). Shared byte-accurate
+  `truncate.ts`. `open-responses.schemas.ts` is the spec vocabulary (the
+  daemon-era `useResponse`/`Adapter` seam is deleted).
+- **Discovery (`src/tools/`) — landed, dormant pending Slice F.** `mcp-client`
+  (7 modes), `skill-client` (3 modes), `discovery` (SQLite CRUD+search,
+  provisioner-injected `dbPath`). Built, tested, not yet wired into
+  provisioning. Pool + v2 keychain OAuth live in `src/kernel/`.
+- **Kernel (`src/kernel/`) — landed.** `kernel.ts` (`createKernel`: pool,
+  `dispatch` bridge, `runTurn`, shutdown-drains-pool), `dispatch.ts`
+  (function_call → tool → `function_call_output`, `call_id`-correlated via
+  `ueid()`, errors as data), `oauth/` (keychain + v2 provider), `threads.ts`
+  (the scaffolding turn-loop thread, MINIMAL — moves into the default plugin
+  once plugin-loading lands, Q3/C).
+- **CLI — landed.** `plaited turn '{"space","prompt"}'` runs a turn cold and
+  prints JSON (deterministic against the scripted model seam — the Harbor /
+  autoresearch seam). No daemon, no TUI.
+- **Harbor tasks (`tasks/`) — landed.** Two skill-authoring tasks
+  (`build-git-context-skill`, `build-typescript-lsp-skill`) for the
+  autoresearch loop; agent authors + installs an AgentSkills skill at
+  `.agents/skills/<name>`, verifier recomputes truth from fixtures → fractional
+  `reward.json`. Validated on docker + Daytona.
+- **Skills — consolidating.** `skills/` → single `behavioral` skill (Q2).
+  `.agents/skills` is a symlink to `skills/`.
+- **Decisions this session (2026-09-07, see Decision Log):** no daemon + gated
+  ingress (Q1); default plugin ships one `behavioral` skill (Q2); threads are
+  a first-class plugin component under `threads/` + `extensions."sh.behavioral"`
+  (Q3); skill gating default-allow host-side (Q4); generative-UI dev server
+  (Q5); space = project folder, isolation invariant (Q6). Phase 6 rewritten to
+  cold invocation + gated ingress + dev server.
+- **In-flight / next (the autoresearch loop prerequisites, Q8/E, in order):**
+  (1) fill the default plugin content (`plugin.json` `sh.behavioral` extension
+  + `mcp.json` you-web); (2) author the real **core thread** in `threads/` (the
+  loop's subject); (3) kernel primitives to run an arbitrary thread + capture
+  the trace/exhaust per run; (4) define the task-success metric (Q8/C, OPEN);
+  (5) install `@daytonaio/sdk` + provision OpenRouter. Then the autoresearch
+  loop script (Q8/A). Also still open: the public-event ingress registry
+  (Q1/B); Slice F (provision discovery primitives); the dev server (Q5).
+- **Known pre-existing test failures (not from recent work):** controller
+  specs (Playwright browser-launch timeouts in this env). The
+  `match-listener.spec.ts:596` `prefixItems` failure is **resolved** — it was
+  an AJV strict-mode tuple-compile rejection (bare `prefixItems` without
+  `minItems`/`maxItems` disambiguates to `add_thread_error`, so the consumer
+  thread was rejected wholesale, not a runtime matching bug as previously
+  guessed). Fix: close the tuple with `minItems`/`maxItems`.
+
 
 ## Decision Log
+
+### 2026-09-09 — Autoresearch loop: shape + prerequisites
+
+- Q8/A — **The eval loop is an autoresearch loop, not a one-off demo.** The
+  reusable Daytona script IS the autoresearch loop (generate → `frontier-verify`
+  in an isolated forked sandbox → promote/discard → log exhaust). The talk demo
+  is one narrated run of it. Karpathy-autoresearch shape: one mutable surface
+  (the thread/skill), a fixed evaluator, a keep/discard rule, loop forever.
+- Q8/B — **The gate is a proof, not a scalar metric.** Karpathy's gate is a
+  metric (`val_bpb`); ours is `frontier-verify` — a symbolic deadlock/livelock
+  proof. "Neural proposes, symbolic disposes"; self-modification can't break
+  confluence. Anti-reward-hacking is free (the evaluator is a pure function of
+  thread data, not agent-editable).
+- Q8/C — **A second signal is required beyond safety.** `frontier-verify`
+  proves a thread can't deadlock/livelock; it does not prove the thread
+  *accomplishes its task*. The loop needs a task-success metric alongside the
+  safety gate, or it optimizes safety without usefulness. OPEN — the metric is
+  undefined (see Open Questions).
+- Q8/D — **Generators are swappable: scripted first, then OpenRouter model.**
+  (a) a scripted generator (deterministic, proves the loop mechanics) as
+  scaffolding; (b) a `model-respond` generator via an OpenRouter endpoint
+  (provisioner-injected key, the `provider` routing field). OpenRouter's
+  Responses-spec conformance must be verified at build time; if it doesn't
+  conform, a thin adapter or a spec-conformant provider is needed.
+- Q8/E — **Prerequisites before the loop script** (dependency order): (1) fill
+  the default plugin content (`plugin.json` `sh.behavioral` extension +
+  `mcp.json` you-web) so the loader has something real to load; (2) author the
+  real **core thread** in `threads/` (the loop's subject — not the MINIMAL
+  scaffolding `TURN_LOOP_THREAD`); (3) kernel primitives to run an *arbitrary*
+  thread (today `runTurn` is hardcoded to `TURN_LOOP_THREAD`) and to capture
+  the trace/exhaust per run; (4) define the second signal (Q8/C); (5) install
+  `@daytonaio/sdk` + provision OpenRouter. Then the loop script.
+
+### 2026-09-07 — Generative-UI dev server (no TUI); space semantics
+
+- Q5/A — **The local UI is a dev server, not a TUI, and it is part of the
+  agent's space.** `plaited` (cold CLI) spins up (or reuses) a local dev
+  server built on `src/controller/` + `src/tools/html.ts`. It serves SSR pages
+  over WebSocket (the controller's existing push model: server-pushed
+  `render`/`attrs`, DOM-bound `b-trigger`/`b-form`, `ui_event` back to the
+  agent). The agent renders into it via `html-render` / `html-update-attributes`
+  — the UI is a space the agent acts on, not a separate app it points at.
+- Q5/B — **The dev server hosts a memory + shared human-agent context UI.** A
+  human selects a space to work in and collaborates with the agent there;
+  because the agent drives the UI generatively, the human can ask the agent to
+  reshape the UI itself. Events transmit over WebSocket; agent-initiated
+  content reaches the page via event emission captured by `useTrace` and
+  pushed up to the page. (Mechanics are a later phase — this records the
+  shape, not the build.)
+- Q6/A — **A space is a project folder (local).** No multi-session: the space
+  *is* the project. One `plaited` invocation works in one space; the space's
+  context persists across invocations (Phase 4 persistence), so the project
+  folder is the durable identity.
+- Q6/B — **Space isolation is invariant across deployment shapes.** Spaces
+  can't see or query each other — they only respond to their own events via
+  `useAddThread`/`useTrigger` space-scoping. Root sees everything because it's
+  unscoped. The atproto deployment shape (root space = server, spaces =
+  atproto spaces, space↔space exchange triggers the agent) is a later phase
+  built on the local model — noted, not committed.
+
+### 2026-09-07 — No daemon; gated event ingress
+
+- Q1/A — **Drop the daemon model entirely.** `plaited` is a normal cold CLI
+  agent (JSON-in/JSON-out, no TUI) — the same interface the autoresearch loop
+  and Harbor tasks drive. There is no warm/serve process. External actors that
+  want the agent (a cron job, an atproto space event, Harbor) invoke `plaited`
+  per trigger; the agent runs to turn-end and exits. If you want a recurring
+  job, write a cron job (Bun) that calls the agent — don't keep the agent
+  resident.
+- Q1/B — **Ingress is gated by a public-event registry, not open.** External
+  events must not trigger arbitrary types. A store holds a CRUD-able list of
+  allowed public events — each entry `{ type, space, schema }` (the JSON Schema
+  the event's detail must satisfy). An external trigger is admitted only if its
+  type+space is registered and its detail validates against the registered
+  schema; unauthorized or malformed events are rejected at the boundary. This
+  is the trust boundary between the outside world and the behavioral space.
+  (Store: reuse the discovery-sqlite pattern — a local, regenerable store the
+  kernel reads at admission time.)
+
+### 2026-09-07 — Threads are a first-class plugin component (not skill assets)
+
+- Q3/A — **Threads are their own plugin component, not skill assets.** The
+  default plugin (agent-plugins spec) carries a `threads/` folder as a peer of
+  `skills/`. Threads are kernel-facing behavioral registrations, not
+  model-consumed skill content, so they must not live in a skill's `assets/`
+  (which the Agent Skills spec reserves for model-readable static files).
+- Q3/B — **Threads are declared via the plaited client-extension namespace.**
+  Per the Agent Plugins spec, `plugin.json` is a closed schema — custom
+  component types go under `extensions`. The default plugin declares its
+  threads under `extensions."sh.behavioral"` with a manifest that maps each
+  thread file to the space it applies to (per the earlier space-scoping
+  design). A top-level `threads/` directory holds the thread files
+  (a plain component dir, not the namespace-named extension dir).
+- Q3/C — **`src/kernel/threads.ts` is a placeholder for the kernel's own
+  floor**, not the home of behavior. Behavior threads ship in plugins under
+  `threads/`; the kernel loads them at provisioning. The scaffolding turn-loop
+  thread currently in `threads.ts` moves into the default plugin once the
+  plugin-loading path exists.
+
+### 2026-09-09 — Spec-conformant plugin; loader becomes a conformant client
+
+- Q3/C-REVISED — **The core framework turn-loop thread stays in
+  `src/kernel/threads.ts`** (overrides the Q3/C "moves into the default
+  plugin" note). The default plugin's `threads/` is for plugin-shipped
+  behavior, not the kernel's own loop.
+- Q7/A — **`plugin.json` is spec-conformant (Agent Plugins v1), not the
+  custom loader manifest.** It carries only the closed portable fields
+  (`$schema`, `name`, `version`, …, `extensions`). MCPs live in `mcp.json`;
+  skills are discovered from `skills/`; neither is declared in `plugin.json`.
+  The earlier `PluginManifestSchema` shape (`{mcps, skills, models, threads}`)
+  is superseded — plaited is a *conformant client*, not a custom format.
+- Q7/B — **Plaited-owned declarations live under the `sh.behavioral` client
+  extension** (the spec's sanctioned mechanism — the spec does not prescribe
+  enablement, trust policy, or client-extension behavior). Under
+  `extensions."sh.behavioral"`: `threads` (thread file → space mapping), `models`
+  (Open Responses endpoints — not a portable component type, so client-owned),
+  and `spaces` (per-space config).
+- Q7/C — **Per-space gating is declared in `sh.behavioral.spaces` and applies to
+  MCPs and skills alike** (and tools), default-allow per Q4. Declaring which
+  MCP tools/skills a space may use under `extensions."sh.behavioral"` is
+  client-specific config — fully compliant. `mcp.json` says which servers
+  *exist*; `sh.behavioral.spaces` says which a space *may use*.
+- Q7/D — **`plugin-loader` is reworked into a conformant client**: validate the
+  spec `plugin.json` + `mcp.json`, discover `skills/` from the fixed location,
+  read the `sh.behavioral` extension for `threads`/`models`/`spaces`. Enforce
+  conformance (reject fatal manifest violations) rather than merely tolerate
+  the shape — the conformant-client claim should be real.
+
+### 2026-09-09 — The `sh.behavioral` extension schema (root + space mirror)
+
+> **Namespace:** `sh.behavioral` — the reverse-domain of `behavioral.sh`, which
+> the project controls. Renamed from `com.plaited` (2026-09-09). Spec §8: the
+> extension namespace MUST be a reverse-domain identifier and SHOULD be a
+> domain the client controls — both hold.
+
+- Q7/E — **`extensions."sh.behavioral"` shape.** Root carries `models`, `mcps`,
+  `skills`, `threads`, and `spaces`. `mcps`/`skills`/`threads` are
+  `{ include?: string[], exclude?: string[] }` gating objects; `models` is an
+  array of endpoint declarations `{ provider, modelId, endpointUrl, apiKeyRef?,
+  locality? }`; `spaces.<name>` mirrors the same shape and overrides root for
+  the keys it sets (unset keys inherit root's default-allow posture).
+- Q7/F — **Threads are discovered from a top-level `threads/` dir** (a plain
+  component dir, not the namespace-named `sh.behavioral/` extension dir — the
+  spec fixes only `skills/` and `mcp.json`). `threads.include`/`exclude` are
+  paths into `threads/`; absent means everything in `threads/` is in scope.
+- Q7/G — **Gating rule: allowlist-first-then-exclude.** `include` (when set)
+  narrows to its members; `exclude` then subtracts. Applies uniformly to
+  mcps, skills, threads. Absent both → allow-all (Q4 posture).
+- Q7/H — **Models are declared at root, gated per space.** Root declares the
+  available model fleet; a space's `models` selects the subset it may route
+  to — a space cannot declare a brand-new endpoint (prevents arbitrary
+  model/credential usage from a space).
+
+### 2026-09-07 — Skill gating: default-allow, list-narrows (matches MCP semantics)
+
+- Q4/A — **Skills are gated host-side at provisioning with the same
+  allow/blocklist pattern as tools/MCPs** (`skills` / `excludeSkills` per
+  space config), **defaulting to allow-all**. If neither list is set, every
+  skill a plugin provides is enabled. `skills` set → allowlist (only these).
+  `excludeSkills` set → blocklist (all but these). Both set → allowlist first,
+  then blocklist subtracts. The absent-means-on posture keeps a space config
+  minimal and auditable: lists appear only when restricting.
+- Q4/B — **Gating is host policy, not plugin self-description.** The plugin
+  declares what it provides; the host (kernel/provisioning thread, per the
+  operator's space config) decides what each space enables. Authoritative
+  allow/deny lives host-side, applied per space. This extends the existing
+  packs model (plan.md "Packs + useBehavioral + skills": `$root`/space packs
+  carry `tools`/`excludeTools` + `skills`/`excludeSkills`) — Q4 confirms it
+  rather than inventing a new mechanism, and fixes the posture to
+  default-allow.
+
+### 2026-09-07 — Default plugin ships one skill: `behavioral`
+
+- Q2/A — **The default plugin consolidates to a single skill, renamed
+  `behavioral`.** `skills/plaited-framework/` becomes `skills/behavioral/`
+  (SKILL.md + its references: behavioral, frontier-analysis, controller,
+  renderer, eval, okf, autoresearch, design-spec). It is the one skill the
+  default plugin carries — the guide to working in/on the plaited behavioral
+  harness.
+- Q2/B — **The other skills leave the repo.** `git-context`, `markdown`,
+  `typescript-lsp` skills are gone from `skills/` (their role is now Harbor
+  challenge content in `tasks/`). `mcp-client` skill is gone (its code became
+  `src/tools/mcp-client.ts`). `design` is dropped (generic doc-authoring, not
+  plaited-specific).
+- Q2/C — **Default plugin layout** (agent-plugins spec): `plugin.json` +
+  `skills/behavioral/` + `threads/` (Q3) + `mcp.json`. Threads are declared
+  under `extensions."sh.behavioral"` mapping thread file → space.
 
 ### 2026-09-07 — MCP/skill discovery: search-mediated progressive disclosure
 
@@ -327,6 +524,13 @@ repo and risks staleness.
   handler iterates for `$root`. **Pending: not yet implemented.**
 
 ## Open Questions
+
+- **The autoresearch loop's task-success metric (Q8/C).** `frontier-verify`
+  proves a candidate thread can't deadlock/livelock (safety), but not that it
+  accomplishes its task (usefulness). What is the fixed second signal the loop
+  optimizes? Candidates: the turn completes / a task eval passes / a
+  frontier-replay reaches a target state. This is the autoresearch "fixed
+  metric" — the real design decision before the loop script (Q8/E step 4).
 
 - **Discovery tool schema + kernel progressive-disclosure thread shape.** The
   three tools' mode/input schemas (`mcp-client` 7 modes, `skill-client` 3 modes,
@@ -1038,34 +1242,51 @@ controller callback and the score event lands in the worker's space.
 
 ---
 
-## Phase 6 — CLI entry: `plaited` (serve-default)
+## Phase 6 — CLI entry: `plaited` (cold invocation, gated ingress, dev server)
 
-**Goal:** the bare `plaited` command is the agent. The warm process is the product;
-the CLI is its client.
+**Goal:** `plaited` is a normal cold CLI agent — JSON-in/JSON-out, no TUI, no
+daemon. There is no warm process: each invocation runs to turn-end and exits.
+External actors (a cron job, an atproto space event, Harbor) invoke `plaited`
+per trigger through a gated ingress. The interface is the same one the
+autoresearch loop and Harbor tasks already drive. (Supersedes the 2024
+serve-default daemon model — see Decision Log 2026-09-07 "No daemon".)
 
 **Deliverables:**
 
-- `plaited` (no subcommand) talks to the running agent process, starting it if absent.
-  Input `{ space, prompt, (optional) permissionAnswer }`.
-- `plaited --no-serve` — one-shot cold-run (restore space context from artifacts →
-  trigger prompt → run to turn-end → persist → print JSON). For CI and minimal envs.
-- `plaited --seed <n>` — validation mode: the serve process runs against the Phase 0
-  scripted adapter (a `UseResponse` bound via `useResponse`) drives it; the Phase 0
-  test double *is* this adapter — scripted
-  responses keyed by seed; one artifact, not two) with a seeded RNG. Deterministic,
-  no network — this is the testing/validation mode, wired through the adapter seam,
-  not a second process shape. **Scope note:** `--seed` seeds the *generator* (the
-  model stream producing turns/candidates). The frontier gate (`verifyFrontiers`) is
-  a pure function of thread data and is already deterministic — it does not consume
-  the seed. Don't conflate the two determinisms.
-- Root provisioning at startup: default tool pack (Phase 2.5) + CLI-derived tools
-  (Phase 3) + guard pack (Phase 5) at root; spaces get subsets/variants on creation.
+- `plaited` (no subcommand) — cold-run a turn in a space. Input
+  `{ space, prompt, (optional) permissionAnswer }` → restore the space's
+  context from its artifacts (Phase 4) → run to turn-end → persist → print
+  JSON. The space is a project folder (Q6/A); one invocation, one space.
+- **Gated event ingress.** External triggers must not inject arbitrary events.
+  A public-event registry (CRUD-able store, discovery-sqlite pattern) holds
+  allowed events as `{ type, space, schema }`; an external trigger is admitted
+  only if its type+space is registered and its detail validates against the
+  schema. Unauthorized/malformed events are rejected at the boundary. The CLI
+  prompt path is the one built-in ingress; everything else registers a public
+  event. (Q1/B)
+- **Scripted-model validation mode** — `plaited --seed <n>` runs against the
+  scripted model seam (the deterministic, no-network model used by the kernel
+  turn loop). Deterministic, reproducible: the same seed reproduces a turn
+  bit-for-bit. Scope note: `--seed` seeds the *generator* (the model stream);
+  the frontier gate (`frontier-verify`) is a pure function of thread data and
+  is already deterministic — it does not consume the seed.
+- **Generative-UI dev server.** `plaited` (or a `plaited ui` subcommand)
+  spins up a local dev server built on `src/controller/` + `src/tools/html.ts`
+  serving the memory + shared human-agent context UI over WebSocket (Q5).
+  The agent renders into it via `html-render`/`html-update-attributes`; the
+  human selects a space and collaborates there. The server is a space-local
+  surface, not the agent host.
+- Root provisioning at startup: the default plugin (Q2 — `skills/behavioral/` +
+  `threads/` + `mcp.json`) + the built-in tool set at root; spaces get
+  subsets/variants per their allow/blocklists (Q4).
 
-**Done when:** `!plaited '{"space":"s1","prompt":"..."}'` from pi (positional JSON
-arg is the CLI's input) completes a turn via the serve process (auto-started if
-needed); `plaited --seed 42` reproduces a turn bit-for-bit twice; `plaited --no-serve`
-works with no daemon; a guarded action returns `permission_required` and a follow-up
-`plaited` command completes it; a second space stays isolated.
+**Done when:** `plaited '{"space":"s1","prompt":"..."}'` completes a turn cold
+(no daemon) and prints JSON; `plaited --seed 42` reproduces a turn bit-for-bit
+twice; an unregistered external event is rejected at the ingress boundary and a
+registered one with a schema-valid detail is admitted; a guarded action returns
+`permission_required` and a follow-up `plaited` command completes it; a second
+space stays isolated; the dev server serves the memory UI over WebSocket and
+reflects an agent-driven `html-render`.
 
 ---
 
