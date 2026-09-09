@@ -642,6 +642,7 @@ export const runModelDemo = async (verbose = false): Promise<void> => {
       modelId: 'z-ai/glm-5.3-flash',
       instructions:
         'You are a behavioral thread optimizer. Generate an improved version of the thread as a full replacement Thread JSON object.',
+      reasoningEffort: 'medium',
     })
 
     const brokenThread: Thread = {

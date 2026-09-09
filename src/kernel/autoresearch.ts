@@ -325,7 +325,7 @@ export const serializeResultsLog = (result: LoopResult): string =>
 // Model generator — model-respond via OpenRouter (GLM-5.3-flash)
 // ---------------------------------------------------------------------------
 
-import type { ModelRespondTool } from '../tools/model.ts'
+import type { ModelRespondTool, ReasoningEffort } from '../tools/model.ts'
 import type { InputItem, MessageItem, OutputItem } from '../tools/open-responses.schemas.ts'
 
 /**
@@ -340,6 +340,8 @@ export type ModelGeneratorConfig = {
   modelId: string
   /** Instructions for the model. */
   instructions: string
+  /** OpenRouter reasoning effort level. Defaults to 'medium'. */
+  reasoningEffort?: ReasoningEffort
 }
 
 /**
@@ -375,7 +377,9 @@ export const createModelGenerator = ({
   provider,
   modelId,
   instructions,
+  reasoningEffort,
 }: ModelGeneratorConfig): Generator => {
+  const effort = reasoningEffort ?? 'medium'
   return async (currentThread: Thread): Promise<Thread> => {
     // Build the input: a user message describing the current thread and asking
     // for a full replacement Thread as JSON.
@@ -399,6 +403,7 @@ export const createModelGenerator = ({
       modelId,
       input,
       instructions,
+      reasoningEffort: effort,
     })
 
     if ('isError' in result) {

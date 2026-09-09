@@ -84,7 +84,11 @@ export type ModelRespondInput = {
   instructions?: string
   truncation?: Truncation
   stream?: boolean
+  reasoningEffort?: ReasoningEffort
 }
+
+/** OpenRouter reasoning effort levels. */
+export type ReasoningEffort = 'xhigh' | 'high' | 'medium' | 'low' | 'minimal' | 'none'
 
 /**
  * Success: items + terminal status (+ usage / structured error, and the full
@@ -128,6 +132,12 @@ export const ModelRespondInputSchema = {
     instructions: { type: 'string', nullable: true },
     truncation: { ...truncationJsonSchema, nullable: true },
     stream: { type: 'boolean', nullable: true, description: 'request SSE streaming' },
+    reasoningEffort: {
+      type: 'string',
+      enum: ['xhigh', 'high', 'medium', 'low', 'minimal', 'none'],
+      nullable: true,
+      description: 'OpenRouter reasoning effort level',
+    },
   },
   required: ['provider', 'modelId', 'input'],
   additionalProperties: false,
@@ -179,12 +189,21 @@ const buildHeaders = (endpoint: ModelEndpointConfig): Record<string, string> => 
   ...endpoint.headers,
 })
 
+const FETCH_TIMEOUT_MS = 60_000
+
+const fetchWithTimeout = (url: string, init: RequestInit, timeoutMs = FETCH_TIMEOUT_MS): Promise<Response> => {
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), timeoutMs)
+  return fetch(url, { ...init, signal: controller.signal }).finally(() => clearTimeout(timer))
+}
+
 const buildRespondBody = (input: ModelRespondInput): Record<string, unknown> => {
   const body: Record<string, unknown> = { model: input.modelId, input: input.input }
   if (input.tools !== undefined) body.tools = input.tools
   if (input.instructions !== undefined) body.instructions = input.instructions
   if (input.truncation !== undefined) body.truncation = input.truncation
   if (input.stream === true) body.stream = true
+  if (input.reasoningEffort !== undefined) body.reasoning = { effort: input.reasoningEffort }
   return body
 }
 
@@ -434,7 +453,7 @@ export const createModelTools = ({
         return { isError: true, message: `[Error: unknown provider "${input.provider}"]` }
       }
       try {
-        const res = await fetch(joinUrl(endpoint.url, '/responses'), {
+        const res = await fetchWithTimeout(joinUrl(endpoint.url, '/responses'), {
           method: 'POST',
           headers: buildHeaders(endpoint),
           body: JSON.stringify(buildRespondBody(input)),
@@ -480,7 +499,7 @@ export const createModelTools = ({
       try {
         const body: Record<string, unknown> = { model: input.modelId, input: input.input }
         if (input.promptCacheKey !== undefined) body.prompt_cache_key = input.promptCacheKey
-        const res = await fetch(joinUrl(endpoint.url, '/responses/compact'), {
+        const res = await fetchWithTimeout(joinUrl(endpoint.url, '/responses/compact'), {
           method: 'POST',
           headers: buildHeaders(endpoint),
           body: JSON.stringify(body),
