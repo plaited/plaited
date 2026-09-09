@@ -8,11 +8,17 @@
  * kernel (scripted model by default — deterministic, no network), run the turn,
  * drain the pool, print the JSON result. Harbor drives this seam later.
  *
+ * The output schema is the kernel's {@link TurnResultSchema} — the single
+ * JSON-schema home for the TurnResult shape. The CLI does not hand-mirror the
+ * type; it imports the schema so a kernel type change and its schema stay in
+ * sync.
+ *
  * @internal
  */
 
 import type { JSONSchemaType } from 'ajv'
-import { createKernel } from '../kernel/kernel.ts'
+import { TurnResultSchema } from '../kernel/kernel.schemas.ts'
+import { createKernel, type TurnResult } from '../kernel/kernel.ts'
 import { makeCli } from './cli.ts'
 
 // ---------------------------------------------------------------------------
@@ -22,21 +28,6 @@ import { makeCli } from './cli.ts'
 type TurnCliInput = {
   space: string
   prompt: string
-}
-
-type Usage = {
-  input_tokens: number
-  output_tokens: number
-  total_tokens: number
-}
-
-type TurnCliOutput = {
-  ok: true
-  space: string
-  status: 'completed' | 'incomplete' | 'failed'
-  items: Record<string, unknown>[]
-  iterations: number
-  usage?: Usage
 }
 
 // ---------------------------------------------------------------------------
@@ -58,56 +49,12 @@ const TurnCliInputSchema = {
   description: 'Turn CLI input — run one scripted model turn from a prompt to a JSON result',
 } as unknown as JSONSchemaType<TurnCliInput>
 
-const UsageSchema = {
-  type: 'object',
-  properties: {
-    input_tokens: { type: 'integer', minimum: 0 },
-    output_tokens: { type: 'integer', minimum: 0 },
-    total_tokens: { type: 'integer', minimum: 0 },
-  },
-  required: ['input_tokens', 'output_tokens', 'total_tokens'],
-  additionalProperties: false,
-  description: 'Token usage from the last model-respond round',
-} as unknown as JSONSchemaType<Usage>
-
-const TurnCliOutputSchema = {
-  type: 'object',
-  properties: {
-    ok: { type: 'boolean', const: true, description: 'the turn executed' },
-    space: { type: 'string', description: 'the space the turn ran in' },
-    status: {
-      type: 'string',
-      enum: ['completed', 'incomplete', 'failed'],
-      description: 'turn outcome',
-    },
-    items: {
-      type: 'array',
-      items: {
-        type: 'object',
-        additionalProperties: true,
-      },
-      description: 'full trajectory — user prompt + model outputs + tool-call outputs',
-    },
-    iterations: {
-      type: 'integer',
-      minimum: 0,
-      description: 'number of model-respond rounds',
-    },
-    usage: {
-      ...UsageSchema,
-      nullable: true,
-      description: 'token usage from the last round, when reported',
-    },
-  },
-  required: ['ok', 'space', 'status', 'items', 'iterations'],
-  additionalProperties: false,
-  description: 'Turn CLI output — the turn result, deterministic against the scripted model',
-} as unknown as JSONSchemaType<TurnCliOutput>
-
 export const turnCli = makeCli({
   name: 'turn',
   inputSchema: TurnCliInputSchema,
-  outputSchema: TurnCliOutputSchema,
+  // The output schema is the kernel's TurnResultSchema — the single schema
+  // home for the TurnResult shape. No hand-mirrored copy here.
+  outputSchema: TurnResultSchema.schema as unknown as JSONSchemaType<TurnResult>,
   help: [
     'Run one scripted model turn end-to-end and print the JSON result.',
     '',

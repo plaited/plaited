@@ -1,5 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 import * as path from 'node:path'
+import { TRACE_MESSAGE_KINDS } from '../../behavioral/behavioral.constants.ts'
+import { TurnResultSchema } from '../../kernel/kernel.ts'
 
 const repoRoot = path.resolve(import.meta.dir, '../../..')
 
@@ -38,13 +40,38 @@ describe('behavioral turn — CLI seam (Harbor hook)', () => {
     expect(result.usage).toBeDefined()
   })
 
+  test('output includes a trace array with selection events and validates against TurnResultSchema', async () => {
+    const { code, stdout, stderr } = await runTurnCli('{"space":"s","prompt":"Hello"}')
+    expect(code).toBe(0)
+    expect(stderr).toBe('')
+    const result = JSON.parse(stdout) as {
+      trace: Array<{ kind: string; selected?: { type: string } }>
+    }
+    // trace is always present (kernel always returns it, possibly empty)
+    expect(Array.isArray(result.trace)).toBe(true)
+    expect(result.trace.length).toBeGreaterThan(0)
+    // The trace contains at least one selection event (the ingress user.prompt)
+    const selectionKinds = result.trace.map((t) => t.kind)
+    expect(selectionKinds).toContain(TRACE_MESSAGE_KINDS.selection)
+    // The output validates against the kernel's TurnResultSchema (single source)
+    const validate = TurnResultSchema.validate
+    expect(validate(result)).toBe(true)
+  })
+
   test('end-to-end determinism — two runs produce byte-identical JSON out', async () => {
     const a = await runTurnCli('{"space":"s","prompt":"Hello"}')
     const b = await runTurnCli('{"space":"s","prompt":"Hello"}')
     expect(a.code).toBe(0)
     expect(b.code).toBe(0)
-    // The core proof: byte-identical output across two cold runs.
-    expect(a.stdout).toBe(b.stdout)
+    // The trace carries per-run timestamps/instanceId — compare the
+    // deterministic trajectory fields, not the raw exhaust.
+    const { trace: _ta, ...aRest } = JSON.parse(a.stdout)
+    const { trace: _tb, ...bRest } = JSON.parse(b.stdout)
+    expect(Bun.deepEquals(aRest, bRest)).toBe(true)
+    // The trace shape (kinds + steps) is still structurally identical.
+    const aKinds = _ta.map((t: { kind: string }) => t.kind)
+    const bKinds = _tb.map((t: { kind: string }) => t.kind)
+    expect(aKinds).toEqual(bKinds)
   })
 
   test('different prompts produce different user-message items', async () => {
