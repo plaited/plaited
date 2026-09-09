@@ -18,7 +18,7 @@
  *   files in the skill directory without reading them.
  *
  * Returns data only; never writes. Own frontmatter parsing (does not import
- * from `src/cli/markdown.ts`). `cwd` is provisioner-supplied (same
+ * the deleted `src/cli/markdown.ts` CLI). `cwd` is provisioner-supplied (same
  * trust-boundary treatment as `read`/`ls`/`write`).
  *
  * MINIMAL: no static skill catalog is emitted into any system prompt — the

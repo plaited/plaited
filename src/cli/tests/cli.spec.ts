@@ -48,7 +48,7 @@ describe('Router-level flags (subprocess)', () => {
     })
     expect(await proc.exited).toBe(0)
     const stderr = await new Response(proc.stderr).text()
-    expect(stderr).toContain('git-context')
+    expect(stderr).toContain('turn')
     expect(stderr).toContain('--version')
   })
 
@@ -71,7 +71,7 @@ describe('Router-level flags (subprocess)', () => {
     })
     expect(await proc.exited).toBe(0)
     const output = JSON.parse(await new Response(proc.stdout).text())
-    expect(output.commands).toContain('git-context')
+    expect(output.commands).toContain('turn')
   })
 })
 
