@@ -614,6 +614,8 @@ test('match listener: 2020-12 prefixItems keyword compiles and matches', () => {
                 items: {
                   type: 'array',
                   prefixItems: [{ type: 'number' }, { type: 'string' }],
+                  minItems: 2,
+                  maxItems: 2,
                 },
               },
               required: ['items'],
@@ -661,6 +663,8 @@ test('match listener: 2020-12 prefixItems enforces tuple ordering', () => {
                 items: {
                   type: 'array',
                   prefixItems: [{ type: 'number' }, { type: 'string' }],
+                  minItems: 2,
+                  maxItems: 2,
                 },
               },
               required: ['items'],
@@ -686,6 +690,62 @@ test('match listener: 2020-12 prefixItems enforces tuple ordering', () => {
   // Tuple out of order: ['x', 1] should not match [number, string]
   // So consumer should NOT resume and 'ack' should not fire
   // The producer's task event IS selected, but the consumer doesn't match
+  expect(log).toEqual(['task'])
+})
+
+test('match listener: closed prefixItems tuple rejects extra elements', () => {
+  // minItems/maxItems: 2 closes the tuple — a 3-element array must fail
+  // validation even when the first two elements are correctly typed.
+  // Distinguishes a closed tuple from an open one (where extras would pass).
+  const log: string[] = []
+  const program = behavioral()
+  const { useAddThread, useTrigger } = program
+  const addThread = useAddThread()
+  const trigger = useTrigger()
+
+  addThread({
+    label: 'producer',
+    rules: [{ request: { type: 'task', detail: { items: [42, 'hello', 'extra'] } } }],
+    once: true,
+  })
+  addThread({
+    label: 'consumer',
+    rules: [
+      {
+        waitFor: [
+          {
+            type: 'task',
+            detailSchema: {
+              type: 'object',
+              properties: {
+                items: {
+                  type: 'array',
+                  prefixItems: [{ type: 'number' }, { type: 'string' }],
+                  minItems: 2,
+                  maxItems: 2,
+                },
+              },
+              required: ['items'],
+              additionalProperties: false,
+            },
+          },
+        ],
+      },
+      { request: { type: 'ack' } },
+    ],
+    once: true,
+  })
+
+  onSelection(program, (selected) => {
+    if (selected.type === 'task') log.push('task')
+  })
+  onSelection(program, (selected) => {
+    if (selected.type === 'ack') log.push('ack')
+  })
+
+  trigger({ type: 'kickoff' })
+
+  // 3-element array exceeds maxItems: 2 — consumer must not resume
   expect(log).toEqual(['task'])
 })
 
