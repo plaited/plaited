@@ -85,6 +85,20 @@ ingress + a plugin-shipped behavior surface.
 
 ## Decision Log
 
+### 2026-09-09 — Architecture diagram lives in README (WIP research phase)
+
+- Pilot asked for a graphic of the harness flow (model-as-tool + behavioral-thread
+  loop) to pass to Claude; decided instead to generate it locally as a Mermaid
+  `flowchart` in `README.md` under "Architecture (WIP — research phase)" — the
+  repo is the best home while the harness is still WIP.
+- Diagram encodes the inversion: `model-respond` drawn inside the tools fleet at
+  the same level as `read`/`bash`/`mcp-client`; the turn-loop thread as a
+  5-rule state machine over the coordination verbs; the dispatch bridge as the
+  `useTrace` action channel with dashed `queueMicrotask` re-entry; the kernel as
+  provisioner + per-turn composer. Marked scaffolding pending Phase 5.5.
+- Navigator note: pilot directed the README edit directly (outside the usual
+  navigator write-scope of plan.md); no commit made — commit is the pilot's.
+
 ### 2026-09-09 — Autoresearch loop: shape + prerequisites
 
 - Q8/A — **The eval loop is an autoresearch loop, not a one-off demo.** The
