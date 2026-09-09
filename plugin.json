@@ -1,4 +1,27 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
-  "name": "behavioral.sh"
+  "name": "behavioral",
+  "version": "0.0.1",
+  "description": "Behavioral agent harness — a neuro-symbolic, self-improving agent built on the behavioral-programming runtime.",
+  "author": { "name": "behavioral.sh" },
+  "homepage": "https://behavioral.sh",
+  "repository": "https://github.com/behavioral-sh/behavioral",
+  "license": "ISC",
+  "keywords": [
+    "behavioral-programming",
+    "b-threads",
+    "agent",
+    "neuro-symbolic",
+    "self-improving",
+    "mcp",
+    "cli"
+  ],
+  "extensions": {
+    "sh.behavioral": {
+      "models": [],
+      "mcps": { "include": ["you-web"] },
+      "threads": { "include": [] },
+      "spaces": {}
+    }
+  }
 }
