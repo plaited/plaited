@@ -1,5 +1,5 @@
 /**
- * The turn CLI seam — the Harbor hook. `plaited turn '<json>'` runs one scripted
+ * The turn CLI seam — the Harbor hook. `behavioral turn '<json>'` runs one scripted
  * model turn end-to-end and prints the {@link TurnResult} as JSON.
  *
  * @remarks
@@ -55,8 +55,8 @@ export const turnCli = makeCli({
     'Deterministic against the kernel default scripted model (no network).',
     '',
     'Examples:',
-    '  plaited turn \'{"space":"s","prompt":"Hello"}\'',
-    '  echo \'{"space":"s","prompt":"Hello"}\' | plaited turn',
+    '  behavioral turn \'{"space":"s","prompt":"Hello"}\'',
+    '  echo \'{"space":"s","prompt":"Hello"}\' | behavioral turn',
   ].join('\n'),
   run: async (input) => {
     const kernel = createKernel()

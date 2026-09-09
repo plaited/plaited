@@ -5,14 +5,14 @@
  */
 
 /** HTTP route where the bundled controller JS is served. */
-export const CONNECT_PLAITED_ROUTE = '/.plaited/connect.js'
+export const CONNECT_BEHAVIORAL_ROUTE = '/.behavioral/connect.js'
 
 /**
  * Virtual entrypoint path for Bun.build. Must match a key in the `files` map.
  * Bun transpiles the `.ts` extension natively, and virtual files from the `files`
  * option take priority over disk — no actual file needs to exist at this path.
  */
-const VIRTUAL_ENTRY = '/.plaited/connect.ts'
+const VIRTUAL_ENTRY = '/.behavioral/connect.ts'
 
 /**
  * Bundles the controller runtime into a gzipped module served at the connect
@@ -62,13 +62,13 @@ controller.connect()
     target: 'browser',
   })
   if (!success) {
-    throw new AggregateError(logs, 'Failed to build Plaited controller runtime')
+    throw new AggregateError(logs, 'Failed to build behavioral controller runtime')
   }
   const artifact = outputs[0]!
   const content = await artifact.text()
   const compressed = Bun.gzipSync(content)
   return {
-    [CONNECT_PLAITED_ROUTE]: new Response(compressed as BodyInit, {
+    [CONNECT_BEHAVIORAL_ROUTE]: new Response(compressed as BodyInit, {
       headers: new Headers({
         'content-type': artifact.type,
         'content-encoding': 'gzip',

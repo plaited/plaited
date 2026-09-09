@@ -1,5 +1,5 @@
 /**
- * Public type definitions for the Plaited controller system.
+ * Public type definitions for the behavioral controller system.
  *
  * @remarks
  * Defines the shapes for constructor arguments, extension registration, and

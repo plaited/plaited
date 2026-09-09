@@ -1,19 +1,30 @@
 {
-  "name": "plaited",
-  "version": "7.2.0",
+  "name": "@behavioral/sh",
+  "version": "0.0.1",
+  "description": "Minimal behavioral agent harness — a neuro-symbolic, self-improving agent built on the behavioral-programming runtime.",
   "license": "ISC",
   "engines": {
     "bun": ">= v1.2.9"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/plaited/plaited.git"
+    "url": "git+https://github.com/behavioral-sh/behavioral.git"
   },
   "bugs": {
-    "url": "https://github.com/plaited/plaited/issues"
+    "url": "https://github.com/behavioral-sh/behavioral/issues"
   },
+  "homepage": "https://behavioral.sh",
+  "keywords": [
+    "behavioral-programming",
+    "b-threads",
+    "agent",
+    "neuro-symbolic",
+    "self-improving",
+    "mcp",
+    "cli"
+  ],
   "bin": {
-    "plaited": "./bin/plaited.ts"
+    "behavioral": "./bin/behavioral.ts"
   },
   "type": "module",
   "exports": {

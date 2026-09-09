@@ -4,7 +4,7 @@ import { keyMirror } from '../utils.ts'
  * @internal
  *
  * Central constants for hyperscript runtime, template creation, and DOM serialization.
- * Defines Plaited's special attributes and DOM behavior.
+ * Defines the behavioral harness's special attributes and DOM behavior.
  *
  * @remarks
  * Implementation details:

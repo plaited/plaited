@@ -62,7 +62,7 @@ export type ConnectionPool = {
 // Constants
 // ---------------------------------------------------------------------------
 
-const CLIENT_INFO = { name: 'plaited', version: '0.0.0' }
+const CLIENT_INFO = { name: 'behavioral', version: '0.0.0' }
 
 // ---------------------------------------------------------------------------
 // Pool factory — a closure, no module-level Map

@@ -16,7 +16,7 @@ export const startMcpServer = async (): Promise<{ url: string; close: () => Prom
     enableJsonResponse: true,
   })
 
-  const server = new McpServer({ name: 'plaited-test-server', version: '0.0.0' })
+  const server = new McpServer({ name: 'behavioral-test-server', version: '0.0.0' })
 
   // MINIMAL: the SDK's registerTool/registerPrompt argsSchema accepts a Zod
   // raw shape, but the installed zod (v4) optional schemas don't statically

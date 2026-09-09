@@ -84,7 +84,7 @@ const goto = async (path: string) => {
   // Wait for the controller connect script to appear in the DOM, confirming
   // the full page HTML has been parsed (body content + script tags).
   await waitFor(async () => {
-    const has = await evalJs('() => !!document.querySelector("script[src*=\'.plaited/connect\']")')
+    const has = await evalJs('() => !!document.querySelector("script[src*=\'.behavioral/connect\']")')
     return has === true ? true : undefined
   }, 8_000)
 }

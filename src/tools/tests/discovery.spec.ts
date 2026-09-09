@@ -69,7 +69,7 @@ describe('discovery tool — schema contract (RED)', () => {
   })
 })
 
-describe('discovery tool — CRUD round-trip through .plaited/discovery.sqlite', () => {
+describe('discovery tool — CRUD round-trip through .behavioral/discovery.sqlite', () => {
   test('create → read → update → delete an mcp-tool row', async () => {
     const { dbPath, cleanup } = await tempDbPath()
     const discovery = createDiscoveryTool({ dbPath })

@@ -17,7 +17,7 @@ const testOpts = { name: 'test-tool', outputSchema: z.object({}), help: 'test co
 
 describe('Router-level flags (subprocess)', () => {
   test('--version prints the version and exits 0', async () => {
-    const proc = Bun.spawn(['bun', 'bin/plaited.ts', '--version'], {
+    const proc = Bun.spawn(['bun', 'bin/behavioral.ts', '--version'], {
       stdout: 'pipe',
       stderr: 'pipe',
       cwd: path.resolve(import.meta.dir, '../../..'),
@@ -29,7 +29,7 @@ describe('Router-level flags (subprocess)', () => {
   })
 
   test('-v prints the version and exits 0', async () => {
-    const proc = Bun.spawn(['bun', 'bin/plaited.ts', '-v'], {
+    const proc = Bun.spawn(['bun', 'bin/behavioral.ts', '-v'], {
       stdout: 'pipe',
       stderr: 'pipe',
       cwd: path.resolve(import.meta.dir, '../../..'),
@@ -41,7 +41,7 @@ describe('Router-level flags (subprocess)', () => {
   })
 
   test('--help exits 0 and includes command list with --version flag', async () => {
-    const proc = Bun.spawn(['bun', 'bin/plaited.ts', '--help'], {
+    const proc = Bun.spawn(['bun', 'bin/behavioral.ts', '--help'], {
       stdout: 'pipe',
       stderr: 'pipe',
       cwd: path.resolve(import.meta.dir, '../../..'),
@@ -53,7 +53,7 @@ describe('Router-level flags (subprocess)', () => {
   })
 
   test('no args exits 1 and prints usage', async () => {
-    const proc = Bun.spawn(['bun', 'bin/plaited.ts'], {
+    const proc = Bun.spawn(['bun', 'bin/behavioral.ts'], {
       stdout: 'pipe',
       stderr: 'pipe',
       cwd: path.resolve(import.meta.dir, '../../..'),
@@ -64,7 +64,7 @@ describe('Router-level flags (subprocess)', () => {
   })
 
   test('--schema lists all commands', async () => {
-    const proc = Bun.spawn(['bun', 'bin/plaited.ts', '--schema'], {
+    const proc = Bun.spawn(['bun', 'bin/behavioral.ts', '--schema'], {
       stdout: 'pipe',
       stderr: 'pipe',
       cwd: path.resolve(import.meta.dir, '../../..'),

@@ -12,8 +12,8 @@ import { turnCli } from '../src/cli/turn.ts'
 import { lspCli } from '../src/cli/typescript-lsp.ts'
 
 export const runCli = makeCliRouter({
-  name: 'plaited',
-  description: 'Agent-facing skill discovery CLI for the Plaited framework',
+  name: 'behavioral',
+  description: 'Agent-facing skill discovery CLI for the behavioral agent harness',
   commands: {
     ...markdownCli,
     ...mcpClientCli,

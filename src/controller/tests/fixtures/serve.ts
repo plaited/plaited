@@ -9,7 +9,7 @@
 import { join } from 'node:path'
 import type { ServerWebSocket } from 'bun'
 import { B_TRIGGER } from '../../controller.constants.ts'
-import { bundleController, CONNECT_PLAITED_ROUTE } from './bundle-controller.ts'
+import { bundleController, CONNECT_BEHAVIORAL_ROUTE } from './bundle-controller.ts'
 
 const FIXTURES_DIR = import.meta.dir
 const controllerRoutes = await bundleController()
@@ -18,7 +18,7 @@ const connectScript = (modules?: string[]) => {
   const params = new URLSearchParams()
   if (modules?.length) params.set('modules', modules.join(','))
   const qs = params.toString()
-  return qs ? `${CONNECT_PLAITED_ROUTE}?${qs}` : CONNECT_PLAITED_ROUTE
+  return qs ? `${CONNECT_BEHAVIORAL_ROUTE}?${qs}` : CONNECT_BEHAVIORAL_ROUTE
 }
 
 // Build the extension module and serve its bundled output as a Response
@@ -264,7 +264,7 @@ export const startServer = (port = 0): FixtureServer => {
       '/control-island.html': new Response(HTML_CONTROL_ISLAND, { headers: { 'Content-Type': 'text/html' } }),
       '/swap-fixture.html': new Response(HTML_SWAP_FIXTURE, { headers: { 'Content-Type': 'text/html' } }),
       '/module-fixture.html': new Response(HTML_MODULE_FIXTURE, { headers: { 'Content-Type': 'text/html' } }),
-      [CONNECT_PLAITED_ROUTE]: () => controllerRoutes[CONNECT_PLAITED_ROUTE]!.clone(),
+      [CONNECT_BEHAVIORAL_ROUTE]: () => controllerRoutes[CONNECT_BEHAVIORAL_ROUTE]!.clone(),
       '/dist/*': (req) => {
         const route = moduleRoutes[new URL(req.url).pathname]
         return route ? route.clone() : new Response('Not Found', { status: 404 })

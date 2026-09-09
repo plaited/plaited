@@ -1,5 +1,5 @@
 /**
- * Utility functions for the Plaited framework.
+ * Utility functions for the behavioral framework.
  * Provides general-purpose helpers for type checking, string manipulation, and more.
  *
  * @remarks
@@ -9,9 +9,9 @@
  *
  * @remarks
  * All utilities are pure functions with no side effects unless explicitly documented.
- * These utilities are framework-agnostic and can be used independently of Plaited's core features.
+ * These utilities are framework-agnostic and can be used independently of the behavioral harness's core features.
  *
- * @see {@link https://github.com/plaited/plaited} for framework documentation
+ * @see {@link https://github.com/behavioral-sh/behavioral} for framework documentation
  * @since 1.0.0
  */
 

@@ -534,7 +534,6 @@ export type UseAddThread = (space?: string) => AddThread
  * - Initiates new execution cycle
  *
  * @see {@link BPEvent} for event structure
- * @see {@link PlaitedTrigger} for enhanced trigger
  */
 export type Trigger = <T extends BPEvent>(args: T) => void
 

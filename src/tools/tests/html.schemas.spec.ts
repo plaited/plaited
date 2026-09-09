@@ -56,7 +56,7 @@ describe('CUSTOM_PROPERTY_REF_PATTERN via ajv', () => {
   })
 })
 
-describe('PlaitedAttributesSchema [style] refinement', () => {
+describe('BehavioralAttributesSchema [style] refinement', () => {
   const validateStyle = (styleValue: unknown) => validatePStyle({}, styleValue)
 
   test('accepts empty string', () => {
@@ -142,7 +142,7 @@ describe('PlaitedAttributesSchema [style] refinement', () => {
   })
 })
 
-describe('PlaitedAttributesSchema [b-trigger] refinement', () => {
+describe('BehavioralAttributesSchema [b-trigger] refinement', () => {
   const validateTrigger = (triggerValue: unknown) => validatePTrigger({}, triggerValue)
 
   test('accepts empty string', () => {

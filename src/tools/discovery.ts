@@ -10,7 +10,7 @@
  * content through the relevant client tool. This tool is the dumb primitive;
  * the smarts live in the thread.
  *
- * Backed by `.plaited/discovery.sqlite` via `bun:sqlite`. Unified rows:
+ * Backed by `.behavioral/discovery.sqlite` via `bun:sqlite`. Unified rows:
  * `kind ∈ {'mcp-tool','skill'}`, `id`, `name`, `description`, `handle`
  * (server-url for mcp-tool, SKILL.md path for skill), `metadata_json`
  * (inputSchema for mcp-tool, frontmatter for skill), `updated_at`.
@@ -20,7 +20,7 @@
  * — local SQLite, regenerable (re-scan filesystem, re-discover servers).
  *
  * `dbPath` is **provisioner-injected, not model-facing**: the provisioner
- * resolves `.plaited/discovery.sqlite` against the project root and injects it
+ * resolves `.behavioral/discovery.sqlite` against the project root and injects it
  * at tool construction (see {@link createDiscoveryTool}). The model never
  * chooses it — a model-supplied `dbPath` is rejected at the schema boundary
  * (`additionalProperties: false`, no `dbPath` field). This is the one deviation
@@ -341,7 +341,7 @@ export type DiscoveryTool = ReturnType<typeof useTool<DiscoveryInput, DiscoveryO
 
 /**
  * Build a provisioned discovery tool bound to `dbPath`. The provisioner
- * resolves `.plaited/discovery.sqlite` against the project root and injects
+ * resolves `.behavioral/discovery.sqlite` against the project root and injects
  * it here; the model never supplies a `dbPath` (rejected at the schema
  * boundary). Returns a {@link useTool}-shaped function ready to register.
  */

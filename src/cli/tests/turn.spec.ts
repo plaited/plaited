@@ -4,7 +4,7 @@ import * as path from 'node:path'
 const repoRoot = path.resolve(import.meta.dir, '../../..')
 
 const runTurnCli = async (input: string): Promise<{ code: number; stdout: string; stderr: string }> => {
-  const proc = Bun.spawn(['bun', 'bin/plaited.ts', 'turn', input], {
+  const proc = Bun.spawn(['bun', 'bin/behavioral.ts', 'turn', input], {
     stdout: 'pipe',
     stderr: 'pipe',
     cwd: repoRoot,
@@ -17,7 +17,7 @@ const runTurnCli = async (input: string): Promise<{ code: number; stdout: string
   return { code, stdout, stderr }
 }
 
-describe('plaited turn — CLI seam (Harbor hook)', () => {
+describe('behavioral turn — CLI seam (Harbor hook)', () => {
   test('runs one scripted turn and prints a valid TurnResult JSON', async () => {
     const { code, stdout, stderr } = await runTurnCli('{"space":"s","prompt":"Hello"}')
     expect(code).toBe(0)
@@ -64,7 +64,7 @@ describe('plaited turn — CLI seam (Harbor hook)', () => {
   })
 
   test('--schema input emits the input JSON schema and exits 0', async () => {
-    const proc = Bun.spawn(['bun', 'bin/plaited.ts', 'turn', '--schema', 'input'], {
+    const proc = Bun.spawn(['bun', 'bin/behavioral.ts', 'turn', '--schema', 'input'], {
       stdout: 'pipe',
       stderr: 'pipe',
       cwd: repoRoot,
@@ -82,7 +82,7 @@ describe('plaited turn — CLI seam (Harbor hook)', () => {
   })
 
   test('--schema output emits the output JSON schema and exits 0', async () => {
-    const proc = Bun.spawn(['bun', 'bin/plaited.ts', 'turn', '--schema', 'output'], {
+    const proc = Bun.spawn(['bun', 'bin/behavioral.ts', 'turn', '--schema', 'output'], {
       stdout: 'pipe',
       stderr: 'pipe',
       cwd: repoRoot,
@@ -110,7 +110,7 @@ describe('plaited turn — CLI seam (Harbor hook)', () => {
   })
 
   test('--dry-run shows the request without running the turn', async () => {
-    const proc = Bun.spawn(['bun', 'bin/plaited.ts', 'turn', '{"space":"s","prompt":"hi"}', '--dry-run'], {
+    const proc = Bun.spawn(['bun', 'bin/behavioral.ts', 'turn', '{"space":"s","prompt":"hi"}', '--dry-run'], {
       stdout: 'pipe',
       stderr: 'pipe',
       cwd: repoRoot,
@@ -128,7 +128,7 @@ describe('plaited turn — CLI seam (Harbor hook)', () => {
   })
 
   test('the turn command is registered in the router --schema listing', async () => {
-    const proc = Bun.spawn(['bun', 'bin/plaited.ts', '--schema'], {
+    const proc = Bun.spawn(['bun', 'bin/behavioral.ts', '--schema'], {
       stdout: 'pipe',
       stderr: 'pipe',
       cwd: repoRoot,

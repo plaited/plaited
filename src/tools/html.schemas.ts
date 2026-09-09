@@ -305,9 +305,9 @@ const AriaRoleSchema = {
   ],
 }
 
-// ── Plaited attributes ────────────────────────────────────────────────────
+// ── Behavioral attributes ────────────────────────────────────────────────────
 
-export const PlaitedAttributesSchema = {
+export const BehavioralAttributesSchema = {
   type: 'object',
   properties: {
     [CLASS]: { type: 'string' },
@@ -321,13 +321,13 @@ export const PlaitedAttributesSchema = {
 // ── Detailed HTML attributes ──────────────────────────────────────────────
 
 /**
- * Standard HTML attributes combined with ARIA and Plaited attributes.
+ * Standard HTML attributes combined with ARIA and behavioral attributes.
  * @public
  */
 export const DetailedHTMLAttributesSchema = {
   type: 'object',
   properties: {
-    ...PlaitedAttributesSchema.properties,
+    ...BehavioralAttributesSchema.properties,
     ...AriaAttributesSchema.properties,
     // Standard HTML Attributes
     accesskey: { type: 'string' },

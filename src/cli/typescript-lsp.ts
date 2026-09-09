@@ -506,8 +506,8 @@ export const lspCli = makeCli({
     ...Object.entries(CAPABILITY_TO_METHOD).map(([cap, method]) => `  ${method} (${cap})`),
     '',
     'Examples:',
-    '  plaited typescript-lsp \'{"mode":"execute","file":"src/index.ts","requests":[{"method":"textDocument/documentSymbol","params":{"textDocument":{"uri":"file://src/index.ts"}}}]}\'',
-    '  plaited typescript-lsp \'{"mode":"discover"}\'',
+    '  behavioral typescript-lsp \'{"mode":"execute","file":"src/index.ts","requests":[{"method":"textDocument/documentSymbol","params":{"textDocument":{"uri":"file://src/index.ts"}}}]}\'',
+    '  behavioral typescript-lsp \'{"mode":"discover"}\'',
   ].join('\n'),
   run: async (input) => {
     if (input.mode === 'discover') {

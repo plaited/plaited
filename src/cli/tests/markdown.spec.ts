@@ -178,7 +178,7 @@ describe('markdownCli', () => {
   })
 
   test('validate-links returns present and missing links', async () => {
-    const baseDir = await mkdtemp(join(tmpdir(), 'plaited-markdown-cli-'))
+    const baseDir = await mkdtemp(join(tmpdir(), 'behavioral-markdown-cli-'))
 
     try {
       await mkdir(join(baseDir, 'docs'), { recursive: true })
@@ -212,7 +212,7 @@ describe('markdownCli', () => {
   })
 
   test('validate-links with rootRelative resolves leading-slash links against directory', async () => {
-    const baseDir = await mkdtemp(join(tmpdir(), 'plaited-markdown-cli-'))
+    const baseDir = await mkdtemp(join(tmpdir(), 'behavioral-markdown-cli-'))
 
     try {
       await mkdir(join(baseDir, 'tables'), { recursive: true })
@@ -246,7 +246,7 @@ describe('markdownCli', () => {
   })
 
   test('validate-links without rootRelative treats leading-slash links as filesystem-root (unchanged)', async () => {
-    const baseDir = await mkdtemp(join(tmpdir(), 'plaited-markdown-cli-'))
+    const baseDir = await mkdtemp(join(tmpdir(), 'behavioral-markdown-cli-'))
 
     try {
       await mkdir(join(baseDir, 'tables'), { recursive: true })

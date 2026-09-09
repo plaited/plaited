@@ -5,7 +5,7 @@
  * `BunKeychain` wraps {@link Bun.secrets} (macOS Keychain / libsecret /
  * Windows Credential Manager) so OAuth refresh tokens and client information
  * persist across process restarts without a plaintext file under
- * `~/.plaited/mcp/tokens/`. `InMemoryKeychain` is the test double — the only
+ * `~/.behavioral/mcp/tokens/`. `InMemoryKeychain` is the test double — the only
  * keychain boundary that gets mocked, per the slice's testing contract.
  *
  * All values are JSON strings; the provider serializes `StoredOAuthTokens` /
@@ -24,8 +24,8 @@ export type Keychain = {
   delete(name: string): Promise<boolean>
 }
 
-/** The fixed keychain service label — unique to plaited's MCP client. */
-export const KEYCHAIN_SERVICE = 'plaited.mcp'
+/** The fixed keychain service label — unique to the behavioral MCP client. */
+export const KEYCHAIN_SERVICE = 'behavioral.mcp'
 
 /**
  * Default keychain backed by {@link Bun.secrets}.

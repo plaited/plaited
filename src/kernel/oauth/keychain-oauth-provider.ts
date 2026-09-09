@@ -146,7 +146,7 @@ export class BunKeychainOAuthProvider {
       redirect_uris: [],
       grant_types: [grant],
       token_endpoint_auth_method: method === 'none' ? undefined : method,
-      client_name: 'plaited remote mcp',
+      client_name: 'behavioral remote mcp',
       scope: this.#scope,
     }
   }

@@ -1,14 +1,14 @@
 schema_version = "1.4"
 
 [task]
-name = "plaited/build-typescript-lsp-skill"
+name = "behavioral/build-typescript-lsp-skill"
 version = "1.0.0"
 description = "Author and install an AgentSkills-compliant typescript-lsp skill (SKILL.md + JSON-in/JSON-out CLI over the TypeScript 7 native API) at a conventional discovery location, verified against a baked-in fixture file"
 keywords = ["agent-skills", "cli", "typescript", "lsp", "json"]
 
 [[task.authors]]
-name = "Plaited"
-email = "agents@plaited.com"
+name = "Behavioral"
+email = "agents@behavioral.sh"
 
 [metadata]
 difficulty = "hard"

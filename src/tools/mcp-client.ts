@@ -566,7 +566,7 @@ export const createKeychainOAuthProvider = (
           redirect_uris: [],
           grant_types: [auth.type === 'oauth-client-credentials' ? 'client_credentials' : 'refresh_token'],
           token_endpoint_auth_method: auth.clientAuthentication === 'none' ? undefined : auth.clientAuthentication,
-          client_name: 'plaited remote mcp',
+          client_name: 'behavioral remote mcp',
           scope: getScopeString(auth.scopes),
         }
       )
