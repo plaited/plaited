@@ -34,7 +34,7 @@ It is used in two phases by two different audiences:
 | **A — authoring** | Agent + user | The **format spec** | A **project DESIGN.md** | Reasoning guidance: what concepts to elicit, how to choose patterns/affordances/feedback, what sections to fill |
 | **B — building** | Agent | The **project DESIGN.md** | **Actual UI** (HTML + behavioral threads) | Declarative inventory: exact `--*` tokens, declared `affordances:` / `feedback:` / `patterns:` maps, prose explaining intent |
 
-The format spec therefore contains: **mechanism** (how `p-scale`, `@scope`,
+The format spec therefore contains: **mechanism** (how `b-scale`, `@scope`,
 DSD, custom properties work — stable, shared) + **starter vocabulary**
 (default `affordances:` / `feedback:` / `patterns:` maps — shared defaults a
 project overrides/extends) + **section templates** (what each body section
@@ -53,7 +53,7 @@ relationship to HTML and to the framework:
 
 | Layer | What it declares | Appears in HTML? | Example |
 |-------|-----------------|------------------|---------|
-| **Structural** (`p-scale`, `patterns:`) | What a node *is* and what may nest inside it; the structural shape of a region | **Yes** — `p-scale` governs DOM nesting, so it appears in markup | `p-scale="s3"` (a block); a `Stream` pattern |
+| **Structural** (`b-scale`, `patterns:`) | What a node *is* and what may nest inside it; the structural shape of a region | **Yes** — `b-scale` governs DOM nesting, so it appears in markup | `b-scale="s3"` (a block); a `Stream` pattern |
 | **Functional** (`affordances:`, `feedback:`) | Named *interaction intents* and *loop response states* — the vocabulary reusable thread objects compose from | **No** — affordances and feedback are properties of *behavioral logic* (thread objects), not of HTML elements; the HTML is downstream of the thread, styled by the token bundles the vocabulary declares | `affordances: { danger, primary, secondary }`; `feedback: { error, confirmation, pending, success }` |
 | **Expressive** (`--*` tokens, carrier model) | The *visual values* — CSS custom properties, resolved per scope via inheritance + `@scope` / DSD | Yes — as CSS custom properties, but the *names* come from the vocabulary, not from a mode attribute | `'--color-primary': "#1A1C1E"`; a `danger` affordance's token-bundle override |
 
@@ -68,7 +68,7 @@ emits a render/attrs that styles the region with the "error" token bundle.
 The thread *is* the state machine; the HTML reflects the state.
 
 This is why no `p-mode` / `p-affordance` / `p-feedback` attribute is needed:
-the existing `p-target` / `p-trigger` / `p-scale` are sufficient for the HTML
+the existing `b-target` / `b-trigger` / `b-scale` are sufficient for the HTML
 side; the functional vocabulary lives in the thread layer, which the spec
 *declares* (so threads and templates share language) but the framework
 *executes* (the spec doesn't say how threads are wired).
@@ -84,8 +84,8 @@ side; the functional vocabulary lives in the thread layer, which the spec
    so a non-Plaited consumer with a similar trigger→logic→render loop can
    consume the same vocabulary through its own channel.
 
-2. **Attribute prefix is `p-*`.** `p-scale` joins the existing `p-trigger` /
-   `p-target` / `p-form`. Not `data-*`. **`p-mode` and `p-density` are
+2. **Attribute prefix is `p-*`.** `b-scale` joins the existing `b-trigger` /
+   `b-target` / `b-form`. Not `data-*`. **`p-mode` and `p-density` are
    dropped** — see decisions 5 and 6.
 
 3. **Carrier model — two boundary kinds + a choice rule + a composition
@@ -110,15 +110,15 @@ side; the functional vocabulary lives in the thread layer, which the spec
 
 6. **`p-density` dropped entirely.** Density is **not an attribute**.
    `--space-near` / `--space-away` are relationship multipliers (stable);
-   `--density-base` is the magnitude, **implied by `p-scale`** (deeper =
+   `--density-base` is the magnitude, **implied by `b-scale`** (deeper =
    denser, per Structural IA scale nesting — deeper = more specific, smaller
    scope). Final spacing is
    `calc(var(--density-base) * var(--space-near))`. No override attribute —
    an S5 is always roomy, an S1 is always compact; the scale nesting *is*
    the density curve. See [Density & spacing](#density--spacing).
 
-7. **Two axes: `p-scale` (structural) + functional vocabulary (affordances/
-   feedback).** `p-scale` governs *what a node is and what may nest inside
+7. **Two axes: `b-scale` (structural) + functional vocabulary (affordances/
+   feedback).** `b-scale` governs *what a node is and what may nest inside
    it* (composition, appears in HTML); affordances/feedback govern *what
    interaction a thread handles and what response it gives* (function, lives
    in thread objects, not HTML). `SCALE.rel` (rank 0, no nesting constraint)
@@ -152,7 +152,7 @@ side; the functional vocabulary lives in the thread layer, which the spec
     *how to think* toward pattern/affordance/feedback choices. They are
     **never** declared in a project's frontmatter and **never** mapped to
     framework primitives. The spec conveys *design reasoning*, not
-    *execution mechanics*. `p-trigger`/`p-target` are the depth the spec
+    *execution mechanics*. `b-trigger`/`b-target` are the depth the spec
     reaches on interaction binding; below that is the framework's concern.
 
 ## Functional flow
@@ -234,7 +234,7 @@ flow, so the same thread drives both.
 
 ```ts
 // src/main/html.constants.ts
-export const P_SCALE = 'p-scale'
+export const B_SCALE = 'b-scale'
 export const SCALE = keyMirror('s1','s2','s3','s4','s5','s6','rel')
 export const SCALE_RANK = { s1:1, s2:2, s3:3, s4:4, s5:5, s6:6, rel:0 }
 ```
@@ -258,13 +258,13 @@ throw on scale violations. Instead, the framework exposes a pre-flight
 that returns the effective structural boundary a `render` target lives in, so
 an agent can generate content that respects the boundary before rendering. The
 rule: **into** modes (`afterbegin`, `beforeend`, `innerHTML`) read the target's
-own `p-scale`, falling back to the nearest ancestor; **replace/beside** modes
+own `b-scale`, falling back to the nearest ancestor; **replace/beside** modes
 (`beforebegin`, `afterend`, `outerHTML`) read the target's parent's nearest
-`p-scale`. Across multiple matches, the most restrictive (lowest-rank) scale
-wins. No `p-scale` found anywhere → `rel` (permissive). `SCALE_RANK` drives
+`b-scale`. Across multiple matches, the most restrictive (lowest-rank) scale
+wins. No `b-scale` found anywhere → `rel` (permissive). `SCALE_RANK` drives
 this min-reduction, not an enforcement throw.
 
-`p-scale` is the **only** spec attribute that appears in HTML.
+`b-scale` is the **only** spec attribute that appears in HTML.
 
 `SCALE.rel` (rank 0) is the **scale-less / expression-only** home. A region
 with no structural role carries `rel` — no nesting constraint. This is the
@@ -273,7 +273,7 @@ scale of a pure expression scope (what `p-mode` regions used to be, before
 
 ### Provenance: the Modnet Structural Standard (MSS)
 
-The spec's four locked vocabulary axes — **scale** (`p-scale`), **structure**
+The spec's four locked vocabulary axes — **scale** (`b-scale`), **structure**
 (`patterns:`), **mechanics** (`affordances:` + `feedback:`), and **boundary**
 (the `patterns:` Boundary attribute) — trace to Rachel Jaffe's [Modnet
 Structural Standard (MSS)](https://rachelaliana.medium.com/modnet-design-standards-15e53176de41)
@@ -282,7 +282,7 @@ The MSS defined five tags for interoperable modules:
 
 | MSS tag | In this spec? | Where |
 |---------|-------------|-------|
-| **Scale** (S1–S8) | Yes (truncated S1–S6 + `rel`) | `p-scale` + `SCALE_RANK` |
+| **Scale** (S1–S8) | Yes (truncated S1–S6 + `rel`) | `b-scale` + `SCALE_RANK` |
 | **Structure** (blocks, modules, Daisy, etc.) | Yes | `patterns:` frontmatter map |
 | **Mechanics** (upvote, follow, karma — cross-cutting interaction dynamics) | Yes (reframed) | `affordances:` + `feedback:` — the interaction-intent and loop-response vocabulary for thread objects |
 | **Boundary** (all / none / ask — what information shares) | Yes (as prose contract) | `patterns:` Boundary attribute — a prose contract, not a CSS mechanism |
@@ -292,7 +292,7 @@ The fifth tag (content type) is deliberately out of scope for this spec: the
 spec governs the *shape* of the UI (scale, structure, mechanics, boundary,
 expression); the *content type* is a separate axis owned by the content layer
 (lexicons, record types, or project-specific content-type identifiers). A
-`Stream` pattern at `p-scale="s3"` is the same structural shape whether it
+`Stream` pattern at `b-scale="s3"` is the same structural shape whether it
 holds articles, episodes, or produce listings — the content type is what the
 stream is *for*; the pattern is *how it's shaped*.
 
@@ -304,7 +304,7 @@ places the agent speaks the vocabulary:
 
 | Vocabulary part | What the thread uses it for | What the template uses it for | Frontmatter |
 |-----------------|------------------------------|-------------------------------|-------------|
-| **Patterns** | "render a *Stream* here" (request structural shape) | Generate HTML with that structure at the declared `p-scale` | `patterns:` map (locked) |
+| **Patterns** | "render a *Stream* here" (request structural shape) | Generate HTML with that structure at the declared `b-scale` | `patterns:` map (locked) |
 | **Feedback states** | "transition to *pending*" (the response half of a loop) | Style the region with the state's token bundle | `feedback:` map — *the p-mode replacement* |
 | **Affordances** | "this region affords *danger*" (declare the interaction's functional intent) | Curate the token bundle + structural cues that convey it | `affordances:` map |
 
@@ -343,7 +343,7 @@ shared attribute.**
 
 **Locked** — `--space-near` / `--space-away` are **relationship multipliers**
 (relationship ratios, stable); `--density-base` is the **magnitude**,
-**implied by `p-scale`** (deeper = denser). Final spacing is
+**implied by `b-scale`** (deeper = denser). Final spacing is
 `calc(var(--density-base) * var(--space-near))` (gap) and
 `calc(var(--density-base) * var(--space-away))` (padding). **No `p-density`
 attribute** — the scale nesting *is* the density curve. This is the
@@ -362,17 +362,17 @@ mode→affordance/feedback reframing.
 
 1. **Light-DOM mode.** An inline `<style>` using `@scope { … }` encapsulates
    element selectors to a subtree. The Controller can still target
-   `[p-target]` *inside* it, and custom-property inheritance passes through.
+   `[b-target]` *inside* it, and custom-property inheritance passes through.
    **Use when the subtree needs Controller interactivity or inheritance
    pass-through.**
 
 2. **Self-contained template mode** (simplify-complexity case). An HTML
    template file (no `<head>`/`<body>`, a true HTML template) whose root
    carries a **Declarative Shadow DOM**. The DSD curates its own styling via
-   `:host([p-scale="…"])` inside the shadow's `<style>`; `::part()` exposes
+   `:host([b-scale="…"])` inside the shadow's `<style>`; `::part()` exposes
    the opt-in outward styling hooks. The Controller **cannot see into the
    shadow** — so this is for presentational/layout subtrees that don't need
-   `p-target` / `p-trigger` / Controller extensions. **Use to simplify
+   `b-target` / `b-trigger` / Controller extensions. **Use to simplify
    complexity by moving such subtrees out of the Controller's reach.**
 
 The shadow-DOM boundary here is a **styling/encapsulation** boundary, not a
@@ -391,8 +391,8 @@ inside the shadow).
 ### Composition + inflight-patch seam
 
 The agent reads template files and composes one into another; it can patch a
-template's *outer* attributes inflight — change the default `p-target`,
-append a `p-trigger` — during SSR (Renderer) or before a Controller render.
+template's *outer* attributes inflight — change the default `b-target`,
+append a `b-trigger` — during SSR (Renderer) or before a Controller render.
 So the **light-DOM shell** of a template instance is mutable by the
 agent/Controller; the **shadow interior** is the hardened, self-styling
 part. A `button.html` template "comes with its styling baked in" via DSD;
@@ -403,9 +403,9 @@ the agent drops it into a page and patches its outer attributes as needed.
 ```html
 <style>
   /* scale implies density-base; no p-density attribute */
-  [p-scale="s5"] { --density-base: 0.5rem; }   /* roomy — module */
-  [p-scale="s3"] { --density-base: 0.375rem; } /* default — block */
-  [p-scale="s1"] { --density-base: 0.25rem; }  /* compact — object */
+  [b-scale="s5"] { --density-base: 0.5rem; }   /* roomy — module */
+  [b-scale="s3"] { --density-base: 0.375rem; } /* default — block */
+  [b-scale="s1"] { --density-base: 0.25rem; }  /* compact — object */
 
   /* one button. padding derives from the enclosing scale + relationship. */
   button {
@@ -413,7 +413,7 @@ the agent drops it into a page and patches its outer attributes as needed.
              calc(var(--density-base) * var(--space-away));
   }
 </style>
-<section p-scale="s3">
+<section b-scale="s3">
   <button>Save</button>   <!-- default density for s3 — no size prop, no variant -->
 </section>
 ```
@@ -422,11 +422,11 @@ the agent drops it into a page and patches its outer attributes as needed.
 
 ```html
 <!-- button.html: a true HTML template, no head/body -->
-<button p-target="save">
+<button b-target="save">
   <template shadowrootmode="open">
     <style>
-      :host([p-scale="s1"]) { --density-base: 0.25rem; }
-      :host([p-scale="s3"]) { --density-base: 0.375rem; }
+      :host([b-scale="s1"]) { --density-base: 0.25rem; }
+      :host([b-scale="s3"]) { --density-base: 0.375rem; }
       button {
         padding: calc(var(--density-base) * var(--space-near))
                  calc(var(--density-base) * var(--space-away));
@@ -438,7 +438,7 @@ the agent drops it into a page and patches its outer attributes as needed.
 </button>
 ```
 
-`:host([p-scale="…"])` makes the host's light-DOM structural attribute drive
+`:host([b-scale="…"])` makes the host's light-DOM structural attribute drive
 styling inside the shadow; inherited `--density-base` from a light ancestor
 pierces in unless `:host()` redefines it.
 
@@ -453,7 +453,7 @@ attributes:
 | **Content** | What activities/interactions take place; the *goal* for the user | Prose string |
 | **Structure** | How information is organized; innate mechanics | Prose string |
 | **Boundary** | What information shares in/out; permissions (prose contract, not a CSS mechanism) | Prose string |
-| **Scale** | Which `p-scale` value this pattern occupies | Enum: `s1`–`s6` |
+| **Scale** | Which `b-scale` value this pattern occupies | Enum: `s1`–`s6` |
 
 ### Starter vocabulary (default, overridable)
 
@@ -487,14 +487,14 @@ top-down: function → structure → expression.
 | **Shapes** | `--radius-*` custom properties | Keep |
 | **Components** — token map with variant keys (`button-primary`, `button-primary-hover`) | **Eliminated.** No variant keys, no `components:` block. Components are `.html` templates styled with `--*` + `@scope`/`:host()`/`::part()`; their file format is an agent concern. | Eliminate |
 | **Modes** | **Dropped.** Replaced by `affordances:` + `feedback:` functional vocabulary (for thread objects, not HTML attributes). | Drop / replace |
-| **Structural Scale & Patterns** | *(NEW)* — `p-scale` (S1–S6 + `rel`), nesting constraint, density-from-scale, `patterns:` frontmatter map (overridable defaults) | Add |
+| **Structural Scale & Patterns** | *(NEW)* — `b-scale` (S1–S6 + `rel`), nesting constraint, density-from-scale, `patterns:` frontmatter map (overridable defaults) | Add |
 | **Functional Vocabulary** | *(NEW)* — `affordances:` + `feedback:` maps, reusable thread objects, functional flow reasoning (substrate-neutral) | Add |
 | **Do's and Don'ts** | Keep; scale + affordance/feedback-specific guidance | Keep |
 
-Net: the spec now has three layers — **structural** (`p-scale` + patterns,
+Net: the spec now has three layers — **structural** (`b-scale` + patterns,
 appears in HTML), **functional** (affordances + feedback, vocabulary for
 thread objects, not in HTML), and **expressive** (`--*` tokens + carrier
-model). `p-scale` is the only spec attribute in HTML. `p-mode` and
+model). `b-scale` is the only spec attribute in HTML. `p-mode` and
 `p-density` are gone. The original's `components:` token map is eliminated
 (the anti-pattern of variant-per-intent token proliferation that structural
 patterns + functional vocabulary dissolve).
@@ -506,10 +506,10 @@ actually works, not decisions.
 
 | Surface | What it does | Relevance |
 |---------|--------------|-----------|
-| **Renderer** (SSR, `src/main/renderer.ts`) | HTML-string in → `#html` buffer → `HTMLRewriter` mutations on `[p-target]` → HTML-string out. Synchronous, no live DOM. Styling lives as inline `<style>` tags in the HTML. | The spec's styling vehicle is inline `<style>`; SSR pre-renders with no JS. |
-| **Controller** (browser, `src/controller/controller.ts`) | WebSocket-push-driven; binds `p-trigger`/`p-form` in light DOM; applies `render`/`attrs`/`dispatch_custom_event`/`navigate`. Swaps fragments via `<template>` + `setHTMLUnsafe`. User events emit `ui_event` BPEvents (`{type, detail: getAttributes(element)}`). | The Controller touches only the **light DOM**. The same `render`/`attrs` BPEvents drive both SSR (Renderer) and CSR (Controller) — the vocabulary flows through both unchanged. |
+| **Renderer** (SSR, `src/main/renderer.ts`) | HTML-string in → `#html` buffer → `HTMLRewriter` mutations on `[b-target]` → HTML-string out. Synchronous, no live DOM. Styling lives as inline `<style>` tags in the HTML. | The spec's styling vehicle is inline `<style>`; SSR pre-renders with no JS. |
+| **Controller** (browser, `src/controller/controller.ts`) | WebSocket-push-driven; binds `b-trigger`/`b-form` in light DOM; applies `render`/`attrs`/`dispatch_custom_event`/`navigate`. Swaps fragments via `<template>` + `setHTMLUnsafe`. User events emit `ui_event` BPEvents (`{type, detail: getAttributes(element)}`). | The Controller touches only the **light DOM**. The same `render`/`attrs` BPEvents drive both SSR (Renderer) and CSR (Controller) — the vocabulary flows through both unchanged. |
 | **Snapshot** | `#sendSnapshot` uses `document.documentElement.getHTML({ serializableShadowRoots: true })`. | **Declarative Shadow DOM is first-class and round-trips** through snapshots. |
-| **`p-scale` / `SCALE` / `SCALE_RANK`** (`src/main/html.constants.ts`) | `P_SCALE = 'p-scale'`; `SCALE = keyMirror('s1'..'s6','rel')`; `SCALE_RANK = { s1:1 … s6:6, rel:0 }`. Old `template.ts` enforced: higher scale cannot nest inside lower; `rel` is scale-less (rank 0, nests anywhere). | The structural axis already exists in the codebase. The spec adopts it as a fixed enum + nesting constraint. `p-scale` is the only spec attribute in HTML. |
+| **`b-scale` / `SCALE` / `SCALE_RANK`** (`src/main/html.constants.ts`) | `B_SCALE = 'b-scale'`; `SCALE = keyMirror('s1'..'s6','rel')`; `SCALE_RANK = { s1:1 … s6:6, rel:0 }`. Old `template.ts` enforced: higher scale cannot nest inside lower; `rel` is scale-less (rank 0, nests anywhere). | The structural axis already exists in the codebase. The spec adopts it as a fixed enum + nesting constraint. `b-scale` is the only spec attribute in HTML. |
 | **BPEvent shape** | One currency across the agent↔browser boundary: `render`/`attrs`/`dispatch_custom_event`/`navigate` (agent→browser) and `ui_event`/`snapshot`/`error`/`success` (browser→agent). | The functional flow (trigger→logic→render) is *already* the behavioral runtime's shape. Threads orchestrating BPEvents *are* loops; *how* they orchestrate *is* the mechanic. The spec names this shape substrate-neutrally; the framework executes it. |
 
 ## Web-platform facts (gathered from MDN)
@@ -518,7 +518,7 @@ actually works, not decisions.
 |---------|----------|-----------|
 | **CSS custom properties** (`--*`) | Widely available, Apr 2017 — **`Inherited: yes`** | Inheritance **pierces the shadow-DOM boundary**: a `--x` set on a light ancestor flows into a shadow tree. The linchpin — token bundles declared for an affordance/feedback state reach the shadow interior through the same mechanism as light-DOM scopes. |
 | **`@scope`** at-rule | Baseline 2025 (Dec '25: Chrome 118, Safari 17.4, Firefox 146) | **Scoping proximity** = nearest scope root wins → the native CSS implementation of nested-scope resolution. Inline form auto-scopes to the `<style>`'s parent. Bare selectors/`&` carry `:where(:scope)` (zero specificity). Isolates *selection*, not *inheritance*. |
-| **`:host(<compound>)`** | Widely available, Jan 2020 | Host's light-DOM attribute drives styling *inside* the shadow, no JS: `:host([p-scale="s1"]) { --density-base: … }`. |
+| **`:host(<compound>)`** | Widely available, Jan 2020 | Host's light-DOM attribute drives styling *inside* the shadow, no JS: `:host([b-scale="s1"]) { --density-base: … }`. |
 | **`::part(<ident>+)`** | Widely available, Jul 2020 | Opt-in *outward* styling hook: the parent DOM can style shadow elements the template chose to expose via `part="…"`. `exportparts` re-exports nested parts. |
 
 ## Open frontier
@@ -529,7 +529,7 @@ wayfinder ticket when sharp enough.
 1. **Pattern vocabulary placement (core vs extension).** Does the starter
    `patterns:` vocabulary (Pools, Streams, Daisy, etc.) live in the core
    spec or in the coming Structural IA extension? The *mechanism*
-   (`p-scale`, four-attribute declaration shape, nesting constraint) lives
+   (`b-scale`, four-attribute declaration shape, nesting constraint) lives
    in core either way. *Held pending the next document.*
 
 2. **Frontmatter exact shape.** Flat `--*` map vs. still-grouped-by-purpose
@@ -565,6 +565,6 @@ resolved — dropped, replaced by affordances/feedback vocabulary.)*
 ## See also
 
 - [Controller](./controller.md) — the browser side; why the Controller only
-  touches the light DOM and why `p-target`/`p-trigger` live there.
+  touches the light DOM and why `b-target`/`b-trigger` live there.
 - [Renderer](./renderer.md) — the SSR side; HTML-string in/out and the
   inline `<style>` styling model.

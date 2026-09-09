@@ -142,7 +142,7 @@ describe('PlaitedAttributesSchema [style] refinement', () => {
   })
 })
 
-describe('PlaitedAttributesSchema [p-trigger] refinement', () => {
+describe('PlaitedAttributesSchema [b-trigger] refinement', () => {
   const validateTrigger = (triggerValue: unknown) => validatePTrigger({}, triggerValue)
 
   test('accepts empty string', () => {
@@ -189,7 +189,7 @@ describe('PlaitedAttributesSchema [p-trigger] refinement', () => {
     expect(validateTrigger('click:save;  click : delete')).toBe(false)
   })
 
-  test('accepts undefined (p-trigger not set)', () => {
+  test('accepts undefined (b-trigger not set)', () => {
     expect(validateTrigger(undefined)).toBe(true)
   })
 

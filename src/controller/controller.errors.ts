@@ -1,7 +1,7 @@
 import { ERROR_TYPES } from './controller.constants.ts'
 
 /**
- * Thrown when a server-pushed render or attrs message names a `p-target` that
+ * Thrown when a server-pushed render or attrs message names a `b-target` that
  * no longer exists in the DOM.
  *
  * @public
@@ -21,7 +21,7 @@ export class WebSocketMessageError extends Error implements Error {
 }
 
 /**
- * Thrown when a `p-trigger` event handler (non-extension path) throws while
+ * Thrown when a `b-trigger` event handler (non-extension path) throws while
  * dispatching a behavioral event to the agent.
  *
  * @public
@@ -51,7 +51,7 @@ export class WebSocketError extends Error implements Error {
 }
 
 /**
- * Thrown when a `p-form` submission's HTTP POST fails or returns a non-OK
+ * Thrown when a `b-form` submission's HTTP POST fails or returns a non-OK
  * status, or when the form submit handler itself throws.
  *
  * @public

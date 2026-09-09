@@ -44,9 +44,9 @@ import { keyMirror, deepEqual } from 'plaited/utils'
 - `src/utils/` — shared utilities
 - `bin/plaited.ts` — CLI entry point
 
-## scaleCheck (advisory p-scale guidance)
+## scaleCheck (advisory b-scale guidance)
 
-`p-scale` is advisory structural metadata, not a runtime-enforced invariant.
+`b-scale` is advisory structural metadata, not a runtime-enforced invariant.
 The framework exposes a read-only `scaleCheck` pre-flight (Renderer method +
 Controller `scale_check` WS message) that returns the effective structural
 boundary a `render` target lives in, so a server-side b-thread can generate

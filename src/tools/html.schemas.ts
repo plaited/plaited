@@ -1,5 +1,5 @@
 import Ajv2020 from 'ajv/dist/2020'
-import { P_FORM, P_SCALE, P_TARGET, P_TRIGGER, SCALE } from '../controller/controller.constants.ts'
+import { B_FORM, B_SCALE, B_TARGET, B_TRIGGER, SCALE } from '../controller/controller.constants.ts'
 import { CSSPropertiesSchema, CUSTOM_PROPERTY_REF_PATTERN, validateCSSValue } from './css.schemas.ts'
 
 export const CLASS = 'class'
@@ -11,7 +11,7 @@ export const STYLE = 'style'
  */
 export const ajv = new Ajv2020({ strict: false, validateSchema: true })
 
-// ── Imperative refines: p-trigger and style ───────────────────────────────
+// ── Imperative refines: b-trigger and style ───────────────────────────────
 //
 // These validation rules can't be expressed in JSON Schema. They are
 // implemented as AJV custom keywords (`pTriggerFormat`, `pStyleFormat`) so
@@ -19,7 +19,7 @@ export const ajv = new Ajv2020({ strict: false, validateSchema: true })
 // The underlying functions are also exported for explicit pre-checks.
 
 /**
- * Validates `p-trigger` strings: semicolon-separated `event:action` pairs
+ * Validates `b-trigger` strings: semicolon-separated `event:action` pairs
  * with no duplicate keys. Empty/whitespace strings are valid (no triggers).
  * @public
  */
@@ -311,9 +311,9 @@ export const PlaitedAttributesSchema = {
   type: 'object',
   properties: {
     [CLASS]: { type: 'string' },
-    [P_SCALE]: { type: 'string', enum: Object.values(SCALE) },
-    [P_TARGET]: { anyOf: [{ type: 'string' }, { type: 'number' }] },
-    [P_TRIGGER]: { type: 'string', pTriggerFormat: true },
+    [B_SCALE]: { type: 'string', enum: Object.values(SCALE) },
+    [B_TARGET]: { anyOf: [{ type: 'string' }, { type: 'number' }] },
+    [B_TRIGGER]: { type: 'string', pTriggerFormat: true },
     [STYLE]: { type: 'string', pStyleFormat: true },
   },
 }
@@ -549,10 +549,10 @@ const DetailedFormHTMLAttributesSchema = {
     name: { type: 'string' },
     novalidate: { type: 'boolean' },
     target: { type: 'string' },
-    [P_TRIGGER]: { not: {} },
-    [P_FORM]: { type: 'string' },
+    [B_TRIGGER]: { not: {} },
+    [B_FORM]: { type: 'string' },
   },
-  required: [P_FORM],
+  required: [B_FORM],
 }
 
 const DetailedHtmlHTMLAttributesSchema = {

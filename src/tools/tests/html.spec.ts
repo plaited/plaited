@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { P_SCALE, P_TARGET, SCALE, SWAP_MODES } from '../../controller/controller.constants.ts'
+import { B_SCALE, B_TARGET, SCALE, SWAP_MODES } from '../../controller/controller.constants.ts'
 import {
   htmlRender,
   htmlScaleCheck,
@@ -242,16 +242,16 @@ describe('htmlValidateAttributeValue — on* security', () => {
 })
 
 describe('htmlValidateAttributeValue — schema validation', () => {
-  test('valid p-scale value returns { valid: true }', async () => {
-    const result = await htmlValidateAttributeValue({ tag: 'div', attr: 'p-scale', val: 's3' })
+  test('valid b-scale value returns { valid: true }', async () => {
+    const result = await htmlValidateAttributeValue({ tag: 'div', attr: 'b-scale', val: 's3' })
     expect(result.isError).toBeFalsy()
     expect(result.valid).toBe(true)
   })
 
-  test('invalid p-scale value returns isError', async () => {
-    const result = await htmlValidateAttributeValue({ tag: 'div', attr: 'p-scale', val: 's99' })
+  test('invalid b-scale value returns isError', async () => {
+    const result = await htmlValidateAttributeValue({ tag: 'div', attr: 'b-scale', val: 's99' })
     expect(result.isError).toBe(true)
-    expect(result.htmlViolations![0]).toMatchObject({ tag: 'div', attribute: 'p-scale' })
+    expect(result.htmlViolations![0]).toMatchObject({ tag: 'div', attribute: 'b-scale' })
   })
 })
 
@@ -260,19 +260,19 @@ describe('htmlValidateAttributeValue — schema validation', () => {
 describe('htmlRender — swap modes', () => {
   test('innerHTML replaces inner content', async () => {
     const result = await htmlRender({
-      html: `<div ${P_TARGET}="t">old</div>`,
+      html: `<div ${B_TARGET}="t">old</div>`,
       target: 't',
       fragment: '<b>new</b>',
       swap: SWAP_MODES.innerHTML,
       id: '1',
     })
     expect(result.isError).toBeFalsy()
-    expect(result.html).toBe(`<div ${P_TARGET}="t"><b>new</b></div>`)
+    expect(result.html).toBe(`<div ${B_TARGET}="t"><b>new</b></div>`)
   })
 
   test('outerHTML replaces the element', async () => {
     const result = await htmlRender({
-      html: `<p>x</p><div ${P_TARGET}="t">old</div><p>y</p>`,
+      html: `<p>x</p><div ${B_TARGET}="t">old</div><p>y</p>`,
       target: 't',
       fragment: `<b>new</b>`,
       swap: SWAP_MODES.outerHTML,
@@ -283,114 +283,114 @@ describe('htmlRender — swap modes', () => {
 
   test('afterbegin inserts at start of inner content', async () => {
     const result = await htmlRender({
-      html: `<div ${P_TARGET}="t">old</div>`,
+      html: `<div ${B_TARGET}="t">old</div>`,
       target: 't',
       fragment: `<b>first</b>`,
       swap: SWAP_MODES.afterbegin,
       id: '1',
     })
-    expect(result.html).toBe(`<div ${P_TARGET}="t"><b>first</b>old</div>`)
+    expect(result.html).toBe(`<div ${B_TARGET}="t"><b>first</b>old</div>`)
   })
 
   test('beforeend inserts at end of inner content', async () => {
     const result = await htmlRender({
-      html: `<div ${P_TARGET}="t">old</div>`,
+      html: `<div ${B_TARGET}="t">old</div>`,
       target: 't',
       fragment: `<b>last</b>`,
       swap: SWAP_MODES.beforeend,
       id: '1',
     })
-    expect(result.html).toBe(`<div ${P_TARGET}="t">old<b>last</b></div>`)
+    expect(result.html).toBe(`<div ${B_TARGET}="t">old<b>last</b></div>`)
   })
 
   test('beforebegin inserts before the element', async () => {
     const result = await htmlRender({
-      html: `<div ${P_TARGET}="t">old</div>`,
+      html: `<div ${B_TARGET}="t">old</div>`,
       target: 't',
       fragment: `<b>before</b>`,
       swap: SWAP_MODES.beforebegin,
       id: '1',
     })
-    expect(result.html).toBe(`<b>before</b><div ${P_TARGET}="t">old</div>`)
+    expect(result.html).toBe(`<b>before</b><div ${B_TARGET}="t">old</div>`)
   })
 
   test('afterend inserts after the element', async () => {
     const result = await htmlRender({
-      html: `<div ${P_TARGET}="t">old</div>`,
+      html: `<div ${B_TARGET}="t">old</div>`,
       target: 't',
       fragment: `<b>after</b>`,
       swap: SWAP_MODES.afterend,
       id: '1',
     })
-    expect(result.html).toBe(`<div ${P_TARGET}="t">old</div><b>after</b>`)
+    expect(result.html).toBe(`<div ${B_TARGET}="t">old</div><b>after</b>`)
   })
 })
 
 describe('htmlRender — all-matches targeting', () => {
-  test('two elements with the same p-target both get swapped', async () => {
+  test('two elements with the same b-target both get swapped', async () => {
     const result = await htmlRender({
-      html: `<div ${P_TARGET}="t">a</div><div ${P_TARGET}="t">b</div>`,
+      html: `<div ${B_TARGET}="t">a</div><div ${B_TARGET}="t">b</div>`,
       target: 't',
       fragment: 'x',
       swap: SWAP_MODES.innerHTML,
       id: '1',
     })
-    expect(result.html).toBe(`<div ${P_TARGET}="t">x</div><div ${P_TARGET}="t">x</div>`)
+    expect(result.html).toBe(`<div ${B_TARGET}="t">x</div><div ${B_TARGET}="t">x</div>`)
   })
 })
 
 describe('htmlRender — match param', () => {
   test("default match ('=') requires exact value", async () => {
     const result = await htmlRender({
-      html: `<div ${P_TARGET}="user">x</div><div ${P_TARGET}="user-name">y</div>`,
+      html: `<div ${B_TARGET}="user">x</div><div ${B_TARGET}="user-name">y</div>`,
       target: 'user',
       fragment: 'z',
       swap: SWAP_MODES.innerHTML,
       id: '1',
     })
-    expect(result.html).toBe(`<div ${P_TARGET}="user">z</div><div ${P_TARGET}="user-name">y</div>`)
+    expect(result.html).toBe(`<div ${B_TARGET}="user">z</div><div ${B_TARGET}="user-name">y</div>`)
   })
 
   test("match='^=' fills user-name and user-email but not other", async () => {
     const result = await htmlRender({
-      html: `<div ${P_TARGET}="greeting">old</div><span ${P_TARGET}="user-name">name</span><span ${P_TARGET}="user-email">email</span><span ${P_TARGET}="other">keep</span>`,
+      html: `<div ${B_TARGET}="greeting">old</div><span ${B_TARGET}="user-name">name</span><span ${B_TARGET}="user-email">email</span><span ${B_TARGET}="other">keep</span>`,
       target: 'user',
       fragment: 'filled',
       match: '^=',
       swap: SWAP_MODES.innerHTML,
       id: '1',
     })
-    expect(result.html).toContain(`<span ${P_TARGET}="user-name">filled</span>`)
-    expect(result.html).toContain(`<span ${P_TARGET}="user-email">filled</span>`)
-    expect(result.html).toContain(`<span ${P_TARGET}="other">keep</span>`)
+    expect(result.html).toContain(`<span ${B_TARGET}="user-name">filled</span>`)
+    expect(result.html).toContain(`<span ${B_TARGET}="user-email">filled</span>`)
+    expect(result.html).toContain(`<span ${B_TARGET}="other">keep</span>`)
   })
 
   test("match='*=' substring matches", async () => {
     const result = await htmlRender({
-      html: `<div ${P_TARGET}="alpha">a</div><div ${P_TARGET}="zeta">z</div>`,
+      html: `<div ${B_TARGET}="alpha">a</div><div ${B_TARGET}="zeta">z</div>`,
       target: 'lph',
       fragment: 'x',
       match: '*=',
       swap: SWAP_MODES.innerHTML,
       id: '1',
     })
-    expect(result.html).toBe(`<div ${P_TARGET}="alpha">x</div><div ${P_TARGET}="zeta">z</div>`)
+    expect(result.html).toBe(`<div ${B_TARGET}="alpha">x</div><div ${B_TARGET}="zeta">z</div>`)
   })
 
   test("match='~=' space-list matches one of space-separated tokens", async () => {
     const result = await htmlRender({
-      html: `<div ${P_TARGET}="a b c">x</div><div ${P_TARGET}="bc">y</div>`,
+      html: `<div ${B_TARGET}="a b c">x</div><div ${B_TARGET}="bc">y</div>`,
       target: 'b',
       fragment: 'z',
       match: '~=',
       swap: SWAP_MODES.innerHTML,
       id: '1',
     })
-    expect(result.html).toBe(`<div ${P_TARGET}="a b c">z</div><div ${P_TARGET}="bc">y</div>`)
+    expect(result.html).toBe(`<div ${B_TARGET}="a b c">z</div><div ${B_TARGET}="bc">y</div>`)
   })
 
   test('zero matches is a no-op — html unchanged, returns { id, target, html }', async () => {
-    const html = `<div ${P_TARGET}="t">keep</div>`
+    const html = `<div ${B_TARGET}="t">keep</div>`
     const result = await htmlRender({ html, target: 'nope', fragment: 'x', swap: SWAP_MODES.innerHTML, id: '1' })
     expect(result.isError).toBeFalsy()
     expect(result.html).toBe(html)
@@ -401,19 +401,19 @@ describe('htmlRender — match param', () => {
 describe('htmlRender — output shape', () => {
   test('render returns { id, target, html } carrying the new state', async () => {
     const result = await htmlRender({
-      html: `<div ${P_TARGET}="t">old</div>`,
+      html: `<div ${B_TARGET}="t">old</div>`,
       target: 't',
       fragment: 'new',
       swap: SWAP_MODES.innerHTML,
       id: 'i1',
     })
-    expect(result).toEqual({ id: 'i1', target: 't', html: `<div ${P_TARGET}="t">new</div>` })
+    expect(result).toEqual({ id: 'i1', target: 't', html: `<div ${B_TARGET}="t">new</div>` })
   })
 })
 
 describe('htmlRender — stateless threading', () => {
   test('a render → attrs → render sequence threads each output html into the next', async () => {
-    let html = `<div ${P_TARGET}="t"></div>`
+    let html = `<div ${B_TARGET}="t"></div>`
     html = (
       await htmlRender({ html, target: 't', fragment: '<span>first</span>', swap: SWAP_MODES.innerHTML, id: '1' })
     ).html
@@ -425,26 +425,26 @@ describe('htmlRender — stateless threading', () => {
       swap: SWAP_MODES.beforeend,
       id: '3',
     })
-    expect(result.html).toBe(`<div ${P_TARGET}="t" data-n="1"><span>first</span><b>second</b></div>`)
+    expect(result.html).toBe(`<div ${B_TARGET}="t" data-n="1"><span>first</span><b>second</b></div>`)
   })
 })
 
 describe('htmlRender — no stylesheet handling', () => {
   test('render does not touch a <style> in the document html', async () => {
     const result = await htmlRender({
-      html: `<style>.x{color:red}</style><div ${P_TARGET}="t">old</div>`,
+      html: `<style>.x{color:red}</style><div ${B_TARGET}="t">old</div>`,
       target: 't',
       fragment: 'new',
       swap: SWAP_MODES.innerHTML,
       id: '1',
     })
-    expect(result.html).toBe(`<style>.x{color:red}</style><div ${P_TARGET}="t">new</div>`)
+    expect(result.html).toBe(`<style>.x{color:red}</style><div ${B_TARGET}="t">new</div>`)
   })
 })
 
 describe('htmlRender — payload (fragment) validation', () => {
   test('on* attribute in fragment returns isError and leaves the document html unchanged', async () => {
-    const html = `<div ${P_TARGET}="t">old</div>`
+    const html = `<div ${B_TARGET}="t">old</div>`
     const result = await htmlRender({
       html,
       target: 't',
@@ -456,8 +456,8 @@ describe('htmlRender — payload (fragment) validation', () => {
     expect(result.html).toBe(html)
   })
 
-  test('fragment is validated even when no p-target matches', async () => {
-    const html = `<div ${P_TARGET}="t">old</div>`
+  test('fragment is validated even when no b-target matches', async () => {
+    const html = `<div ${B_TARGET}="t">old</div>`
     const result = await htmlRender({
       html,
       target: 'nope',
@@ -470,7 +470,7 @@ describe('htmlRender — payload (fragment) validation', () => {
 
   test('quote-breakout in fragment attributes is neutralized', async () => {
     const result = await htmlRender({
-      html: `<div ${P_TARGET}="t">old</div>`,
+      html: `<div ${B_TARGET}="t">old</div>`,
       target: 't',
       fragment: `<b class='"breakout'>new</b>`,
       swap: SWAP_MODES.innerHTML,
@@ -483,7 +483,7 @@ describe('htmlRender — payload (fragment) validation', () => {
 
   test('validates CSS in fragment <style> blocks', async () => {
     const result = await htmlRender({
-      html: `<div ${P_TARGET}="t">old</div>`,
+      html: `<div ${B_TARGET}="t">old</div>`,
       target: 't',
       fragment: `<style>.a { box-sizing: mah-box; }</style>new`,
       swap: SWAP_MODES.innerHTML,
@@ -498,76 +498,76 @@ describe('htmlRender — payload (fragment) validation', () => {
 describe('htmlUpdateAttributes — updateAttributes rules', () => {
   test('string set', async () => {
     const result = await htmlUpdateAttributes({
-      html: `<div ${P_TARGET}="t" data-x="old"></div>`,
+      html: `<div ${B_TARGET}="t" data-x="old"></div>`,
       target: 't',
       attr: { 'data-x': 'new' },
       id: '1',
     })
     expect(result.isError).toBeFalsy()
-    expect(result.html).toBe(`<div ${P_TARGET}="t" data-x="new"></div>`)
+    expect(result.html).toBe(`<div ${B_TARGET}="t" data-x="new"></div>`)
   })
 
   test('null + present → removeAttribute', async () => {
     const result = await htmlUpdateAttributes({
-      html: `<div ${P_TARGET}="t" data-x="old"></div>`,
+      html: `<div ${B_TARGET}="t" data-x="old"></div>`,
       target: 't',
       attr: { 'data-x': null },
       id: '1',
     })
-    expect(result.html).toBe(`<div ${P_TARGET}="t"></div>`)
+    expect(result.html).toBe(`<div ${B_TARGET}="t"></div>`)
   })
 
   test('null + absent → no-op', async () => {
-    const html = `<div ${P_TARGET}="t"></div>`
+    const html = `<div ${B_TARGET}="t"></div>`
     const result = await htmlUpdateAttributes({ html, target: 't', attr: { 'data-x': null }, id: '1' })
     expect(result.html).toBe(html)
   })
 
   test('BOOLEAN_ATTRS → set bare (present when absent)', async () => {
     const result = await htmlUpdateAttributes({
-      html: `<input ${P_TARGET}="t"/>`,
+      html: `<input ${B_TARGET}="t"/>`,
       target: 't',
       attr: { disabled: true },
       id: '1',
     })
-    expect(result.html).toBe(`<input ${P_TARGET}="t" disabled="" />`)
+    expect(result.html).toBe(`<input ${B_TARGET}="t" disabled="" />`)
   })
 
   test('number coerced to string', async () => {
     const result = await htmlUpdateAttributes({
-      html: `<div ${P_TARGET}="t"></div>`,
+      html: `<div ${B_TARGET}="t"></div>`,
       target: 't',
       attr: { 'data-n': 5 },
       id: '1',
     })
-    expect(result.html).toBe(`<div ${P_TARGET}="t" data-n="5"></div>`)
+    expect(result.html).toBe(`<div ${B_TARGET}="t" data-n="5"></div>`)
   })
 
-  test('all-matches: same p-target on multiple elements → all updated', async () => {
+  test('all-matches: same b-target on multiple elements → all updated', async () => {
     const result = await htmlUpdateAttributes({
-      html: `<div ${P_TARGET}="t"></div><div ${P_TARGET}="t"></div>`,
+      html: `<div ${B_TARGET}="t"></div><div ${B_TARGET}="t"></div>`,
       target: 't',
       attr: { 'data-n': '1' },
       id: '1',
     })
-    expect(result.html).toBe(`<div ${P_TARGET}="t" data-n="1"></div><div ${P_TARGET}="t" data-n="1"></div>`)
+    expect(result.html).toBe(`<div ${B_TARGET}="t" data-n="1"></div><div ${B_TARGET}="t" data-n="1"></div>`)
   })
 
   test('match param on attrs (^=)', async () => {
     const result = await htmlUpdateAttributes({
-      html: `<span ${P_TARGET}="user-name">name</span><span ${P_TARGET}="user-email">email</span><span ${P_TARGET}="other">keep</span>`,
+      html: `<span ${B_TARGET}="user-name">name</span><span ${B_TARGET}="user-email">email</span><span ${B_TARGET}="other">keep</span>`,
       target: 'user',
       match: '^=',
       attr: { 'data-set': '1' },
       id: '1',
     })
-    expect(result.html).toContain(`<span ${P_TARGET}="user-name" data-set="1">name</span>`)
-    expect(result.html).toContain(`<span ${P_TARGET}="user-email" data-set="1">email</span>`)
-    expect(result.html).toContain(`<span ${P_TARGET}="other">keep</span>`)
+    expect(result.html).toContain(`<span ${B_TARGET}="user-name" data-set="1">name</span>`)
+    expect(result.html).toContain(`<span ${B_TARGET}="user-email" data-set="1">email</span>`)
+    expect(result.html).toContain(`<span ${B_TARGET}="other">keep</span>`)
   })
 
   test('zero matches is a no-op — html unchanged, returns { id, target, html }', async () => {
-    const html = `<div ${P_TARGET}="t">keep</div>`
+    const html = `<div ${B_TARGET}="t">keep</div>`
     const result = await htmlUpdateAttributes({ html, target: 'nope', attr: { 'data-x': '1' }, id: '1' })
     expect(result.isError).toBeFalsy()
     expect(result.html).toBe(html)
@@ -578,18 +578,18 @@ describe('htmlUpdateAttributes — updateAttributes rules', () => {
 describe('htmlUpdateAttributes — output shape', () => {
   test('attrs returns { id, target, html } carrying the new state', async () => {
     const result = await htmlUpdateAttributes({
-      html: `<div ${P_TARGET}="t"></div>`,
+      html: `<div ${B_TARGET}="t"></div>`,
       target: 't',
       attr: { 'data-n': 9 },
       id: 'i2',
     })
-    expect(result).toEqual({ id: 'i2', target: 't', html: `<div ${P_TARGET}="t" data-n="9"></div>` })
+    expect(result).toEqual({ id: 'i2', target: 't', html: `<div ${B_TARGET}="t" data-n="9"></div>` })
   })
 })
 
 describe('htmlUpdateAttributes — on* and schema validation', () => {
   test('on* attribute returns isError and leaves the document html unchanged', async () => {
-    const html = `<div ${P_TARGET}="t"></div>`
+    const html = `<div ${B_TARGET}="t"></div>`
     const result = await htmlUpdateAttributes({ html, target: 't', attr: { onclick: 'alert(1)' }, id: '1' })
     expect(result.isError).toBe(true)
     expect(result.htmlViolations![0]).toMatchObject({ tag: 'div', attribute: 'onclick' })
@@ -597,7 +597,7 @@ describe('htmlUpdateAttributes — on* and schema validation', () => {
   })
 
   test('schema-invalid value returns isError', async () => {
-    const html = `<a ${P_TARGET}="t" href="#"></a>`
+    const html = `<a ${B_TARGET}="t" href="#"></a>`
     const result = await htmlUpdateAttributes({ html, target: 't', attr: { target: '_bad' }, id: '1' })
     expect(result.isError).toBe(true)
     expect(result.htmlViolations![0]).toMatchObject({ tag: 'a', attribute: 'target' })
@@ -605,22 +605,22 @@ describe('htmlUpdateAttributes — on* and schema validation', () => {
 
   test('schema-valid enum value is accepted', async () => {
     const result = await htmlUpdateAttributes({
-      html: `<a ${P_TARGET}="t" href="#"></a>`,
+      html: `<a ${B_TARGET}="t" href="#"></a>`,
       target: 't',
       attr: { target: '_blank' },
       id: '1',
     })
     expect(result.isError).toBeFalsy()
-    expect(result.html).toBe(`<a ${P_TARGET}="t" href="#" target="_blank"></a>`)
+    expect(result.html).toBe(`<a ${B_TARGET}="t" href="#" target="_blank"></a>`)
   })
 })
 
 // ── html-scale-check ───────────────────────────────────────────────────────
 
 describe('htmlScaleCheck — into modes (self boundary)', () => {
-  test('target with own p-scale returns that scale', async () => {
+  test('target with own b-scale returns that scale', async () => {
     const result = await htmlScaleCheck({
-      html: `<div ${P_TARGET}="t" ${P_SCALE}="s3">old</div>`,
+      html: `<div ${B_TARGET}="t" ${B_SCALE}="s3">old</div>`,
       target: 't',
       swap: SWAP_MODES.innerHTML,
       id: '1',
@@ -628,9 +628,9 @@ describe('htmlScaleCheck — into modes (self boundary)', () => {
     expect(result).toEqual({ id: '1', target: 't', effectiveScale: SCALE.s3 })
   })
 
-  test('target without own p-scale inherits nearest ancestor scale', async () => {
+  test('target without own b-scale inherits nearest ancestor scale', async () => {
     const result = await htmlScaleCheck({
-      html: `<section ${P_SCALE}="s5"><article ${P_SCALE}="s3"><span ${P_TARGET}="t">x</span></article></section>`,
+      html: `<section ${B_SCALE}="s5"><article ${B_SCALE}="s3"><span ${B_TARGET}="t">x</span></article></section>`,
       target: 't',
       swap: SWAP_MODES.innerHTML,
       id: '1',
@@ -640,9 +640,9 @@ describe('htmlScaleCheck — into modes (self boundary)', () => {
 })
 
 describe('htmlScaleCheck — replace/beside modes (parent boundary)', () => {
-  test('outerHTML uses parent scale, ignores target own p-scale', async () => {
+  test('outerHTML uses parent scale, ignores target own b-scale', async () => {
     const result = await htmlScaleCheck({
-      html: `<section ${P_SCALE}="s5"><span ${P_TARGET}="t" ${P_SCALE}="s1">x</span></section>`,
+      html: `<section ${B_SCALE}="s5"><span ${B_TARGET}="t" ${B_SCALE}="s1">x</span></section>`,
       target: 't',
       swap: SWAP_MODES.outerHTML,
       id: '1',
@@ -652,9 +652,9 @@ describe('htmlScaleCheck — replace/beside modes (parent boundary)', () => {
 })
 
 describe('htmlScaleCheck — no scale found', () => {
-  test('no p-scale anywhere returns rel', async () => {
+  test('no b-scale anywhere returns rel', async () => {
     const result = await htmlScaleCheck({
-      html: `<div><span ${P_TARGET}="t">x</span></div>`,
+      html: `<div><span ${B_TARGET}="t">x</span></div>`,
       target: 't',
       swap: SWAP_MODES.innerHTML,
       id: '1',
@@ -664,7 +664,7 @@ describe('htmlScaleCheck — no scale found', () => {
 
   test('zero matches returns rel', async () => {
     const result = await htmlScaleCheck({
-      html: `<div ${P_TARGET}="t">x</div>`,
+      html: `<div ${B_TARGET}="t">x</div>`,
       target: 'nope',
       swap: SWAP_MODES.innerHTML,
       id: '1',
@@ -676,7 +676,7 @@ describe('htmlScaleCheck — no scale found', () => {
 describe('htmlScaleCheck — multiple matches', () => {
   test('most restrictive (lowest rank) across matches wins', async () => {
     const result = await htmlScaleCheck({
-      html: `<section ${P_SCALE}="s5"><div ${P_TARGET}="t">a</div></section><article ${P_SCALE}="s2"><div ${P_TARGET}="t">b</div></article>`,
+      html: `<section ${B_SCALE}="s5"><div ${B_TARGET}="t">a</div></section><article ${B_SCALE}="s2"><div ${B_TARGET}="t">b</div></article>`,
       target: 't',
       swap: SWAP_MODES.innerHTML,
       id: '1',

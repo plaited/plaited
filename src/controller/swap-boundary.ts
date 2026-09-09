@@ -12,7 +12,7 @@ import { SWAP_MODES, SWAP_TARGETS } from './controller.constants.ts'
  *   parent is the container → `'parent'`.
  *
  * Shared by the Renderer (SSR) and Controller (browser) so both surfaces apply
- * the same boundary rule before reading `p-scale`.
+ * the same boundary rule before reading `b-scale`.
  *
  * @param swap - A {@link SWAP_MODES} value.
  * @returns `'self'` for into modes, `'parent'` for replace/beside modes.

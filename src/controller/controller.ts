@@ -1,12 +1,12 @@
 import type { BPEvent, Disconnect } from '../behavioral/behavioral.types.ts'
 import {
+  B_FORM,
+  B_SCALE,
+  B_TARGET,
+  B_TRIGGER,
   BOOLEAN_ATTRS,
   CONTROLLER_INCOMING_MESSAGE_TYPES,
   CONTROLLER_OUTGOING_MESSAGE_TYPES,
-  P_FORM,
-  P_SCALE,
-  P_TARGET,
-  P_TRIGGER,
   PAGE_EVENTS,
   SCALE,
   SCALE_RANK,
@@ -73,8 +73,8 @@ const isSubmit = (event: Event): event is SubmitEvent => event instanceof Submit
  *
  * @remarks
  * One instance per page, loaded via an async module script in `<head>`. The
- * controller opens a WebSocket to its serving agent, binds `p-trigger` and
- * `p-form` declarations in the DOM, and applies server-pushed `render`,
+ * controller opens a WebSocket to its serving agent, binds `b-trigger` and
+ * `b-form` declarations in the DOM, and applies server-pushed `render`,
  * `attrs`, `dispatch_custom_event`, and `navigate` messages. User
  * interactions emit `ui_event` messages back to the agent, which decides what
  * to render in response — a push-based model distinct from pull-based
@@ -217,9 +217,9 @@ export class Controller {
     })
   }
   #bindTriggers(subtree: DocumentFragment | HTMLBodyElement) {
-    const elements = subtree.querySelectorAll(`[${P_TRIGGER}]`)
+    const elements = subtree.querySelectorAll(`[${B_TRIGGER}]`)
     for (const element of elements) {
-      const raw = element.getAttribute(P_TRIGGER)
+      const raw = element.getAttribute(B_TRIGGER)
       if (!raw) continue
       const handlers = new Map<string, (event: Event) => void>()
       for (const pair of raw.split(' ')) {
@@ -264,7 +264,7 @@ export class Controller {
     }
   }
   #bindForms(subtree: DocumentFragment | HTMLBodyElement) {
-    const elements = subtree.querySelectorAll<HTMLFormElement>(`form[${P_FORM}]`)
+    const elements = subtree.querySelectorAll<HTMLFormElement>(`form[${B_FORM}]`)
     for (const element of elements) {
       const listener =
         delegates.get(element) ??
@@ -278,7 +278,7 @@ export class Controller {
               method: 'POST',
               body: formData,
               headers: {
-                [P_TRIGGER]: element.getAttribute(P_FORM)!,
+                [B_TRIGGER]: element.getAttribute(B_FORM)!,
               },
             })
             if (!response.ok) {
@@ -336,7 +336,7 @@ export class Controller {
     }
   }
   #render({ target, html, swap, id, match = '=' }: RenderMessage['detail']) {
-    const nodelist = document.querySelectorAll(`[${P_TARGET}${match}"${target}"]`)
+    const nodelist = document.querySelectorAll(`[${B_TARGET}${match}"${target}"]`)
     const length = nodelist.length
     for (let i = 0; i < length; i++) {
       const element = nodelist[i]
@@ -355,7 +355,7 @@ export class Controller {
     }
   }
   #attrs({ target, attr, id, match = '=' }: AttrsMessage['detail']) {
-    const nodelist = document.querySelectorAll(`[${P_TARGET}${match}"${target}"]`)
+    const nodelist = document.querySelectorAll(`[${B_TARGET}${match}"${target}"]`)
     const length = nodelist.length
     for (let i = 0; i < length; i++) {
       const element = nodelist[i]
@@ -383,7 +383,7 @@ export class Controller {
     cancelable,
     composed,
   }: DispatchCustomEventMessage['detail']) {
-    const element = document.querySelector(`[${P_TARGET}="${target}"]`)
+    const element = document.querySelector(`[${B_TARGET}="${target}"]`)
     if (!element)
       throw new ElementNotFoundError(`${CONTROLLER_INCOMING_MESSAGE_TYPES.dispatch_custom_event}`, {
         cause: {
@@ -404,15 +404,15 @@ export class Controller {
     else window.location.assign(url)
   }
   #scaleCheck({ target, swap, id, match = '=' }: ScaleCheckMessage['detail']) {
-    const nodelist = document.querySelectorAll(`[${P_TARGET}${match}"${target}"]`)
+    const nodelist = document.querySelectorAll(`[${B_TARGET}${match}"${target}"]`)
     const boundary = swapBoundary(swap)
     const scales: (keyof typeof SCALE)[] = []
     for (const element of nodelist) {
       const scaleEl =
         boundary === SWAP_TARGETS.self
-          ? element.closest(`[${P_SCALE}]`)
-          : element.parentElement?.closest(`[${P_SCALE}]`)
-      const scale = scaleEl?.getAttribute(P_SCALE) ?? SCALE.rel
+          ? element.closest(`[${B_SCALE}]`)
+          : element.parentElement?.closest(`[${B_SCALE}]`)
+      const scale = scaleEl?.getAttribute(B_SCALE) ?? SCALE.rel
       scales.push(scale as keyof typeof SCALE)
     }
     const effectiveScale =

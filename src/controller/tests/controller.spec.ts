@@ -145,10 +145,10 @@ describe('controller: render swap modes', () => {
   test('all six swap modes produce the correct DOM structure', async () => {
     await goto('/test/swap-test')
     expect(await evalJs("() => document.getElementById('inner-result')?.textContent")).toContain('inner replaced')
-    expect(await evalJs('() => document.querySelector(\'[p-target="main"]\')?.firstElementChild?.id')).toContain(
+    expect(await evalJs('() => document.querySelector(\'[b-target="main"]\')?.firstElementChild?.id')).toContain(
       'afterbegin-result',
     )
-    expect(await evalJs('() => document.querySelector(\'[p-target="main"]\')?.lastElementChild?.id')).toContain(
+    expect(await evalJs('() => document.querySelector(\'[b-target="main"]\')?.lastElementChild?.id')).toContain(
       'beforeend-result',
     )
     expect(await evalJs("() => document.getElementById('afterend-result')?.textContent")).toContain('after main')
@@ -157,7 +157,7 @@ describe('controller: render swap modes', () => {
   }, 15000)
 
   test('binds triggers on swapped-in fragments', async () => {
-    // The action-test fixture renders a button with a p-trigger; clicking it
+    // The action-test fixture renders a button with a b-trigger; clicking it
     // must emit a ui_event the server receives and acknowledge with a render.
     await goto('/test/action-test')
     await waitFor(async () => {
@@ -176,7 +176,7 @@ describe('controller: render swap modes', () => {
 describe('controller: attrs handler', () => {
   test('sets string, removes null, toggles boolean, coerces number', async () => {
     await goto('/test/attrs-test')
-    const sel = "() => document.querySelector('[p-target=main]')"
+    const sel = "() => document.querySelector('[b-target=main]')"
     await waitFor(async () => {
       const cls = await evalJs(`${sel}?.getAttribute('class')`)
       return cls?.includes('active') ? true : undefined
@@ -191,54 +191,54 @@ describe('controller: attrs handler', () => {
 // ─── All-matches targeting (querySelectorAll) ──────────────────────────────
 
 describe('controller: all-matches targeting', () => {
-  test('attrs applies to every element with the matching p-target', async () => {
-    // attrs-multi ships three [p-target="card"]; one attrs command must set the
+  test('attrs applies to every element with the matching b-target', async () => {
+    // attrs-multi ships three [b-target="card"]; one attrs command must set the
     // class on all of them (querySelectorAll, not querySelector first-match).
     await goto('/test/attrs-multi')
     await waitFor(async () => {
       const n = await evalJs(
-        "() => Array.from(document.querySelectorAll('[p-target=card]')).filter(el => el.classList.contains('active')).length",
+        "() => Array.from(document.querySelectorAll('[b-target=card]')).filter(el => el.classList.contains('active')).length",
       )
       return n === 3 ? n : undefined
     }, 10_000)
     const count = await evalJs(
-      "() => Array.from(document.querySelectorAll('[p-target=card]')).filter(el => el.classList.contains('active')).length",
+      "() => Array.from(document.querySelectorAll('[b-target=card]')).filter(el => el.classList.contains('active')).length",
     )
     expect(count).toBe(3)
   }, 20_000)
 
-  test('render (innerHTML) applies to every element with the matching p-target', async () => {
-    // render-multi ships two [p-target="slot"]; an innerHTML render must
+  test('render (innerHTML) applies to every element with the matching b-target', async () => {
+    // render-multi ships two [b-target="slot"]; an innerHTML render must
     // replace the inner content of both, not just the first.
     await goto('/test/render-multi')
     await waitFor(async () => {
       const n = await evalJs(
-        "() => Array.from(document.querySelectorAll('[p-target=slot]')).filter(el => el.textContent?.includes('filled')).length",
+        "() => Array.from(document.querySelectorAll('[b-target=slot]')).filter(el => el.textContent?.includes('filled')).length",
       )
       return n === 2 ? n : undefined
     }, 10_000)
     const count = await evalJs(
-      "() => Array.from(document.querySelectorAll('[p-target=slot]')).filter(el => el.textContent?.includes('filled')).length",
+      "() => Array.from(document.querySelectorAll('[b-target=slot]')).filter(el => el.textContent?.includes('filled')).length",
     )
     expect(count).toBe(2)
   }, 20_000)
 
-  test('match param (^=) targets every element whose p-target starts with the prefix', async () => {
-    // render-prefix ships [p-target="user-name"], [p-target="user-email"],
-    // and [p-target="other"]. A render with match='^=' and target='user' must
+  test('match param (^=) targets every element whose b-target starts with the prefix', async () => {
+    // render-prefix ships [b-target="user-name"], [b-target="user-email"],
+    // and [b-target="other"]. A render with match='^=' and target='user' must
     // fill the two user-* slots and leave 'other' untouched.
     await goto('/test/render-prefix')
     await waitFor(async () => {
       const n = await evalJs(
-        "() => Array.from(document.querySelectorAll('[p-target^=user]')).filter(el => el.textContent?.includes('hi')).length",
+        "() => Array.from(document.querySelectorAll('[b-target^=user]')).filter(el => el.textContent?.includes('hi')).length",
       )
       return n === 2 ? n : undefined
     }, 10_000)
     const filled = await evalJs(
-      "() => Array.from(document.querySelectorAll('[p-target^=user]')).filter(el => el.textContent?.includes('hi')).length",
+      "() => Array.from(document.querySelectorAll('[b-target^=user]')).filter(el => el.textContent?.includes('hi')).length",
     )
     expect(filled).toBe(2)
-    const other = await evalJs("() => document.querySelector('[p-target=other]')?.textContent")
+    const other = await evalJs("() => document.querySelector('[b-target=other]')?.textContent")
     expect(other).toContain('untouched')
   }, 20_000)
 })
@@ -271,9 +271,9 @@ describe('controller: navigate handler', () => {
   }, 15000)
 })
 
-// ─── p-trigger routing ──────────────────────────────────────────────────────
+// ─── b-trigger routing ──────────────────────────────────────────────────────
 
-describe('controller: p-trigger routing', () => {
+describe('controller: b-trigger routing', () => {
   test('click emits a ui_event with the action type and element attributes', async () => {
     await goto('/test/action-test')
     await waitFor(async () => {
@@ -295,7 +295,7 @@ describe('controller: p-trigger routing', () => {
     const detail = ev.message.detail as { event?: { type?: string; detail?: Record<string, unknown> } }
     expect(detail.event?.type).toBe('test_click')
     // The trigger detail carries the element's attributes.
-    expect(detail.event?.detail?.['p-trigger']).toBe('click:test_click')
+    expect(detail.event?.detail?.['b-trigger']).toBe('click:test_click')
     expect(detail.event?.detail?.id).toBe('test-btn')
   }, 20000)
 })
@@ -303,7 +303,7 @@ describe('controller: p-trigger routing', () => {
 // ─── Extensions ─────────────────────────────────────────────────────────────
 
 describe('controller: extensions', () => {
-  test('extension module is invoked for its matching p-trigger and triggers a BP event', async () => {
+  test('extension module is invoked for its matching b-trigger and triggers a BP event', async () => {
     await goto('/module-fixture.html')
     await waitFor(async () => {
       const has = await evalJs("() => !!document.getElementById('module-ext-btn')")
@@ -322,13 +322,13 @@ describe('controller: extensions', () => {
     expect(detail.event?.detail?.id).toBe('module-ext-btn')
   }, 20000)
 
-  test('standard p-trigger still emits a BP event alongside extensions', async () => {
+  test('standard b-trigger still emits a BP event alongside extensions', async () => {
     await goto('/module-fixture.html')
     await waitFor(async () => {
-      const has = await evalJs("() => !!document.getElementById('module-p-trigger-btn')")
+      const has = await evalJs("() => !!document.getElementById('module-b-trigger-btn')")
       return has ? true : undefined
     }, 5000)
-    await evalJs("() => document.getElementById('module-p-trigger-btn').click()")
+    await evalJs("() => document.getElementById('module-b-trigger-btn').click()")
     const ev = await waitFor(
       () =>
         Promise.resolve(
@@ -347,7 +347,7 @@ describe('controller: extensions', () => {
 // ─── Form submit ────────────────────────────────────────────────────────────
 
 describe('controller: form submit', () => {
-  test('POSTs the form data to the server with the p-form-trigger header', async () => {
+  test('POSTs the form data to the server with the b-form-trigger header', async () => {
     await goto('/test/form-test')
     await waitFor(async () => {
       const has = await evalJs("() => !!document.getElementById('controller-form')")
@@ -399,7 +399,7 @@ describe('controller: error reporting & success acks', () => {
 })
 
 describe('controller: scaleCheck handler', () => {
-  test('into target without own p-scale inherits nearest ancestor scale', async () => {
+  test('into target without own b-scale inherits nearest ancestor scale', async () => {
     await goto('/test/scale-check-test')
     const result = await waitFor(
       () => Promise.resolve(getFixture().scaleCheckResults.find((s) => s.source === 'scale-check-test')),
@@ -408,7 +408,7 @@ describe('controller: scaleCheck handler', () => {
     expect((result.message.detail as { effectiveScale: string }).effectiveScale).toBe('s3')
   }, 15000)
 
-  test('outerHTML uses parent scale, ignores target own p-scale', async () => {
+  test('outerHTML uses parent scale, ignores target own b-scale', async () => {
     await goto('/test/scale-check-parent-test')
     const result = await waitFor(
       () => Promise.resolve(getFixture().scaleCheckResults.find((s) => s.source === 'scale-check-parent-test')),

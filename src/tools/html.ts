@@ -2,9 +2,9 @@
 import type { JSONSchemaType } from 'ajv'
 import { parse, walk } from 'css-tree'
 import {
+  B_SCALE,
+  B_TARGET,
   BOOLEAN_ATTRS,
-  P_SCALE,
-  P_TARGET,
   SCALE,
   SCALE_RANK,
   SWAP_MODES,
@@ -90,7 +90,7 @@ export type CssViolation = {
 
 // ── Shared scalar types ───────────────────────────────────────────────────
 
-/** A `p-target` selector match operator. `match` defaults to `=`. */
+/** A `b-target` selector match operator. `match` defaults to `=`. */
 type MatchOp = '=' | '^=' | '~=' | '*='
 
 /** A `SWAP_MODES` value: the insertion/replacement mode of a render. */
@@ -406,7 +406,7 @@ export const HtmlValidateAndEscapeOutputSchema = {
  * Two handlers are chained on one rewriter:
  *
  * 1. `.on('*', { element })` — for every element: (a) block `on*` inline event
- *    handler attributes (security: events must use `p-trigger`); (b) validate
+ *    handler attributes (security: events must use `b-trigger`); (b) validate
  *    attributes against the per-tag schema via {@link validateAttribute}; (c)
  *    re-serialize every non-`on*` attribute via `setAttribute`, which
  *    normalizes to double-quoted form and escapes `"` (the only character that
@@ -502,7 +502,7 @@ export const HtmlValidateAttributeValueOutputSchema = {
  * `attrs` message before sending it to the browser can use this same check.
  *
  * Rules: `on*` attributes are always blocked (security: events must use
- * `p-trigger`); otherwise the value is validated against the per-tag attribute
+ * `b-trigger`); otherwise the value is validated against the per-tag attribute
  * schema. Violations are returned as data — never thrown. On failure the
  * output is `{ valid: null, isError: true, message, htmlViolations }`; on
  * success `{ valid: true }`.
@@ -544,7 +544,7 @@ export const HtmlRenderInputSchema = {
   type: 'object',
   properties: {
     html: { type: 'string', description: 'the full HTML document' },
-    target: { type: 'string', description: 'the p-target value to match' },
+    target: { type: 'string', description: 'the b-target value to match' },
     fragment: {
       type: 'string',
       description: 'the markup payload to insert or swap in (validated before the rewriter pass)',
@@ -561,7 +561,7 @@ export const HtmlRenderInputSchema = {
   required: ['html', 'target', 'fragment', 'swap', 'id'],
   additionalProperties: false,
   description:
-    'Insert or replace content at every element matching the p-target selector. The fragment payload is validated before the pass; on validation failure the document html is returned unchanged.',
+    'Insert or replace content at every element matching the b-target selector. The fragment payload is validated before the pass; on validation failure the document html is returned unchanged.',
 } as unknown as JSONSchemaType<HtmlRenderInput>
 
 type HtmlRenderOutput = {
@@ -578,7 +578,7 @@ export const HtmlRenderOutputSchema = {
   type: 'object',
   properties: {
     id: { type: 'string', description: 'the request id' },
-    target: { type: 'string', description: 'the matched p-target value' },
+    target: { type: 'string', description: 'the matched b-target value' },
     html: {
       type: 'string',
       description:
@@ -606,12 +606,12 @@ export const HtmlRenderOutputSchema = {
 } as unknown as JSONSchemaType<HtmlRenderOutput>
 
 /**
- * Insert or replace content at every element matching the `p-target` selector.
+ * Insert or replace content at every element matching the `b-target` selector.
  *
  * @remarks
  * The `fragment` payload is validated via {@link validateAndEscapeHtmlRaw}
  * before the rewriter pass — an invalid payload returns an error with the
- * original input `html` unchanged, even when no `[p-target]` element matches
+ * original input `html` unchanged, even when no `[b-target]` element matches
  * (security: never silently accept a dangerous payload). Targets all matches
  * (mirroring `querySelectorAll`): the `match` operator interpolates into
  * `[p-target${match}"${target}"]`, and `HTMLRewriter.on` fires the handler for
@@ -625,7 +625,7 @@ export const htmlRender = useTool(
   {
     name: 'html-render',
     description:
-      'Insert or replace content at every element matching a p-target selector. Validates the fragment payload first; returns the new document, or the original document unchanged with violations on failure.',
+      'Insert or replace content at every element matching a b-target selector. Validates the fragment payload first; returns the new document, or the original document unchanged with violations on failure.',
     inputSchema: HtmlRenderInputSchema,
     outputSchema: HtmlRenderOutputSchema,
   },
@@ -643,7 +643,7 @@ export const htmlRender = useTool(
       }
     }
     const next = new HTMLRewriter()
-      .on(`[${P_TARGET}${match}"${target}"]`, {
+      .on(`[${B_TARGET}${match}"${target}"]`, {
         element: (element) => {
           applySwap({ element, html: validated.html, swap })
         },
@@ -667,7 +667,7 @@ export const HtmlUpdateAttributesInputSchema = {
   type: 'object',
   properties: {
     html: { type: 'string', description: 'the full HTML document' },
-    target: { type: 'string', description: 'the p-target value to match' },
+    target: { type: 'string', description: 'the b-target value to match' },
     attr: {
       type: 'object',
       additionalProperties: attrValueSchema,
@@ -685,7 +685,7 @@ export const HtmlUpdateAttributesInputSchema = {
   required: ['html', 'target', 'attr', 'id'],
   additionalProperties: false,
   description:
-    'Merge an attribute map into every element matching the p-target selector. Each value is validated before it is applied; on any validation failure the document html is returned unchanged.',
+    'Merge an attribute map into every element matching the b-target selector. Each value is validated before it is applied; on any validation failure the document html is returned unchanged.',
 } as unknown as JSONSchemaType<HtmlUpdateAttributesInput>
 
 type HtmlUpdateAttributesOutput = {
@@ -701,7 +701,7 @@ export const HtmlUpdateAttributesOutputSchema = {
   type: 'object',
   properties: {
     id: { type: 'string', description: 'the request id' },
-    target: { type: 'string', description: 'the matched p-target value' },
+    target: { type: 'string', description: 'the matched b-target value' },
     html: {
       type: 'string',
       description:
@@ -723,7 +723,7 @@ export const HtmlUpdateAttributesOutputSchema = {
 } as unknown as JSONSchemaType<HtmlUpdateAttributesOutput>
 
 /**
- * Merge an attribute map into every element matching the `p-target` selector.
+ * Merge an attribute map into every element matching the `b-target` selector.
  *
  * @remarks
  * Each attribute value is validated via {@link validateAttributeValueRaw}
@@ -742,14 +742,14 @@ export const htmlUpdateAttributes = useTool(
   {
     name: 'html-update-attributes',
     description:
-      'Merge an attribute map into every element matching a p-target selector. Validates each value first; returns the new document, or the original document unchanged with violations on failure.',
+      'Merge an attribute map into every element matching a b-target selector. Validates each value first; returns the new document, or the original document unchanged with violations on failure.',
     inputSchema: HtmlUpdateAttributesInputSchema,
     outputSchema: HtmlUpdateAttributesOutputSchema,
   },
   ({ html, target, attr, id, match = '=' }) => {
     const violations: HtmlViolation[] = []
     const next = new HTMLRewriter()
-      .on(`[${P_TARGET}${match}"${target}"]`, {
+      .on(`[${B_TARGET}${match}"${target}"]`, {
         element: (el) => {
           for (const key in attr) {
             updateAttributes({ element: el, attr: key, val: attr[key] ?? null, violations })
@@ -785,7 +785,7 @@ export const HtmlScaleCheckInputSchema = {
   type: 'object',
   properties: {
     html: { type: 'string', description: 'the full HTML document to walk (read-only)' },
-    target: { type: 'string', description: 'the p-target value to match' },
+    target: { type: 'string', description: 'the b-target value to match' },
     swap: {
       type: 'string',
       enum: swapEnum,
@@ -802,7 +802,7 @@ export const HtmlScaleCheckInputSchema = {
   required: ['html', 'target', 'swap', 'id'],
   additionalProperties: false,
   description:
-    'Pre-flight read: resolve the structural scale context a render into or beside this target would nest inside. Zero matches or no p-scale found anywhere → rel.',
+    'Pre-flight read: resolve the structural scale context a render into or beside this target would nest inside. Zero matches or no b-scale found anywhere → rel.',
 } as unknown as JSONSchemaType<HtmlScaleCheckInput>
 
 type HtmlScaleCheckOutput = { id: string; target: string; effectiveScale: ScaleValue }
@@ -811,7 +811,7 @@ export const HtmlScaleCheckOutputSchema = {
   type: 'object',
   properties: {
     id: { type: 'string', description: 'the request id' },
-    target: { type: 'string', description: 'the matched p-target value' },
+    target: { type: 'string', description: 'the matched b-target value' },
     effectiveScale: {
       type: 'string',
       enum: scaleEnum,
@@ -829,26 +829,26 @@ export const HtmlScaleCheckOutputSchema = {
  *
  * @remarks
  * Walks the document `html` with a single read-only `HTMLRewriter` pass,
- * maintaining an open-element stack to track ancestor `p-scale` values. For
- * every `[p-target]` match, resolves the effective structural boundary:
+ * maintaining an open-element stack to track ancestor `b-scale` values. For
+ * every `[b-target]` match, resolves the effective structural boundary:
  *
  * - **Into modes** (`afterbegin`, `beforeend`, `innerHTML`): the target IS the
- *   container → read its own `p-scale`; if absent, inherit the nearest
+ *   container → read its own `b-scale`; if absent, inherit the nearest
  *   ancestor's.
  * - **Replace/beside modes** (`beforebegin`, `afterend`, `outerHTML`): the
- *   target's PARENT is the container → read the nearest ancestor's `p-scale`
+ *   target's PARENT is the container → read the nearest ancestor's `b-scale`
  *   (the target's own scale does not govern).
  *
  * Across multiple matches, returns the **most restrictive** (lowest-rank)
  * effective scale, so a single content blob respects every target's boundary.
- * Zero matches or no `p-scale` found anywhere → `rel` (scale-less,
+ * Zero matches or no `b-scale` found anywhere → `rel` (scale-less,
  * permissive). Advisory only — does not enforce nesting.
  */
 export const htmlScaleCheck = useTool(
   {
     name: 'html-scale-check',
     description:
-      'Resolve the structural scale a render into or beside a p-target would nest inside. Returns the most restrictive effective scale across matches, or rel.',
+      'Resolve the structural scale a render into or beside a b-target would nest inside. Returns the most restrictive effective scale across matches, or rel.',
     inputSchema: HtmlScaleCheckInputSchema,
     outputSchema: HtmlScaleCheckOutputSchema,
   },
@@ -861,14 +861,14 @@ export const htmlScaleCheck = useTool(
       .on('*', {
         element(el) {
           if (el.canHaveContent) {
-            stack.push(el.getAttribute(P_SCALE))
+            stack.push(el.getAttribute(B_SCALE))
             el.onEndTag(() => void stack.pop())
           }
         },
       })
-      .on(`[${P_TARGET}${match}"${target}"]`, {
+      .on(`[${B_TARGET}${match}"${target}"]`, {
         element(el) {
-          const ownScale = el.getAttribute(P_SCALE)
+          const ownScale = el.getAttribute(B_SCALE)
           let scale: string | null = null
           if (boundary === SWAP_TARGETS.self && ownScale) {
             scale = ownScale

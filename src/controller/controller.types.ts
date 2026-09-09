@@ -98,7 +98,7 @@ export type ControllerExtensionParams<
  * @remarks
  * Each extension is registered in the Controller constructor via the
  * `extensions` map keyed by trigger pair strings (e.g. `"click:my_action"`).
- * When a `p-trigger` attribute value matches an extension key, the function
+ * When a `b-trigger` attribute value matches an extension key, the function
  * is invoked on each matching DOM event and receives the event plus a
  * `trigger` for emitting behavioral events. It returns nothing (synchronous
  * or promise-based); rejected promises are reported to the agent as errors.
@@ -120,7 +120,7 @@ export type ControllerConstructorArgs = {
   /**
    * Optional map of trigger-pair keys to extension functions.
    * Keys follow the pattern `"<domEvent>:<action>"` (e.g. `"click:my_handler"`)
-   * and are matched against `p-trigger` attribute values on elements.
+   * and are matched against `b-trigger` attribute values on elements.
    */
   extensions?: Map<string, ControllerExtension>
   /** Called on {@link https://developer.mozilla.org/en-US/docs/Web/API/Window/pagereveal_event | pagereveal}. */
@@ -234,8 +234,8 @@ export type NavigateMessage = {
  *
  * @remarks
  * Advisory only — does not enforce nesting. The agent sends this before
- * `render` to learn the `p-scale` boundary. The Controller/Renderer walk the
- * matched target's `p-scale` (or nearest ancestor's) and reply with a
+ * `render` to learn the `b-scale` boundary. The Controller/Renderer walk the
+ * matched target's `b-scale` (or nearest ancestor's) and reply with a
  * {@link ScaleCheckResultMessage}.
  *
  * @public

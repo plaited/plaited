@@ -9,7 +9,7 @@ import { keyMirror } from '../utils.ts'
  * @remarks
  * Implementation details:
  * - VOID_TAGS and BOOLEAN_ATTRS align with HTML5 and SVG specs
- * - P_TARGET & P_TRIGGER declare controller update and event wiring
+ * - B_TARGET & B_TRIGGER declare controller update and event wiring
  * - Sets provide O(1) lookup performance for validation
  *
  * Known limitations:
@@ -20,20 +20,20 @@ import { keyMirror } from '../utils.ts'
  */
 
 /**
- * Constant representing the attribute name (`p-target`) used to identify specific elements
+ * Constant representing the attribute name (`b-target`) used to identify specific elements
  * within a controller island for server-pushed render and attribute updates.
  */
-export const P_TARGET = 'p-target'
+export const B_TARGET = 'b-target'
 /**
- * Constant representing the attribute name (`p-trigger`) used for declarative event binding,
+ * Constant representing the attribute name (`b-trigger`) used for declarative event binding,
  * connecting DOM events to BP events sent by a controller island. Serialized values contain
  * space-separated pairs of `event:action` (e.g., "click:doSomething focus:notify").
  */
-export const P_TRIGGER = 'p-trigger'
+export const B_TRIGGER = 'b-trigger'
 
-export const P_SCALE = 'p-scale'
+export const B_SCALE = 'b-scale'
 
-export const P_FORM = 'p-form'
+export const B_FORM = 'b-form'
 
 /**
  * A Set containing HTML attribute names that are considered boolean attributes.

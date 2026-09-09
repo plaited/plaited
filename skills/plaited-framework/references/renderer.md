@@ -27,8 +27,8 @@ The entire public surface is three things:
 
 | Member | Purpose |
 |--------|---------|
-| `render({ target, html, swap, id, match })` | Apply `html` to `[p-target]` elements per `swap` mode |
-| `attrs({ target, attr, id, match })` | Set/remove attributes on `[p-target]` elements |
+| `render({ target, html, swap, id, match })` | Apply `html` to `[b-target]` elements per `swap` mode |
+| `attrs({ target, attr, id, match })` | Set/remove attributes on `[b-target]` elements |
 | `get html()` | Read the current buffer state |
 
 Both `render` and `attrs` return a `RendererResult` whose `detail` is
@@ -43,7 +43,7 @@ live DOM is dropped:
 - No WebSocket transport (no push loop — the Renderer is called directly by
   your handlers).
 - No page lifecycle (`pagereveal`/`pageswap`/`pagehide`/`pageshow`).
-- No `p-trigger` / `p-form` DOM binding (no user input on the server).
+- No `b-trigger` / `b-form` DOM binding (no user input on the server).
 - No `dispatch_custom_event`, no `navigate` (those need a live page).
 
 What remains is exactly the `render`/`attrs` transform applied to a string.
@@ -70,7 +70,7 @@ transformer:
 
 1. **Payload HTML is validated/escaped before selector match.**
    `Renderer.render` runs `validateAndEscapeHtml` on the incoming `html`
-   payload *before* matching `[p-target]`. An XSS-laden or schema-invalid
+   payload *before* matching `[b-target]`. An XSS-laden or schema-invalid
    payload throws `ValidationError` **even when no element matches** — the
    Renderer never silently accepts a dangerous payload. The behavioral
    engine's `feedback_error` snapshot captures the throw.

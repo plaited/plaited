@@ -8,7 +8,7 @@
  */
 import { join } from 'node:path'
 import type { ServerWebSocket } from 'bun'
-import { P_TRIGGER } from '../../controller.constants.ts'
+import { B_TRIGGER } from '../../controller.constants.ts'
 import { bundleController, CONNECT_PLAITED_ROUTE } from './bundle-controller.ts'
 
 const FIXTURES_DIR = import.meta.dir
@@ -59,19 +59,19 @@ const attrsMsg = (detail: Record<string, unknown>) => ({ type: 'attrs', detail }
 // ─── Static HTML fixtures ────────────────────────────────────────────────────
 
 const HTML_CONTROL_ISLAND = `<!DOCTYPE html><html><body>
-  <div p-target="main"><p>initial content</p></div>
+  <div b-target="main"><p>initial content</p></div>
   <script type="module" src="${connectScript()}"></script>
 </body></html>`
 
 const HTML_SWAP_FIXTURE = `<!DOCTYPE html><html><body>
-  <div p-target="main"><p>initial swap content</p></div>
+  <div b-target="main"><p>initial swap content</p></div>
   <script type="module" src="${connectScript()}"></script>
 </body></html>`
 
 const HTML_MODULE_FIXTURE = `<!DOCTYPE html><html><body>
-  <div p-target="main">
-    <button id="module-p-trigger-btn" data-extra="p-trigger-attr" p-trigger="click:test_click">Standard Trigger</button>
-    <button id="module-ext-btn" data-extra="extension-listener" p-trigger="click:module_enhanced_action">Extension</button>
+  <div b-target="main">
+    <button id="module-b-trigger-btn" data-extra="b-trigger-attr" b-trigger="click:test_click">Standard Trigger</button>
+    <button id="module-ext-btn" data-extra="extension-listener" b-trigger="click:module_enhanced_action">Extension</button>
   </div>
   <script type="module" src="${connectScript(['/dist/modules/controller-module.js'])}"></script>
 </body></html>`
@@ -79,19 +79,19 @@ const HTML_MODULE_FIXTURE = `<!DOCTYPE html><html><body>
 // ─── Dynamic test pages ──────────────────────────────────────────────────────
 
 const TEST_PAGE_CONTENT: Record<string, string> = {
-  'swap-test': `<div p-target="main"><p id="original">original</p></div><div p-target="outer-target">outer original</div>`,
-  'attrs-test': `<div p-target="main" data-removable="old-value"><p>attrs target</p></div>`,
-  'attrs-multi': `<div p-target="card" id="c1">card1</div><div p-target="card" id="c2">card2</div><div p-target="card" id="c3">card3</div>`,
-  'render-multi': `<div p-target="slot" id="s1">empty1</div><div p-target="slot" id="s2">empty2</div>`,
-  'render-prefix': `<span p-target="user-name">name</span><span p-target="user-email">email</span><span p-target="other">untouched</span>`,
-  'dispatch-test': `<div p-target="main"><p>dispatch target</p></div>`,
-  'action-test': `<div p-target="main"><p>waiting for action</p></div>`,
-  'form-test': `<div p-target="main"><p>waiting for form</p></div>`,
-  'retry-test': `<div p-target="main"><p>connecting</p></div>`,
-  'lifecycle-test': `<div p-target="main"><p>lifecycle</p></div>`,
-  'navigate-test': `<div p-target="main"><p>navigate target</p></div>`,
-  'scale-check-test': `<section p-scale="s5"><article p-scale="s3"><div p-target="slot">content</div></article></section>`,
-  'scale-check-parent-test': `<section p-scale="s5"><span p-target="slot" p-scale="s1">content</span></section>`,
+  'swap-test': `<div b-target="main"><p id="original">original</p></div><div b-target="outer-target">outer original</div>`,
+  'attrs-test': `<div b-target="main" data-removable="old-value"><p>attrs target</p></div>`,
+  'attrs-multi': `<div b-target="card" id="c1">card1</div><div b-target="card" id="c2">card2</div><div b-target="card" id="c3">card3</div>`,
+  'render-multi': `<div b-target="slot" id="s1">empty1</div><div b-target="slot" id="s2">empty2</div>`,
+  'render-prefix': `<span b-target="user-name">name</span><span b-target="user-email">email</span><span b-target="other">untouched</span>`,
+  'dispatch-test': `<div b-target="main"><p>dispatch target</p></div>`,
+  'action-test': `<div b-target="main"><p>waiting for action</p></div>`,
+  'form-test': `<div b-target="main"><p>waiting for form</p></div>`,
+  'retry-test': `<div b-target="main"><p>connecting</p></div>`,
+  'lifecycle-test': `<div b-target="main"><p>lifecycle</p></div>`,
+  'navigate-test': `<div b-target="main"><p>navigate target</p></div>`,
+  'scale-check-test': `<section b-scale="s5"><article b-scale="s3"><div b-target="slot">content</div></article></section>`,
+  'scale-check-parent-test': `<section b-scale="s5"><span b-target="slot" b-scale="s1">content</span></section>`,
 }
 
 // Inline scripts injected before the connect module, keyed by source tag.
@@ -100,7 +100,7 @@ const TEST_PAGE_SCRIPT: Record<string, string> = {
   'dispatch-test': `<script>
     window.__pingDetail = null
     document.addEventListener('DOMContentLoaded', function () {
-      document.querySelector('[p-target="main"]').addEventListener('app:ping', function (e) {
+      document.querySelector('[b-target="main"]').addEventListener('app:ping', function (e) {
         window.__pingDetail = JSON.stringify(e.detail)
       })
     })
@@ -156,7 +156,7 @@ const sendSwapMessages = (ws: ServerWebSocket<{ source: string }>) => {
       renderMsg({
         id: 's6',
         target: 'outer-target',
-        html: '<div id="outer-result" p-target="outer-target">outer replaced</div>',
+        html: '<div id="outer-result" b-target="outer-target">outer replaced</div>',
         swap: 'outerHTML',
       }),
     ),
@@ -171,17 +171,17 @@ const sendAttrsMessages = (ws: ServerWebSocket<{ source: string }>) => {
 }
 
 const sendAttrsMultiMessages = (ws: ServerWebSocket<{ source: string }>) => {
-  // One attrs command against p-target="card" must apply to all three cards.
+  // One attrs command against b-target="card" must apply to all three cards.
   ws.send(JSON.stringify(attrsMsg({ id: 'am1', target: 'card', attr: { class: 'active' } })))
 }
 
 const sendRenderMultiMessages = (ws: ServerWebSocket<{ source: string }>) => {
-  // One innerHTML render against p-target="slot" must fill both slots.
+  // One innerHTML render against b-target="slot" must fill both slots.
   ws.send(JSON.stringify(renderMsg({ id: 'rm1', target: 'slot', html: 'filled', swap: 'innerHTML' })))
 }
 
 const sendRenderPrefixMessages = (ws: ServerWebSocket<{ source: string }>) => {
-  // match='^=' targets every p-target starting with "user".
+  // match='^=' targets every b-target starting with "user".
   ws.send(JSON.stringify(renderMsg({ id: 'rp1', target: 'user', html: 'hi', match: '^=', swap: 'innerHTML' })))
 }
 
@@ -200,7 +200,7 @@ const sendActionInitialRender = (ws: ServerWebSocket<{ source: string }>) => {
       renderMsg({
         id: 'ar',
         target: 'main',
-        html: '<button id="test-btn" p-trigger="click:test_click">Click me</button>',
+        html: '<button id="test-btn" b-trigger="click:test_click">Click me</button>',
       }),
     ),
   )
@@ -212,7 +212,7 @@ const sendFormInitialRender = (ws: ServerWebSocket<{ source: string }>) => {
       renderMsg({
         id: 'fr',
         target: 'main',
-        html: '<form id="controller-form" p-form="register" method="post"><input name="name" value="Ada"><input name="tags" value="ui"><input name="tags" value="controller"><button type="submit">Submit</button></form>',
+        html: '<form id="controller-form" b-form="register" method="post"><input name="name" value="Ada"><input name="tags" value="ui"><input name="tags" value="controller"><button type="submit">Submit</button></form>',
       }),
     ),
   )
@@ -377,9 +377,9 @@ export const startServer = (port = 0): FixtureServer => {
     },
     async fetch(req, server) {
       // Form POST — the controller POSTs to window.location.href with a
-      // p-form-trigger header carrying the form's p-form value.
+      // b-form-trigger header carrying the form's b-form value.
       if (req.method === 'POST') {
-        const trigger = req.headers.get(P_TRIGGER)
+        const trigger = req.headers.get(B_TRIGGER)
         if (trigger) {
           const form = await req.formData()
           const body: Record<string, unknown> = {}

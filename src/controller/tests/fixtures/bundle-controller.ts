@@ -28,7 +28,7 @@ const params = new URL(import.meta.url).searchParams
 
 // Load optional extension modules specified as comma-separated paths.
 // Each module must export:
-//   - key: the p-trigger pair string this extension handles (e.g. "click:my_action")
+//   - key: the b-trigger pair string this extension handles (e.g. "click:my_action")
 //   - default: a ControllerExtension function
 const modulePaths = (params.get('modules') ?? '').split(',').map(function (s) { return s.trim() }).filter(Boolean)
 const extEntries = await Promise.all(

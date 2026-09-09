@@ -4,7 +4,7 @@ import type { ControllerExtensionParams } from '../../controller.types.ts'
  * Controller extension module for testing the extension feature.
  *
  * @remarks
- * Exports a `key` that maps to a `p-trigger` pair, and a default `ControllerExtension`
+ * Exports a `key` that maps to a `b-trigger` pair, and a default `ControllerExtension`
  * function that is invoked inside the controller's delegated listener when a matching
  * DOM event fires.
  */

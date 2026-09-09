@@ -35,8 +35,8 @@ opens a WebSocket to its serving agent and applies server-pushed messages:
 
 | Server → browser message | What the Controller does |
 |--------------------------|---------------------------|
-| `render` | Apply HTML to `[p-target]` elements per the `swap` mode |
-| `attrs` | Set/remove attributes on `[p-target]` elements |
+| `render` | Apply HTML to `[b-target]` elements per the `swap` mode |
+| `attrs` | Set/remove attributes on `[b-target]` elements |
 | `dispatch_custom_event` | Fire a `CustomEvent` on the target |
 | `navigate` | Navigate the page (URL change) |
 
@@ -50,7 +50,7 @@ applier.
 - **Wiring a multi-page app**: one `Controller` per page, constructed in the
   page's `<head>` async module. The WebSocket URL is derived from the page's
   origin.
-- **Binding interactive elements**: declare `p-trigger` and `p-form`
+- **Binding interactive elements**: declare `b-trigger` and `b-form`
   attributes in the DOM; the Controller wires them to emit `ui_event` messages
   on user interaction. No manual `addEventListener` in your code.
 - **Page lifecycle**: the `onPage*` hooks fire on `pagereveal`/`pageswap`/
@@ -66,7 +66,7 @@ Calling `Controller` methods directly to mutate the DOM. The Controller is a
 `navigate` arrive as server-pushed messages and are dispatched internally,
 not called by your code. If you find yourself reaching for a Controller method
 to change the page, the correct path is to emit a `ui_event` (via a
-`p-trigger`/`p-form` declaration) and let the agent's behavioral program
+`b-trigger`/`b-form` declaration) and let the agent's behavioral program
 respond with a server-pushed `render`. The DOM is downstream of the agent,
 not the other way around.
 
