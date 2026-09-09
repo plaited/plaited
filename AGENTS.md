@@ -177,6 +177,11 @@ and let `useTool` compile both with the shared `ajv` instance (`src/tools/use-to
 structural schemas (`oneOf` branches, strict `additionalProperties: false` at every level) so
 constraints are explicit and JSON-schema replay contracts stay aligned. Do not hand-maintain a
 parallel Zod shape alongside an AJV one.
+**No cross-module schema drift.** When a CLI command returns a shape produced by another module
+(kernel, tools), the output schema must derive from or reference that module's exported schema —
+not be hand-mirrored. Failure mode: a module's output type changes; a downstream CLI/tool schema
+silently rejects the new field (`additionalProperties: false` bites). Fix: one JSON-schema home for
+the shape (e.g. `TurnResultSchema` in `src/kernel/`), consumed downstream via `.schema`.
 **CLI schema reflection uses AJV.** The `makeCliRouter`/`parseCli` framework in `src/cli/cli.ts`
 reflects command schemas via `--schema input|output` — schemas are `JSONSchemaType<T>` objects,
 so reflection is `JSON.stringify(schema)`. The CLI AJV instance (`useDefaults: true`) matches
