@@ -1,8 +1,8 @@
-![Plaited sovereign agent node framework: generative UI, self-evolving agents, ATProto distribution and discovery, and memory, provenance, and verifiable work](assets/banner.svg)
+![behavioral sovereign agent node framework: generative UI, self-evolving agents, ATProto distribution and discovery, and memory, provenance, and verifiable work](assets/banner.svg)
 
-# plaited
+# behavioral
 
-The Plaited framework — behavioral-programming runtime, SSR Renderer, browser
+The behavioral framework — behavioral-programming runtime, SSR Renderer, browser
 Controller, HTML/CSS schemas, validation utils, and CLI.
 
 ## Repository Map
@@ -19,17 +19,17 @@ Controller, HTML/CSS schemas, validation utils, and CLI.
 
 ## Public API
 
-Imported as `plaited`. Three entry points:
+Imported as `@behavioral/sh`. Three entry points:
 
 ```ts
 // Main entry — behavioral runtime, Renderer, validation utils, frontier analysis
-import { Renderer, validateAndEscapeHtml, validateAttributeValue, ValidationError } from 'plaited'
+import { Renderer, validateAndEscapeHtml, validateAttributeValue, ValidationError } from '@behavioral/sh'
 
 // Controller — browser-side controller bootstrap
-import { Controller } from 'plaited/controller'
+import { Controller } from '@behavioral/sh/controller'
 
 // Utils — keyMirror, deepEqual, isTypeOf, trueTypeOf, ueid, case conversion, escape, wait
-import { keyMirror, deepEqual } from 'plaited/utils'
+import { keyMirror, deepEqual } from '@behavioral/sh/utils'
 ```
 
 ## What's here
@@ -39,10 +39,10 @@ import { keyMirror, deepEqual } from 'plaited/utils'
   (scale-check classifier), frontier analysis
 - `src/controller/` — browser Controller (WebSocket-driven, applies
   `render`/`attrs`/`dispatch_custom_event`/`navigate`/`scale_check` to the live DOM)
-- `src/cli/` — `plaited` CLI (`git-context`, `markdown`, `mcp-client`,
+- `src/cli/` — `behavioral` CLI (`git-context`, `markdown`, `mcp-client`,
   `typescript-lsp`)
 - `src/utils/` — shared utilities
-- `bin/plaited.ts` — CLI entry point
+- `bin/behavioral.ts` — CLI entry point
 
 ## scaleCheck (advisory b-scale guidance)
 

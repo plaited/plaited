@@ -57,7 +57,7 @@ formatters or other Git operations are still in flight.
 **Template required** — before opening or editing a PR, read `.github/pull_request_template.md`
 and preserve every required heading exactly.
 **Check after editing** — after opening or editing a PR, run
-`gh pr checks <pr-number> --repo plaited/plaited`.
+`gh pr checks <pr-number> --repo behavioral-sh/behavioral`.
 **Fix description lint** — if `pr-description-lint` fails, inspect the failing job with
 `gh run view` and update the PR body with `gh pr edit` until the required heading check passes.
 
@@ -103,13 +103,13 @@ Examples:
 **`src/`** — Framework code that ships with the package: runtime modules, schemas, types, and
 stable CLI-backed features.
 **CLI features** — Prefer a `makeCli` JSON-in/JSON-out command exported through the owning
-`src/<feature>/` module and registered in `bin/plaited.ts`.
+`src/<feature>/` module and registered in `bin/behavioral.ts`.
 **`scripts/`** — Repo setup and package-maintenance shell glue.
 **`skills/`** — Implementation patterns and skill-local tools. Skill scripts, prompts,
 references, tests, and assets stay under their skill directory.
 
 **Operator surface** — Stable agent/operator features should be discoverable through
-`plaited --schema` and invokable as `plaited <command> '<json>'`.
+`behavioral --schema` and invokable as `behavioral <command> '<json>'`.
 
 ## GitHub CLI
 
@@ -201,7 +201,7 @@ requires a specific non-emitted JSON shape.
 inside `addHandler`/feedback handlers unless explicitly converting a known domain failure into a
 normal result event. Let behavioral publish `feedback_error` snapshots for handler failures.
 **Mermaid diagrams only** — no ASCII box-drawing.
-**Skill checks** — use `plaited skills` for skill discovery, validation, and registry checks. Do
+**Skill checks** — use `behavioral skills` for skill discovery, validation, and registry checks. Do
 not invent standalone skill validators unless the repo exposes them.
 
 ## Minimal-Implementation Directive
@@ -212,7 +212,7 @@ Before writing code, resolve the task at the FIRST step that holds:
 2. Does something already in THIS codebase do it? Reuse it. Read before you write;
    re-implementing a helper that lives three files over is the most common waste.
    Check `src/utils.ts` first (`keyMirror`, `deepEqual`, `isTypeOf`, `trueTypeOf`,
-   `ueid`, case conversion, `htmlEscape`, `wait`); use `plaited typescript-lsp`
+   `ueid`, case conversion, `htmlEscape`, `wait`); use `behavioral typescript-lsp`
    to explore its exports when uncertain.
 3. Does the standard library or the runtime/platform already do it? (`<input type="date">`, a DB
    unique constraint, a CSS rule.) Use it.
@@ -258,7 +258,7 @@ Prefer direct callsite wiring when logic is local, stable, and used once.
 Preferred:
 ```ts
 emitter.on(SESSION_EVENTS.stdout, onStdout);
-const contextDbPath = resolveRelativePath({ cwd, path: '.plaited/context.sqlite' });
+const contextDbPath = resolveRelativePath({ cwd, path: '.behavioral/context.sqlite' });
 process.on('message', (raw) => {
   const parsed = parseIpcMessage(raw);
   if (!parsed) return;
@@ -269,7 +269,7 @@ process.on('message', (raw) => {
 Discouraged:
 ```ts
 const resolveContextDbPath = (cwd: string) =>
-  resolveRelativePath({ cwd, path: '.plaited/context.sqlite' });
+  resolveRelativePath({ cwd, path: '.behavioral/context.sqlite' });
 EVENT_FORWARDERS.forEach(({ event, handler }) => emitter.on(event, handler));
 test('parse helper', () => expect(parseMessage(raw)).toEqual(parsed));
 ```
@@ -277,6 +277,6 @@ test('parse helper', () => expect(parseMessage(raw)).toEqual(parsed));
 # Skill Pointers
 
 **TSDoc** — use `code-documentation` skill for conventions when writing/editing TSDoc.
-**BP patterns** — use `plaited-runtime` skill when implementing behavioral programs.
-**UI development/testing** — use `plaited-ui` for controller protocol, custom
+**BP patterns** — use `behavioral-runtime` skill when implementing behavioral programs.
+**UI development/testing** — use `behavioral-ui` for controller protocol, custom
 elements, SSR, and the three-layer UI test strategy.
