@@ -31,6 +31,8 @@ import { read } from '../tools/read.ts'
 import { createDispatchBridge, type DispatchableTool, type DispatchBridge } from './dispatch.ts'
 import { TURN_LOOP_THREAD } from './threads.ts'
 
+export { TurnResultSchema } from './kernel.schemas.ts'
+
 // ---------------------------------------------------------------------------
 // Pool contract types
 // ---------------------------------------------------------------------------

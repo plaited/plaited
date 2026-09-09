@@ -75,7 +75,7 @@ export type SchemaValidator<T> = {
  * object is kept (`.schema`) for embedding in other schemas; the compiled
  * AJV validator backs `.parse` / `.safeParse`.
  */
-const makeSchema = <T>(schema: object): SchemaValidator<T> => {
+export const makeSchema = <T>(schema: object): SchemaValidator<T> => {
   const validate = ajv.compile(schema) as ValidateFunction<unknown>
   return Object.freeze({
     schema,
