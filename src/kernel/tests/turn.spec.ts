@@ -143,7 +143,11 @@ describe('createKernel().runTurn — minimal turn loop', () => {
     try {
       const a = await kernel.runTurn({ space: 's', prompt: 'same prompt' })
       const b = await kernel.runTurn({ space: 's', prompt: 'same prompt' })
-      expect(Bun.deepEquals(a, b)).toBe(true)
+      // The trace carries per-run timestamps/instanceId — compare the
+      // deterministic trajectory fields, not the raw exhaust.
+      const { trace: _ta, ...aRest } = a
+      const { trace: _tb, ...bRest } = b
+      expect(Bun.deepEquals(aRest, bRest)).toBe(true)
     } finally {
       await kernel.shutdown()
     }

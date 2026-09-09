@@ -22,7 +22,7 @@ import {
 } from '@modelcontextprotocol/client'
 import { TRACE_MESSAGE_KINDS } from '../behavioral/behavioral.constants.ts'
 import { behavioral } from '../behavioral/behavioral.ts'
-import type { BPEvent, Disconnect } from '../behavioral/behavioral.types.ts'
+import type { BPEvent, Disconnect, Frontier, Thread, Trace } from '../behavioral/behavioral.types.ts'
 import { createMcpClientTool, type McpClientTool } from '../tools/mcp-client.ts'
 import type { ModelCompactTool, ModelRespondTool } from '../tools/model.ts'
 import { createScriptedModelTools, DEFAULT_SCRIPTED_RESPONSE } from '../tools/model.ts'
@@ -161,6 +161,16 @@ export type TurnResult = {
   iterations: number
   /** Token usage from the last model-respond round, when the model reported it. */
   usage?: Usage
+  /** Captured trace stream — every Trace message from the run (the exhaust). */
+  trace: Trace[]
+}
+
+/** The result of running an arbitrary thread set without a model round-trip. */
+export type RunThreadsResult = {
+  /** The captured trace stream — every Trace message from the run. */
+  trace: Trace[]
+  /** The final frontier after the engine settled (deadlock/idle), or null. */
+  frontier: Frontier | null
 }
 
 /** Options for instantiating a kernel floor. All provisioner-injected. */
@@ -186,8 +196,13 @@ export type Kernel = {
   pool: ConnectionPool
   /** MCP client tool provisioned with the kernel's pool getter. */
   mcpClient: McpClientTool
-  /** Run one turn from a `{ space, prompt }` to a JSON {@link TurnResult}. */
-  runTurn: (input: { space: string; prompt: string }) => Promise<TurnResult>
+  /** Run one turn from a `{ space, prompt, threads? }` to a JSON {@link TurnResult}.
+   *  Candidate `threads` are co-registered alongside the turn-loop coordination
+   *  skeleton; when omitted the turn loop runs alone (backward compat). */
+  runTurn: (input: { space: string; prompt: string; threads?: Thread[] }) => Promise<TurnResult>
+  /** Register arbitrary threads + run the program + capture the trace, with no
+   *  model round-trip. Returns the captured trace and the final frontier. */
+  runThreads: (input: { space: string; threads: Thread[] }) => Promise<RunThreadsResult>
   /** Drain every pooled connection. Idempotent; registered on process teardown. */
   shutdown: () => Promise<void>
 }
@@ -207,6 +222,7 @@ export type Kernel = {
 const runTurnImpl = ({
   space,
   prompt,
+  threads,
   modelRespond,
   dispatch,
   maxIterations,
@@ -215,6 +231,7 @@ const runTurnImpl = ({
 }: {
   space: string
   prompt: string
+  threads?: Thread[]
   modelRespond: ModelRespondTool
   dispatch: DispatchBridge
   maxIterations: number
@@ -224,6 +241,7 @@ const runTurnImpl = ({
   const program = behavioral()
   const addThread = program.useAddThread(space)
   const trigger = program.useTrigger(space)
+  const trace: Trace[] = []
 
   // Kernel-owned trajectory: the user message + every appended model output and
   // tool-call output. Re-fed to `modelRespond` each round; returned as the result.
@@ -235,6 +253,7 @@ const runTurnImpl = ({
   let turnUsage: Usage | undefined
 
   addThread(TURN_LOOP_THREAD)
+  for (const thread of threads ?? []) addThread(thread)
 
   // Defer bridge triggers past the current synchronous super-step so the
   // action channel never re-enters the engine from inside a sendTrace listener.
@@ -309,6 +328,7 @@ const runTurnImpl = ({
   return new Promise<TurnResult>((resolve) => {
     let disconnect: Disconnect | undefined
     disconnect = program.useTrace((msg) => {
+      trace.push(msg)
       if (msg.kind !== TRACE_MESSAGE_KINDS.selection) return
       if (msg.selected.type === 'turn.end') {
         disconnect?.()
@@ -318,6 +338,7 @@ const runTurnImpl = ({
           status: turnStatus,
           items,
           iterations,
+          trace,
           ...(turnUsage === undefined ? {} : { usage: turnUsage }),
         })
         return
@@ -326,6 +347,63 @@ const runTurnImpl = ({
     })
     trigger({ type: 'user.prompt', detail: { prompt }, space })
   })
+}
+
+/**
+ * Run an arbitrary thread set without a model round-trip: register the threads,
+ * capture every Trace message, and return the trace alongside the final frontier.
+ *
+ * @remarks
+ * This is the primitive the autoresearch gate calls — it runs a candidate
+ * thread (or set) and reads the exhaust (the trace + frontier) for
+ * frontier-verify/frontier-replay. No model tools, no dispatch bridge — just
+ * the behavioral engine. The engine runs to completion (all selectable events
+ * fire) or pauses at deadlock/idle; the last frontier trace provides the
+ * frontier.
+ */
+const runThreadsImpl = ({ space, threads }: { space: string; threads: Thread[] }): Promise<RunThreadsResult> => {
+  const program = behavioral()
+  const addThread = program.useAddThread(space)
+  const trigger = program.useTrigger(space)
+  const trace: Trace[] = []
+
+  // Capture all trace messages.
+  program.useTrace((msg) => {
+    trace.push(msg)
+  })
+
+  for (const thread of threads) addThread(thread)
+
+  // Kick the engine: addThread adds threads to `running` but does not call
+  // step(). Trigger `threads.registered` (priority 0, selected first) to start
+  // the super-step cycle. The engine then selects every available event from
+  // the candidate threads and settles at deadlock/idle.
+  //
+  // `threads.registered` is a documented harness event — it appears in the
+  // trace as the first selection and is part of the contract, not noise. Two
+  // ways to use it:
+  //  1. Candidate threads can `waitFor` it as an ingress signal (the same way
+  //     the turn loop waits for `user.prompt`).
+  //  2. Consumers replaying the trace against a different thread set (e.g.
+  //     `frontierReplay`) must filter it out — it is not part of the candidate
+  //     program's event vocabulary.
+  trigger({ type: 'threads.registered', detail: { count: threads.length }, space })
+
+  // Extract the final frontier from the last frontier trace.
+  const frontierTraces = trace.filter(
+    (msg): msg is Extract<Trace, { kind: typeof TRACE_MESSAGE_KINDS.frontier }> =>
+      msg.kind === TRACE_MESSAGE_KINDS.frontier,
+  )
+  const lastFrontierTrace = frontierTraces[frontierTraces.length - 1]
+  const frontier = lastFrontierTrace
+    ? {
+        candidates: lastFrontierTrace.candidates,
+        enabled: lastFrontierTrace.enabled,
+        status: lastFrontierTrace.status,
+      }
+    : null
+
+  return Promise.resolve({ trace, frontier })
 }
 
 /**
@@ -354,8 +432,9 @@ export const createKernel = (options: KernelOptions = {}): Kernel => {
   const maxIterations = options.maxIterations ?? 8
   const provider = options.provider ?? 'scripted'
   const modelId = options.modelId ?? 'scripted-model'
-  const runTurn = (input: { space: string; prompt: string }): Promise<TurnResult> =>
+  const runTurn = (input: { space: string; prompt: string; threads?: Thread[] }): Promise<TurnResult> =>
     runTurnImpl({ ...input, modelRespond: modelTools.modelRespond, dispatch, maxIterations, provider, modelId })
+  const runThreads = (input: { space: string; threads: Thread[] }): Promise<RunThreadsResult> => runThreadsImpl(input)
 
   let shuttingDown = false
   const shutdown = async (): Promise<void> => {
@@ -368,5 +447,5 @@ export const createKernel = (options: KernelOptions = {}): Kernel => {
   // can fire more than once; `shutdown` is idempotent so re-entry is safe.
   process.on('beforeExit', shutdown)
 
-  return { pool, mcpClient, runTurn, shutdown }
+  return { pool, mcpClient, runTurn, runThreads, shutdown }
 }
